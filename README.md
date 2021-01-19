@@ -1,9 +1,6 @@
 # Ammitto
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/ammitto`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
-
+Retrieve sanctioned people and organizations from various reputed published sources
 ## Installation
 
 Add this line to your application's Gemfile:

@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
   s.email         = ["open.source@ribose.com"]
   s.homepage      = "https://github.com/ammitto/ammitto"
   s.licenses      = "BSD-2-Clause"
-  s.summary       = "Amitto: retrieve sanctioned people and organizations from various publish sources"
-  s.description   = "Amitto: retrieve sanctioned people and organizations from various publish sources"
+  s.summary       = "Amitto: retrieve sanctioned people and organizations from various published sources"
+  s.description   = "Amitto: retrieve sanctioned people and organizations from various published sources"
 
   s.files         = Dir.chdir(File.expand_path(__dir__)) do
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
 
-  s.add_dependency "nokogiri"
+  s.add_dependency "nokogiri", '1.10.10'
 
 end
 

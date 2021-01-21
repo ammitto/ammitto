@@ -1,0 +1,62 @@
+require_relative "hash"
+require_relative "address"
+require_relative "document"
+
+module Ammitto
+  class SanctionItem
+    attr_reader :names, :source, :entity_type, :country, :birthdate,
+                :ref_number, :ref_type, :remark, :contact, :designation, :addresses, :documents
+
+    def initialize(sanction_item)
+      sanction_item.symbolize_keys!
+      @names = sanction_item[:names] if sanction_item[:names].is_a?(Array)
+      @source = sanction_item[:source] if sanction_item[:source].is_a?(String)
+      @entity_type = sanction_item[:entity_type] if sanction_item[:entity_type].is_a?(String)
+      @country = sanction_item[:country] if sanction_item[:country].is_a?(String)
+      @birthdate = sanction_item[:country] if sanction_item[:country].is_a?(String)
+      @ref_number = sanction_item[:ref_number] if sanction_item[:ref_number].is_a?(String)
+      @ref_type = sanction_item[:ref_type] if sanction_item[:ref_type].is_a?(String)
+      @remark = sanction_item[:remark] if sanction_item[:remark].is_a?(String)
+      @contact = sanction_item[:contact] if sanction_item[:contact].is_a?(String)
+      @designation = sanction_item[:designation] if sanction_item[:designation].is_a?(String)
+      @addresses = sanction_item[:address].map { |address| Ammitto::Address.new(address) } if sanction_item[:address].is_a?(Array)
+      @documents = sanction_item[:documents].map { |document| Ammitto::Document.new(document) } if sanction_item[:documents].is_a?(Array)
+    end
+  end
+end
+
+
+##########################################################################
+#
+#
+#- names:
+#   - Rasheed Bank
+#   - Al Rashid Bank
+#   - Al-Rasheed Bank
+#   - Al-Rashid Bank
+#   source: eu_sanctions_list
+#   entity_type: organization
+#   country: ''
+#   birthdate: ''
+#   ref_number: EU.245.66
+#   ref_type: EU Reference Number
+#   remark:
+#   contact: ''
+#   address:
+#   - street: Haifa Street
+#     city: Baghdad
+#     state: ''
+#     country: IRAQ
+#     zip: PO Box 7177
+#   documents:
+#   - type: Passport
+#     number: Russian foreign travel passport number 515458008
+#     country:
+#     note: expires 30 May 2017
+#   - type: National Identification Number
+#     number: '8200203535'
+#     country: Russian Federation
+#     note:
+#
+#
+##########################################################################

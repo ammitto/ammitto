@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "ammitto/version"
+require_relative "ammitto/sanction_item_collection"
 require 'net/http'
 require 'yaml'
 require 'ostruct'
@@ -30,7 +31,7 @@ module Ammitto
         warn "[amitto] found match: #{res.length}"
         results << res
       end
-      results = results.flatten.map { |r| OpenStruct.new(r) }
+      results = SanctionItemCollection.new(results.flatten)
       warn "[amitto] found total match : #{results.length}"
       results
     rescue SocketError, Errno::EINVAL, Errno::ECONNRESET, EOFError,

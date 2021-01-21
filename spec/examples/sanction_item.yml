@@ -1,0 +1,35 @@
+entity_type: person
+names:
+  - HAMID HAMAD HAMID AL-‘ALI
+designation:
+source: un_sanctions_list
+ref_number: QDi.326
+ref_type: Al-Qaida
+country: Kuwait
+birthdate: '1960-11-17'
+remark: |-
+  A Kuwait-based financier, recruiter and facilitator for Islamic State in
+  Iraq and the Levant, listed as Al-Qaida in Iraq (QDe.115), and Jabhat al-Nusrah, listed
+  as Al-Nusrah Front for the People of the Levant (QDe.137). Associated with Ibrahim Awwad
+  Ibrahim Ali al-Badri al-Samarrai (QDi.299) and Abu Mohammed al-Jawlani
+  (QDi.317). INTERPOL-UN Security Council Special Notice web link: https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Individuals
+address:
+  - street: Barangay Mangayao
+    city: Tagkawayan
+    state: Quezon
+    country: Philippines
+    zip:
+  - street: Barangay Tigib
+    city: Ayungon
+    state: Negros Oriental
+    country: Philippines
+    zip:
+documents:
+  - type: Passport
+    number: '001714467'
+    country: Kuwait
+    note:
+  - type: Passport
+    number: '101505554'
+    country: Kuwait
+    note:

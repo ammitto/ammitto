@@ -12,7 +12,7 @@ RSpec.describe Ammitto do
 
   context "search" do
     it "will always respond with SanctionItem collection object" do
-      result = Ammitto::search('abc')
+      result = Ammitto::search('abcdef')
       expect(result).to be_instance_of Ammitto::SanctionItemCollection
       result = Ammitto::search('Salih')
       expect(result).to be_instance_of Ammitto::SanctionItemCollection

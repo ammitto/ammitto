@@ -24,39 +24,3 @@ module Ammitto
     end
   end
 end
-
-
-##########################################################################
-#
-#
-#- names:
-#   - Rasheed Bank
-#   - Al Rashid Bank
-#   - Al-Rasheed Bank
-#   - Al-Rashid Bank
-#   source: eu_sanctions_list
-#   entity_type: organization
-#   country: ''
-#   birthdate: ''
-#   ref_number: EU.245.66
-#   ref_type: EU Reference Number
-#   remark:
-#   contact: ''
-#   address:
-#   - street: Haifa Street
-#     city: Baghdad
-#     state: ''
-#     country: IRAQ
-#     zip: PO Box 7177
-#   documents:
-#   - type: Passport
-#     number: Russian foreign travel passport number 515458008
-#     country:
-#     note: expires 30 May 2017
-#   - type: National Identification Number
-#     number: '8200203535'
-#     country: Russian Federation
-#     note:
-#
-#
-##########################################################################

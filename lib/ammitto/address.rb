@@ -1,5 +1,3 @@
-
-
 module Ammitto
   class Address
     attr_reader :street, :city, :state, :country, :zip
@@ -22,7 +20,15 @@ module Ammitto
       hash
     end
 
-
+    def to_xml(builder)
+      builder.address do
+        builder.street street if city
+        builder.city city if city
+        builder.state state if state
+        builder.country country if country
+        builder.zip zip if zip
+      end
+    end
 
   end
 end

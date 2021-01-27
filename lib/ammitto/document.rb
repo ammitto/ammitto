@@ -1,5 +1,3 @@
-
-
 module Ammitto
   class Document
     attr_reader :type, :number, :country, :note
@@ -18,6 +16,15 @@ module Ammitto
       hash["country"] = country.to_s if country
       hash["note"] = note.to_s if note
       hash
+    end
+
+    def to_xml(builder)
+      builder.document do
+        builder.type type if type
+        builder.number number if number
+        builder.country country if country
+        builder.note note if note
+      end
     end
 
   end

@@ -4,6 +4,9 @@
 Dir["./spec/support/**/*.rb"].sort.each { |f| require f }
 
 require "ammitto"
+require "yaml"
+require "rspec/matchers"
+require "equivalent-xml"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

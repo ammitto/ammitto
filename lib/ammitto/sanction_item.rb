@@ -40,5 +40,42 @@ module Ammitto
       hash
     end
 
+    def to_xml(**opts, &block)
+      Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
+        render_xml builder: xml, **opts, &block
+      end.doc.root.to_xml
+    end
+
+    private
+
+    def render_xml(**opts)
+      xml = opts[:builder].send(:sanction_item) do |builder|
+        builder.names do
+          names.each { |l| builder.name l }
+        end
+        builder.source source if source
+        builder.entity_type entity_type if entity_type
+        builder.country country if country
+        builder.country country if country
+        builder.birthdate birthdate if birthdate
+        builder.ref_number ref_number if ref_number
+        builder.ref_type ref_type if ref_type
+        builder.remark remark if remark
+        builder.contact contact if contact
+        builder.designation designation if designation
+        if addresses&.any?
+          builder.addresses do |b|
+            addresses.each { |address| address.to_xml(b) }
+          end
+        end
+        if documents&.any?
+          builder.documents do |b|
+            documents.each { |document| document.to_xml(b) }
+          end
+        end
+      end
+      xml
+    end
+
   end
 end

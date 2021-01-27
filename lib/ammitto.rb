@@ -4,7 +4,6 @@ require_relative "ammitto/version"
 require_relative "ammitto/sanction_item_collection"
 require 'net/http'
 require 'yaml'
-require 'ostruct'
 require 'nokogiri'
 
 module Ammitto

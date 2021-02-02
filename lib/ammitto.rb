@@ -5,6 +5,7 @@ require_relative "ammitto/sanction_item_collection"
 require 'net/http'
 require 'yaml'
 require 'nokogiri'
+require 'ammitto/processor'
 
 module Ammitto
   DATA_SOURCE_ENDPOINT = "https://raw.githubusercontent.com/ammitto/data/master/processed/".freeze
@@ -15,8 +16,13 @@ module Ammitto
   class RequestError < StandardError; end
 
   class << self
+
+    def fetch(date=nil)
+      Processor.prepare(date)
+    end
+
     def search(term)
-      warn "[amitto] fetching for: \"#{term}\" ..."
+      warn "[amitto] searching for: \"#{term}\" ..."
 
       response = Net::HTTP.get_response URI(DATA_PROCESSED_ENDPOINT)
       doc = Nokogiri::HTML(response.body)

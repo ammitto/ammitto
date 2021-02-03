@@ -1,4 +1,5 @@
 require_relative 'sanction_item_collection'
+require 'rbconfig'
 
 module Ammitto
   class Processor
@@ -9,6 +10,7 @@ module Ammitto
     def self.prepare(date=nil)
       last_updated = Time.parse(File.open("#{SOURCE_DIRECTORY}/update.log", &:gets)) rescue nil
       if date.nil? || date && last_updated && ((date - last_updated) / 3600) > 24
+        warn "[amitto] Please install git in your system!" and return if !check_if_git_installed
         FileUtils.mkdir_p SOURCE_DIRECTORY
         DATA_SOURCES.each do |ds|
           FileUtils.rm_rf "#{SOURCE_DIRECTORY}/#{ds}" if File.directory?("#{SOURCE_DIRECTORY}/#{ds}")
@@ -36,6 +38,11 @@ module Ammitto
       results = SanctionItemCollection.new(results.flatten)
       warn "[amitto] found total match : #{results.length}"
       results
+    end
+
+    def self.check_if_git_installed
+      void = RbConfig::CONFIG['host_os'] =~ /msdos|mswin|djgpp|mingw/ ? 'NUL' : '/dev/null'
+      system "git --version >>#{void} 2>&1"
     end
 
   end

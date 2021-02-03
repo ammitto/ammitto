@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
 require_relative "ammitto/version"
-require_relative "ammitto/sanction_item_collection"
 require 'net/http'
 require 'yaml'
 require 'nokogiri'
 require 'ammitto/processor'
+require 'time'
 
 module Ammitto
-  DATA_SOURCE_ENDPOINT = "https://raw.githubusercontent.com/ammitto/data/master/processed/".freeze
-  DATA_PROCESSED_ENDPOINT = "https://github.com/ammitto/data/tree/master/processed/".freeze
 
   class Error < StandardError; end
 
@@ -17,34 +15,16 @@ module Ammitto
 
   class << self
 
-    def fetch(date=nil)
-      Processor.prepare(date)
-    end
-
     def search(term)
-      warn "[amitto] searching for: \"#{term}\" ..."
-
-      response = Net::HTTP.get_response URI(DATA_PROCESSED_ENDPOINT)
-      doc = Nokogiri::HTML(response.body)
-      data_sources = doc.xpath('//a[contains(text(), "sanctions_list.yaml")]').map(&:text)
-      results = []
-      data_sources.each do |ds|
-        warn "[amitto] searching in #{ds.sub('.yaml', '').gsub("_", " ")}"
-        resp = Net::HTTP.get_response URI("#{DATA_SOURCE_ENDPOINT}#{ds}")
-        data = YAML::safe_load(resp.body)
-        res = data.find_all { |d| d["names"].join(" ").downcase.index(term.downcase) }
-        warn "[amitto] found match: #{res.length}"
-        results << res
-      end
-      results = SanctionItemCollection.new(results.flatten)
-      warn "[amitto] found total match : #{results.length}"
-      results
-    rescue SocketError, Errno::EINVAL, Errno::ECONNRESET, EOFError,
-      Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError,
-      Net::ProtocolError, Net::ReadTimeout,
-      Errno::ETIMEDOUT => e
-      raise Ammitto::RequestError, "Could not access data source due to : #{e.message}"
+      Processor.prepare(Time.now)
+      Processor.fetch(term)
     end
+
+    def update_data_source
+      Processor.prepare
+    end
+
+
   end
 
 end

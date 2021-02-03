@@ -21,8 +21,6 @@ Gem::Specification.new do |s|
   s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
 
   s.add_dependency "nokogiri", '1.10.10'
-  s.add_development_dependency "vcr"
-  s.add_development_dependency "webmock"
   s.add_development_dependency "equivalent-xml", "~> 0.6"
 
 end

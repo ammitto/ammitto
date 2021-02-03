@@ -2,10 +2,6 @@
 
 RSpec.describe Ammitto do
 
-  around(:each) do |example|
-    VCR.use_cassette("load_data", &example)
-  end
-
   it "has a version number" do
     expect(Ammitto::VERSION).not_to be nil
   end

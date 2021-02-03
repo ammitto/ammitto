@@ -33,6 +33,6 @@ jobs:
           repository: ammitto/eu-data
           path: '~/.ammitto/sources/eu-data'
       - name: Show Update Log
-          shell: bash
-          run: |
-           cd ~/.ammitto/sources/ && ls
+        shell: bash
+        run: |
+         cd ~/.ammitto/sources/ && ls

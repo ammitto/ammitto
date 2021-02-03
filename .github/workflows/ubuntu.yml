@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.6' ]
+        ruby: [ '2.6', '2.5', '2.4' ]
     steps:
       - uses: actions/checkout@master
       - name: Use Ruby
@@ -27,12 +27,6 @@ jobs:
         run: |
           gem install bundler
           bundle install --jobs 4 --retry 3
-      - name: Preparing data sources
-        uses: actions/checkout@master
-        with:
-          repository: ammitto/eu-data
-          path: '~/.ammitto/sources/eu-data'
-      - name: Show Update Log
-        shell: bash
+      - name: Run specs
         run: |
-         cd ~/.ammitto/sources/ && ls
+          bundle exec rake

@@ -1,0 +1,17 @@
+---
+entity_type: organization
+names:
+- Ali Salim ROUMANIN
+source: us-govt-data
+ref_number: '9665'
+ref_type: Sdn UID
+country: Palestinian
+birthdate: '1971'
+remark: 
+address:
+- street: "   "
+  city: Oja
+  state: West Bank
+  country: Palestinian
+  zip: 
+documents: []

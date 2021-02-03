@@ -2,6 +2,17 @@
 
 RSpec.describe Ammitto do
 
+  before :each do
+    allow(Ammitto::Processor).to receive(:prepare).and_return(nil)
+    stubbed_files = ["spec/examples/eu-data/ammach-hud-34.yaml",
+                     "spec/examples/eu-data/salih-al-7.yaml",
+                     "spec/examples/un-data/aziz-salih-136.yaml",
+                     "spec/examples/us-govt-data/ali-salim-26.yaml",
+                     "spec/examples/wb-data/services-sa-259.yaml",
+    ]
+    allow(Dir).to receive(:[]).and_return(stubbed_files)
+  end
+
   it "has a version number" do
     expect(Ammitto::VERSION).not_to be nil
   end
@@ -22,7 +33,7 @@ RSpec.describe Ammitto do
     it "searches a name from all data sources and find expected results" do
       result = Ammitto::search('Salih')
       expect(result.empty?).to be false
-      expect(result.length).to be 24
+      expect(result.length).to be 16
       expect(result.map{|item| item.names.join(" ").include?('Salih')}.uniq.first).to be true
     end
 

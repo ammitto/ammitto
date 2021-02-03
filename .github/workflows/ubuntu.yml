@@ -27,6 +27,13 @@ jobs:
         run: |
           gem install bundler
           bundle install --jobs 4 --retry 3
-      - name: Run specs
+     - uses: actions/checkout@master
+     - name: Preparing data sources
+       uses: actions/checkout@master
+       with:
+         repository: ammitto/eu-data
+         path: '~/.ammitto/sources/eu-data'
+      - name: Show Update Log
+        shell: bash
         run: |
-          bundle exec rake
+         cd ~/.ammitto/sources/ && ls

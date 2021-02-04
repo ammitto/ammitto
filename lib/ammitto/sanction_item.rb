@@ -19,8 +19,8 @@ module Ammitto
       @remark = sanction_item["remark"] if sanction_item["remark"].is_a?(String)
       @contact = sanction_item["contact"] if sanction_item["contact"].is_a?(String)
       @designation = sanction_item["designation"] if sanction_item["designation"].is_a?(String)
-      @addresses = sanction_item["address"].map { |address| Ammitto::Address.new(address) } if sanction_item["address"].is_a?(Array)
-      @documents = sanction_item["documents"].map { |document| Ammitto::Document.new(document) } if sanction_item["documents"].is_a?(Array)
+      @addresses = sanction_item["address"].is_a?(Array) ? sanction_item["address"].map { |address| Ammitto::Address.new(address) } : []
+      @documents = sanction_item["documents"].is_a?(Array)? sanction_item["documents"].map { |document| Ammitto::Document.new(document) } : []
     end
 
     def to_hash

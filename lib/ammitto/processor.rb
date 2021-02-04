@@ -1,5 +1,6 @@
 require_relative 'sanction_item_collection'
 require 'rbconfig'
+require 'fileutils'
 
 module Ammitto
   class Processor
@@ -8,10 +9,9 @@ module Ammitto
     SOURCE_DIRECTORY = "#{Dir.home}/.ammitto/sources"
 
     def self.prepare(date=nil)
-      raise "kolaa"
       last_updated = Time.parse(File.open("#{SOURCE_DIRECTORY}/update.log", &:gets)) rescue nil
-      if date.nil? || date && last_updated && ((date - last_updated) / 3600) > 24
-        warn "[amitto] Please install git in your system!" and return if !git_installed
+      if date.nil? || last_updated.nil? || date && last_updated && ((date - last_updated) / 3600) > 24
+        raise "[amitto] Please install git in your system!" if !git_installed
         FileUtils.mkdir_p SOURCE_DIRECTORY
         DATA_SOURCES.each do |ds|
           FileUtils.rm_rf "#{SOURCE_DIRECTORY}/#{ds}" if File.directory?("#{SOURCE_DIRECTORY}/#{ds}")
@@ -19,8 +19,8 @@ module Ammitto
           warn "[amitto] Done fetching data sources for #{ds}!"
         end
         open("#{SOURCE_DIRECTORY}/update.log", "w") { |file| file.write(Time.now.to_s) }
+        warn "[amitto] Updated data sources \"#{DATA_SOURCES.join(", ")}\" !"
       end
-      warn "[amitto] Updated data sources \"#{DATA_SOURCES.join(", ")}\" !"
     end
 
     def self.fetch(term)

@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.homepage      = "https://github.com/ammitto/ammitto"
   s.licenses      = "BSD-2-Clause"
   s.summary       = "Amitto: retrieve sanctioned people and organizations from various published sources"
-  s.description   = "Amitto: retrieve sanctioned people and organizations from various published sources"
+  s.description   = "Amitto is a utility gem to retrieve sanctioned people and organizations from various published sources"
 
   s.files         = Dir.chdir(File.expand_path(__dir__)) do
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
@@ -22,6 +22,8 @@ Gem::Specification.new do |s|
 
   s.add_dependency "nokogiri", '1.10.10'
   s.add_development_dependency "equivalent-xml", "~> 0.6"
+
+  s.extensions = ['ext/extconf.rb']
 
 end
 

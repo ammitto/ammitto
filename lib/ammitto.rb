@@ -11,8 +11,6 @@ module Ammitto
 
   class Error < StandardError; end
 
-  class RequestError < StandardError; end
-
   class << self
 
     def search(term)

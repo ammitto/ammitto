@@ -11,7 +11,7 @@ module Ammitto
     def self.prepare(date=nil)
       last_updated = Time.parse(File.open("#{SOURCE_DIRECTORY}/update.log", &:gets)) rescue nil
       if date.nil? || last_updated.nil? || date && last_updated && ((date - last_updated) / 3600) > 24
-        raise "[amitto] Please install git in your system!" if !git_installed
+        raise "[amitto] Please install git in your system!" if !git_installed?
         FileUtils.mkdir_p SOURCE_DIRECTORY
         DATA_SOURCES.each do |ds|
           FileUtils.rm_rf "#{SOURCE_DIRECTORY}/#{ds}" if File.directory?("#{SOURCE_DIRECTORY}/#{ds}")
@@ -21,6 +21,7 @@ module Ammitto
         open("#{SOURCE_DIRECTORY}/update.log", "w") { |file| file.write(Time.now.to_s) }
         warn "[amitto] Updated data sources \"#{DATA_SOURCES.join(", ")}\" !"
       end
+      true
     end
 
     def self.fetch(term)
@@ -41,7 +42,7 @@ module Ammitto
       results
     end
 
-    def self.git_installed
+    def self.git_installed?
       void = RbConfig::CONFIG['host_os'] =~ /msdos|mswin|djgpp|mingw/ ? 'NUL' : '/dev/null'
       system "git --version >>#{void} 2>&1"
     end

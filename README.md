@@ -20,9 +20,86 @@ Or install it yourself as:
 ## Usage
 
 ```ruby
+require 'ammitto'
 Ammitto::search(SEARCH_TERM) # e.g. Ammitto::search('Salih')
 ```
-will respond with a `Ammitto::SanctionItemCollection` object, which contains a collection of `Ammitto::SanctionItem`
+will search for a part of a name or full name of an entity and respond with a `Ammitto::SanctionItemCollection` object, which contains a collection of `Ammitto::SanctionItem`
+
+#### Example response: 
+```
+#<Ammitto::SanctionItem:0x00005586c8205158 
+    @names=["HAMID HAMAD HAMID AL-‘ALI", "HAMID HAMAD AL-‘ALI", "HAMID HAMAD ALI"], 
+    @source="un_sanctions_list", 
+    @entity_type="person", 
+    @country="Kuwait", 
+    @birthdate="1960-11-17", 
+    @ref_number="QDi.326", 
+    @ref_type="Al-Qaida", 
+    @remark="A Kuwait-based financier, recruiter and facilitator for Islamic State in\nIraq and the Levant, listed as 
+    Al-Qaida in Iraq (QDe.115), and Jabhat al-Nusrah, listed\nas Al-Nusrah Front for the People of the Levant (QDe.137).", 
+    @addresses=[
+        #<Ammitto::Address:0x00005586c8205090 
+            @street="Barangay Mangayao", 
+            @city="Tagkawayan", 
+            @state="Quezon", 
+            @country="Philippines", 
+            @zip="30141">, 
+        #<Ammitto::Address:0x00005586c8205068 
+            @street="Barangay Tigib", 
+            @city="Ayungon", 
+            @state="Negros Oriental", 
+            @country="Philippines", 
+            @zip="30141">], 
+    @documents=[
+        #<Ammitto::Document:0x00005586c8204f50 
+            @type="Passport", 
+            @number="001714467", 
+            @country="Kuwait", 
+            @note="Dual Passport">, 
+        #<Ammitto::Document:0x00005586c8204f28 
+            @type="Passport", 
+            @number="101505554", 
+            @country="Kuwait", 
+            @note="Second Passport">]>
+```
+
+## Object Details
+
+`Ammitto::SanctionItem` has the following fields:
+  
+ * names(`Array`) - Array of name and alias of an entity
+ * source(`String`) - Source of this entity
+ * entity_type(`String`) - Is the entity is a person or organization
+ * country(`String`) - country of the entity
+ * birthdate(`String`) - birth date of the entity
+ * ref_number(`String`) - reference number of the entity in the source document 
+ * ref_type(`String`) - reference type of the entity in the source document 
+ * remark(`String`) - remark/comment for the entity
+ * contact(`String`) - contact of the entity
+ * designation(`String`) - designation of the entity
+ * addresses(`Array`) - Array of `Ammitto::Address` objects
+ * documents(`Array`) - Array of `Ammitto::Document` objects
+ 
+ `Ammitto::Address` has the following fields:
+ * street(`String`) 
+ * city(`String`) 
+ * state(`String`)
+ * country(`String`)
+ * zip(`String`) - zip or post code
+ 
+ `Ammitto::Document` has the following fields:
+ * type(`String`) - type of the document
+ * number(`String`) - document number e.g. passpost or NID number
+ * country(`String`)
+ * note(`String`)
+ 
+`Ammitto::SanctionItem` has standard `to_hash` and `to_xml` methods.
+
+### Update Data Source
+Data sources will be updated automatically once in 24 hours. To update data sources on demand
+```ruby
+Ammitto::update_data_source
+```
 
 ## Development
 

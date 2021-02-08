@@ -10,13 +10,13 @@ country: Iraq
 birthdate: 
 remark: ''
 address:
-- street: 
-  city: 
-  state: 
-  country: ''
+- street: 'house 28 road 2'
+  city: 'Baghdad'
+  state: 'Baghdad'
+  country: 'Iraq'
   zip: 
 documents:
-- type: 
-  number: 
-  country: 
-  note: 
+- type: 'Passport'
+  number: 'IQ2347'
+  country: 'Iraq'
+  note: 'N/A'

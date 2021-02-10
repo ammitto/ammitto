@@ -24,15 +24,24 @@ module Ammitto
       true
     end
 
-    def self.fetch(term)
+    def self.fetch(term,**opts)
       warn "[amitto] searching for: \"#{term}\" ..."
       results = []
       Processor::DATA_SOURCES.each do |ds|
         warn "[amitto] searching in #{ds}"
         matched = []
+        opts.each { |k, v| v.downcase! if v.is_a?(String) }
         Dir["#{Processor::SOURCE_DIRECTORY}/#{ds}/processed/*.yaml"].each do |source_entity|
           data = YAML::safe_load(File.read(source_entity))
-          matched << data if data["names"].join(" ").downcase.index(term.downcase)
+          conditions = data["names"].join(" ").downcase.index(term.downcase)
+          conditions = conditions && data["entity_type"]&.downcase&.index(opts[:entity_type]) unless opts[:entity_type].nil?
+          conditions = conditions && data["source"]&.downcase&.index(opts[:source]) unless opts[:source].nil?
+          conditions = conditions && data["ref_number"]&.downcase&.index(opts[:ref_number]) unless opts[:ref_number].nil?
+          conditions = conditions && data["ref_type"]&.downcase&.index(opts[:ref_type]) unless opts[:ref_type].nil?
+          conditions = conditions && data["country"]&.downcase&.index(opts[:country]) unless opts[:country].nil?
+          conditions = conditions && data["remark"]&.downcase&.index(opts[:remark]) unless opts[:remark].nil?
+          conditions = conditions && data["designation"]&.downcase&.index(opts[:designation]) unless opts[:designation].nil?
+          matched << data if conditions
         end
         results << matched
         warn "[amitto] found match: #{matched.length}"

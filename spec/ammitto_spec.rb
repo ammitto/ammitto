@@ -11,7 +11,7 @@ RSpec.describe Ammitto do
                      "spec/examples/wb-data/services-sa-259.yaml",
     ]
     allow(Dir).to receive(:[]).and_return(stubbed_files)
-    stub_const("Ammitto::Processor::DATA_SOURCES", ['un-data','us-govt-data','eu-data','wb-data'])
+    stub_const("DATA_SOURCES", ['un-data','us-govt-data','eu-data','wb-data'])
   end
 
   it "has a version number" do

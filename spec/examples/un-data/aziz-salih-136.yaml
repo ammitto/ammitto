@@ -14,7 +14,7 @@ address:
   city: 'Baghdad'
   state: 'Baghdad'
   country: 'Iraq'
-  zip: 
+  zip: '1254'
 documents:
 - type: 'Passport'
   number: 'IQ2347'

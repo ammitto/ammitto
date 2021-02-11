@@ -13,9 +13,9 @@ module Ammitto
 
   class << self
 
-    def search(term, **opts)
+    def search(term, opts={})
       Processor.prepare(Time.now)
-      Processor.fetch(term, **opts)
+      Processor.fetch(term, opts)
     end
 
     def update_data_source

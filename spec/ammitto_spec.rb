@@ -11,6 +11,7 @@ RSpec.describe Ammitto do
                      "spec/examples/wb-data/services-sa-259.yaml",
     ]
     allow(Dir).to receive(:[]).and_return(stubbed_files)
+    stub_const("Ammitto::Processor::DATA_SOURCES", ['un-data','us-govt-data','eu-data','wb-data'])
   end
 
   it "has a version number" do
@@ -35,6 +36,18 @@ RSpec.describe Ammitto do
       expect(result.empty?).to be false
       expect(result.length).to be 16
       expect(result.map{|item| item.names.join(" ").include?('Salih')}.uniq.first).to be true
+    end
+
+    it "searches a name with street address from all data sources and find expected results" do
+      result = Ammitto::search('AZIZ SALIH AL-NUMAN', {addresses: {street: 'house 28'}})
+      expect(result.empty?).to be false
+      expect(result.length).to be 4
+    end
+
+    it "searches a name with ref number from all data sources and find expected results" do
+      result = Ammitto::search('AZIZ SALIH AL-NUMAN', {ref_number: 'IQi.008'})
+      expect(result.empty?).to be false
+      expect(result.length).to be 4
     end
 
   end

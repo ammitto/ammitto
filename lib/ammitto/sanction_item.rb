@@ -14,7 +14,7 @@ module Ammitto
       @entity_type = sanction_item["entity_type"] if sanction_item["entity_type"].is_a?(String)
       @country = sanction_item["country"] if sanction_item["country"].is_a?(String)
       @birthdate = sanction_item["birthdate"] if sanction_item["birthdate"].is_a?(String)
-      @ref_number = sanction_item["ref_number"] if sanction_item["ref_number"].is_a?(String)
+      @ref_number = sanction_item["ref_number"].to_s if sanction_item["ref_number"].is_a?(String) || sanction_item["ref_number"].is_a?(Numeric)
       @ref_type = sanction_item["ref_type"] if sanction_item["ref_type"].is_a?(String)
       @remark = sanction_item["remark"] if sanction_item["remark"].is_a?(String)
       @contact = sanction_item["contact"] if sanction_item["contact"].is_a?(String)

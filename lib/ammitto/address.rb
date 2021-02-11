@@ -7,7 +7,7 @@ module Ammitto
       @city = address["city"] if address["city"].is_a?(String)
       @state = address["state"] if address["state"].is_a?(String)
       @country = address["country"] if address["country"].is_a?(String)
-      @zip = address["zip"] if address["zip"].is_a?(String)
+      @zip = address["zip"].to_s if address["zip"].is_a?(String) || address["zip"].is_a?(Numeric)
     end
 
     def to_hash

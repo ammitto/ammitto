@@ -21,9 +21,40 @@ Or install it yourself as:
 
 ```ruby
 require 'ammitto'
-Ammitto::search(SEARCH_TERM) # e.g. Ammitto::search('Salih')
+Ammitto::search(SEARCH_TERM,options) # options is a hash is not mandatory
+# e.g. Ammitto::search('Salih')
 ```
-will search for a part of a name or full name of an entity and respond with a `Ammitto::SanctionItemCollection` object, which contains a collection of `Ammitto::SanctionItem`
+will search for a part of a name or full name of an entity according to the `SEARCH_TERM` and respond with a `Ammitto::SanctionItemCollection` object, which contains a collection of `Ammitto::SanctionItem`
+
+#### Options
+
+advanced search `options` can be passed to the search function. Here is the list of options accepted:
+ 
+* entity_type  - value can be 'person' or 'organization'
+* source 
+* ref_number
+* ref_type
+* country
+* remark
+* designation
+
+* document[:type]
+* document[:number]
+* document[:country]
+* document[:note]
+   
+* address[:street]
+* address[:city]
+* address[:country]
+* address[:state]
+* address[:zip]
+ 
+ All option values has to be of `String` type. The search options can be passed one or more at once and will be treated as `AND`.
+ Here is an example search with options passed:
+ ```ruby
+ Ammitto::search("CORONADO",{ref_number:'343106',addresses: {street: 'HOSPITAL HUMBERTO ALVARADO'}})
+```   
+Search will match exact or a part of the string to extract result.
 
 #### Example response: 
 ```
@@ -63,7 +94,7 @@ will search for a part of a name or full name of an entity and respond with a `A
             @note="Second Passport">]>
 ```
 
-## Object Details
+## Response Object Details
 
 `Ammitto::SanctionItem` has the following fields:
   

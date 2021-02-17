@@ -90,19 +90,5 @@ module Ammitto
       system "git --version >>#{void} 2>&1"
     end
 
-    def self.find_types
-      results = []
-      Processor::DATA_SOURCES.each do |ds|
-        Dir["#{Processor::SOURCE_DIRECTORY}/#{ds}/processed/*.yaml"].each do |source_entity|
-          data = YAML::safe_load(File.read(source_entity))
-          results << data["documents"].map{|doc| doc["type"]} if !data["documents"].nil?
-        end
-      end
-       results.flatten.uniq.map{|ele| ele unless ele.nil?}.each do |type|
-         puts type
-       end
-      raise "kola"
-    end
-
   end
 end

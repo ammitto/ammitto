@@ -22,11 +22,6 @@ module Ammitto
       Processor.prepare
     end
 
-    def find_types
-      Processor.find_types
-    end
-
-
   end
 
 end

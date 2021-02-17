@@ -7,7 +7,7 @@ module Ammitto
       @number = doc["number"] if doc["number"].is_a?(String)
       @country = doc["country"] if doc["country"].is_a?(String)
       @note = doc["note"] if doc["note"].is_a?(String)
-      @doc_name = self.class.to_s.sub('Ammitto::','').downcase.to_s
+      @doc_name = self.class.to_s.sub('Ammitto::','').downcase
     end
 
 

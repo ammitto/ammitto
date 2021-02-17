@@ -19,7 +19,7 @@ module Ammitto
     end
 
     def to_xml(builder)
-      builder.document do
+      builder.send(self.class.to_s.sub('Ammitto::','').downcase.to_sym) do
         builder.type type if type
         builder.number number if number
         builder.country country if country

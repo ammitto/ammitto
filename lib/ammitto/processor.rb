@@ -6,7 +6,7 @@ module Ammitto
   class Processor
 
     SOURCE_DIRECTORY = "#{Dir.home}/.ammitto/sources"
-    DATA_SOURCES =  Dir.entries(SOURCE_DIRECTORY).select {|entry| File.directory? File.join(SOURCE_DIRECTORY,entry) and !(entry =='.' || entry == '..') } rescue []
+    DATA_SOURCES =  ['un-data','us-govt-data','eu-data','wb-data'].freeze
 
     def self.prepare(date = nil)
       last_updated = Time.parse(File.open("#{SOURCE_DIRECTORY}/update.log", &:gets)) rescue nil
@@ -88,6 +88,20 @@ module Ammitto
     def self.git_installed?
       void = RbConfig::CONFIG['host_os'] =~ /msdos|mswin|djgpp|mingw/ ? 'NUL' : '/dev/null'
       system "git --version >>#{void} 2>&1"
+    end
+
+    def self.find_types
+      results = []
+      Processor::DATA_SOURCES.each do |ds|
+        Dir["#{Processor::SOURCE_DIRECTORY}/#{ds}/processed/*.yaml"].each do |source_entity|
+          data = YAML::safe_load(File.read(source_entity))
+          results << data["documents"].map{|doc| doc["type"]} if !data["documents"].nil?
+        end
+      end
+       results.flatten.uniq.map{|ele| ele unless ele.nil?}.each do |type|
+         puts type
+       end
+      raise "kola"
     end
 
   end

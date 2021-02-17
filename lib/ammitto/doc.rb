@@ -1,16 +1,16 @@
 module Ammitto
-  class Document
+  class Doc
     attr_reader :type, :number, :country, :note
 
-    def initialize(address)
-      @type = address["type"] if address["type"].is_a?(String)
-      @number = address["number"] if address["number"].is_a?(String)
-      @country = address["country"] if address["country"].is_a?(String)
-      @note = address["note"] if address["note"].is_a?(String)
+    def initialize(doc)
+      @type = doc["type"] if doc["type"].is_a?(String)
+      @number = doc["number"] if doc["number"].is_a?(String)
+      @country = doc["country"] if doc["country"].is_a?(String)
+      @note = doc["note"] if doc["note"].is_a?(String)
     end
 
     def to_hash
-      hash = { }
+      hash = {}
       hash["type"] = type.to_s if type
       hash["number"] = number.to_s if number
       hash["country"] = country.to_s if country
@@ -26,6 +26,5 @@ module Ammitto
         builder.note note if note
       end
     end
-
   end
 end

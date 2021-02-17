@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class Vat < Ammitto::Doc
+  class Vat < Ammitto::Document
   end
 end

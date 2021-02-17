@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class Passport < Ammitto::Doc
+  class Passport < Ammitto::Document
   end
 end

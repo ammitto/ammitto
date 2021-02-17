@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class NationalId < Ammitto::Doc
+  class NationalId < Ammitto::Document
   end
 end

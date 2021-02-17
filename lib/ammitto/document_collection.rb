@@ -15,7 +15,9 @@ module Ammitto
 
     PASSPORT = ["Passport","Numéro de passeport","Número de pasaporte"]
     NATIONAL_ID = ["National Identification Number","National identification no."]
-    REGISTRATION = ["License","Public Registration Number","Nationality of Registration", "Registration ID", "Business Registration Number", "Commercial Registry Number", "Registration Number" ]
+    REGISTRATION = ["License","Public Registration Number","Nationality of Registration",
+                    "Registration ID", "Business Registration Number", "Commercial Registry Number",
+                    "Registration Number" ]
     TAX_ID = ["Tax ID No."]
     SWIFT = ["SWIFT/BIC"]
     VAT = ["V.A.T. Number"]
@@ -27,23 +29,21 @@ module Ammitto
     def initialize(collection)
       @array = collection.map do |doc|
         type = doc["type"]
-        case
-        when PASSPORT.include?(type)
+        if PASSPORT.include?(type)
           Passport.new(doc)
-        when NATIONAL_ID.include?(type)
+        elsif NATIONAL_ID.include?(type)
           NationalId.new(doc)
-        when REGISTRATION.include?(type)
+        elsif REGISTRATION.include?(type)
           Registration.new(doc)
-        when TAX_ID.include?(type)
+        elsif TAX_ID.include?(type)
           TaxId.new(doc)
-        when SWIFT.include?(type)
+        elsif SWIFT.include?(type)
           Swift.new(doc)
-        when VAT.include?(type)
+        elsif VAT.include?(type)
           Vat.new(doc)
         else
           Other.new(doc)
         end
-
       end
     end
 

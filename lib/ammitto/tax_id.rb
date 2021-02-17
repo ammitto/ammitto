@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class TaxId < Ammitto::Doc
+  class TaxId < Ammitto::Document
   end
 end

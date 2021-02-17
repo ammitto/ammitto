@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class Registration < Ammitto::Doc
+  class Registration < Ammitto::Document
   end
 end

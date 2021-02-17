@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class Other < Ammitto::Doc
+  class Other < Ammitto::Document
   end
 end

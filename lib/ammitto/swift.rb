@@ -1,6 +1,6 @@
-require_relative 'doc'
+require_relative 'document'
 
 module Ammitto
-  class Swift < Ammitto::Doc
+  class Swift < Ammitto::Document
   end
 end

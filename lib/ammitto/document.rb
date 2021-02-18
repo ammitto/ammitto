@@ -7,12 +7,12 @@ module Ammitto
       @number = doc["number"] if doc["number"].is_a?(String)
       @country = doc["country"] if doc["country"].is_a?(String)
       @note = doc["note"] if doc["note"].is_a?(String)
-      @doc_name = self.class.to_s.sub('Ammitto::','').downcase
     end
 
 
     def to_hash
       res = {}
+      doc_name = self.class.to_s.sub('Ammitto::','').downcase
       res[doc_name] = {}
       res[doc_name]["type"] = type.to_s if type
       res[doc_name]["number"] = number.to_s if number
@@ -22,6 +22,7 @@ module Ammitto
     end
 
     def to_xml(builder)
+      doc_name = self.class.to_s.sub('Ammitto::','').downcase
       builder.send(doc_name) do
         builder.type type if type
         builder.number number if number

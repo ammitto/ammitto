@@ -81,17 +81,19 @@ Search will match exact or a part of the string to extract result.
             @state="Negros Oriental", 
             @country="Philippines", 
             @zip="30141">], 
-    @documents=[
-        #<Ammitto::Document:0x00005586c8204f50 
-            @type="Passport", 
-            @number="001714467", 
-            @country="Kuwait", 
-            @note="Dual Passport">, 
-        #<Ammitto::Document:0x00005586c8204f28 
-            @type="Passport", 
-            @number="101505554", 
-            @country="Kuwait", 
-            @note="Second Passport">]>
+    @documents=#<Ammitto::DocumentCollection:0x000055a4f4d85330 
+        @array=[
+                #<Ammitto::Passport:0x000055a4f4d852e0 
+                    @type="Passport", 
+                    @number="001714467", 
+                    @country="Kuwait">,
+                    @note="issued in Philippines">, 
+                #<Ammitto::NationalId:0x000055a4f4d852b8 
+                    @type="National Id", 
+                    @number="N-101505554", 
+                    @country="Kuwait"
+                    @note="issued in Philippines">
+                ]
 ```
 
 ## Response Object Details
@@ -118,7 +120,7 @@ Search will match exact or a part of the string to extract result.
  * country(`String`)
  * zip(`String`) - zip or post code
  
- `Ammitto::Document` has the following fields:
+ `Ammitto::DocumentCollection` is a collection consisting of `Ammitto::Passport ,Ammitto::NationalId ,Ammitto::Registration ,Ammitto::TaxId ,Ammitto::Swift ,Ammitto::Vat ,Ammitto::Other` types objects and these objects has the following fields:
  * type(`String`) - type of the document
  * number(`String`) - document number e.g. passpost or NID number
  * country(`String`)

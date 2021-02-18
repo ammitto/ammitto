@@ -22,7 +22,6 @@ module Ammitto
       Processor.prepare
     end
 
-
   end
 
 end

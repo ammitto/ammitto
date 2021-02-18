@@ -1,6 +1,6 @@
 
 require_relative "address"
-require_relative "document"
+require_relative "document_collection"
 
 module Ammitto
   class SanctionItem
@@ -20,7 +20,7 @@ module Ammitto
       @contact = sanction_item["contact"] if sanction_item["contact"].is_a?(String)
       @designation = sanction_item["designation"] if sanction_item["designation"].is_a?(String)
       @addresses = sanction_item["address"].is_a?(Array) ? sanction_item["address"].map { |address| Ammitto::Address.new(address) } : []
-      @documents = sanction_item["documents"].is_a?(Array)? sanction_item["documents"].map { |document| Ammitto::Document.new(document) } : []
+      @documents = Ammitto::DocumentCollection.new(sanction_item["documents"] || [])
     end
 
     def to_hash

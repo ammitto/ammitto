@@ -6,7 +6,7 @@ module Ammitto
   class Processor
 
     SOURCE_DIRECTORY = "#{Dir.home}/.ammitto/sources"
-    DATA_SOURCES =  Dir.entries(SOURCE_DIRECTORY).select {|entry| File.directory? File.join(SOURCE_DIRECTORY,entry) and !(entry =='.' || entry == '..') } rescue []
+    DATA_SOURCES =  ['un-data','us-govt-data','eu-data','wb-data'].freeze
 
     def self.prepare(date = nil)
       last_updated = Time.parse(File.open("#{SOURCE_DIRECTORY}/update.log", &:gets)) rescue nil

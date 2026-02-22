@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Ammitto CLI executable
+#
+# This is the main entry point for the ammitto command-line tool.
+
+require 'bundler/setup'
+require_relative '../lib/ammitto'
+
+# Load CLI
+require_relative '../lib/ammitto/cli'
+
+# Run the CLI
+Ammitto::CLI.start(ARGV)

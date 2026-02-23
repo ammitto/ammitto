@@ -150,6 +150,8 @@ module Ammitto
         # @param name_aliases [Array<Ammitto::Sources::Eu::NameAlias>]
         # @return [Array<NameVariant>]
         def transform_names(name_aliases)
+          return [] if name_aliases.nil?
+
           name_aliases.map.with_index do |name, idx|
             create_name_variant(
               full_name: name.whole_name,
@@ -166,6 +168,8 @@ module Ammitto
         # @param addresses [Array<Ammitto::Sources::Eu::Address>]
         # @return [Array<Address>]
         def transform_addresses(addresses)
+          return [] if addresses.nil?
+
           addresses.map do |addr|
             create_address(
               street: addr.street,
@@ -182,6 +186,8 @@ module Ammitto
         # @param birthdates [Array<Ammitto::Sources::Eu::Birthdate>]
         # @return [Array<BirthInfo>]
         def transform_birthdates(birthdates)
+          return [] if birthdates.nil?
+
           birthdates.map do |bd|
             date = parse_eu_date(bd.birthdate) || parse_year(bd.year)
 
@@ -200,6 +206,8 @@ module Ammitto
         # @param identifications [Array<Ammitto::Sources::Eu::Identification>]
         # @return [Array<Identification>]
         def transform_identifications(identifications)
+          return [] if identifications.nil?
+
           identifications.map do |id|
             create_identification(
               type: normalize_id_type(id.identification_type_code),
@@ -213,6 +221,8 @@ module Ammitto
         # @param regulations [Array<Ammitto::Sources::Eu::Regulation>]
         # @return [Array<LegalInstrument>]
         def transform_regulations(regulations)
+          return [] if regulations.nil?
+
           regulations.map do |reg|
             Ammitto::LegalInstrument.new(
               type: normalize_instrument_type(reg.regulation_type),

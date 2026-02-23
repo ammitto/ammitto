@@ -109,9 +109,13 @@ module Ammitto
           data = YAML.load_file(file)
           next unless data
 
-          result = transform_data(source, data)
-          entities << result[:entity] if result[:entity]
-          entries << result[:entry] if result[:entry]
+          begin
+            result = transform_data(source, data)
+            entities << result[:entity] if result[:entity]
+            entries << result[:entry] if result[:entry]
+          rescue => e
+            puts "[#{source}] Error processing #{File.basename(file)}: #{e.message}" if options[:verbose]
+          end
         end
 
         # Write JSON-LD output
@@ -501,8 +505,13 @@ module Ammitto
       def entity_to_hash(entity)
         return {} unless entity
 
-        hash = entity.respond_to?(:to_hash) ? entity.to_hash : entity.to_h
-        compact_hash(hash)
+        begin
+          hash = entity.respond_to?(:to_hash) ? entity.to_hash : entity.to_h
+          compact_hash(hash)
+        rescue => e
+          puts "Error converting entity to hash: #{e.message}" if options[:verbose]
+          {}
+        end
       end
 
       # Convert entry to hash
@@ -511,8 +520,13 @@ module Ammitto
       def entry_to_hash(entry)
         return {} unless entry
 
-        hash = entry.respond_to?(:to_hash) ? entry.to_hash : entry.to_h
-        compact_hash(hash)
+        begin
+          hash = entry.respond_to?(:to_hash) ? entry.to_hash : entry.to_h
+          compact_hash(hash)
+        rescue => e
+          puts "Error converting entry to hash: #{e.message}" if options[:verbose]
+          {}
+        end
       end
 
       # Remove nil values from hash recursively

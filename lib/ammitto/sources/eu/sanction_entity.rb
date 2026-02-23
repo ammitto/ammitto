@@ -95,6 +95,8 @@ module Ammitto
         end
 
         def nationalities
+          return [] if citizenships.nil?
+
           citizenships.map(&:country_description).compact
         end
 

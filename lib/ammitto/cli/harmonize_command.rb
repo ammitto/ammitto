@@ -200,6 +200,16 @@ module Ammitto
           transform_cn(transformer, data)
         when :ru
           transform_ru(transformer, data)
+        when :nz
+          transform_nz(transformer, data)
+        when :tr
+          transform_tr(transformer, data)
+        when :eu_vessels
+          transform_eu_vessels(transformer, data)
+        when :jp
+          transform_jp(transformer, data)
+        when :un_vessels
+          transform_un_vessels(transformer, data)
         else
           { entity: nil, entry: nil }
         end
@@ -389,6 +399,94 @@ module Ammitto
         require_relative '../sources/ru/sanctions_list'
 
         source = Ammitto::Sources::Ru::SanctionedEntity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform NZ data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_nz(transformer, data)
+        require_relative '../sources/nz/sanctions_list'
+
+        # Determine type
+        case data['type']
+        when 'Individual'
+          source = Ammitto::Sources::Nz::Individual.from_yaml(data.to_yaml)
+        when 'Ship'
+          source = Ammitto::Sources::Nz::Ship.from_yaml(data.to_yaml)
+        else
+          source = Ammitto::Sources::Nz::Entity.from_yaml(data.to_yaml)
+        end
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform TR data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_tr(transformer, data)
+        require_relative '../sources/tr/sanctions_list'
+
+        source = Ammitto::Sources::Tr::Entity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform EU Vessels data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_eu_vessels(transformer, data)
+        require_relative '../sources/eu_vessels/vessel'
+
+        source = Ammitto::Sources::EuVessels::Vessel.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform JP data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_jp(transformer, data)
+        require_relative '../sources/jp/entity'
+
+        source = Ammitto::Sources::Jp::Entity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform UN Vessels data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_un_vessels(transformer, data)
+        require_relative '../sources/un_vessels/vessel'
+
+        source = Ammitto::Sources::UnVessels::Vessel.from_yaml(data.to_yaml)
         result = transformer.transform(source)
 
         {

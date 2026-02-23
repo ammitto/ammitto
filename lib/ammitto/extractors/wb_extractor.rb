@@ -7,7 +7,10 @@ module Ammitto
   module Extractors
     # WbExtractor extracts sanctions data from the World Bank (Debarment List)
     #
-    # Source: https://apigwext.worldbank.org/dvns/v1/ols/SanctionedFirms
+    # Source: https://www.worldbank.org/en/projects-operations/procurement/debarred-firms
+    #
+    # The World Bank page contains JSON data embedded in the HTML.
+    # Look for 'class="debarredJsonResponse"' to parse the JSON content.
     #
     # World Bank data structure (JSON):
     # - Array of sanctioned firm objects
@@ -16,6 +19,8 @@ module Ammitto
     #   - DEBAR_REASON, SUPP_ELIG_STAT
     #
     class WbExtractor < BaseExtractor
+      attr_accessor :verbose
+
       # @return [Symbol] the source code
       def code
         :wb
@@ -26,15 +31,89 @@ module Ammitto
         'World Bank'
       end
 
-      # @return [String] API endpoint
+      # @return [String] API endpoint (HTML page with embedded JSON)
       def api_endpoint
-        'https://apigwext.worldbank.org/dvns/v1/ols/SanctionedFirms'
+        'https://www.worldbank.org/en/projects-operations/procurement/debarred-firms'
       end
 
-      # Fetch raw data from World Bank
-      # @return [Array<Hash>]
+      # @return [String] JSON API endpoint
+      def json_api_endpoint
+        'https://apigwext.worldbank.org/dvsvc/v1.0/json/APPLICATION/ADOBE_EXPRNCE_MGR/FIRM/SANCTIONED_FIRM'
+      end
+
+      # @return [String] API key (extracted from WB website)
+      def api_key
+        'z9duUaFUiEUYSHs97CU38fcZO7ipOPvm'
+      end
+
+      # Fetch raw data from World Bank JSON API
+      # @return [String] raw JSON content
       def fetch
-        download_json(api_endpoint)
+        require 'open-uri'
+        require 'json'
+
+        headers = {
+          'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept' => 'application/json, */*',
+          'apikey' => api_key
+        }
+
+        puts "[#{code}] Downloading from #{json_api_endpoint}" if verbose?
+        content = URI.open(json_api_endpoint, headers).read
+
+        # Return the raw JSON content - the fetch_command expects a string
+        content
+      rescue StandardError => e
+        puts "[#{code}] Error fetching WB data: #{e.message}" if verbose?
+        raise
+      end
+
+      # Fetch from HTML page by finding embedded JSON
+      # @return [String] raw JSON content
+      def fetch_from_html
+        require 'open-uri'
+        require 'nokogiri'
+
+        headers = {
+          'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept' => 'text/html, application/xhtml+xml, */*'
+        }
+
+        puts "[#{code}] Downloading HTML from #{api_endpoint}" if verbose?
+        html_content = URI.open(api_endpoint, headers).read
+
+        # Parse HTML to find embedded JSON
+        doc = Nokogiri::HTML(html_content)
+
+        # Look for element with class="debarredJsonResponse"
+        json_element = doc.at_css('.debarredJsonResponse')
+
+        if json_element && !json_element['value'].to_s.strip.empty?
+          puts "[#{code}] Found debarredJsonResponse element with data" if verbose?
+          return json_element['value']
+        end
+
+        # Try to find JSON in script content
+        doc.css('script').each do |script|
+          content = script.text
+          if content.include?('debarredJsonResponse') || content.include?('SUPP_ID')
+            json_match = content.match(/\[\s*\{.*"SUPP_ID".*\}\s*\]/m)
+            if json_match
+              puts "[#{code}] Found JSON in script tag" if verbose?
+              return json_match[0]
+            end
+          end
+        end
+
+        raise "Could not find JSON data in World Bank page"
+      end
+
+      # Fetch and parse as JSON array
+      # @return [Array<Hash>]
+      def fetch_json
+        require 'json'
+        content = fetch
+        JSON.parse(content)
       end
 
       # Extract entities from World Bank JSON

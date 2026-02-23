@@ -79,6 +79,16 @@ module Ammitto
               require_relative 'cn_extractor'
             when :ru
               require_relative 'ru_extractor'
+            when :tr
+              require_relative 'tr_extractor'
+            when :nz
+              require_relative 'nz_extractor'
+            when :eu_vessels
+              require_relative 'eu_vessels_extractor'
+            when :un_vessels
+              require_relative 'un_vessels_extractor'
+            when :jp
+              require_relative 'jp_extractor'
             end
           rescue LoadError
             # Extractor not available

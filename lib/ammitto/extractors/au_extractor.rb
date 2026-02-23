@@ -41,6 +41,8 @@ module Ammitto
         'Maritime Restriction' => :maritime_restriction
       }.freeze
 
+      attr_accessor :verbose
+
       # @return [Symbol] the source code
       def code
         :au
@@ -57,31 +59,27 @@ module Ammitto
       end
 
       # Fetch raw data from Australia
-      # @return [Hash] { rows: [...], grouped: {...} }
+      # @return [String] path to downloaded XLSX temp file
       def fetch
         require 'open-uri'
         require 'tempfile'
 
-        puts "[#{code}] Downloading from #{api_endpoint}" if verbose?
+        puts "[#{code}] Downloading from #{api_endpoint}" if verbose
 
         # Download XLSX to temp file
-        temp_file = Tempfile.new(['au_sanctions', '.xlsx'])
-        begin
-          URI.open(api_endpoint, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
-            temp_file.write(remote_file.read)
-          end
-          temp_file.close
-
-          # Parse XLSX
-          rows = parse_xlsx(temp_file.path)
-
-          # Group by base reference
-          grouped = group_by_base_reference(rows)
-
-          { rows: rows, grouped: grouped }
-        ensure
-          temp_file.unlink
+        @temp_file = Tempfile.new(['au_sanctions', '.xlsx'])
+        URI.open(api_endpoint, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
+          @temp_file.write(remote_file.read)
         end
+        @temp_file.close
+
+        @temp_file.path
+      end
+
+      # Clean up temp file after processing
+      def cleanup
+        @temp_file&.unlink
+        @temp_file = nil
       end
 
       # Extract entities from Australia XLSX

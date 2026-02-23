@@ -11,7 +11,11 @@ module Ammitto
     # XSD: https://www.seco.admin.ch/dam/seco/en/dokumente/Aussenwirtschaft/Wirtschaftsbeziehungen/Exportkontrollen/Sanktionen/xml_specification_document_xsd_version_6-12-2023.xsd.download.xsd/swiss-sanctions-list_v3.1.xsd
     # Format: XML
     #
+    # Note: Swiss server is slow and may require manual download.
+    #
     class ChExtractor < BaseExtractor
+      attr_accessor :verbose
+
       # @return [Symbol] the source code
       def code
         :ch
@@ -28,9 +32,44 @@ module Ammitto
       end
 
       # Fetch raw data from Switzerland
-      # @return [Nokogiri::XML::Document]
+      # @return [String] raw XML content
       def fetch
-        download_xml(api_endpoint)
+        require 'open-uri'
+
+        headers = {
+          'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept' => 'application/xml, text/xml, */*',
+          'Accept-Encoding' => 'gzip, deflate'
+        }
+
+        puts "[#{code}] Downloading from #{api_endpoint}..." if verbose
+
+        max_retries = 3
+        retry_count = 0
+
+        begin
+          timeout_seconds = 600 # 10 minutes
+
+          content = URI.open(
+            api_endpoint,
+            headers.merge(
+              read_timeout: timeout_seconds,
+              open_timeout: 120
+            )
+          ).read
+
+          content
+        rescue Net::ReadTimeout, Net::OpenTimeout, EOFError, Errno::ECONNRESET => e
+          retry_count += 1
+          if retry_count <= max_retries
+            wait_time = retry_count * 30
+            puts "[#{code}] Error: #{e.message}, retrying in #{wait_time}s (attempt #{retry_count}/#{max_retries})..." if verbose
+            sleep(wait_time)
+            retry
+          else
+            raise
+          end
+        end
       end
 
       # Extract entities from Switzerland XML

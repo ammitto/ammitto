@@ -104,6 +104,7 @@ module Ammitto
 
         # Create extractor instance
         extractor = extractor_class.new
+        extractor.verbose = options[:verbose] if extractor.respond_to?(:verbose=)
 
         # Fetch and parse using source models if format is yaml
         format = options[:format] || 'yaml'
@@ -127,11 +128,9 @@ module Ammitto
       def fetch_with_source_models(source, extractor, output_dir)
         puts "[#{source}] Fetching with source models..." if options[:verbose]
 
-        # Fetch raw content
-        require 'open-uri'
-        url = extractor.api_endpoint
-        puts "[#{source}] Downloading from #{url}" if options[:verbose]
-        content = URI.open(url).read
+        # Fetch raw content using extractor's fetch method (handles tokens, etc.)
+        puts "[#{source}] Downloading from #{extractor.api_endpoint}" if options[:verbose]
+        content = extractor.fetch
 
         # Parse using source model
         model_class = source_model_class_for(source)
@@ -140,10 +139,21 @@ module Ammitto
         puts "[#{source}] Parsing with #{model_class.name}..." if options[:verbose]
 
         # Detect format and parse accordingly
-        data = if source == :wb
+        data = case source
+               when :wb
                  require 'json'
-                 json_data = JSON.parse(content)
-                 model_class.from_json(json_data)
+                 # WB model's from_json expects the raw JSON string
+                 model_class.from_json(content)
+               when :au, :tr, :nz, :eu_vessels
+                 # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
+                 result = model_class.from_xlsx(content)
+                 extractor.cleanup if extractor.respond_to?(:cleanup)
+                 result
+               when :jp, :un_vessels
+                 # JP, UN Vessels are PDF-based - requires manual conversion
+                 puts "[#{source}] Note: #{source.upcase} data is PDF-based"
+                 puts "[#{source}] Data requires manual conversion from PDF"
+                 model_class.from_pdf(content)
                else
                  model_class.from_xml(content)
                end
@@ -214,7 +224,7 @@ module Ammitto
         when :wb
           data.firms || []
         when :au
-          data.individuals || []
+          (data.individuals || []) + (data.organizations || []) + (data.vessels || [])
         when :ca
           (data.individuals || []) + (data.entities || [])
         when :ch
@@ -223,6 +233,16 @@ module Ammitto
           data.entities || []
         when :ru
           data.entities || []
+        when :tr
+          data.entities || []
+        when :nz
+          (data.individuals || []) + (data.entities || []) + (data.ships || [])
+        when :eu_vessels
+          data.vessels || []
+        when :jp
+          data.entities || []
+        when :un_vessels
+          data.vessels || []
         else
           []
         end
@@ -250,7 +270,7 @@ module Ammitto
           ref = item.supp_id || "unknown-#{item.object_id}"
           "wb-#{ref}.yaml"
         when :au
-          ref = item.id || "unknown-#{item.object_id}"
+          ref = item.reference || item.id || "unknown-#{item.object_id}"
           "au-#{ref}.yaml"
         when :ca
           ref = item.id || "unknown-#{item.object_id}"
@@ -264,6 +284,21 @@ module Ammitto
         when :ru
           ref = item.id || item.russian_name || "unknown-#{item.object_id}"
           "#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
+        when :tr
+          ref = item.reference_number || item.name || "unknown-#{item.object_id}"
+          "tr-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
+        when :nz
+          ref = item.unique_identifier || item.reference_number || "unknown-#{item.object_id}"
+          "nz-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
+        when :eu_vessels
+          ref = item.imo_number || item.unique_identifier || "unknown-#{item.object_id}"
+          "eu-vessel-#{ref}.yaml"
+        when :jp
+          ref = item.id || item.unique_identifier || "unknown-#{item.object_id}"
+          "jp-#{ref}.yaml"
+        when :un_vessels
+          ref = item.imo_number || item.unique_identifier || "unknown-#{item.object_id}"
+          "un-vessel-#{ref}.yaml"
         else
           "#{item.object_id}.yaml"
         end
@@ -304,6 +339,21 @@ module Ammitto
         when :ru
           require_relative '../sources/ru'
           Ammitto::Sources::Ru::SanctionsList
+        when :tr
+          require_relative '../sources/tr'
+          Ammitto::Sources::Tr::SanctionsList
+        when :nz
+          require_relative '../sources/nz'
+          Ammitto::Sources::Nz::SanctionsList
+        when :eu_vessels
+          require_relative '../sources/eu_vessels'
+          Ammitto::Sources::EuVessels::SanctionsList
+        when :jp
+          require_relative '../sources/jp'
+          Ammitto::Sources::Jp::SanctionsList
+        when :un_vessels
+          require_relative '../sources/un_vessels'
+          Ammitto::Sources::UnVessels::SanctionsList
         end
       rescue LoadError
         nil

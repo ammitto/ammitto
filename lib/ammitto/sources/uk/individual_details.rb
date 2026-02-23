@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'date_normalizer'
+
 module Ammitto
   module Sources
     module Uk
@@ -62,6 +64,8 @@ module Ammitto
       #   details.nationalities.each { |n| puts n }
       #
       class IndividualDetails < Lutaml::Model::Serializable
+        include DateNormalizer
+
         attribute :dobs, :string, collection: true
         attribute :nationalities, :string, collection: true
         attribute :positions, :string, collection: true
@@ -93,13 +97,27 @@ module Ammitto
         # Get primary date of birth (first non-placeholder)
         # @return [String, nil]
         def primary_dob
-          dobs.find { |d| !d.include?('dd/mm') }
+          normalized_dobs.find { |d| !d.include?('dd/mm') && !d.include?('--') }
         end
 
         # Check if there are valid (non-placeholder) DOBs
         # @return [Boolean]
         def valid_dobs?
-          dobs.any? { |d| !d.include?('dd/mm') }
+          normalized_dobs.any? { |d| !d.include?('dd/mm') && !d.include?('--') }
+        end
+
+        # Get all DOBs in normalized ISO format
+        # @return [Array<String>]
+        def normalized_dobs
+          return [] if @dobs.nil?
+
+          @dobs.map { |d| normalize_date(d) }
+        end
+
+        # Override to return normalized DOBs
+        # @return [Array<String>]
+        def dobs
+          normalized_dobs
         end
       end
     end

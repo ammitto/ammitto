@@ -7,7 +7,11 @@ module Ammitto
   module Extractors
     # UsExtractor extracts sanctions data from the United States (OFAC)
     #
-    # Source: https://www.treasury.gov/ofac/downloads/sdn.xml
+    # Source: https://ofac.treasury.gov/sanctions-lists
+    #
+    # OFAC provides multiple lists:
+    # - SDN (Specially Designated Nationals) - primary sanctions list
+    # - Consolidated (Non-SDN) - additional sanctions lists
     #
     # US data structure:
     # - sdnList
@@ -20,6 +24,15 @@ module Ammitto
     #     - dateOfBirthList/dateOfBirthItem
     #
     class UsExtractor < BaseExtractor
+      attr_accessor :verbose
+
+      # New OFAC API endpoints (ZIP files containing XML)
+      SDN_ZIP_URL = 'https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN_ADVANCED.ZIP'
+      CONSOLIDATED_ZIP_URL = 'https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/CONS_ADVANCED.ZIP'
+
+      # Legacy URL (fallback)
+      LEGACY_SDN_URL = 'https://www.treasury.gov/ofac/downloads/sdn.xml'
+
       # @return [Symbol] the source code
       def code
         :us
@@ -32,13 +45,51 @@ module Ammitto
 
       # @return [String] API endpoint
       def api_endpoint
-        'https://www.treasury.gov/ofac/downloads/sdn.xml'
+        SDN_ZIP_URL
       end
 
-      # Fetch raw data from US
-      # @return [Nokogiri::XML::Document]
+      # Fetch raw data from US OFAC
+      # Downloads ZIP, extracts XML, returns XML content
+      # @return [String] raw XML content
       def fetch
-        download_xml(api_endpoint)
+        require 'open-uri'
+        require 'tempfile'
+        require 'zip'
+
+        puts "[#{code}] Downloading SDN list from #{SDN_ZIP_URL}..." if verbose
+
+        # Download ZIP file
+        @temp_file = Tempfile.new(['us_sdn', '.zip'])
+        URI.open(SDN_ZIP_URL, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
+          @temp_file.write(remote_file.read)
+        end
+        @temp_file.close
+
+        puts "[#{code}] Extracting XML from ZIP..." if verbose
+
+        # Extract XML from ZIP
+        xml_content = nil
+        Zip::File.open(@temp_file.path) do |zip_file|
+          # Find the XML file (usually sdn.xml)
+          xml_entry = zip_file.entries.find { |e| e.name =~ /\.xml$/i }
+          if xml_entry
+            xml_content = xml_entry.get_input_stream.read
+          else
+            raise "No XML file found in ZIP archive"
+          end
+        end
+
+        xml_content
+      rescue StandardError => e
+        puts "[#{code}] Error with ZIP download: #{e.message}, trying legacy URL..." if verbose
+        # Fallback to legacy URL
+        URI.open(LEGACY_SDN_URL, 'User-Agent' => 'Mozilla/5.0').read
+      end
+
+      # Clean up temp file
+      def cleanup
+        @temp_file&.unlink
+        @temp_file = nil
       end
 
       # Extract entities from US XML

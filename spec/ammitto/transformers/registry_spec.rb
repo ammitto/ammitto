@@ -62,7 +62,7 @@ RSpec.describe Ammitto::Transformers::Registry do
   describe '.supported_sources' do
     it 'returns array of supported source codes' do
       expect(described_class.supported_sources).to contain_exactly(
-        :uk, :eu, :un, :us, :wb, :au, :ca, :ch, :cn, :ru
+        :uk, :eu, :un, :us, :wb, :au, :ca, :ch, :cn, :ru, :nz, :tr
       )
     end
   end

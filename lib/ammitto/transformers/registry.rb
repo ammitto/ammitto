@@ -13,6 +13,8 @@ require_relative '../sources/ca/transformer'
 require_relative '../sources/ch/transformer'
 require_relative '../sources/cn/transformer'
 require_relative '../sources/ru/transformer'
+require_relative '../sources/nz/transformer'
+require_relative '../sources/tr/transformer'
 
 module Ammitto
   module Transformers
@@ -34,7 +36,9 @@ module Ammitto
         ca: Ammitto::Sources::Ca::Transformer,
         ch: Ammitto::Sources::Ch::Transformer,
         cn: Ammitto::Sources::Cn::Transformer,
-        ru: Ammitto::Sources::Ru::Transformer
+        ru: Ammitto::Sources::Ru::Transformer,
+        nz: Ammitto::Sources::Nz::Transformer,
+        tr: Ammitto::Sources::Tr::Transformer
       }.freeze
 
       class << self

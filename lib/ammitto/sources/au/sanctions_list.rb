@@ -670,6 +670,70 @@ module Ammitto
           list
         end
 
+        # Parse from XLSX file path
+        # @param xlsx_path [String] path to XLSX file
+        # @return [SanctionsList]
+        def self.from_xlsx(xlsx_path)
+          require 'roo'
+
+          list = new(individuals: [], organizations: [], vessels: [])
+
+          # Track entities by base reference to merge rows
+          individuals_map = {}
+          organizations_map = {}
+          vessels_map = {}
+
+          xlsx = Roo::Excelx.new(xlsx_path)
+          sheet = xlsx.sheet(0)
+
+          # Get headers from first row
+          headers = sheet.row(1).map(&:to_s)
+
+          (2..sheet.last_row).each do |row_num|
+            values = sheet.row(row_num)
+
+            # Build row hash
+            row = {}
+            headers.each_with_index do |header, idx|
+              row[header] = values[idx]&.to_s
+            end
+
+            next unless row['Reference'] && !row['Reference'].strip.empty?
+
+            entity_type = EntityType.from_csv(row['Type'])
+            base_ref = parse_base_reference(row['Reference'])
+
+            case entity_type
+            when EntityType::INDIVIDUAL
+              if individuals_map[base_ref]
+                individuals_map[base_ref].merge_row(row)
+              else
+                entity = Individual.from_csv_row(row)
+                individuals_map[base_ref] = entity
+                list.individuals << entity
+              end
+            when EntityType::ORGANIZATION
+              if organizations_map[base_ref]
+                organizations_map[base_ref].merge_row(row)
+              else
+                entity = Organization.from_csv_row(row)
+                organizations_map[base_ref] = entity
+                list.organizations << entity
+              end
+            when EntityType::VESSEL
+              if vessels_map[base_ref]
+                vessels_map[base_ref].merge_row(row)
+              else
+                entity = Vessel.from_csv_row(row)
+                vessels_map[base_ref] = entity
+                list.vessels << entity
+              end
+            end
+          end
+
+          list
+        end
+
         def all_entities
           individuals + organizations + vessels
         end

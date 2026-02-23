@@ -31,7 +31,7 @@ module Ammitto
       DEFAULT_SOURCES = %i[eu un us wb].freeze
 
       # All available sources
-      ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru].freeze
+      ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru tr nz jp eu_vessels un_vessels].freeze
 
       # Default output format
       DEFAULT_OUTPUT_FORMAT = 'jsonld'

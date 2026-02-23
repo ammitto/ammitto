@@ -18,10 +18,24 @@ module Ammitto
         end
 
         class << self
+          # Override from_json to handle nested response structure
+          # @param data [String, Hash] JSON string or parsed Hash
+          # @return [Response]
           def from_json(data)
-            # Handle nested response structure
+            # Parse string to hash if needed
+            data = JSON.parse(data) if data.is_a?(String)
+
+            # Extract nested response structure
             data = data['response'] if data.is_a?(Hash) && data.key?('response')
-            super(data)
+
+            # Create instance and populate firms
+            instance = new
+            firms_data = data['ZPROCSUPP'] || []
+            instance.firms = firms_data.map do |item|
+              # Convert Hash to JSON string for lutaml-model
+              SanctionedFirm.from_json(item.to_json)
+            end
+            instance
           end
         end
 
@@ -38,13 +52,6 @@ module Ammitto
 
         def firms_to_json
           { 'ZPROCSUPP' => firms.map(&:to_json) }
-        end
-
-        # Override to handle nested response structure
-        def self.from_json(data)
-          # Handle nested response structure
-          data = data['response'] if data.is_a?(Hash) && data.key?('response')
-          super(data)
         end
       end
     end

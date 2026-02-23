@@ -2,12 +2,14 @@
 
 require_relative 'base_extractor'
 require_relative 'registry'
+require 'mechanize'
 
 module Ammitto
   module Extractors
     # EuExtractor extracts sanctions data from the European Union
     #
-    # Source: https://ec.europa.eu/external_relations/cfsp/sanctions/list/version4/global/global.xml
+    # Source: EU Financial Sanctions Database (FSF)
+    # The EU API requires a token obtained via mechanize.
     #
     # EU data structure:
     # - sanctionsData/sanctionEntity
@@ -19,6 +21,8 @@ module Ammitto
     #   - regulation (legal basis)
     #
     class EuExtractor < BaseExtractor
+      attr_accessor :verbose
+
       # @return [Symbol] the source code
       def code
         :eu
@@ -29,15 +33,93 @@ module Ammitto
         'European Union'
       end
 
-      # @return [String] API endpoint
+      # @return [String] base API endpoint (without token)
       def api_endpoint
-        'https://ec.europa.eu/external_relations/cfsp/sanctions/list/version4/global/global.xml'
+        'https://webgate.ec.europa.eu/fsd/fsf/public/files/xmlFullSanctionsList_1_1/content'
       end
 
-      # Fetch raw data from EU
-      # @return [Nokogiri::XML::Document]
+      # @return [String] token page URL (data.europa.eu dataset page)
+      def token_page_url
+        'https://data.europa.eu/data/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions?locale=en'
+      end
+
+      # Default token that works (from data.europa.eu page)
+      # This token appears to be stable and reusable
+      # @return [String]
+      def default_token
+        'dG9rZW4tMjAxNw'
+      end
+
+      # Fetch the token from the data.europa.eu page
+      # The page contains a link like: https://webgate.ec.europa.eu/fsd/fsf/public/files/xmlFullSanctionsList_1_1/content?token=XXX
+      # @return [String] the token (fetched or default)
+      def fetch_token
+        require 'mechanize'
+
+        agent = Mechanize.new
+        agent.user_agent_alias = 'Mac Safari'
+
+        puts "[#{code}] Fetching token from #{token_page_url}..." if verbose
+
+        # Visit the data.europa.eu page to get the token
+        page = agent.get(token_page_url)
+
+        # The token is in a link like:
+        # https://webgate.ec.europa.eu/fsd/fsf/public/files/xmlFullSanctionsList_1_1/content?token=dG9rZW4tMjAxNw
+        page.links.each do |link|
+          href = link.href
+          next unless href&.include?('xmlFullSanctionsList') && href&.include?('token=')
+
+          match = href.match(/token=([^&]+)/)
+          if match
+            token = match[1]
+            puts "[#{code}] Found token in link: #{token[0..10]}..." if verbose
+            return token
+          end
+        end
+
+        # Try to find token in page content
+        content = page.content
+        match = content.match(/xmlFullSanctionsList[^"]*token=([^&"'\s]+)/)
+        if match
+          token = match[1]
+          puts "[#{code}] Found token in content: #{token[0..10]}..." if verbose
+          return token
+        end
+
+        # Use default token as fallback
+        puts "[#{code}] Using default token" if verbose
+        default_token
+      rescue StandardError => e
+        puts "[#{code}] Failed to fetch EU token: #{e.message}, using default" if verbose
+        default_token
+      end
+
+      # Fetch raw data from EU using token
+      # @return [String] raw XML content
       def fetch
-        download_xml(api_endpoint)
+        require 'open-uri'
+
+        puts "[#{code}] Fetching token..." if verbose
+        token = fetch_token
+
+        # Always use token (fetch_token returns default if needed)
+        url = "#{api_endpoint}?token=#{token}"
+        puts "[#{code}] Using URL: #{url}" if verbose
+
+        headers = {
+          'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept' => 'application/xml, text/xml, */*'
+        }
+
+        URI.open(url, headers).read
+      end
+
+      # Fetch and parse as Nokogiri document (for extract_entities)
+      # @return [Nokogiri::XML::Document]
+      def fetch_doc
+        require 'nokogiri'
+        Nokogiri::XML(fetch)
       end
 
       # Extract entities from EU XML

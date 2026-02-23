@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'date_normalizer'
 
 module Ammitto
   module Sources
@@ -17,6 +18,8 @@ module Ammitto
       #   end
       #
       class Designations < Lutaml::Model::Serializable
+        include DateNormalizer
+
         attribute :date_generated, :string
         attribute :designations, Designation, collection: true
 
@@ -32,6 +35,12 @@ module Ammitto
         yaml do
           map 'date_generated', to: :date_generated
           map 'designations', to: :designations
+        end
+
+        # Get date_generated in normalized ISO format (YYYY-MM-DD)
+        # @return [String, nil]
+        def date_generated
+          normalize_date(@date_generated)
         end
       end
     end

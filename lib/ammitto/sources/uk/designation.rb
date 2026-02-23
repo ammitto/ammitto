@@ -6,6 +6,7 @@ require_relative 'non_latin_name'
 require_relative 'address'
 require_relative 'individual_details'
 require_relative 'sanctions_indicators'
+require_relative 'date_normalizer'
 
 module Ammitto
   module Sources
@@ -76,6 +77,8 @@ module Ammitto
       #   designation.names.each { |n| puts n.name6 }
       #
       class Designation < Lutaml::Model::Serializable
+        include DateNormalizer
+
         attribute :last_updated, :string
         attribute :date_designated, :string
         attribute :unique_id, :string
@@ -192,6 +195,18 @@ module Ammitto
         # @return [Array<Name>]
         def aliases
           names.reject(&:primary_name?)
+        end
+
+        # Get last_updated in normalized ISO format (YYYY-MM-DD)
+        # @return [String, nil]
+        def last_updated
+          normalize_date(@last_updated)
+        end
+
+        # Get date_designated in normalized ISO format (YYYY-MM-DD)
+        # @return [String, nil]
+        def date_designated
+          normalize_date(@date_designated)
         end
       end
     end

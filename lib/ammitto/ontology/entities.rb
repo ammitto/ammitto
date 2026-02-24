@@ -5,11 +5,11 @@
 # Entities are objects with unique identity. Each entity can have
 # multiple sanction entries from different authorities.
 
-require_relative 'entity'
-require_relative 'person_entity'
-require_relative 'organization_entity'
-require_relative 'vessel_entity'
-require_relative 'aircraft_entity'
+require_relative 'entities/entity'
+require_relative 'entities/person_entity'
+require_relative 'entities/organization_entity'
+require_relative 'entities/vessel_entity'
+require_relative 'entities/aircraft_entity'
 
 module Ammitto
   module Ontology

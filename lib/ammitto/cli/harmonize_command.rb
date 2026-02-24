@@ -145,6 +145,11 @@ module Ammitto
 
         # Check sources_dir
         if options[:sources_dir]
+          # First check for processed/ directory
+          processed_path = File.join(options[:sources_dir], "data-#{source}", 'processed')
+          return processed_path if Dir.exist?(processed_path)
+
+          # Then check for raw/{date} directory
           source_path = File.join(options[:sources_dir], "data-#{source}", 'raw')
           return find_latest_subdir(source_path) if Dir.exist?(source_path)
         end

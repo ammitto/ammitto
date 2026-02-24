@@ -155,6 +155,7 @@ module Ammitto
                  puts "[#{source}] Data requires manual conversion from PDF"
                  model_class.from_pdf(content)
                else
+                 # XML sources - content is already a string from extractor
                  model_class.from_xml(content)
                end
 
@@ -226,13 +227,13 @@ module Ammitto
         when :au
           (data.individuals || []) + (data.organizations || []) + (data.vessels || [])
         when :ca
-          (data.individuals || []) + (data.entities || [])
+          data.records || []
         when :ch
-          (data.individuals || []) + (data.entities || [])
+          data.all_identities || []
         when :cn
-          data.entities || []
+          data.all_entities || data.entities || []
         when :ru
-          data.entities || []
+          data.all_entities || data.entities || []
         when :tr
           data.entities || []
         when :nz
@@ -273,17 +274,17 @@ module Ammitto
           ref = item.reference || item.id || "unknown-#{item.object_id}"
           "au-#{ref}.yaml"
         when :ca
-          ref = item.id || "unknown-#{item.object_id}"
+          ref = item.generate_id || item.item || "unknown-#{item.object_id}"
           "ca-#{ref}.yaml"
         when :ch
-          ref = item.id || "unknown-#{item.object_id}"
+          ref = item.ssid || item.full_name&.gsub(/\s+/, '-') || "unknown-#{item.object_id}"
           "ch-#{ref}.yaml"
         when :cn
-          ref = item.id || item.chinese_name || "unknown-#{item.object_id}"
-          "#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
+          ref = item.english_name || item.chinese_name || "unknown-#{item.object_id}"
+          "cn-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
         when :ru
-          ref = item.id || item.russian_name || "unknown-#{item.object_id}"
-          "#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
+          ref = item.english_name || item.russian_name || "unknown-#{item.object_id}"
+          "ru-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
         when :tr
           ref = item.reference_number || item.name || "unknown-#{item.object_id}"
           "tr-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
@@ -333,12 +334,6 @@ module Ammitto
         when :ch
           require_relative '../sources/ch'
           Ammitto::Sources::Ch::SanctionsList
-        when :cn
-          require_relative '../sources/cn'
-          Ammitto::Sources::Cn::SanctionsList
-        when :ru
-          require_relative '../sources/ru'
-          Ammitto::Sources::Ru::SanctionsList
         when :tr
           require_relative '../sources/tr'
           Ammitto::Sources::Tr::SanctionsList

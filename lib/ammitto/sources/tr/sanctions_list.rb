@@ -62,6 +62,9 @@ module Ammitto
         end
       end
 
+      # Alias for backward compatibility with harmonize command
+      Entity = SanctionedEntity
+
       # Collection of sanctioned entities from Turkey
       class SanctionsList < Lutaml::Model::Serializable
         attribute :entities, SanctionedEntity, collection: true

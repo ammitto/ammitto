@@ -1,15 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Ammitto CLI executable
-#
-# This is the main entry point for the ammitto command-line tool.
+lib_path = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib_path) unless $LOAD_PATH.include?(lib_path)
 
-require 'bundler/setup'
-require_relative '../lib/ammitto'
+require 'ammitto/cli'
 
-# Load CLI
-require_relative '../lib/ammitto/cli'
-
-# Run the CLI
 Ammitto::CLI.start(ARGV)

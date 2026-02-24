@@ -60,6 +60,30 @@ module Ammitto
         # @return [String, nil]
         attribute :website, :string
 
+        # Date of dissolution (if dissolved)
+        # @return [Date, nil]
+        attribute :dissolution_date, :date
+
+        # Legal form (LLC, JSC, etc.)
+        # @return [String, nil]
+        attribute :legal_form, :string
+
+        # Country (full name)
+        # @return [String, nil]
+        attribute :country, :string
+
+        # Country ISO code
+        # @return [String, nil]
+        attribute :country_iso_code, :string
+
+        # Beneficial owners
+        # @return [Array<String>, nil]
+        attribute :beneficial_owners, :string, collection: true
+
+        # Sector of operation
+        # @return [String, nil]
+        attribute :sector, :string
+
         def initialize(*args)
           super
           self.entity_type = 'organization'
@@ -98,6 +122,12 @@ module Ammitto
           hash[:incorporation_date] = incorporation_date.to_s if incorporation_date
           hash[:industry] = industry if industry
           hash[:website] = website if website
+          hash[:dissolution_date] = dissolution_date.to_s if dissolution_date
+          hash[:legal_form] = legal_form if legal_form
+          hash[:country] = country if country
+          hash[:country_iso_code] = country_iso_code if country_iso_code
+          hash[:beneficial_owners] = beneficial_owners if beneficial_owners&.any?
+          hash[:sector] = sector if sector
           hash
         end
 
@@ -115,6 +145,12 @@ module Ammitto
           map :incorporation_date, to: :incorporation_date
           map :industry, to: :industry
           map :website, to: :website
+          map :dissolution_date, to: :dissolution_date
+          map :legal_form, to: :legal_form
+          map :country, to: :country
+          map :country_iso_code, to: :country_iso_code
+          map :beneficial_owners, to: :beneficial_owners
+          map :sector, to: :sector
           map :source_references, to: :source_references
           map :same_as, to: :same_as
           map :remarks, to: :remarks
@@ -134,6 +170,12 @@ module Ammitto
           map :incorporation_date, to: :incorporation_date
           map :industry, to: :industry
           map :website, to: :website
+          map :dissolution_date, to: :dissolution_date
+          map :legal_form, to: :legal_form
+          map :country, to: :country
+          map :country_iso_code, to: :country_iso_code
+          map :beneficial_owners, to: :beneficial_owners
+          map :sector, to: :sector
           map :source_references, to: :source_references
           map :same_as, to: :same_as
           map :remarks, to: :remarks

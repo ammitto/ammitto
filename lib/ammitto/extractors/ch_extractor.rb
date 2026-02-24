@@ -34,6 +34,13 @@ module Ammitto
       # Fetch raw data from Switzerland
       # @return [String] raw XML content
       def fetch
+        # Check for local reference file first
+        local_file = find_local_reference_file
+        if local_file && File.exist?(local_file)
+          puts "[#{code}] Using local reference file: #{local_file}" if verbose
+          return File.read(local_file)
+        end
+
         require 'open-uri'
 
         headers = {
@@ -70,6 +77,21 @@ module Ammitto
             raise
           end
         end
+      end
+
+      # Find local reference file
+      # @return [String, nil] path to local file or nil
+      def find_local_reference_file
+        # Check common locations for local reference files
+        base_dir = File.expand_path('../../..', __dir__)
+        possible_paths = [
+          File.join(base_dir, '..', 'data-ch', 'reference-docs', 'consolidated-list_2026-02-18.xml'),
+          File.join(base_dir, '..', 'data-ch', 'reference-docs', 'consolidated-list.xml'),
+          File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list_2026-02-18.xml'),
+          File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list.xml'),
+        ]
+
+        possible_paths.find { |path| File.exist?(path) }
       end
 
       # Extract entities from Switzerland XML

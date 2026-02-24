@@ -147,10 +147,9 @@ module Ammitto
       # Download XML from URL
       # @param url [String] the URL
       # @param headers [Hash] optional HTTP headers
-      # @return [Nokogiri::XML::Document] parsed XML
+      # @return [String] raw XML content
       def download_xml(url, headers = {})
         require 'open-uri'
-        require 'nokogiri'
 
         default_headers = {
           'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -158,8 +157,7 @@ module Ammitto
         }
 
         puts "[#{code}] Downloading from #{url}" if verbose?
-        content = URI.open(url, default_headers.merge(headers)).read
-        Nokogiri::XML(content)
+        URI.open(url, default_headers.merge(headers)).read
       end
 
       # Download JSON from URL

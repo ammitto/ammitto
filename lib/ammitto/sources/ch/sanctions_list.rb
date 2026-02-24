@@ -5,113 +5,202 @@ require 'lutaml/model'
 module Ammitto
   module Sources
     module Ch
-      # Alias name
-      class AliasName < Lutaml::Model::Serializable
-        attribute :name, :string
-        attribute :type, :string
+      # Name part in Swiss sanctions list (given-name, family-name, etc.)
+      class NamePart < Lutaml::Model::Serializable
+        attribute :order, :integer
+        attribute :name_part_type, :string
+        attribute :value, :string
 
         xml do
-          root 'ALIAS_NAME'
-          map_element 'NAME', to: :name
-          map_element 'TYPE', to: :type
+          root 'name-part'
+          map_attribute 'order', to: :order
+          map_attribute 'name-part-type', to: :name_part_type
+          map_element 'value', to: :value
         end
       end
 
-      # Address
+      # Name in Swiss sanctions list
+      class Name < Lutaml::Model::Serializable
+        attribute :name_type, :string
+        attribute :quality, :string
+        attribute :lang, :string
+        attribute :name_parts, NamePart, collection: true
+
+        xml do
+          root 'name'
+          map_attribute 'name-type', to: :name_type
+          map_attribute 'quality', to: :quality
+          map_attribute 'lang', to: :lang
+          map_element 'name-part', to: :name_parts
+        end
+
+        # Get full name from name parts
+        def full_name
+          name_parts.sort_by(&:order).map(&:value).compact.join(' ')
+        end
+      end
+
+      # Date of birth in Swiss sanctions list
+      class DayMonthYear < Lutaml::Model::Serializable
+        attribute :day, :integer
+        attribute :month, :integer
+        attribute :year, :integer
+
+        xml do
+          root 'day-month-year'
+          map_attribute 'day', to: :day
+          map_attribute 'month', to: :month
+          map_attribute 'year', to: :year
+        end
+
+        def to_iso_date
+          return nil unless year
+          "#{year}-#{month.to_s.rjust(2, '0')}-#{day.to_s.rjust(2, '0')}"
+        end
+      end
+
+      # Address in Swiss sanctions list
       class Address < Lutaml::Model::Serializable
-        attribute :street, :string
-        attribute :city, :string
-        attribute :country, :string
-        attribute :postal_code, :string
+        attribute :address_details, :string
+        attribute :zip_code, :string
 
         xml do
-          root 'ADDRESS'
-          map_element 'STREET', to: :street
-          map_element 'CITY', to: :city
-          map_element 'COUNTRY', to: :country
-          map_element 'POSTAL_CODE', to: :postal_code
+          root 'address'
+          map_element 'address-details', to: :address_details
+          map_element 'zip-code', to: :zip_code
         end
       end
 
-      # Identification document
-      class Identification < Lutaml::Model::Serializable
-        attribute :type, :string
-        attribute :number, :string
-        attribute :country, :string
-
-        xml do
-          root 'IDENTIFICATION'
-          map_element 'TYPE', to: :type
-          map_element 'NUMBER', to: :number
-          map_element 'COUNTRY', to: :country
-        end
-      end
-
-      # Individual person in Swiss sanctions list
-      class Individual < Lutaml::Model::Serializable
-        attribute :id, :string
-        attribute :last_name, :string
-        attribute :first_name, :string
-        attribute :date_of_birth, :string
-        attribute :place_of_birth, :string
-        attribute :nationality, :string, collection: true
-        attribute :alias_names, AliasName, collection: true
+      # Identity (person or entity) in Swiss sanctions list
+      class Identity < Lutaml::Model::Serializable
+        attribute :ssid, :string
+        attribute :main, :string
+        attribute :names, Name, collection: true
+        attribute :day_month_year, DayMonthYear
         attribute :addresses, Address, collection: true
-        attribute :identifications, Identification, collection: true
-        attribute :sanctions_program, :string
-        attribute :list_date, :string
 
         xml do
-          root 'INDIVIDUAL'
-          map_element 'ID', to: :id
-          map_element 'LAST_NAME', to: :last_name
-          map_element 'FIRST_NAME', to: :first_name
-          map_element 'DATE_OF_BIRTH', to: :date_of_birth
-          map_element 'PLACE_OF_BIRTH', to: :place_of_birth
-          map_element 'NATIONALITY', to: :nationality
-          map_element 'ALIAS_NAME', to: :alias_names
-          map_element 'ADDRESS', to: :addresses
-          map_element 'IDENTIFICATION', to: :identifications
-          map_element 'SANCTIONS_PROGRAM', to: :sanctions_program
-          map_element 'LIST_DATE', to: :list_date
+          root 'identity'
+          map_attribute 'ssid', to: :ssid
+          map_attribute 'main', to: :main
+          map_element 'name', to: :names
+          map_element 'day-month-year', to: :day_month_year
+          map_element 'address', to: :addresses
         end
 
         def full_name
-          [first_name, last_name].compact.join(' ')
+          names.first&.full_name
+        end
+
+        def person?
+          names.any? { |n| n.name_parts.any? { |p| p.name_part_type == 'given-name' } }
+        end
+
+        def entity_type
+          person? ? 'person' : 'organization'
+        end
+      end
+
+      # Individual in Swiss sanctions list
+      class Individual < Lutaml::Model::Serializable
+        attribute :identity, Identity
+        attribute :justification, :string
+
+        xml do
+          root 'individual'
+          map_element 'identity', to: :identity
+          map_element 'justification', to: :justification
         end
       end
 
       # Entity (organization) in Swiss sanctions list
       class Entity < Lutaml::Model::Serializable
-        attribute :id, :string
-        attribute :name, :string
-        attribute :alias_names, AliasName, collection: true
-        attribute :addresses, Address, collection: true
-        attribute :sanctions_program, :string
-        attribute :list_date, :string
+        attribute :identity, Identity
+        attribute :justification, :string
 
         xml do
-          root 'ENTITY'
-          map_element 'ID', to: :id
-          map_element 'NAME', to: :name
-          map_element 'ALIAS_NAME', to: :alias_names
-          map_element 'ADDRESS', to: :addresses
-          map_element 'SANCTIONS_PROGRAM', to: :sanctions_program
-          map_element 'LIST_DATE', to: :list_date
+          root 'entity'
+          map_element 'identity', to: :identity
+          map_element 'justification', to: :justification
+        end
+      end
+
+      # Target in Swiss sanctions list (contains individual or entity)
+      class Target < Lutaml::Model::Serializable
+        attribute :ssid, :string
+        attribute :sanctions_set_id, :string
+        attribute :individual, Individual
+        attribute :entity, Entity
+
+        xml do
+          root 'target'
+          map_attribute 'ssid', to: :ssid
+          map_element 'sanctions-set-id', to: :sanctions_set_id
+          map_element 'individual', to: :individual
+          map_element 'entity', to: :entity
+        end
+
+        def identity
+          individual&.identity || entity&.identity
+        end
+
+        def full_name
+          identity&.full_name
+        end
+
+        def entity_type
+          individual ? 'person' : 'organization'
+        end
+      end
+
+      # Sanctions program in Swiss sanctions list
+      class SanctionsProgram < Lutaml::Model::Serializable
+        attribute :ssid, :string
+        attribute :program_keys, :string, collection: true
+
+        xml do
+          root 'sanctions-program'
+          map_attribute 'ssid', to: :ssid
+          map_element 'program-key', to: :program_keys
         end
       end
 
       # Swiss SECO Sanctions List (XML)
-      # Source: State Secretariat for Economic Affairs (SECO)
-      # URL: https://www.sesam.search.admin.ch/sesam-search-web/pages/downloadXmlGesamtliste.xhtml
+      #
+      # The XML has two main sections:
+      # - sanctions-program: regime information
+      # - target: sanctioned individuals and entities
+      #
       class SanctionsList < Lutaml::Model::Serializable
-        attribute :individuals, Individual, collection: true
-        attribute :entities, Entity, collection: true
+        attribute :list_type, :string
+        attribute :date, :string
+        attribute :programs, SanctionsProgram, collection: true
+        attribute :targets, Target, collection: true
 
         xml do
-          root 'SECO_SANCTIONS_LIST'
-          map_element 'INDIVIDUAL', to: :individuals
-          map_element 'ENTITY', to: :entities
+          root 'swiss-sanctions-list'
+          map_attribute 'list-type', to: :list_type
+          map_attribute 'date', to: :date
+          map_element 'sanctions-program', to: :programs
+          map_element 'target', to: :targets
+        end
+
+        # Get all identities for YAML output
+        # @return [Array<Target>]
+        def all_identities
+          targets
+        end
+
+        # Get all individuals
+        # @return [Array<Target>]
+        def individuals
+          targets.select { |t| t.individual }
+        end
+
+        # Get all entities (organizations)
+        # @return [Array<Target>]
+        def entities
+          targets.select { |t| t.entity }
         end
       end
     end

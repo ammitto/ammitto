@@ -30,8 +30,6 @@ module Ammitto
         # @return [String, nil]
         attribute :description, :string
 
-        validates :code, presence: true
-
         # Convert to hash for JSON-LD serialization
         # @return [Hash]
         def to_hash

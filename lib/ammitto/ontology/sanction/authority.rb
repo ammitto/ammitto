@@ -35,9 +35,6 @@ module Ammitto
         # @return [String, nil]
         attribute :url, :string
 
-        validates :id, presence: true
-        validates :name, presence: true
-
         # Convert to hash for JSON-LD serialization
         # @return [Hash]
         def to_hash

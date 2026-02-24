@@ -38,11 +38,16 @@ module Ammitto
           { code: 'us', name: 'United States (OFAC)', format: 'XML', machine_readable: true },
           { code: 'wb', name: 'World Bank', format: 'JSON', machine_readable: true },
           { code: 'uk', name: 'United Kingdom (OFSI)', format: 'XML', machine_readable: true },
-          { code: 'au', name: 'Australia (DFAT)', format: 'CSV', machine_readable: true },
-          { code: 'ca', name: 'Canada (SEFO)', format: 'XML', machine_readable: true },
+          { code: 'au', name: 'Australia (DFAT)', format: 'XLSX', machine_readable: true },
+          { code: 'ca', name: 'Canada (GAC)', format: 'XML', machine_readable: true },
           { code: 'ch', name: 'Switzerland (SECO)', format: 'XML', machine_readable: true },
           { code: 'cn', name: 'China (MOFCOM/MFA)', format: 'HTML', machine_readable: false },
-          { code: 'ru', name: 'Russia (MID)', format: 'HTML', machine_readable: false }
+          { code: 'ru', name: 'Russia (MID)', format: 'HTML', machine_readable: false },
+          { code: 'nz', name: 'New Zealand (MFAT)', format: 'XLSX', machine_readable: true },
+          { code: 'tr', name: 'Turkey (HMB)', format: 'XLSX', machine_readable: true },
+          { code: 'jp', name: 'Japan (METI)', format: 'PDF', machine_readable: false },
+          { code: 'eu_vessels', name: 'EU Vessels (Denmark DMA)', format: 'XLSX', machine_readable: true },
+          { code: 'un_vessels', name: 'UN Vessels (1718 Committee)', format: 'PDF', machine_readable: false }
         ]
       end
 

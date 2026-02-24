@@ -8,6 +8,10 @@ module Ammitto
       # Transformer for NZ Sanctions data
       #
       class Transformer < Ammitto::Transformers::BaseTransformer
+        def initialize
+          super(:nz)
+        end
+
         # Transform NZ entity to harmonized model
         # @param source [Object] source model
         # @return [Hash] { entity: Entity, entry: SanctionEntry }

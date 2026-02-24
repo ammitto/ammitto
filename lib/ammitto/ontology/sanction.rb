@@ -5,10 +5,10 @@
 # These classes represent the sanction-specific aspects of the data,
 # including authorities, regimes, entries, and status history.
 
-require_relative 'authority'
-require_relative 'sanction_regime'
-require_relative 'sanction_entry'
-require_relative 'status_history'
+require_relative 'sanction/authority'
+require_relative 'sanction/sanction_regime'
+require_relative 'sanction/sanction_entry'
+require_relative 'sanction/status_history'
 
 module Ammitto
   module Ontology

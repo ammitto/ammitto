@@ -5,171 +5,110 @@ require 'lutaml/model'
 module Ammitto
   module Sources
     module Ca
-      # Date of birth
-      class DateOfBirth < Lutaml::Model::Serializable
-        attribute :date, :string
-        attribute :type, :string
-
-        xml do
-          root 'DATE_OF_BIRTH'
-          map_element 'DATE', to: :date
-          map_element 'TYPE', to: :type
-        end
-      end
-
-      # Place of birth
-      class PlaceOfBirth < Lutaml::Model::Serializable
-        attribute :city, :string
-        attribute :province, :string
+      # Individual record from Canadian sanctions list
+      #
+      # The actual XML format uses <data-set> root with <record> elements
+      # containing person/entity information in a flat structure.
+      #
+      # Source: https://www.international.gc.ca/world-monde/assets/office_docs/
+      #         international_relations-relations_internationales/sanctions/sema-lmes.xml
+      #
+      class Record < Lutaml::Model::Serializable
         attribute :country, :string
-
-        xml do
-          root 'PLACE_OF_BIRTH'
-          map_element 'CITY', to: :city
-          map_element 'PROVINCE', to: :province
-          map_element 'COUNTRY', to: :country
-        end
-      end
-
-      # Alias name
-      class Alias < Lutaml::Model::Serializable
-        attribute :name, :string
-        attribute :type, :string
-
-        xml do
-          root 'ALIAS'
-          map_element 'NAME', to: :name
-          map_element 'TYPE', to: :type
-        end
-      end
-
-      # Address
-      class Address < Lutaml::Model::Serializable
-        attribute :street, :string
-        attribute :city, :string
-        attribute :province, :string
-        attribute :country, :string
-        attribute :postal_code, :string
-
-        xml do
-          root 'ADDRESS'
-          map_element 'STREET', to: :street
-          map_element 'CITY', to: :city
-          map_element 'PROVINCE', to: :province
-          map_element 'COUNTRY', to: :country
-          map_element 'POSTAL_CODE', to: :postal_code
-        end
-      end
-
-      # Identification document
-      class Identification < Lutaml::Model::Serializable
-        attribute :type, :string
-        attribute :number, :string
-        attribute :country, :string
-
-        xml do
-          root 'IDENTIFICATION'
-          map_element 'TYPE', to: :type
-          map_element 'NUMBER', to: :number
-          map_element 'COUNTRY', to: :country
-        end
-      end
-
-      # Individual person in Canadian sanctions list
-      class Individual < Lutaml::Model::Serializable
-        attribute :id, :integer
-        attribute :first_name, :string
         attribute :last_name, :string
-        attribute :date_of_birth, DateOfBirth, collection: true
-        attribute :place_of_birth, PlaceOfBirth, collection: true
-        attribute :nationality, :string, collection: true
-        attribute :aliases, Alias, collection: true
-        attribute :addresses, Address, collection: true
-        attribute :identifications, Identification, collection: true
-        attribute :sanctions_program, :string
+        attribute :given_name, :string
+        attribute :date_of_birth_or_ship_build_date, :string
         attribute :schedule, :string
+        attribute :item, :string
+        attribute :date_of_listing, :string
 
         xml do
-          root 'INDIVIDUAL'
-          map_element 'ID', to: :id
-          map_element 'FIRST_NAME', to: :first_name
-          map_element 'LAST_NAME', to: :last_name
-          map_element 'DATE_OF_BIRTH', to: :date_of_birth
-          map_element 'PLACE_OF_BIRTH', to: :place_of_birth
-          map_element 'NATIONALITY', to: :nationality
-          map_element 'ALIAS', to: :aliases
-          map_element 'ADDRESS', to: :addresses
-          map_element 'IDENTIFICATION', to: :identifications
-          map_element 'SANCTIONS_PROGRAM', to: :sanctions_program
-          map_element 'SCHEDULE', to: :schedule
+          root 'record'
+          map_element 'Country', to: :country
+          map_element 'LastName', to: :last_name
+          map_element 'GivenName', to: :given_name
+          map_element 'DateOfBirthOrShipBuildDate', to: :date_of_birth_or_ship_build_date
+          map_element 'Schedule', to: :schedule
+          map_element 'Item', to: :item
+          map_element 'DateOfListing', to: :date_of_listing
         end
 
+        # Get full name
+        # @return [String]
         def full_name
-          [first_name, last_name].compact.join(' ')
+          [given_name, last_name].compact.join(' ')
         end
-      end
 
-      # Entity (organization) in Canadian sanctions list
-      class Entity < Lutaml::Model::Serializable
-        attribute :id, :integer
-        attribute :name, :string
-        attribute :aliases, Alias, collection: true
-        attribute :addresses, Address, collection: true
-        attribute :sanctions_program, :string
-        attribute :schedule, :string
-
-        xml do
-          root 'ENTITY'
-          map_element 'ID', to: :id
-          map_element 'NAME', to: :name
-          map_element 'ALIAS', to: :aliases
-          map_element 'ADDRESS', to: :addresses
-          map_element 'SANCTIONS_PROGRAM', to: :sanctions_program
-          map_element 'SCHEDULE', to: :schedule
+        # Check if this is an individual (has personal name)
+        # @return [Boolean]
+        def individual?
+          last_name? || given_name?
         end
-      end
 
-      # Wrapper for Individuals collection
-      class IndividualsWrapper < Lutaml::Model::Serializable
-        attribute :items, Individual, collection: true
-
-        xml do
-          root 'INDIVIDUALS'
-          map_element 'INDIVIDUAL', to: :items
+        # Get entity type based on content
+        # @return [String] 'person' or 'organization'
+        def entity_type
+          # If has LastName/GivenName, it's a person
+          if last_name || given_name
+            'person'
+          else
+            'organization'
+          end
         end
-      end
 
-      # Wrapper for Entities collection
-      class EntitiesWrapper < Lutaml::Model::Serializable
-        attribute :items, Entity, collection: true
+        # Generate a unique ID
+        # @return [String]
+        def generate_id
+          parts = [country, schedule, item].compact
+          parts.join('-').gsub(/[^a-zA-Z0-9-]/, '-').gsub(/-+/, '-')
+        end
 
-        xml do
-          root 'ENTITIES'
-          map_element 'ENTITY', to: :items
+        # Convert to hash for YAML serialization
+        # @return [Hash]
+        def to_hash
+          hash = {
+            id: generate_id,
+            entity_type: entity_type,
+            country: country,
+            schedule: schedule,
+            item: item,
+            date_of_listing: date_of_listing
+          }
+          hash[:names] = [{ full_name: full_name, is_primary: true }] if full_name && !full_name.empty?
+          hash[:date_of_birth] = date_of_birth_or_ship_build_date if date_of_birth_or_ship_build_date
+          hash.compact
         end
       end
 
       # Canadian Consolidated Autonomous Sanctions List (XML)
-      # Source: Global Affairs Canada
-      # URL: https://www.international.gc.ca/world-monde/assets/office_docs/international_relations-relations_internationales/sanctions/sema-lmes.xml
+      #
+      # The actual XML format uses <data-set> as root element with <record>
+      # children. Each record represents either an individual or entity.
+      #
+      # @example Parsing from XML
+      #   list = Ca::SanctionsList.from_xml(xml_content)
+      #   list.records.each do |record|
+      #     puts record.full_name
+      #   end
+      #
       class SanctionsList < Lutaml::Model::Serializable
-        attribute :individuals_wrapper, IndividualsWrapper
-        attribute :entities_wrapper, EntitiesWrapper
+        attribute :records, Record, collection: true
 
         xml do
-          root 'CONSOLIDATED_LIST'
-          map_element 'INDIVIDUALS', to: :individuals_wrapper
-          map_element 'ENTITIES', to: :entities_wrapper
+          root 'data-set'
+          map_element 'record', to: :records
         end
 
-        # Get all individuals
+        # Get all individuals (records with names)
+        # @return [Array<Record>]
         def individuals
-          individuals_wrapper&.items || []
+          records.select(&:individual?)
         end
 
-        # Get all entities
+        # Get all entities (records without personal names)
+        # @return [Array<Record>]
         def entities
-          entities_wrapper&.items || []
+          records.reject(&:individual?)
         end
       end
     end

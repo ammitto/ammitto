@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# Ensure core models are loaded
+require_relative '../../ammitto'
+
 require_relative 'base_transformer'
 
 # Load transformers from source directories
@@ -15,6 +18,9 @@ require_relative '../sources/cn/transformer'
 require_relative '../sources/ru/transformer'
 require_relative '../sources/nz/transformer'
 require_relative '../sources/tr/transformer'
+require_relative '../sources/eu_vessels/transformer'
+require_relative '../sources/jp/transformer'
+require_relative '../sources/un_vessels/transformer'
 
 module Ammitto
   module Transformers
@@ -38,7 +44,10 @@ module Ammitto
         cn: Ammitto::Sources::Cn::Transformer,
         ru: Ammitto::Sources::Ru::Transformer,
         nz: Ammitto::Sources::Nz::Transformer,
-        tr: Ammitto::Sources::Tr::Transformer
+        tr: Ammitto::Sources::Tr::Transformer,
+        eu_vessels: Ammitto::Sources::EuVessels::Transformer,
+        jp: Ammitto::Sources::Jp::Transformer,
+        un_vessels: Ammitto::Sources::UnVessels::Transformer
       }.freeze
 
       class << self

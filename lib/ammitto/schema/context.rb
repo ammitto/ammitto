@@ -148,7 +148,66 @@ module Ammitto
                 '@type' => '@id',
                 '@container' => '@set'
               },
-              'seeAlso' => { '@id' => 'rdfs:seeAlso', '@type' => '@id' }
+              'seeAlso' => { '@id' => 'rdfs:seeAlso', '@type' => '@id' },
+
+              # Provenance
+              'sourceReferences' => {
+                '@id' => 'prov:hadPrimarySource',
+                '@container' => '@set'
+              },
+              'linkedEntities' => {
+                '@id' => 'linkedEntity',
+                '@container' => '@set'
+              },
+              'sourceCode' => { '@id' => 'sourceCode' },
+              'referenceNumber' => { '@id' => 'referenceNumber' },
+              'resolution' => { '@id' => 'resolution' },
+              'fetchedAt' => { '@id' => 'fetchedAt', '@type' => 'xsd:dateTime' },
+
+              # Entity Link
+              'targetId' => { '@id' => 'targetId', '@type' => '@id' },
+              'relationshipType' => { '@id' => 'relationshipType', '@type' => '@vocab' },
+              'targetName' => { '@id' => 'targetName' },
+              'targetType' => { '@id' => 'targetType' },
+
+              # Tonnage
+              'gt' => { '@id' => 'grossTonnage', '@type' => 'xsd:integer' },
+              'dwt' => { '@id' => 'deadweightTonnage', '@type' => 'xsd:integer' },
+              'nt' => { '@id' => 'netTonnage', '@type' => 'xsd:integer' },
+              'grt' => { '@id' => 'grossRegisterTonnage', '@type' => 'xsd:integer' },
+              'tonnage' => { '@id' => 'tonnage' },
+
+              # BirthInfo full structure
+              'birthDate' => { '@id' => 'schema:birthDate', '@type' => 'xsd:date' },
+              'birthYear' => { '@id' => 'birthYear', '@type' => 'xsd:gYear' },
+              'birthCity' => { '@id' => 'schema:birthPlace' },
+              'birthCountry' => { '@id' => 'birthCountry' },
+
+              # Address full structure
+              'streetAddress' => { '@id' => 'schema:streetAddress' },
+              'addressLocality' => { '@id' => 'schema:addressLocality' },
+              'addressRegion' => { '@id' => 'schema:addressRegion' },
+              'postalCode' => { '@id' => 'schema:postalCode' },
+              'addressCountry' => { '@id' => 'schema:addressCountry' },
+
+              # Identification full structure
+              'idType' => { '@id' => 'idType', '@type' => '@vocab' },
+              'idNumber' => { '@id' => 'idNumber' },
+              'idCountry' => { '@id' => 'idCountry' },
+              'issueDate' => { '@id' => 'issueDate', '@type' => 'xsd:date' },
+              'expiryDate' => { '@id' => 'expiryDate', '@type' => 'xsd:date' },
+
+              # Status History
+              'fromStatus' => { '@id' => 'fromStatus', '@type' => '@vocab' },
+              'toStatus' => { '@id' => 'toStatus', '@type' => '@vocab' },
+              'statusHistory' => { '@id' => 'statusHistory', '@container' => '@set' },
+              'suspensionEndDate' => { '@id' => 'suspensionEndDate', '@type' => 'xsd:date' },
+
+              # Organization additional attributes
+              'dissolutionDate' => { '@id' => 'dissolutionDate', '@type' => 'xsd:date' },
+              'country' => { '@id' => 'country' },
+              'countryIsoCode' => { '@id' => 'countryIsoCode' },
+              'sector' => { '@id' => 'sector' }
             }
           }
         end

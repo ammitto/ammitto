@@ -15,6 +15,9 @@ require_relative 'value_objects/legal_instrument'
 require_relative 'value_objects/sanction_effect'
 require_relative 'value_objects/temporal_period'
 require_relative 'value_objects/contact_info'
+require_relative 'value_objects/entity_link'
+require_relative 'value_objects/source_reference'
+require_relative 'value_objects/tonnage'
 
 module Ammitto
   module Ontology

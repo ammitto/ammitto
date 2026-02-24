@@ -1,36 +1,48 @@
 # frozen_string_literal: true
 
-# BaseTransformer is loaded by transformers/registry.rb
+require_relative '../../transformers/base_transformer'
 
 module Ammitto
   module Sources
-    module Tr
-      # Transformer for Turkey Sanctions data
+    module Jp
+      # Transformer converts Japan End-User List source models to the
+      # harmonized Ammitto ontology models.
+      #
+      # Note: Japan's End-User List is primarily for export control purposes,
+      # not financial sanctions. It lists entities that may be involved in
+      # WMD proliferation activities.
+      #
+      # @example Transforming a Japan entity
+      #   transformer = Ammitto::Sources::Jp::Transformer.new
+      #   result = transformer.transform(entity)
+      #   entity = result[:entity]    # PersonEntity or OrganizationEntity
+      #   entry = result[:entry]      # SanctionEntry
       #
       class Transformer < Ammitto::Transformers::BaseTransformer
         def initialize
-          super(:tr)
+          super(:jp)
         end
 
-        # Transform TR entity to harmonized model
-        # @param source [Object] source model
+        # Transform a Japan Entity to ontology models
+        # @param source [Ammitto::Sources::Jp::Entity] the entity
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
         def transform(source)
           entity = create_entity(source)
           entry = create_entry(source, entity)
 
-          { entity: entity, entry: entry }
+          {
+            entity: entity,
+            entry: entry
+          }
         end
 
         private
 
         # Create harmonized entity
-        # @param source [Object] source model
+        # @param source [Ammitto::Sources::Jp::Entity]
         # @return [PersonEntity, OrganizationEntity]
         def create_entity(source)
-          entity_type = map_entity_type(source)
-
-          case entity_type
+          case source.entity_type
           when 'person'
             create_person_entity(source)
           else
@@ -39,7 +51,7 @@ module Ammitto
         end
 
         # Create person entity
-        # @param source [Object] source model
+        # @param source [Ammitto::Sources::Jp::Entity]
         # @return [PersonEntity]
         def create_person_entity(source)
           Ammitto::PersonEntity.new.tap do |entity|
@@ -47,54 +59,67 @@ module Ammitto
             entity.entity_type = 'person'
             entity.names = build_names(source)
             entity.source_references = build_source_references(source)
+            entity.remarks = source.remarks
           end
         end
 
         # Create organization entity
-        # @param source [Object] source model
+        # @param source [Ammitto::Sources::Jp::Entity]
         # @return [OrganizationEntity]
         def create_organization_entity(source)
           Ammitto::OrganizationEntity.new.tap do |entity|
             entity.id = generate_entity_id(source.reference_number)
             entity.entity_type = 'organization'
             entity.names = build_names(source)
+            entity.addresses = build_addresses(source)
             entity.source_references = build_source_references(source)
+            entity.remarks = source.remarks
           end
         end
 
         # Build names array
-        # @param source [Object] source model
+        # @param source [Ammitto::Sources::Jp::Entity]
         # @return [Array<NameVariant>]
         def build_names(source)
           names = []
 
+          # English name (primary)
           if source.name
-            names << create_name_variant(full_name: source.name, is_primary: true)
+            names << create_name_variant(full_name: source.name, is_primary: true, script: 'Latn')
+          end
+
+          # Japanese name
+          if source.name_ja
+            names << create_name_variant(full_name: source.name_ja, is_primary: false, script: 'Jpan')
           end
 
           names
         end
 
+        # Build addresses array
+        # @param source [Ammitto::Sources::Jp::Entity]
+        # @return [Array<Address>]
+        def build_addresses(source)
+          return [] if source.addresses.empty?
+
+          source.addresses.map do |addr|
+            create_address(street: addr)
+          end
+        end
+
         # Build source references
-        # @param source [Object] source model
+        # @param source [Ammitto::Sources::Jp::Entity]
         # @return [Array<SourceReference>]
         def build_source_references(source)
           [Ammitto::SourceReference.new(
-            source_code: 'tr',
+            source_code: 'jp',
             reference_number: source.reference_number,
             fetched_at: Time.now.utc.iso8601
           )]
         end
 
-        # Map entity type
-        # @param source [Object] source model
-        # @return [String]
-        def map_entity_type(source)
-          source.entity_type&.downcase == 'person' ? 'person' : 'organization'
-        end
-
         # Create sanction entry
-        # @param source [Object] source model
+        # @param source [Ammitto::Sources::Jp::Entity]
         # @param entity [Entity] harmonized entity
         # @return [SanctionEntry]
         def create_entry(source, entity)
@@ -102,48 +127,36 @@ module Ammitto
             entry.id = generate_entry_id(source.reference_number)
             entry.entity_id = entity.id
             entry.authority = authority
-            entry.regime = create_regime(source.program)
+            entry.regime = create_regime
             entry.status = 'active'
-            entry.effects = build_effects(source)
-            entry.period = create_period(source)
+            entry.effects = build_effects
+            entry.period = create_period
+            entry.remarks = 'Japan End-User List - Export Control'
           end
         end
 
         # Create regime
-        # @param program [String] program name
         # @return [SanctionRegime]
-        def create_regime(program)
-          code = case program
-                 when /7262.*3\.A/i then 'TR-D'
-                 when /7262/i then 'TR-D'
-                 when /6415.*6/i then 'TR-B'
-                 when /6415/i then 'TR-C'
-                 else 'TR'
-                 end
-
+        def create_regime
           Ammitto::SanctionRegime.new(
-            name: "Turkey #{program || 'Sanctions'}",
-            code: code
+            name: 'Japan End-User List (METI)',
+            code: 'JP-EUL'
           )
         end
 
         # Build effects
-        # @param source [Object] source model
         # @return [Array<SanctionEffect>]
-        def build_effects(source)
-          # Turkey typically imposes asset freeze and entry ban
+        def build_effects
+          # Japan End-User List is for export control, not financial sanctions
           [
-            create_effect(effect_type: 'asset_freeze'),
-            create_effect(effect_type: 'entry_ban')
+            create_effect(effect_type: 'export_restriction', description: 'Subject to export license requirements')
           ]
         end
 
         # Create period
-        # @param source [Object] source model
         # @return [TemporalPeriod]
-        def create_period(source)
+        def create_period
           Ammitto::TemporalPeriod.new(
-            listed_date: parse_date(source.listed_date),
             is_indefinite: true
           )
         end

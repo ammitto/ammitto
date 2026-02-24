@@ -7,7 +7,9 @@ module Ammitto
     module Un
       # Designation with multiple VALUE elements
       class Designation < Lutaml::Model::Serializable
-        attribute :values, :string, collection: true
+        attribute :values, :string, collection: true, transform: {
+          import: ->(vals) { Array(vals).map { |v| v.to_s.strip.gsub(/\s+/, ' ') } }
+        }
 
         xml do
           root 'DESIGNATION'

@@ -100,7 +100,7 @@ module Ammitto
         # @param source [Ammitto::Sources::Jp::Entity]
         # @return [Array<Address>]
         def build_addresses(source)
-          return [] if source.addresses.empty?
+          return [] if source.addresses.nil? || source.addresses.empty?
 
           source.addresses.map do |addr|
             create_address(street: addr)

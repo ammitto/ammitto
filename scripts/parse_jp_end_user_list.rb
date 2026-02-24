@@ -32,19 +32,24 @@ def parse_jp_end_user_list
     next unless cells[0] =~ /^\d+$/  # Must have a number
 
     # Extract entity data
+    name = cells[2] || cells[1]
     entity = {
-      'id' => "jp-#{cells[0]}",
+      'id' => cells[0],
+      'name' => name,
       'entity_type' => 'organization',
-      'names' => [
-        { 'full_name' => cells[2] || cells[1], 'is_primary' => true }
-      ].compact
+      'addresses' => [],
+      'remarks' => nil
     }
 
-    # Add country
-    entity['country'] = cells[1] if cells[1] && !cells[1].empty?
+    # Add country as part of remarks
+    if cells[1] && !cells[1].empty?
+      entity['remarks'] = "Country: #{cells[1]}"
+    end
 
-    # Add remarks/details
-    entity['remarks'] = cells[5] if cells[5] && !cells[5].empty?
+    # Add additional remarks/details
+    if cells[5] && !cells[5].empty?
+      entity['remarks'] = [entity['remarks'], cells[5]].compact.join('; ')
+    end
 
     entities << entity
   end

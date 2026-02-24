@@ -83,7 +83,7 @@ module Ammitto
         end
 
         def primary_regulation
-          regulations.first
+          regulations&.first
         end
 
         def programme

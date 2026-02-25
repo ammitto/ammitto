@@ -254,18 +254,24 @@ module Ammitto
 
     # ---- Search Command ----
 
-    desc 'search QUERY', 'Search cached data for matching entities'
+    desc 'search QUERY', 'Search entities by name'
     long_desc <<~DESC
-      Search sanctioned entities by name, identifier, or other criteria.
+      Search sanctioned entities by name or identifier.
+
+      Entity types: person, organization, vessel, aircraft
 
       Examples:
-        ammitto search "Kim Jong"                # Search all sources
-        ammitto search "Putin" --sources eu,us   # Search specific sources
-        ammitto search "IMO 12345" --format json # Output as JSON
+        ammitto search "Kim Jong"                    # Search all sources
+        ammitto search "Putin" --type person         # Filter by type
+        ammitto search "123 AVIATION" --source eu    # Filter by source
+        ammitto search "ship" --type vessel          # Search vessels
+        ammitto search "IMO 12345" --format json     # Output as JSON
     DESC
-    option :sources, type: :string, desc: 'Comma-separated sources to search'
+    option :type, type: :string, desc: 'Entity type (person, organization, vessel, aircraft)'
+    option :source, type: :string, desc: 'Source code to filter by'
     option :limit, type: :numeric, default: 50, desc: 'Maximum results'
     option :format, type: :string, default: 'text', desc: 'Output format (text, json)'
+    option :data_repository, type: :string, desc: 'Path to data repository'
     def search(query)
       require_relative 'cli/search_command'
       Cmd::SearchCommand.new(options, query).run

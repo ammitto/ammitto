@@ -4,10 +4,20 @@ require 'json'
 
 module Ammitto
   module Cmd
-    # Search command - search cached data
+    # Search command - search sanction entities
     #
-    # Searches cached sanction data for matching entities.
+    # Searches the data repository for matching entities.
+    #
+    # @example
+    #   ammitto search "Kim Jong"                    # Search by name
+    #   ammitto search "Putin" --type person         # Filter by entity type
+    #   ammitto search "123 AVIATION" --source eu    # Filter by source
+    #   ammitto search "ship" --type vessel          # Search vessels
+    #
     class SearchCommand
+      # Entity types that can be searched
+      ENTITY_TYPES = %w[person organization vessel aircraft].freeze
+
       # @return [Hash] command options
       attr_reader :options
 
@@ -27,6 +37,8 @@ module Ammitto
       def run
         if query.empty?
           puts 'Error: Query required. Usage: ammitto search QUERY'
+          puts '  ammitto search "Kim Jong"'
+          puts '  ammitto search "ship" --type vessel'
           exit 1
         end
 
@@ -67,68 +79,52 @@ module Ammitto
       # Perform the search
       # @return [Array<SearchResult>] search results
       def perform_search
-        sources = parse_sources
-        results = []
+        repo = create_repository
 
-        sources.each do |source|
-          source_results = search_source(source)
-          results.concat(source_results)
+        unless repo.cloned?
+          puts "Data repository not found. Run 'ammitto data clone' first."
+          puts "Or set AMMITTO_DATA_REPOSITORY environment variable."
+          return []
         end
 
-        # Limit results
-        limit = options[:limit] || 50
-        results.first(limit)
-      end
+        criteria = build_criteria
+        entities = repo.query(criteria)
 
-      # Parse sources from options
-      # @return [Array<Symbol>]
-      def parse_sources
-        return Config::Defaults::ALL_SOURCES unless options[:sources]
-
-        options[:sources].to_s.split(',').map do |s|
-          s.strip.to_sym
+        entities.map do |entity|
+          SearchResult.new(entity, entity['source'] || detect_source(entity['id']))
         end
       end
 
-      # Search a single source
-      # @param source [Symbol] source code
-      # @return [Array<SearchResult>]
-      def search_source(source)
-        cache_file = File.join(cache_dir, 'cache', 'sources', source.to_s, "#{source}.jsonld")
-        return [] unless File.exist?(cache_file)
-
-        require 'json'
-        data = JSON.parse(File.read(cache_file))
-        graph = data['@graph'] || []
-
-        # Find matching entities
-        graph.select do |item|
-          next unless item['@type']&.include?('Entity')
-
-          matches_query?(item)
-        end.map { |item| SearchResult.new(item, source) }
-      rescue StandardError
-        []
+      # Create the data repository
+      # @return [Ammitto::Data::Repository]
+      def create_repository
+        require_relative '../data/repository'
+        local_path = options[:data_repository] || ENV['AMMITTO_DATA_REPOSITORY']
+        Ammitto::Data::Repository.new(
+          local_path: local_path,
+          verbose: options[:verbose]
+        )
       end
 
-      # Check if entity matches query
-      # @param entity [Hash] entity data
-      # @return [Boolean]
-      def matches_query?(entity)
-        query_lower = query.downcase
+      # Build query criteria from options
+      # @return [Hash]
+      def build_criteria
+        criteria = { name: query }
+        criteria[:source] = options[:source] if options[:source]
+        criteria[:type] = options[:type] if options[:type]
+        criteria[:limit] = options[:limit] || 50
+        criteria
+      end
 
-        # Search in names
-        names = entity['names'] || []
-        return true if names.any? { |n| n['fullName']&.downcase&.include?(query_lower) }
+      # Detect source from entity ID
+      # @param id [String] entity ID
+      # @return [String] source code
+      def detect_source(id)
+        return 'unknown' unless id
 
-        # Search in reference number
-        ref = entity['sourceReferences'] || []
-        return true if ref.any? { |r| r['referenceNumber']&.downcase&.include?(query_lower) }
-
-        # Search in ID
-        return true if entity['@id']&.downcase&.include?(query_lower)
-
-        false
+        # Extract source from ID like "https://www.ammitto.org/entity/eu/EU.123"
+        match = id.match(%r{/entity/([^/]+)/})
+        match ? match[1] : 'unknown'
       end
 
       # Print a single result
@@ -140,13 +136,10 @@ module Ammitto
         puts "   Source: #{result.source.upcase}"
         puts "   Type: #{result.entity_type}"
         puts "   ID: #{result.id}"
+        if result.country
+          puts "   Country: #{result.country}"
+        end
         puts
-      end
-
-      # Get cache directory
-      # @return [String]
-      def cache_dir
-        options[:cache_dir] || File.expand_path('~/.ammitto')
       end
 
       # Search result wrapper
@@ -154,12 +147,12 @@ module Ammitto
         # @return [Hash] entity data
         attr_reader :data
 
-        # @return [Symbol] source code
+        # @return [String] source code
         attr_reader :source
 
         # Initialize with data and source
         # @param data [Hash] entity data
-        # @param source [Symbol] source code
+        # @param source [String] source code
         def initialize(data, source)
           @data = data
           @source = source
@@ -168,21 +161,28 @@ module Ammitto
         # Get entity ID
         # @return [String]
         def id
-          data['@id'] || ''
+          data['id'] || data['@id'] || ''
         end
 
         # Get primary name
         # @return [String]
         def primary_name
           names = data['names'] || []
-          primary = names.find { |n| n['isPrimary'] } || names.first
-          primary&.dig('fullName') || 'Unknown'
+          primary = names.find { |n| n['is_primary'] } || names.first
+          primary&.dig('full_name') || primary&.dig('fullName') || 'Unknown'
         end
 
         # Get entity type
         # @return [String]
         def entity_type
-          data['entityType'] || 'unknown'
+          data['entity_type'] || data['entityType'] || 'unknown'
+        end
+
+        # Get country
+        # @return [String, nil]
+        def country
+          addresses = data['addresses'] || []
+          addresses.first&.dig('country')
         end
 
         # Convert to hash
@@ -192,8 +192,9 @@ module Ammitto
             id: id,
             name: primary_name,
             type: entity_type,
-            source: source.to_s.upcase
-          }
+            source: source.to_s.upcase,
+            country: country
+          }.compact
         end
       end
     end

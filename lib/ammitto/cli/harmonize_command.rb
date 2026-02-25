@@ -254,9 +254,9 @@ module Ammitto
       # @param data [Hash] source data
       # @return [Hash]
       def transform_eu(transformer, data)
-        require_relative '../sources/eu/sanction_entity'
+        require_relative '../sources/eu/processed_entity'
 
-        entity = Ammitto::Sources::Eu::SanctionEntity.from_yaml(data.to_yaml)
+        entity = Ammitto::Sources::Eu::ProcessedEntity.from_yaml(data.to_yaml)
         result = transformer.transform(entity)
 
         {

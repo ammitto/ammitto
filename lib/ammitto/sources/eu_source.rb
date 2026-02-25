@@ -10,6 +10,7 @@ require_relative 'eu/citizenship'
 require_relative 'eu/address'
 require_relative 'eu/identification'
 require_relative 'eu/sanction_entity'
+require_relative 'eu/processed_entity'
 require_relative 'eu/export'
 require_relative 'eu/transformer'
 

@@ -232,11 +232,46 @@ module Ammitto
 
       # Get an entity by ID
       #
-      # @param id [String] Entity ID
+      # Supports multiple ID formats:
+      # - Full URI: "https://www.ammitto.org/entity/un/KPi.066"
+      # - Short path: "entity/un/KPi.066" or "un/KPi.066"
+      # - Reference number: "KPi.066" (source-specific, may match multiple)
+      #
+      # @param id [String] Entity ID (full or partial)
       # @return [Hash, nil] Entity data or nil if not found
       def get(id)
         entities = load_all
-        entities.find { |e| e['id'] == id }
+
+        # Try exact match first
+        entity = entities.find { |e| e['id'] == id }
+        return entity if entity
+
+        # Try with full URI prefix
+        full_id = normalize_id(id)
+        entity = entities.find { |e| e['id'] == full_id }
+        return entity if entity
+
+        # Try matching end of ID (e.g., "un/KPi.066")
+        entity = entities.find { |e| e['id']&.end_with?(id) }
+        return entity if entity
+
+        # Try matching reference number in source_references
+        entities.find do |e|
+          refs = e['source_references'] || []
+          refs.any? { |r| r['reference_number'] == id }
+        end
+      end
+
+      # Normalize a partial ID to full URI
+      #
+      # @param id [String] Partial or full ID
+      # @return [String] Full URI
+      def normalize_id(id)
+        return id if id.to_s.start_with?('http')
+
+        # Add entity prefix if missing
+        path = id.to_s.gsub(%r{^/?entity/}, '')
+        "https://www.ammitto.org/entity/#{path}"
       end
 
       # Ensure the repository is cloned and up to date

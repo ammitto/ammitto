@@ -277,6 +277,29 @@ module Ammitto
       Cmd::SearchCommand.new(options, query).run
     end
 
+    # ---- Get Command ----
+
+    desc 'get ID', 'Get an entity by ID'
+    long_desc <<~DESC
+      Fetch a specific entity by its identifier.
+
+      ID formats supported:
+        - Full URI: "https://www.ammitto.org/entity/un/KPi.066"
+        - Short path: "un/KPi.066" or "entity/un/KPi.066"
+        - Reference number: "KPi.066" (source-specific)
+
+      Examples:
+        ammitto get un/KPi.066              # Get by short path
+        ammitto get eu/EU.10982.59          # Get EU entity
+        ammitto get KPi.066 --format json   # Get by reference number
+    DESC
+    option :format, type: :string, default: 'text', desc: 'Output format (text, json)'
+    option :data_repository, type: :string, desc: 'Path to data repository'
+    def get(id)
+      require_relative 'cli/get_command'
+      Cmd::GetCommand.new(options, id).run
+    end
+
     # ---- Ontology Command ----
 
     desc 'ontology SUBCOMMAND', 'Ontology management commands'

@@ -50,6 +50,16 @@ module Ammitto
 
       # Default export format
       EXPORT_DIR = 'export'
+
+      # Data repository directory (for harmonized JSON-LD output)
+      # __FILE__ is lib/ammitto/config/defaults.rb
+      # Go up 5 levels: config -> ammitto -> lib -> ammitto(gem) -> ammitto(project) -> data
+      DATA_REPOSITORY = File.expand_path('../../../../data', __dir__)
+
+      # Source data repositories parent directory
+      # __FILE__ is lib/ammitto/config/defaults.rb
+      # Go up 5 levels: config -> ammitto -> lib -> ammitto(gem) -> ammitto(project)
+      SOURCES_DIR = File.expand_path('../../../..', __dir__)
     end
   end
 end

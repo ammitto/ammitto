@@ -40,6 +40,26 @@ module Ammitto
         attribute :registration_number, :string
         attribute :country_of_registration, :string
 
+        yaml do
+          map 'chinese_name', to: :chinese_name
+          map 'english_name', to: :english_name
+          map 'entity_type', to: :entity_type
+          map 'list_type', to: :list_type
+          map 'announcement_number', to: :announcement_number
+          map 'announcement_date', to: :announcement_date
+          map 'effective_date', to: :effective_date
+          map 'reason', to: :reason
+          map 'measures', to: :measures
+          map 'legal_basis', to: :legal_basis
+          map 'source_url', to: :source_url
+          map 'date_of_birth', to: :date_of_birth
+          map 'nationality', to: :nationality
+          map 'gender', to: :gender
+          map 'title', to: :title
+          map 'registration_number', to: :registration_number
+          map 'country_of_registration', to: :country_of_registration
+        end
+
         def full_name
           english_name || chinese_name
         end

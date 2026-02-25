@@ -46,6 +46,59 @@ module Ammitto
     end
   end
 
+  # Data subcommand CLI
+  class DataCLI < Thor
+    desc 'clone', 'Clone the data repository to local storage'
+    option :force, type: :boolean, default: false, desc: 'Force re-clone'
+    option :data_repository, type: :string, desc: 'Local path for repository'
+    def clone
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'clone').run
+    end
+
+    desc 'pull', 'Pull latest updates from remote'
+    def pull
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'pull').run
+    end
+
+    desc 'status', 'Show repository status'
+    def status
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'status').run
+    end
+
+    desc 'query', 'Query entities from the data'
+    option :name, type: :string, desc: 'Name to search for'
+    option :source, type: :string, desc: 'Source code to filter by'
+    option :type, type: :string, desc: 'Entity type to filter by'
+    option :country, type: :string, desc: 'Country to filter by'
+    option :limit, type: :numeric, default: 20, desc: 'Maximum results'
+    option :offset, type: :numeric, default: 0, desc: 'Offset for pagination'
+    def query
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'query').run
+    end
+
+    desc 'get ID', 'Get an entity by ID'
+    def get(id)
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'get', id).run
+    end
+
+    desc 'sources', 'List available sources'
+    def sources
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'sources').run
+    end
+
+    desc 'stats', 'Show data statistics'
+    def stats
+      require_relative 'cli/data_command'
+      Cmd::DataCommand.new(options, 'stats').run
+    end
+  end
+
   # Namespace for command classes
   module Cmd
   end
@@ -60,11 +113,14 @@ module Ammitto
   #   ammitto process         - Process raw data into harmonized models
   #   ammitto export          - Export to JSON-LD, Turtle, etc.
   #   ammitto search QUERY    - Search cached data
+  #   ammitto data SUBCOMMAND - Data repository management
   #
   # @example Basic usage
   #   ammitto fetch eu un gb
   #   ammitto export jsonld --output-dir ./data
   #   ammitto search "Kim Jong" --sources un,eu
+  #   ammitto data clone
+  #   ammitto data query --name "Smith"
   #
   class CLI < Thor
     # Disable Thor's default handling of unknown options
@@ -219,6 +275,30 @@ module Ammitto
 
     desc 'ontology SUBCOMMAND', 'Ontology management commands'
     subcommand 'ontology', OntologyCLI
+
+    # ---- Data Command ----
+
+    desc 'data SUBCOMMAND', 'Data repository management commands'
+    long_desc <<~DESC
+      Manage the local data repository containing harmonized entity data.
+
+      Subcommands:
+        clone   - Clone the data repository to local storage
+        pull    - Pull latest updates from remote
+        status  - Show repository status
+        query   - Query entities from the data
+        get     - Get an entity by ID
+        sources - List available sources
+        stats   - Show data statistics
+
+      Examples:
+        ammitto data clone                    # Clone the data repository
+        ammitto data pull                     # Pull latest updates
+        ammitto data query --name "Smith"     # Query by name
+        ammitto data get eu-12345             # Get entity by ID
+        ammitto data sources                  # List sources
+    DESC
+    subcommand 'data', DataCLI
 
     # ---- Helper Methods ----
 

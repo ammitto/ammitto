@@ -57,12 +57,10 @@ module Ammitto
           names = []
 
           # Primary vessel name
-          if vessel.vessel_name
-            names << create_name_variant(full_name: vessel.vessel_name, is_primary: true)
-          end
+          names << create_name_variant(full_name: vessel.vessel_name, is_primary: true) if vessel.vessel_name
 
           # Previous names as aliases
-          vessel.previous_names.each do |prev_name|
+          (vessel.previous_names || []).each do |prev_name|
             names << create_name_variant(full_name: prev_name, is_primary: false)
           end
 

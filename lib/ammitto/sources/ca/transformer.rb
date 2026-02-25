@@ -8,10 +8,10 @@ module Ammitto
       # Transformer converts Canada source models to the harmonized
       # Ammitto ontology models.
       #
-      # @example Transforming a CA individual
+      # @example Transforming a CA record
       #   transformer = Ammitto::Sources::Ca::Transformer.new
-      #   result = transformer.transform(individual)
-      #   entity = result[:entity]    # PersonEntity
+      #   result = transformer.transform(record)
+      #   entity = result[:entity]    # PersonEntity or OrganizationEntity
       #   entry = result[:entry]      # SanctionEntry
       #
       class Transformer < Ammitto::Transformers::BaseTransformer
@@ -24,191 +24,96 @@ module Ammitto
           'DPRK' => { code: 'DPRK', name: "Democratic People's Republic of Korea" },
           'MYANMAR' => { code: 'MYANMAR', name: 'Myanmar' },
           'SYRIA' => { code: 'SYRIA', name: 'Syria' },
-          'BELARUS' => { code: 'BELARUS', name: 'Belarus' }
+          'BELARUS' => { code: 'BELARUS', name: 'Belarus' },
+          'UKRAINE' => { code: 'UKRAINE', name: 'Ukraine' }
         }.freeze
 
         def initialize
           super(:ca)
         end
 
-        # Transform a CA Individual to ontology models
-        # @param individual [Ammitto::Sources::Ca::Individual]
-        # @return [Hash] { entity: PersonEntity, entry: SanctionEntry }
-        def transform_individual(individual)
-          entity = create_person_entity(individual)
-          entry = create_entry_from_individual(individual)
-
-          entity.add_sanction_entry(entry)
-
-          { entity: entity, entry: entry }
-        end
-
-        # Transform a CA Entity to ontology models
-        # @param entity [Ammitto::Sources::Ca::Entity]
-        # @return [Hash] { entity: OrganizationEntity, entry: SanctionEntry }
-        def transform_entity(entity)
-          ont_entity = create_organization_entity(entity)
-          entry = create_entry_from_entity(entity)
-
-          ont_entity.add_sanction_entry(entry)
-
-          { entity: ont_entity, entry: entry }
-        end
-
-        # Generic transform method
-        # @param source [Object] CA Individual or Entity
-        # @return [Hash]
-        def transform(source)
-          case source
-          when Ammitto::Sources::Ca::Individual
-            transform_individual(source)
-          when Ammitto::Sources::Ca::Entity
-            transform_entity(source)
+        # Transform a CA Record to ontology models
+        # @param record [Ammitto::Sources::Ca::Record]
+        # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        def transform(record)
+          if record.individual?
+            transform_individual(record)
           else
-            raise ArgumentError, "Unknown source type: #{source.class}"
+            transform_organization(record)
           end
         end
 
         private
 
-        def create_person_entity(individual)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(individual.id.to_s),
+        def transform_individual(record)
+          entity = Ammitto::PersonEntity.new(
+            id: generate_entity_id(record.generate_id),
             entity_type: 'person',
-            names: transform_names(individual),
-            addresses: transform_addresses(individual.addresses),
-            birth_info: transform_birth_info(individual),
-            identifications: transform_identifications(individual.identifications),
-            remarks: build_remarks(individual)
+            names: transform_names(record),
+            remarks: build_remarks(record)
           )
+
+          entry = create_entry(record, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
         end
 
-        def create_organization_entity(entity)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(entity.id.to_s),
+        def transform_organization(record)
+          entity = Ammitto::OrganizationEntity.new(
+            id: generate_entity_id(record.generate_id),
             entity_type: 'organization',
-            names: transform_entity_names(entity),
-            addresses: transform_addresses(entity.addresses),
-            remarks: build_entity_remarks(entity)
+            names: transform_names(record),
+            remarks: build_remarks(record)
           )
+
+          entry = create_entry(record, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
         end
 
-        def create_entry_from_individual(individual)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(individual.id.to_s),
-            entity_id: generate_entity_id(individual.id.to_s),
-            authority: authority,
-            regime: transform_regime(individual.sanctions_program),
-            effects: create_default_effects,
-            status: 'active',
-            reference_number: individual.id.to_s,
-            remarks: individual.schedule,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'ca:program' => individual.sanctions_program,
-                'ca:schedule' => individual.schedule
-              }
-            )
-          )
-        end
-
-        def create_entry_from_entity(entity)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(entity.id.to_s),
-            entity_id: generate_entity_id(entity.id.to_s),
-            authority: authority,
-            regime: transform_regime(entity.sanctions_program),
-            effects: create_default_effects,
-            status: 'active',
-            reference_number: entity.id.to_s,
-            remarks: entity.schedule,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'ca:program' => entity.sanctions_program,
-                'ca:schedule' => entity.schedule
-              }
-            )
-          )
-        end
-
-        def transform_names(individual)
+        def transform_names(record)
           names = []
 
-          if individual.full_name && !individual.full_name.empty?
+          if record.full_name && !record.full_name.strip.empty?
             names << create_name_variant(
-              full_name: individual.full_name,
-              first_name: individual.first_name,
-              last_name: individual.last_name,
+              full_name: record.full_name.strip,
+              first_name: record.given_name&.strip,
+              last_name: record.last_name,
               is_primary: true
-            )
-          end
-
-          individual.aliases.each do |alias_obj|
-            names << create_name_variant(
-              full_name: alias_obj.name,
-              is_primary: false
             )
           end
 
           names
         end
 
-        def transform_entity_names(entity)
-          names = []
-
-          if entity.name && !entity.name.empty?
-            names << create_name_variant(
-              full_name: entity.name,
-              is_primary: true
+        def create_entry(record, entity_id)
+          Ammitto::SanctionEntry.new(
+            id: generate_entry_id(record.generate_id),
+            entity_id: entity_id,
+            authority: authority,
+            regime: transform_regime(record.country),
+            effects: create_default_effects,
+            status: 'active',
+            reference_number: record.generate_id,
+            remarks: "Schedule: #{record.schedule}, Item: #{record.item}",
+            raw_source_data: create_raw_source_data(
+              source_format: 'xml',
+              source_specific_fields: {
+                'ca:country' => record.country,
+                'ca:schedule' => record.schedule,
+                'ca:item' => record.item,
+                'ca:date_of_listing' => record.date_of_listing
+              }
             )
-          end
-
-          entity.aliases.each do |alias_obj|
-            names << create_name_variant(
-              full_name: alias_obj.name,
-              is_primary: false
-            )
-          end
-
-          names
+          )
         end
 
-        def transform_addresses(addresses)
-          addresses.map do |addr|
-            create_address(
-              street: addr.street,
-              city: addr.city,
-              state: addr.province,
-              country: addr.country,
-              postal_code: addr.postal_code
-            )
-          end
-        end
+        def transform_regime(country)
+          return create_regime(code: 'CA_SEMA', name: 'Canada Sanctions') if country.nil?
 
-        def transform_birth_info(individual)
-          individual.date_of_birth.map do |dob|
-            create_birth_info(
-              date: parse_date(dob.date)
-            )
-          end
-        end
-
-        def transform_identifications(identifications)
-          identifications.map do |id|
-            create_identification(
-              type: normalize_id_type(id.type),
-              number: id.number,
-              issuing_country: id.country
-            )
-          end
-        end
-
-        def transform_regime(program)
-          return create_regime(code: 'CA_SEMA', name: 'Canada Sanctions') if program.nil?
-
-          info = REGIME_MAPPING[program.upcase] || { code: program.upcase, name: program }
+          info = REGIME_MAPPING[country.upcase] || { code: "CA_#{country.upcase}", name: country }
           create_regime(code: info[:code], name: info[:name])
         end
 
@@ -218,32 +123,12 @@ module Ammitto
           ]
         end
 
-        def normalize_id_type(type)
-          return 'Other' if type.nil?
-
-          case type.downcase
-          when /passport/
-            'Passport'
-          when /national.*id/, /sin/
-            'NationalID'
-          when /driver/
-            'DriversLicense'
-          else
-            type.split.map(&:capitalize).join(' ')
-          end
-        end
-
-        def build_remarks(individual)
+        def build_remarks(record)
           parts = []
-          parts << "Program: #{individual.sanctions_program}" if individual.sanctions_program
-          parts << "Schedule: #{individual.schedule}" if individual.schedule
-          parts.join('; ')
-        end
-
-        def build_entity_remarks(entity)
-          parts = []
-          parts << "Program: #{entity.sanctions_program}" if entity.sanctions_program
-          parts << "Schedule: #{entity.schedule}" if entity.schedule
+          parts << "Country: #{record.country}" if record.country
+          parts << "Schedule: #{record.schedule}" if record.schedule
+          parts << "Item: #{record.item}" if record.item
+          parts << "Date of Listing: #{record.date_of_listing}" if record.date_of_listing
           parts.join('; ')
         end
       end

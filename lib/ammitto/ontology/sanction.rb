@@ -3,10 +3,11 @@
 # Sanction classes for the Ammitto Sanctions Ontology
 #
 # These classes represent the sanction-specific aspects of the data,
-# including authorities, regimes, entries, and status history.
+# including authorities, regimes, entries, reasons, and status history.
 
 require_relative 'sanction/authority'
 require_relative 'sanction/sanction_regime'
+require_relative 'sanction/sanction_reason'
 require_relative 'sanction/sanction_entry'
 require_relative 'sanction/status_history'
 

@@ -71,13 +71,15 @@ module Ammitto
       end
 
       # Parse a date string safely
-      # @param date_str [String, nil] the date string
+      # @param date_str [String, Date, nil] the date string or Date object
       # @return [Date, nil] parsed date or nil
       def parse_date(date_str)
-        return nil if date_str.nil? || date_str.empty?
+        return nil if date_str.nil?
+        return date_str if date_str.is_a?(Date)
+        return nil if date_str.to_s.empty?
 
         begin
-          Date.parse(date_str)
+          Date.parse(date_str.to_s)
         rescue Date::Error
           nil
         end

@@ -30,7 +30,9 @@ module Ammitto
         output_format: 'OUTPUT_FORMAT',
         connection_timeout: 'CONNECTION_TIMEOUT',
         read_timeout: 'READ_TIMEOUT',
-        verbose: 'VERBOSE'
+        verbose: 'VERBOSE',
+        data_repository: 'DATA_REPOSITORY',
+        sources_dir: 'SOURCES_DIR'
       }.freeze
 
       class << self

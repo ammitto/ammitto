@@ -162,7 +162,7 @@ module Ammitto
         end
 
         def transform_effects(measures)
-          return [create_effect(effect_type: 'entry_ban', scope: 'full')] if measures.empty?
+          return [create_effect(effect_type: 'entry_ban', scope: 'full')] if measures.nil? || measures.empty?
 
           measures.map do |measure|
             effect_type = map_measure_to_effect(measure)

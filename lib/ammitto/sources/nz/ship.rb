@@ -26,6 +26,26 @@ module Ammitto
         attribute :record_deleted_flag, :string
         attribute :reason_for_deletion, :string
 
+        yaml do
+          map 'type', to: :type
+          map 'unique_identifier', to: :unique_identifier
+          map 'imo_number', to: :imo_number
+          map 'name', to: :name
+          map 'date_of_sanction', to: :date_of_sanction
+          map 'alias_alternate_names', to: :alias_alternate_names
+          map 'date_of_additional_sanction', to: :date_of_additional_sanction
+          map 'sanction_status', to: :sanction_status
+          map 'travel_ban', to: :travel_ban
+          map 'asset_freeze', to: :asset_freeze
+          map 'aircraft_ban', to: :aircraft_ban
+          map 'ship_ban', to: :ship_ban
+          map 'service_prohibition', to: :service_prohibition
+          map 'dealing_with_securities', to: :dealing_with_securities
+          map 'date_record_deleted', to: :date_record_deleted
+          map 'record_deleted_flag', to: :record_deleted_flag
+          map 'reason_for_deletion', to: :reason_for_deletion
+        end
+
         # Create Ship from row data hash
         # @param data [Hash] row data
         # @return [Ship]

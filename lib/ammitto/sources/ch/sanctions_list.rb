@@ -17,6 +17,12 @@ module Ammitto
           map_attribute 'name-part-type', to: :name_part_type
           map_element 'value', to: :value
         end
+
+        yaml do
+          map 'order', to: :order
+          map 'name_part_type', to: :name_part_type
+          map 'value', to: :value
+        end
       end
 
       # Name in Swiss sanctions list
@@ -32,6 +38,13 @@ module Ammitto
           map_attribute 'quality', to: :quality
           map_attribute 'lang', to: :lang
           map_element 'name-part', to: :name_parts
+        end
+
+        yaml do
+          map 'name_type', to: :name_type
+          map 'quality', to: :quality
+          map 'lang', to: :lang
+          map 'name_parts', to: :name_parts
         end
 
         # Get full name from name parts
@@ -53,8 +66,15 @@ module Ammitto
           map_attribute 'year', to: :year
         end
 
+        yaml do
+          map 'day', to: :day
+          map 'month', to: :month
+          map 'year', to: :year
+        end
+
         def to_iso_date
           return nil unless year
+
           "#{year}-#{month.to_s.rjust(2, '0')}-#{day.to_s.rjust(2, '0')}"
         end
       end
@@ -68,6 +88,11 @@ module Ammitto
           root 'address'
           map_element 'address-details', to: :address_details
           map_element 'zip-code', to: :zip_code
+        end
+
+        yaml do
+          map 'address_details', to: :address_details
+          map 'zip_code', to: :zip_code
         end
       end
 
@@ -86,6 +111,14 @@ module Ammitto
           map_element 'name', to: :names
           map_element 'day-month-year', to: :day_month_year
           map_element 'address', to: :addresses
+        end
+
+        yaml do
+          map 'ssid', to: :ssid
+          map 'main', to: :main
+          map 'names', to: :names
+          map 'day_month_year', to: :day_month_year
+          map 'addresses', to: :addresses
         end
 
         def full_name
@@ -111,6 +144,11 @@ module Ammitto
           map_element 'identity', to: :identity
           map_element 'justification', to: :justification
         end
+
+        yaml do
+          map 'identity', to: :identity
+          map 'justification', to: :justification
+        end
       end
 
       # Entity (organization) in Swiss sanctions list
@@ -122,6 +160,11 @@ module Ammitto
           root 'entity'
           map_element 'identity', to: :identity
           map_element 'justification', to: :justification
+        end
+
+        yaml do
+          map 'identity', to: :identity
+          map 'justification', to: :justification
         end
       end
 
@@ -138,6 +181,13 @@ module Ammitto
           map_element 'sanctions-set-id', to: :sanctions_set_id
           map_element 'individual', to: :individual
           map_element 'entity', to: :entity
+        end
+
+        yaml do
+          map 'ssid', to: :ssid
+          map 'sanctions_set_id', to: :sanctions_set_id
+          map 'individual', to: :individual
+          map 'entity', to: :entity
         end
 
         def identity
@@ -163,6 +213,11 @@ module Ammitto
           map_attribute 'ssid', to: :ssid
           map_element 'program-key', to: :program_keys
         end
+
+        yaml do
+          map 'ssid', to: :ssid
+          map 'program_keys', to: :program_keys
+        end
       end
 
       # Swiss SECO Sanctions List (XML)
@@ -183,6 +238,13 @@ module Ammitto
           map_attribute 'date', to: :date
           map_element 'sanctions-program', to: :programs
           map_element 'target', to: :targets
+        end
+
+        yaml do
+          map 'list_type', to: :list_type
+          map 'date', to: :date
+          map 'programs', to: :programs
+          map 'targets', to: :targets
         end
 
         # Get all identities for YAML output

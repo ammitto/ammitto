@@ -33,6 +33,17 @@ module Ammitto
           map_element 'DateOfListing', to: :date_of_listing
         end
 
+        # YAML mapping for processed YAML files
+        yaml do
+          map 'country', to: :country
+          map 'last_name', to: :last_name
+          map 'given_name', to: :given_name
+          map 'date_of_birth_or_ship_build_date', to: :date_of_birth_or_ship_build_date
+          map 'schedule', to: :schedule
+          map 'item', to: :item
+          map 'date_of_listing', to: :date_of_listing
+        end
+
         # Get full name
         # @return [String]
         def full_name
@@ -42,7 +53,7 @@ module Ammitto
         # Check if this is an individual (has personal name)
         # @return [Boolean]
         def individual?
-          last_name? || given_name?
+          !last_name.to_s.strip.empty? || !given_name.to_s.strip.empty?
         end
 
         # Get entity type based on content

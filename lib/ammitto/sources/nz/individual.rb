@@ -34,6 +34,34 @@ module Ammitto
         attribute :general_rationale_for_sanction, :string
         attribute :associates_relatives, :string
 
+        yaml do
+          map 'type', to: :type
+          map 'unique_identifier', to: :unique_identifier
+          map 'first_name', to: :first_name
+          map 'middle_names', to: :middle_names
+          map 'last_name', to: :last_name
+          map 'dob', to: :dob
+          map 'title', to: :title
+          map 'alias_alternate_spellings', to: :alias_alternate_spellings
+          map 'address', to: :address
+          map 'place_of_birth', to: :place_of_birth
+          map 'citizenship', to: :citizenship
+          map 'citizenship_2', to: :citizenship_2
+          map 'citizenship_3', to: :citizenship_3
+          map 'passport_number', to: :passport_number
+          map 'sanction_status', to: :sanction_status
+          map 'date_of_sanction', to: :date_of_sanction
+          map 'date_of_additional_sanction', to: :date_of_additional_sanction
+          map 'travel_ban', to: :travel_ban
+          map 'asset_freeze', to: :asset_freeze
+          map 'aircraft_ban', to: :aircraft_ban
+          map 'ship_ban', to: :ship_ban
+          map 'service_prohibition', to: :service_prohibition
+          map 'dealing_with_securities', to: :dealing_with_securities
+          map 'general_rationale_for_sanction', to: :general_rationale_for_sanction
+          map 'associates_relatives', to: :associates_relatives
+        end
+
         # Create Individual from row data hash
         # @param data [Hash] row data
         # @return [Individual]

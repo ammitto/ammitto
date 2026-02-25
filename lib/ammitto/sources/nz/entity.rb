@@ -10,7 +10,7 @@ module Ammitto
       class Entity < Lutaml::Model::Serializable
         attribute :type, :string
         attribute :unique_identifier, :string
-        attribute :name, :string  # Stored in first_name column as "Name of Asset"
+        attribute :name, :string # Stored in first_name column as "Name of Asset"
         attribute :name_of_service, :string
         attribute :alias_alternate_spellings, :string
         attribute :address, :string
@@ -24,6 +24,25 @@ module Ammitto
         attribute :service_prohibition, :string
         attribute :dealing_with_securities, :string
         attribute :general_rationale_for_sanction, :string
+
+        yaml do
+          map 'type', to: :type
+          map 'unique_identifier', to: :unique_identifier
+          map 'name', to: :name
+          map 'name_of_service', to: :name_of_service
+          map 'alias_alternate_spellings', to: :alias_alternate_spellings
+          map 'address', to: :address
+          map 'sanction_status', to: :sanction_status
+          map 'date_of_sanction', to: :date_of_sanction
+          map 'date_of_additional_sanction', to: :date_of_additional_sanction
+          map 'travel_ban', to: :travel_ban
+          map 'asset_freeze', to: :asset_freeze
+          map 'aircraft_ban', to: :aircraft_ban
+          map 'ship_ban', to: :ship_ban
+          map 'service_prohibition', to: :service_prohibition
+          map 'dealing_with_securities', to: :dealing_with_securities
+          map 'general_rationale_for_sanction', to: :general_rationale_for_sanction
+        end
 
         # Create Entity from row data hash
         # @param data [Hash] row data

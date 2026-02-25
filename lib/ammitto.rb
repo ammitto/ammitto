@@ -73,6 +73,9 @@ require_relative 'ammitto/client/api_client'
 require_relative 'ammitto/client/cache'
 require_relative 'ammitto/client/cache_manager'
 
+# Data repository
+require_relative 'ammitto/data/repository'
+
 # Search
 require_relative 'ammitto/search/query_builder'
 require_relative 'ammitto/search/result_set'
@@ -96,6 +99,13 @@ require_relative 'ammitto/exporter/json_ld_export'
 
 module Ammitto
   class << self
+    # Get the gem installation directory
+    #
+    # @return [String] the path to the gem installation directory
+    def gem_dir
+      @gem_dir ||= File.expand_path('..', __dir__)
+    end
+
     # Search for sanctioned entities
     #
     # @param term [String] the search term
@@ -139,6 +149,23 @@ module Ammitto
     # @return [Schema::Context] the schema context
     def schema
       Schema::Context
+    end
+
+    # Get the data repository
+    #
+    # @param options [Hash] repository options
+    # @option options [String] :local_path Local path for the repository
+    # @option options [String] :remote_url Remote URL for the repository
+    # @option options [Boolean] :verbose Enable verbose output
+    # @return [Ammitto::Data::Repository] the repository instance
+    def data_repository(options = {})
+      @data_repository ||= {}
+      key = options.hash
+      @data_repository[key] ||= Data::Repository.new(
+        local_path: options[:local_path] || configuration.data_repository,
+        remote_url: options[:remote_url],
+        verbose: options[:verbose] || configuration.verbose
+      )
     end
   end
 end

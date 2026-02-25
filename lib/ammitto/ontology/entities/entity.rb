@@ -32,12 +32,12 @@ module Ammitto
         attribute :entity_type, :string
 
         # Source references (which data sources mention this entity)
-        # @return [Array<Hash>, nil]
-        attribute :source_references, :hash, collection: true
+        # @return [Array<SourceReference>, nil]
+        attribute :source_references, ValueObjects::SourceReference, collection: true
 
         # Linked entities (relationships to other entities)
-        # @return [Array<Hash>, nil]
-        attribute :linked_entities, :hash, collection: true
+        # @return [Array<EntityLink>, nil]
+        attribute :linked_entities, ValueObjects::EntityLink, collection: true
 
         # Same-as links (same entity in other databases)
         # @return [Array<String>, nil]
@@ -104,8 +104,8 @@ module Ammitto
         # @return [Hash]
         def to_hash
           hash = { id: id, entity_type: entity_type }
-          hash[:source_references] = source_references if source_references&.any?
-          hash[:linked_entities] = linked_entities if linked_entities&.any?
+          hash[:source_references] = source_references.map(&:to_hash) if source_references&.any?
+          hash[:linked_entities] = linked_entities.map(&:to_hash) if linked_entities&.any?
           hash[:same_as] = same_as if same_as&.any?
           hash[:remarks] = remarks if remarks
           hash

@@ -38,6 +38,25 @@ module Ammitto
         attribute :country, :string
         attribute :industry, :string
 
+        yaml do
+          map 'russian_name', to: :russian_name
+          map 'english_name', to: :english_name
+          map 'entity_type', to: :entity_type
+          map 'list_type', to: :list_type
+          map 'announcement_number', to: :announcement_number
+          map 'announcement_date', to: :announcement_date
+          map 'effective_date', to: :effective_date
+          map 'reason', to: :reason
+          map 'measures', to: :measures
+          map 'source_url', to: :source_url
+          map 'date_of_birth', to: :date_of_birth
+          map 'nationality', to: :nationality
+          map 'title', to: :title
+          map 'affiliation', to: :affiliation
+          map 'country', to: :country
+          map 'industry', to: :industry
+        end
+
         def full_name
           english_name || russian_name
         end

@@ -12,93 +12,107 @@ module Ammitto
           super(:ch)
         end
 
-        def transform_individual(individual)
-          entity = create_person_entity(individual)
-          entry = create_entry(individual, entity.id)
-
-          entity.add_sanction_entry(entry)
-
-          { entity: entity, entry: entry }
-        end
-
-        def transform_entity(entity_obj)
-          entity = create_organization_entity(entity_obj)
-          entry = create_entry(entity_obj, entity.id)
-
-          entity.add_sanction_entry(entry)
-
-          { entity: entity, entry: entry }
-        end
-
-        def transform(source)
-          case source
-          when Ammitto::Sources::Ch::Individual
-            transform_individual(source)
-          when Ammitto::Sources::Ch::Entity
-            transform_entity(source)
+        # Transform a CH Target to ontology models
+        # @param target [Ammitto::Sources::Ch::Target]
+        # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        def transform(target)
+          if target.individual
+            transform_individual(target)
+          elsif target.entity
+            transform_entity(target)
           else
-            raise ArgumentError, "Unknown source type: #{source.class}"
+            # Minimal data - create entity directly
+            transform_from_minimal(target)
           end
         end
 
         private
 
-        def create_person_entity(individual)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(individual.id.to_s),
+        def transform_individual(target)
+          individual = target.individual
+          identity = individual.identity
+
+          entity = Ammitto::PersonEntity.new(
+            id: generate_entity_id(target.ssid),
             entity_type: 'person',
-            names: transform_names(individual),
-            addresses: transform_addresses(individual.addresses),
-            birth_info: [create_birth_info(date: parse_date(individual.date_of_birth))],
-            identifications: transform_identifications(individual.identifications),
-            remarks: individual.sanctions_program
+            names: transform_names_from_identity(identity),
+            birth_info: transform_birth_info(identity),
+            remarks: individual.justification
           )
+
+          entry = create_entry(target, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
         end
 
-        def create_organization_entity(entity_obj)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(entity_obj.id.to_s),
+        def transform_entity(target)
+          entity_obj = target.entity
+          identity = entity_obj.identity
+
+          entity = Ammitto::OrganizationEntity.new(
+            id: generate_entity_id(target.ssid),
             entity_type: 'organization',
-            names: [create_name_variant(full_name: entity_obj.name, is_primary: true)],
-            addresses: transform_addresses(entity_obj.addresses),
-            remarks: entity_obj.sanctions_program
+            names: transform_names_from_identity(identity),
+            remarks: entity_obj.justification
           )
+
+          entry = create_entry(target, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
         end
 
-        def create_entry(source, entity_id)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(source.id.to_s),
-            entity_id: entity_id,
-            authority: authority,
-            regime: create_regime(code: 'CH_SECO', name: source.sanctions_program || 'Switzerland Sanctions'),
-            effects: [create_effect(effect_type: 'asset_freeze', scope: 'full')],
-            status: 'active',
-            reference_number: source.id.to_s,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: { 'ch:program' => source.sanctions_program }
-            )
+        def transform_from_minimal(target)
+          entity = Ammitto::OrganizationEntity.new(
+            id: generate_entity_id(target.ssid),
+            entity_type: 'organization',
+            names: [create_name_variant(full_name: "Entity #{target.ssid}", is_primary: true)],
+            remarks: "Sanctions Set ID: #{target.sanctions_set_id}"
           )
+
+          entry = create_entry(target, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
         end
 
-        def transform_names(individual)
-          names = [create_name_variant(full_name: individual.full_name, is_primary: true)]
-          individual.alias_names.each do |a|
-            names << create_name_variant(full_name: a.name, is_primary: false)
-          end
+        def transform_names_from_identity(identity)
+          names = []
+
+          full_name = identity&.full_name
+          names << create_name_variant(full_name: full_name, is_primary: true) if full_name && !full_name.empty?
+
           names
         end
 
-        def transform_addresses(addresses)
-          addresses.map do |a|
-            create_address(street: a.street, city: a.city, country: a.country, postal_code: a.postal_code)
-          end
+        def transform_birth_info(identity)
+          return [] unless identity&.day_month_year
+
+          dmy = identity.day_month_year
+          return [] unless dmy.year
+
+          date_str = dmy.to_iso_date
+          [create_birth_info(date: parse_date(date_str))]
         end
 
-        def transform_identifications(ids)
-          ids.map do |i|
-            create_identification(type: i.type, number: i.number, issuing_country: i.country)
-          end
+        def create_entry(target, entity_id)
+          Ammitto::SanctionEntry.new(
+            id: generate_entry_id(target.ssid),
+            entity_id: entity_id,
+            authority: authority,
+            regime: create_regime(code: 'CH_SECO', name: 'Switzerland SECO Sanctions'),
+            effects: [create_effect(effect_type: 'asset_freeze', scope: 'full')],
+            status: 'active',
+            reference_number: target.ssid,
+            raw_source_data: create_raw_source_data(
+              source_format: 'xml',
+              source_specific_fields: {
+                'ch:ssid' => target.ssid,
+                'ch:sanctions_set_id' => target.sanctions_set_id
+              }
+            )
+          )
         end
       end
     end

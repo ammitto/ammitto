@@ -5,27 +5,71 @@ require 'lutaml/model'
 module Ammitto
   module Sources
     module UnVessels
+      # Simple name variant for YAML deserialization
+      class NameVariant < Lutaml::Model::Serializable
+        attribute :full_name, :string
+        attribute :is_primary, :boolean, default: false
+
+        yaml do
+          map 'full_name', to: :full_name
+          map 'is_primary', to: :is_primary
+        end
+
+        def to_hash
+          { 'full_name' => full_name, 'is_primary' => is_primary }
+        end
+      end
+
       # Vessel represents a sanctioned vessel in the UN Designated Vessels List
       #
       class Vessel < Lutaml::Model::Serializable
-        attribute :vessel_name, :string
+        attribute :id, :string
+        attribute :entity_type, :string
+        attribute :names, NameVariant, collection: true
         attribute :imo_number, :string
         attribute :flag_state, :string
-        attribute :previous_names, :string, collection: true
         attribute :tonnage, :integer
         attribute :build_year, :integer
         attribute :designation_date, :date
         attribute :resolution, :string
+
+        # YAML mapping for actual YAML structure
+        yaml do
+          map 'id', to: :id
+          map 'entity_type', to: :entity_type
+          map 'names', to: :names
+          map 'imo_number', to: :imo_number
+          map 'flag_state', to: :flag_state
+          map 'tonnage', to: :tonnage
+          map 'build_year', to: :build_year
+          map 'date_designated', to: :designation_date
+          map 'resolution', to: :resolution
+        end
+
+        # Get vessel name from names array (primary name or first name)
+        # @return [String, nil]
+        def vessel_name
+          primary = names&.find(&:is_primary)
+          primary&.full_name || names&.first&.full_name
+        end
+
+        # Get previous names from names array (non-primary names)
+        # @return [Array<String>]
+        def previous_names
+          return [] if names.nil? || names.empty?
+
+          names.reject(&:is_primary).map(&:full_name).compact
+        end
 
         # Create Vessel from row data hash
         # @param data [Hash] row data
         # @return [Vessel]
         def self.from_hash(data)
           vessel = new
-          vessel.vessel_name = data['vessel_name']
+          vessel.id = data['id']
+          vessel.entity_type = data['entity_type']
           vessel.imo_number = data['imo_number']&.to_s
           vessel.flag_state = data['flag_state']
-          vessel.previous_names = Array(data['previous_names'])
           vessel.tonnage = data['tonnage']&.to_i
           vessel.build_year = data['build_year']&.to_i
           vessel.designation_date = parse_date(data['designation_date'])
@@ -58,13 +102,14 @@ module Ammitto
         # Convert to hash for YAML serialization
         def to_hash
           {
-            'vessel_name' => vessel_name,
+            'id' => id,
+            'entity_type' => entity_type,
+            'names' => names&.map(&:to_hash),
             'imo_number' => imo_number,
             'flag_state' => flag_state,
-            'previous_names' => previous_names,
             'tonnage' => tonnage,
             'build_year' => build_year,
-            'designation_date' => designation_date&.iso8601,
+            'date_designated' => designation_date&.iso8601,
             'resolution' => resolution
           }.compact
         end

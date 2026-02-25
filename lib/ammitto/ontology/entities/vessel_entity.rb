@@ -16,7 +16,7 @@ module Ammitto
       #     name: "Andaman Skies",
       #     imo_number: "9288693",
       #     flag_state: "DPRK",
-      #     tonnage: 5000,
+      #     tonnage: ValueObjects::Tonnage.new(gt: 5000, dwt: 8000),
       #     build_year: 2004
       #   )
       #
@@ -53,11 +53,17 @@ module Ammitto
         # @return [String, nil]
         attribute :vessel_type, :string
 
-        # Gross tonnage
-        # @return [Integer, nil]
-        attribute :tonnage, :integer
+        # Tonnage measurements (GT, DWT, NT, GRT)
+        # @return [ValueObjects::Tonnage, nil]
+        attribute :tonnage, ValueObjects::Tonnage
 
-        # Deadweight tonnage
+        # Gross tonnage (legacy - use tonnage.gt instead)
+        # @deprecated Use tonnage.gt instead
+        # @return [Integer, nil]
+        attribute :gross_tonnage, :integer
+
+        # Deadweight tonnage (legacy - use tonnage.dwt instead)
+        # @deprecated Use tonnage.dwt instead
         # @return [Integer, nil]
         attribute :deadweight, :integer
 
@@ -115,6 +121,18 @@ module Ammitto
           parts.join(" / ")
         end
 
+        # Get gross tonnage (from tonnage object or legacy attribute)
+        # @return [Integer, nil]
+        def gross_tonnage_value
+          tonnage&.gt || gross_tonnage
+        end
+
+        # Get deadweight tonnage (from tonnage object or legacy attribute)
+        # @return [Integer, nil]
+        def deadweight_value
+          tonnage&.dwt || deadweight
+        end
+
         # Convert to hash for JSON-LD serialization
         # @return [Hash]
         def to_hash
@@ -127,8 +145,7 @@ module Ammitto
           hash[:flag_state] = flag_state if flag_state
           hash[:previous_flags] = previous_flags if previous_flags&.any?
           hash[:vessel_type] = vessel_type if vessel_type
-          hash[:tonnage] = tonnage if tonnage
-          hash[:deadweight] = deadweight if deadweight
+          hash[:tonnage] = tonnage.to_hash if tonnage&.present?
           hash[:build_year] = build_year if build_year
           hash[:builder] = builder if builder
           hash[:port_of_registry] = port_of_registry if port_of_registry
@@ -151,6 +168,7 @@ module Ammitto
           map :previous_flags, to: :previous_flags
           map :vessel_type, to: :vessel_type
           map :tonnage, to: :tonnage
+          map :gross_tonnage, to: :gross_tonnage
           map :deadweight, to: :deadweight
           map :build_year, to: :build_year
           map :builder, to: :builder
@@ -176,6 +194,7 @@ module Ammitto
           map :previous_flags, to: :previous_flags
           map :vessel_type, to: :vessel_type
           map :tonnage, to: :tonnage
+          map :gross_tonnage, to: :gross_tonnage
           map :deadweight, to: :deadweight
           map :build_year, to: :build_year
           map :builder, to: :builder

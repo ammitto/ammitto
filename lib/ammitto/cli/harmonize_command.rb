@@ -113,7 +113,7 @@ module Ammitto
             result = transform_data(source, data)
             entities << result[:entity] if result[:entity]
             entries << result[:entry] if result[:entry]
-          rescue => e
+          rescue StandardError => e
             puts "[#{source}] Error processing #{File.basename(file)}: #{e.message}" if options[:verbose]
           end
         end
@@ -143,14 +143,23 @@ module Ammitto
           return options[:input_dir] if Dir.exist?(options[:input_dir])
         end
 
-        # Check sources_dir
+        # Check sources_dir - try both underscore and hyphen naming
         if options[:sources_dir]
-          # First check for processed/ directory
+          # Try underscore version first (eu_vessels -> data-eu_vessels)
           processed_path = File.join(options[:sources_dir], "data-#{source}", 'processed')
+          return processed_path if Dir.exist?(processed_path)
+
+          # Try hyphen version (eu_vessels -> data-eu-vessels)
+          hyphen_source = source.to_s.gsub('_', '-')
+          processed_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'processed')
           return processed_path if Dir.exist?(processed_path)
 
           # Then check for raw/{date} directory
           source_path = File.join(options[:sources_dir], "data-#{source}", 'raw')
+          return find_latest_subdir(source_path) if Dir.exist?(source_path)
+
+          # Try hyphen version for raw
+          source_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'raw')
           return find_latest_subdir(source_path) if Dir.exist?(source_path)
         end
 
@@ -347,14 +356,10 @@ module Ammitto
       def transform_ca(transformer, data)
         require_relative '../sources/ca/sanctions_list'
 
-        # Check if individual or entity
-        if data.key?('first_name') || data.key?('date_of_birth')
-          source = Ammitto::Sources::Ca::Individual.from_yaml(data.to_yaml)
-          result = transformer.transform_individual(source)
-        else
-          source = Ammitto::Sources::Ca::Entity.from_yaml(data.to_yaml)
-          result = transformer.transform_entity(source)
-        end
+        # Use Record class - it handles both individuals and entities
+        # The YAML has given_name, not first_name
+        source = Ammitto::Sources::Ca::Record.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
 
         {
           entity: entity_to_hash(result[:entity]),
@@ -369,14 +374,9 @@ module Ammitto
       def transform_ch(transformer, data)
         require_relative '../sources/ch/sanctions_list'
 
-        # Check if individual or entity
-        if data.key?('full_name') && data.key?('alias_names')
-          source = Ammitto::Sources::Ch::Individual.from_yaml(data.to_yaml)
-          result = transformer.transform_individual(source)
-        else
-          source = Ammitto::Sources::Ch::Entity.from_yaml(data.to_yaml)
-          result = transformer.transform_entity(source)
-        end
+        # Parse as Target which contains individual or entity
+        source = Ammitto::Sources::Ch::Target.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
 
         {
           entity: entity_to_hash(result[:entity]),
@@ -424,14 +424,14 @@ module Ammitto
         require_relative '../sources/nz/sanctions_list'
 
         # Determine type
-        case data['type']
-        when 'Individual'
-          source = Ammitto::Sources::Nz::Individual.from_yaml(data.to_yaml)
-        when 'Ship'
-          source = Ammitto::Sources::Nz::Ship.from_yaml(data.to_yaml)
-        else
-          source = Ammitto::Sources::Nz::Entity.from_yaml(data.to_yaml)
-        end
+        source = case data['type']
+                 when 'Individual'
+                   Ammitto::Sources::Nz::Individual.from_yaml(data.to_yaml)
+                 when 'Ship'
+                   Ammitto::Sources::Nz::Ship.from_yaml(data.to_yaml)
+                 else
+                   Ammitto::Sources::Nz::Entity.from_yaml(data.to_yaml)
+                 end
         result = transformer.transform(source)
 
         {
@@ -513,7 +513,7 @@ module Ammitto
         begin
           hash = entity.respond_to?(:to_hash) ? entity.to_hash : entity.to_h
           compact_hash(hash)
-        rescue => e
+        rescue StandardError => e
           puts "Error converting entity to hash: #{e.message}" if options[:verbose]
           {}
         end
@@ -528,7 +528,7 @@ module Ammitto
         begin
           hash = entry.respond_to?(:to_hash) ? entry.to_hash : entry.to_h
           compact_hash(hash)
-        rescue => e
+        rescue StandardError => e
           puts "Error converting entry to hash: #{e.message}" if options[:verbose]
           {}
         end
@@ -583,8 +583,14 @@ module Ammitto
       def create_combined_output
         output_dir = options[:output_dir] || './api/v1'
         all_file = File.join(output_dir, 'all.jsonld')
+        stats_file = File.join(output_dir, 'stats.json')
 
         all_graph = []
+        stats = {
+          generated_at: Time.now.utc.iso8601,
+          sources: {},
+          total_entities: 0
+        }
 
         @sources.each do |source|
           source_file = File.join(output_dir, 'sources', "#{source}.jsonld")
@@ -592,6 +598,14 @@ module Ammitto
 
           data = JSON.parse(File.read(source_file))
           graph = data['@graph'] || []
+          entity_count = graph.count { |item| item['@type'] != 'SanctionEntry' }
+
+          stats[:sources][source.to_s] = {
+            entities: entity_count,
+            file: "sources/#{source}.jsonld"
+          }
+          stats[:total_entities] += entity_count
+
           all_graph.concat(graph)
         end
 
@@ -603,7 +617,9 @@ module Ammitto
         }
 
         File.write(all_file, JSON.pretty_generate(output))
+        File.write(stats_file, JSON.pretty_generate(stats))
         puts "[all] Combined output written to #{all_file}" if options[:verbose]
+        puts "[stats] Statistics written to #{stats_file}" if options[:verbose]
       end
 
       # Get cache directory

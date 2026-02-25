@@ -205,12 +205,14 @@ module Ammitto
           end
 
           # Aliases
-          individual.aliases.each do |alias_obj|
-            names << create_name_variant(
-              full_name: alias_obj.alias_name,
-              is_primary: false,
-              script: detect_script(alias_obj.alias_name)
-            )
+          if individual.aliases
+            individual.aliases.each do |alias_obj|
+              names << create_name_variant(
+                full_name: alias_obj.alias_name,
+                is_primary: false,
+                script: detect_script(alias_obj.alias_name)
+              )
+            end
           end
 
           names
@@ -232,21 +234,25 @@ module Ammitto
           end
 
           # Aliases
-          entity.aliases.each do |alias_obj|
-            names << create_name_variant(
-              full_name: alias_obj.alias_name,
-              is_primary: false,
-              script: detect_script(alias_obj.alias_name)
-            )
+          if entity.aliases
+            entity.aliases.each do |alias_obj|
+              names << create_name_variant(
+                full_name: alias_obj.alias_name,
+                is_primary: false,
+                script: detect_script(alias_obj.alias_name)
+              )
+            end
           end
 
           names
         end
 
         # Transform UN individual addresses to Address objects
-        # @param addresses [Array<Ammitto::Sources::Un::IndividualAddress>]
+        # @param addresses [Array<Ammitto::Sources::Un::IndividualAddress>, nil]
         # @return [Array<Address>]
         def transform_individual_addresses(addresses)
+          return [] if addresses.nil?
+
           addresses.map do |addr|
             create_address(
               street: addr.street,
@@ -258,9 +264,11 @@ module Ammitto
         end
 
         # Transform UN entity addresses to Address objects
-        # @param addresses [Array<Ammitto::Sources::Un::EntityAddress>]
+        # @param addresses [Array<Ammitto::Sources::Un::EntityAddress>, nil]
         # @return [Array<Address>]
         def transform_entity_addresses(addresses)
+          return [] if addresses.nil?
+
           addresses.map do |addr|
             create_address(
               street: addr.street,
@@ -302,9 +310,11 @@ module Ammitto
         end
 
         # Transform UN documents to Identification objects
-        # @param documents [Array<Ammitto::Sources::Un::IndividualDocument>]
+        # @param documents [Array<Ammitto::Sources::Un::IndividualDocument>, nil]
         # @return [Array<Identification>]
         def transform_documents(documents)
+          return [] if documents.nil?
+
           documents.map do |doc|
             create_identification(
               type: normalize_doc_type(doc.type_of_document),

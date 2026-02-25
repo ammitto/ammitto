@@ -26,15 +26,20 @@ module Ammitto
     attribute :title, :string          # Mr., Dr., Prof., etc.
     attribute :function, :string       # Role or position
 
-    # JSON mapping
+    # JSON mapping - supports both snake_case (harmonized) and camelCase (legacy)
     json do
-      map 'fullName', to: :full_name
-      map 'firstName', to: :first_name
-      map 'middleName', to: :middle_name
-      map 'lastName', to: :last_name
+      map 'full_name', to: :full_name
+      map 'fullName', to: :full_name  # backward compatibility
+      map 'first_name', to: :first_name
+      map 'firstName', to: :first_name  # backward compatibility
+      map 'middle_name', to: :middle_name
+      map 'middleName', to: :middle_name  # backward compatibility
+      map 'last_name', to: :last_name
+      map 'lastName', to: :last_name  # backward compatibility
       map 'script', to: :script
       map 'language', to: :language
-      map 'isPrimary', to: :is_primary
+      map 'is_primary', to: :is_primary
+      map 'isPrimary', to: :is_primary  # backward compatibility
       map 'title', to: :title
       map 'function', to: :function
     end

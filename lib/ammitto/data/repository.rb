@@ -11,12 +11,17 @@ module Ammitto
     # The data repository contains harmonized JSON-LD data for all sources.
     # It can be configured via AMMITTO_DATA_REPOSITORY environment variable.
     #
+    # Supports both local paths and git URLs:
+    # - Local path: /path/to/data or ./data
+    # - Git URL: https://github.com/ammitto/data.git or git@github.com:ammitto/data.git
+    #
     # @example Clone the data repository
     #   repo = Ammitto::Data::Repository.new
     #   repo.clone
     #
-    # @example Pull updates
-    #   repo.pull
+    # @example Use a git URL
+    #   repo = Ammitto::Data::Repository.new(local_path: 'https://github.com/ammitto/data.git')
+    #   repo.ensure_available  # Auto-clones to ~/.ammitto/data
     #
     # @example Query entities
     #   entities = repo.query(name: "Smith")
@@ -24,6 +29,12 @@ module Ammitto
     class Repository
       # Default remote URL for the data repository
       DEFAULT_REMOTE_URL = 'https://github.com/ammitto/data.git'
+
+      # Default local cache directory
+      DEFAULT_LOCAL_PATH = File.expand_path('~/.ammitto/data')
+
+      # URL patterns for detecting git URLs
+      URL_PATTERN = /\A(?:https?|git):\/\/|git@/
 
       # @return [String] Local path for the repository
       attr_reader :local_path
@@ -36,20 +47,29 @@ module Ammitto
 
       # Initialize a new Repository
       #
-      # @param local_path [String] Local path for the repository (default: from env or ~/.ammitto/data)
-      # @param remote_url [String] Remote URL for the repository
+      # @param local_path [String] Local path or git URL for the repository
+      # @param remote_url [String] Remote URL for the repository (optional)
       # @param verbose [Boolean] Enable verbose output
       def initialize(local_path: nil, remote_url: nil, verbose: false)
-        @local_path = local_path || default_local_path
-        @remote_url = remote_url || DEFAULT_REMOTE_URL
         @verbose = verbose
+
+        # Parse local_path - it might be a URL
+        path = local_path || default_path_from_env
+        if url?(path)
+          @remote_url = path
+          @local_path = DEFAULT_LOCAL_PATH
+        else
+          @local_path = path || DEFAULT_LOCAL_PATH
+          @remote_url = remote_url || DEFAULT_REMOTE_URL
+        end
       end
 
       # Check if the repository is cloned
       #
       # @return [Boolean]
       def cloned?
-        File.directory?(File.join(local_path, '.git'))
+        File.directory?(File.join(local_path, '.git')) ||
+          File.exist?(File.join(local_path, 'api', 'v1', 'stats.json'))
       end
 
       # Clone the data repository
@@ -58,7 +78,7 @@ module Ammitto
       # @return [Boolean] true if clone succeeded
       def clone(force: false)
         if cloned? && !force
-          log("Repository already cloned at #{local_path}")
+          log("Repository already available at #{local_path}")
           return true
         end
 
@@ -70,7 +90,7 @@ module Ammitto
         FileUtils.mkdir_p(File.dirname(local_path))
 
         log("Cloning #{remote_url} to #{local_path}")
-        success, output = run_git('clone', '--depth', '1', remote_url, local_path)
+        success, output = run_git_command('clone', '--depth', '1', remote_url, local_path)
 
         unless success
           raise Ammitto::Error, "Failed to clone repository: #{output}"
@@ -84,12 +104,12 @@ module Ammitto
       #
       # @return [Boolean] true if pull succeeded
       def pull
-        unless cloned?
-          raise Ammitto::Error, "Repository not cloned. Run clone first."
+        unless File.directory?(File.join(local_path, '.git'))
+          raise Ammitto::Error, "Repository not a git repository. Cannot pull."
         end
 
         log("Pulling updates from #{remote_url}")
-        success, output = run_git('pull', '--ff-only')
+        success, output = run_git_command('-C', local_path, 'pull', '--ff-only')
 
         unless success
           raise Ammitto::Error, "Failed to pull updates: #{output}"
@@ -224,31 +244,39 @@ module Ammitto
       # @param pull [Boolean] Whether to pull updates
       # @return [Boolean]
       def ensure_available(pull: false)
-        clone unless cloned?
-        self.pull if pull && cloned?
+        return true if cloned?
+
+        clone
+        self.pull if pull
         true
       end
 
       private
 
-      # Default local path for the repository
+      # Get default path from environment variable
       #
-      # @return [String]
-      def default_local_path
-        # Check AMMITTO_DATA_REPOSITORY env variable
+      # @return [String, nil]
+      def default_path_from_env
         env_path = ENV['AMMITTO_DATA_REPOSITORY']
-        return env_path if env_path && !env_path.empty?
+        return nil if env_path.nil? || env_path.empty?
 
-        # Default to ~/.ammitto/data
-        File.expand_path('~/.ammitto/data')
+        env_path
+      end
+
+      # Check if a path is a URL
+      #
+      # @param path [String] Path to check
+      # @return [Boolean]
+      def url?(path)
+        path.to_s.match?(URL_PATTERN)
       end
 
       # Run a git command
       #
       # @param args [Array<String>] Git arguments
       # @return [Array<Boolean, String>] Success status and output
-      def run_git(*args)
-        cmd = ['git', '-C', local_path] + args
+      def run_git_command(*args)
+        cmd = ['git'] + args
         log("Running: #{cmd.join(' ')}")
 
         output, status = Open3.capture2e(*cmd)

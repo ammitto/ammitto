@@ -28,9 +28,12 @@ module Ammitto
       map 'city', to: :city
       map 'state', to: :state
       map 'country', to: :country
-      map 'countryIsoCode', to: :country_iso_code
-      map 'postalCode', to: :postal_code
-      map 'poBox', to: :po_box
+      map 'country_iso_code', to: :country_iso_code
+      map 'countryIsoCode', to: :country_iso_code  # backward compatibility
+      map 'postal_code', to: :postal_code
+      map 'postalCode', to: :postal_code  # backward compatibility
+      map 'po_box', to: :po_box
+      map 'poBox', to: :po_box  # backward compatibility
     end
 
     # @return [String] formatted single-line address

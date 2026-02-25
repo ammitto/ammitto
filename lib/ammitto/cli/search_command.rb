@@ -132,13 +132,10 @@ module Ammitto
       # @param index [Integer] result index
       # @return [void]
       def print_result(result, index)
-        puts "#{index}. #{result.primary_name}"
-        puts "   Source: #{result.source.upcase}"
-        puts "   Type: #{result.entity_type}"
-        puts "   ID: #{result.id}"
-        if result.country
-          puts "   Country: #{result.country}"
-        end
+        puts "=" * 60
+        puts "##{index} #{result.primary_name}"
+        puts "=" * 60
+        puts JSON.pretty_generate(result.to_h)
         puts
       end
 
@@ -185,16 +182,11 @@ module Ammitto
           addresses.first&.dig('country')
         end
 
-        # Convert to hash
+        # Convert to hash - returns full entity data
         # @return [Hash]
         def to_h
-          {
-            id: id,
-            name: primary_name,
-            type: entity_type,
-            source: source.to_s.upcase,
-            country: country
-          }.compact
+          # Return the full entity data with source added
+          data.merge('source' => source.to_s.upcase)
         end
       end
     end

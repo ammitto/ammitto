@@ -46,12 +46,10 @@ module Ammitto
           announcements = []
 
           links.first(5).each do |link_info| # Limit for testing
-            begin
-              announcement = fetch_and_parse_announcement(link_info[:url])
-              announcements << announcement if announcement
-            rescue StandardError => e
-              puts "[MidPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
-            end
+            announcement = fetch_and_parse_announcement(link_info[:url])
+            announcements << announcement if announcement
+          rescue StandardError => e
+            puts "[MidPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
           end
 
           announcements
@@ -95,7 +93,7 @@ module Ammitto
         # @param text [String]
         # @param href [String]
         # @return [Boolean]
-        def sanctions_link?(text, href)
+        def sanctions_link?(text, _href)
           text.include?('санкци') ||
             text.include?('стоп-лист') ||
             text.include?('персональн') ||
@@ -108,7 +106,7 @@ module Ammitto
         # @return [String, nil]
         def extract_date_from_url(url)
           # Look for date patterns in URL
-          match = url.match(/(\d{4})[-_\/](\d{2})[-_\/](\d{2})/)
+          match = url.match(%r{(\d{4})[-_/](\d{2})[-_/](\d{2})})
           return "#{match[1]}-#{match[2]}-#{match[3]}" if match
 
           # Match /web/guest/2024-01-15 pattern
@@ -199,7 +197,7 @@ module Ammitto
         # @return [String, nil]
         def extract_announcement_number(text)
           # Look for number patterns
-          match = text.match(/№\s*(\d+[\/\-]?\d*)/)
+          match = text.match(%r{№\s*(\d+[/-]?\d*)})
           return "№#{match[1]}" if match
 
           nil
@@ -272,19 +270,19 @@ module Ammitto
             # Pattern 3: Russian name only with title
             # "1. Иванов Иван Иванович, директор..."
             match = line.match(/^\s*(\d+)\.\s*(.+?),\s*(.+?)(?:\.|;|$)/)
-            if match
-              name = clean_russian_text(match[2])
-              # Check if it looks like a Russian name
-              if name.match?(/\p{Cyrillic}/) && name.split.length >= 2
-                entities << {
-                  index: match[1].to_i,
-                  russian_name: name,
-                  english_name: nil,
-                  title: clean_russian_text(match[3]),
-                  entity_type: current_entity_type
-                }
-              end
-            end
+            next unless match
+
+            name = clean_russian_text(match[2])
+            # Check if it looks like a Russian name
+            next unless name.match?(/\p{Cyrillic}/) && name.split.length >= 2
+
+            entities << {
+              index: match[1].to_i,
+              russian_name: name,
+              english_name: nil,
+              title: clean_russian_text(match[3]),
+              entity_type: current_entity_type
+            }
           end
 
           entities
@@ -306,11 +304,11 @@ module Ammitto
           measures = []
 
           measure_patterns = [
-            /запрет[^\.]+въезд/i,
-            /запрет[^\.]+въезда/i,
-            /запрещени[^\.]+въезд/i,
-            /замораживан[^\.]+актив/i,
-            /ограничен[^\.]+финансов/i
+            /запрет[^.]+въезд/i,
+            /запрет[^.]+въезда/i,
+            /запрещени[^.]+въезд/i,
+            /замораживан[^.]+актив/i,
+            /ограничен[^.]+финансов/i
           ]
 
           measure_patterns.each do |pattern|
@@ -327,10 +325,10 @@ module Ammitto
         # @return [String, nil]
         def extract_reason_from_text(text)
           # Look for reason patterns
-          match = text.match(/В\s+связи\s+с[^\.]+\./i)
+          match = text.match(/В\s+связи\s+с[^.]+\./i)
           return clean_russian_text(match[0]) if match
 
-          match = text.match(/в\s+ответ[^\.]+\./i)
+          match = text.match(/в\s+ответ[^.]+\./i)
           return clean_russian_text(match[0]) if match
 
           nil

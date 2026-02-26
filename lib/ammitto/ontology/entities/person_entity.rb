@@ -102,7 +102,8 @@ module Ammitto
         def place_of_birth
           bi = birth_info&.first
           return nil unless bi
-          [bi.city, bi.country].compact.join(", ")
+
+          [bi.city, bi.country].compact.join(', ')
         end
 
         # Get gender as normalized symbol

@@ -16,8 +16,8 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
 
   describe '#export' do
     before do
-    exporter.export(output_dir)
-  end
+      exporter.export(output_dir)
+    end
 
     it 'creates ontology directory' do
       expect(Dir.exist?(File.join(output_dir, 'ontology'))).to be true

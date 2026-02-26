@@ -69,23 +69,21 @@ module Ammitto
           errors = []
 
           # Fetch Unreliable Entity List
-          [:unreliable_entity, :export_control].each do |list_type|
-            begin
-              scraper = MofcomPage.new(list_type: list_type, options: options)
-              result = scraper.fetch_all_announcements
+          %i[unreliable_entity export_control].each do |list_type|
+            scraper = MofcomPage.new(list_type: list_type, options: options)
+            result = scraper.fetch_all_announcements
 
-              result.each do |announcement|
-                announcements << announcement
+            result.each do |announcement|
+              announcements << announcement
 
-                # Extract entities from announcement
-                (announcement[:entities] || []).each do |entity_data|
-                  entities << build_entity(entity_data, announcement)
-                end
+              # Extract entities from announcement
+              (announcement[:entities] || []).each do |entity_data|
+                entities << build_entity(entity_data, announcement)
               end
-            rescue StandardError => e
-              errors << { source: "mofcom_#{list_type}", error: e.message }
-              puts "[CnSanctionsScraper] MOFCOM #{list_type} error: #{e.message}" if verbose?
             end
+          rescue StandardError => e
+            errors << { source: "mofcom_#{list_type}", error: e.message }
+            puts "[CnSanctionsScraper] MOFCOM #{list_type} error: #{e.message}" if verbose?
           end
 
           { announcements: announcements, entities: entities, errors: errors }

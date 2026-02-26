@@ -40,7 +40,7 @@ module Ammitto
 
         unless repo.cloned?
           puts "Data repository not found. Run 'ammitto data clone' first."
-          puts "Or set AMMITTO_DATA_REPOSITORY environment variable."
+          puts 'Or set AMMITTO_DATA_REPOSITORY environment variable.'
           exit 1
         end
 
@@ -70,13 +70,11 @@ module Ammitto
       # Output entity data
       # @param entity [Hash] entity data
       def output_entity(entity)
-        if options[:format] == 'json'
-          puts JSON.pretty_generate(entity)
-        else
+        unless options[:format] == 'json'
           puts "Entity: #{id}"
           puts '=' * 60
-          puts JSON.pretty_generate(entity)
         end
+        puts JSON.pretty_generate(entity)
       end
     end
   end

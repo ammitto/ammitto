@@ -156,9 +156,7 @@ module Ammitto
         measures = []
 
         MEASURES.each do |chinese, english|
-          if content.include?(chinese)
-            measures << english
-          end
+          measures << english if content.include?(chinese)
         end
 
         measures
@@ -169,18 +167,10 @@ module Ammitto
       def extract_legal_basis
         bases = []
 
-        if content.include?('《中华人民共和国对外贸易法》')
-          bases << 'Foreign Trade Law of the PRC'
-        end
-        if content.include?('《中华人民共和国国家安全法》')
-          bases << 'National Security Law of the PRC'
-        end
-        if content.include?('《中华人民共和国反外国制裁法》')
-          bases << 'Anti-Foreign Sanctions Law of the PRC'
-        end
-        if content.include?('《不可靠实体清单规定》')
-          bases << 'Unreliable Entity List Provisions'
-        end
+        bases << 'Foreign Trade Law of the PRC' if content.include?('《中华人民共和国对外贸易法》')
+        bases << 'National Security Law of the PRC' if content.include?('《中华人民共和国国家安全法》')
+        bases << 'Anti-Foreign Sanctions Law of the PRC' if content.include?('《中华人民共和国反外国制裁法》')
+        bases << 'Unreliable Entity List Provisions' if content.include?('《不可靠实体清单规定》')
 
         bases
       end
@@ -192,10 +182,10 @@ module Ammitto
       def generate_id(english_name, index)
         # Create a slug from the English name
         slug = english_name
-                 .downcase
-                 .gsub(/[^a-z0-9]+/, '-')
-                 .gsub(/^-|-$/, '')
-                 .slice(0, 50)
+               .downcase
+               .gsub(/[^a-z0-9]+/, '-')
+               .gsub(/^-|-$/, '')
+               .slice(0, 50)
 
         "cn-#{slug}-#{index}"
       end

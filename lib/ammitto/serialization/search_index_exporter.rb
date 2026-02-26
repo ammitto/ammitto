@@ -220,9 +220,7 @@ module Ammitto
         end
 
         # Fall back to first name
-        if entity['names'].is_a?(Array) && entity['names'].first.is_a?(Hash)
-          return entity['names'].first['fullName']
-        end
+        return entity['names'].first['fullName'] if entity['names'].is_a?(Array) && entity['names'].first.is_a?(Hash)
 
         # Fall back to name field
         entity['name']
@@ -276,9 +274,7 @@ module Ammitto
         end
 
         # From birthDate
-        if entity['birthDate']
-          return entity['birthDate'][0, 4] if entity['birthDate'].length >= 4
-        end
+        return entity['birthDate'][0, 4] if entity['birthDate'] && (entity['birthDate'].length >= 4)
 
         nil
       end
@@ -307,9 +303,7 @@ module Ammitto
       # @param entry [Hash] entry data
       def update_facets(search_entity, regime_code, entry)
         # Authority
-        if search_entity[:authority]
-          @facets[:authorities][search_entity[:authority]] += 1
-        end
+        @facets[:authorities][search_entity[:authority]] += 1 if search_entity[:authority]
 
         # Regime
         if regime_code
@@ -318,19 +312,15 @@ module Ammitto
         end
 
         # Type
-        if search_entity[:type]
-          @facets[:types][search_entity[:type]] += 1
-        end
+        @facets[:types][search_entity[:type]] += 1 if search_entity[:type]
 
         # Country
-        if search_entity[:country]
-          @facets[:countries][search_entity[:country].upcase] += 1
-        end
+        @facets[:countries][search_entity[:country].upcase] += 1 if search_entity[:country]
 
         # Status
-        if search_entity[:status]
-          @facets[:statuses][search_entity[:status]] += 1
-        end
+        return unless search_entity[:status]
+
+        @facets[:statuses][search_entity[:status]] += 1
       end
 
       # Extract regime name from entry
@@ -338,6 +328,7 @@ module Ammitto
       # @return [String, nil] regime name
       def extract_regime_name(entry)
         return nil unless entry && entry['regime'].is_a?(Hash)
+
         entry['regime']['name']
       end
 

@@ -51,7 +51,7 @@ module Ammitto
         a: 'https://en.hmb.gov.tr/5madde_ing',  # Article 5 - UNSC resolutions
         b: 'https://en.hmb.gov.tr/6madde_ing',  # Article 6
         c: 'https://en.hmb.gov.tr/7madde_ing',  # Article 7
-        d: 'https://en.hmb.gov.tr/3a3b'        # Law 7262, Articles 3.A/3.B
+        d: 'https://en.hmb.gov.tr/3a3b' # Law 7262, Articles 3.A/3.B
       }.freeze
 
       # Country code (ISO 3166-1 alpha-2)

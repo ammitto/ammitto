@@ -57,25 +57,23 @@ module Ammitto
         begin
           timeout_seconds = 600 # 10 minutes
 
-          content = URI.open(
+          URI.open(
             api_endpoint,
             headers.merge(
               read_timeout: timeout_seconds,
               open_timeout: 120
             )
           ).read
-
-          content
         rescue Net::ReadTimeout, Net::OpenTimeout, EOFError, Errno::ECONNRESET => e
           retry_count += 1
-          if retry_count <= max_retries
-            wait_time = retry_count * 30
-            puts "[#{code}] Error: #{e.message}, retrying in #{wait_time}s (attempt #{retry_count}/#{max_retries})..." if verbose
-            sleep(wait_time)
-            retry
-          else
-            raise
+          raise unless retry_count <= max_retries
+
+          wait_time = retry_count * 30
+          if verbose
+            puts "[#{code}] Error: #{e.message}, retrying in #{wait_time}s (attempt #{retry_count}/#{max_retries})..."
           end
+          sleep(wait_time)
+          retry
         end
       end
 
@@ -88,7 +86,7 @@ module Ammitto
           File.join(base_dir, '..', 'data-ch', 'reference-docs', 'consolidated-list_2026-02-18.xml'),
           File.join(base_dir, '..', 'data-ch', 'reference-docs', 'consolidated-list.xml'),
           File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list_2026-02-18.xml'),
-          File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list.xml'),
+          File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list.xml')
         ]
 
         possible_paths.find { |path| File.exist?(path) }
@@ -248,7 +246,7 @@ module Ammitto
       # @param node [Nokogiri::XML::Element]
       # @param entity_type [String]
       # @return [Hash, nil]
-      def extract_entry(node, entity_type)
+      def extract_entry(node, _entity_type)
         id = node.at_xpath('Id')&.text
         return nil unless id
 

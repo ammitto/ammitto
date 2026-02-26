@@ -84,14 +84,10 @@ module Ammitto
           names = []
 
           # English name (primary)
-          if source.name
-            names << create_name_variant(full_name: source.name, is_primary: true, script: 'Latn')
-          end
+          names << create_name_variant(full_name: source.name, is_primary: true, script: 'Latn') if source.name
 
           # Japanese name
-          if source.name_ja
-            names << create_name_variant(full_name: source.name_ja, is_primary: false, script: 'Jpan')
-          end
+          names << create_name_variant(full_name: source.name_ja, is_primary: false, script: 'Jpan') if source.name_ja
 
           names
         end

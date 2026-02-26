@@ -192,7 +192,10 @@ module Ammitto
       # @param measures [Array<String>]
       # @return [Array<Hash>]
       def build_effects(measures)
-        return [{ '@type' => 'SanctionEffect', 'effectType' => 'sectoral_sanction', 'scope' => 'full' }] if measures.nil? || measures.empty?
+        if measures.nil? || measures.empty?
+          return [{ '@type' => 'SanctionEffect', 'effectType' => 'sectoral_sanction',
+                    'scope' => 'full' }]
+        end
 
         measures.map do |measure|
           {

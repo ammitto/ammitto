@@ -205,14 +205,12 @@ module Ammitto
           end
 
           # Aliases
-          if individual.aliases
-            individual.aliases.each do |alias_obj|
-              names << create_name_variant(
-                full_name: alias_obj.alias_name,
-                is_primary: false,
-                script: detect_script(alias_obj.alias_name)
-              )
-            end
+          individual.aliases&.each do |alias_obj|
+            names << create_name_variant(
+              full_name: alias_obj.alias_name,
+              is_primary: false,
+              script: detect_script(alias_obj.alias_name)
+            )
           end
 
           names
@@ -234,14 +232,12 @@ module Ammitto
           end
 
           # Aliases
-          if entity.aliases
-            entity.aliases.each do |alias_obj|
-              names << create_name_variant(
-                full_name: alias_obj.alias_name,
-                is_primary: false,
-                script: detect_script(alias_obj.alias_name)
-              )
-            end
+          entity.aliases&.each do |alias_obj|
+            names << create_name_variant(
+              full_name: alias_obj.alias_name,
+              is_primary: false,
+              script: detect_script(alias_obj.alias_name)
+            )
           end
 
           names

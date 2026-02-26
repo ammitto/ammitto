@@ -85,17 +85,15 @@ module Ammitto
 
           # Primary name
           primary = case source
-                   when Individual
-                     [source.first_name, source.middle_names, source.last_name].compact.join(' ')
-                   when Ship
-                     source.name
-                   else
-                     source.name
-                   end
+                    when Individual
+                      [source.first_name, source.middle_names, source.last_name].compact.join(' ')
+                    when Ship
+                      source.name
+                    else
+                      source.name
+                    end
 
-          if primary
-            names << create_name_variant(full_name: primary, is_primary: true)
-          end
+          names << create_name_variant(full_name: primary, is_primary: true) if primary
 
           names
         end
@@ -158,10 +156,8 @@ module Ammitto
         def map_status(status)
           case status&.downcase
           when 'sanctioned'
-            'active'
-          else
-            'active'
           end
+          'active'
         end
 
         # Build effects
@@ -170,21 +166,13 @@ module Ammitto
         def build_effects(source)
           effects = []
 
-          if source.travel_ban == 'Yes'
-            effects << create_effect(effect_type: 'travel_ban')
-          end
+          effects << create_effect(effect_type: 'travel_ban') if source.travel_ban == 'Yes'
 
-          if source.asset_freeze == 'Yes'
-            effects << create_effect(effect_type: 'asset_freeze')
-          end
+          effects << create_effect(effect_type: 'asset_freeze') if source.asset_freeze == 'Yes'
 
-          if source.ship_ban == 'Yes'
-            effects << create_effect(effect_type: 'vessel_ban')
-          end
+          effects << create_effect(effect_type: 'vessel_ban') if source.ship_ban == 'Yes'
 
-          if source.aircraft_ban == 'Yes'
-            effects << create_effect(effect_type: 'aircraft_ban')
-          end
+          effects << create_effect(effect_type: 'aircraft_ban') if source.aircraft_ban == 'Yes'
 
           effects
         end

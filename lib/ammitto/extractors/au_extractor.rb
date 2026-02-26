@@ -157,8 +157,11 @@ module Ammitto
 
         entity = {
           '@id' => entity_id,
-          '@type' => entity_type == 'person' ? 'PersonEntity' :
-                     entity_type == 'vessel' ? 'VesselEntity' : 'OrganizationEntity',
+          '@type' => if entity_type == 'person'
+                       'PersonEntity'
+                     else
+                       entity_type == 'vessel' ? 'VesselEntity' : 'OrganizationEntity'
+                     end,
           'entityType' => entity_type,
           'names' => build_names(rows),
           'sourceReferences' => [{
@@ -193,12 +196,12 @@ module Ammitto
           }
 
           # Detect script
-          case row[:name_type]
-          when 'Original Script'
-            name['script'] = detect_script(row[:name])
-          else
-            name['script'] = 'Latn'
-          end
+          name['script'] = case row[:name_type]
+                           when 'Original Script'
+                             detect_script(row[:name])
+                           else
+                             'Latn'
+                           end
 
           # Add alias info
           if row[:name_type] == 'Alias'
@@ -430,7 +433,7 @@ module Ammitto
         end
 
         # Try "2/2/26" format (M/D/YY)
-        match = date_str.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
+        match = date_str.match(%r{(\d{1,2})/(\d{1,2})/(\d{2,4})})
         if match
           month = match[1].rjust(2, '0')
           day = match[2].rjust(2, '0')

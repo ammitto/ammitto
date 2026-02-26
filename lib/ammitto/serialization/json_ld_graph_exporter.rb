@@ -132,9 +132,11 @@ module Ammitto
         export_stats
         copy_context_file
 
+        return unless ENV['VERBOSE']
+
         puts "Exported #{@entities.length} entities, #{@entries.length} entries, " \
              "#{@instruments.length} instruments, #{@regimes.length} regimes, " \
-             "#{@authorities.length} authorities" if ENV['VERBOSE']
+             "#{@authorities.length} authorities"
       end
 
       private
@@ -439,7 +441,7 @@ module Ammitto
 
         # Group entries by authority
         by_authority = {}
-        @entries.each do |_id, entry|
+        @entries.each_value do |entry|
           auth_ref = entry.dig('authority', '@id')
           next unless auth_ref
 
@@ -478,7 +480,7 @@ module Ammitto
 
         # Group entries by regime
         by_regime = {}
-        @entries.each do |_id, entry|
+        @entries.each_value do |entry|
           regime_ref = entry.dig('regime', '@id')
           next unless regime_ref
 
@@ -517,7 +519,7 @@ module Ammitto
 
         # Group entries by status
         by_status = {}
-        @entries.each do |_id, entry|
+        @entries.each_value do |entry|
           status = entry['status'] || 'unknown'
           by_status[status] ||= []
           by_status[status] << { '@id' => entry['@id'] || entry['id'] }
@@ -553,7 +555,7 @@ module Ammitto
 
         # Group entities by type
         by_type = {}
-        @entities.each do |_id, entity|
+        @entities.each_value do |entity|
           type = entity['entityType'] || entity['@type'] || 'unknown'
           type_key = type.to_s.downcase.gsub(/entity$/i, '').gsub(/[^a-z0-9]/, '')
           by_type[type_key] ||= []
@@ -596,7 +598,11 @@ module Ammitto
       # @return [String, nil] path to context file or nil
       def find_context_file_path
         # Try gem data directory
-        gem_root = Gem::Specification.find_by_name('ammitto').gem_dir rescue nil
+        gem_root = begin
+          Gem::Specification.find_by_name('ammitto').gem_dir
+        rescue StandardError
+          nil
+        end
         if gem_root
           context_path = File.join(gem_root, 'data', 'ontology', 'context.jsonld')
           return context_path if File.exist?(context_path)
@@ -619,7 +625,7 @@ module Ammitto
       def group_by_source(nodes)
         result = {}
 
-        nodes.each do |id, _node|
+        nodes.each_key do |id|
           # Extract source from ID like "https://www.ammitto.org/entity/un/KPi.066"
           match = id.match(%r{#{Regexp.escape(BASE_URI)}/[^/]+/([^/]+)/})
           next unless match

@@ -29,7 +29,7 @@ def parse_jp_end_user_list
     # Typical columns: No., Country, Name, Details
     # Japanese format: 国名、地域名 (Country), 氏名・名称 (Name), 通関名 (Common Name), 型式・番号 (Type/Number), 备注 (Remarks)
 
-    next unless cells[0] =~ /^\d+$/  # Must have a number
+    next unless cells[0] =~ /^\d+$/ # Must have a number
 
     # Extract entity data
     name = cells[2] || cells[1]
@@ -42,14 +42,10 @@ def parse_jp_end_user_list
     }
 
     # Add country as part of remarks
-    if cells[1] && !cells[1].empty?
-      entity['remarks'] = "Country: #{cells[1]}"
-    end
+    entity['remarks'] = "Country: #{cells[1]}" if cells[1] && !cells[1].empty?
 
     # Add additional remarks/details
-    if cells[5] && !cells[5].empty?
-      entity['remarks'] = [entity['remarks'], cells[5]].compact.join('; ')
-    end
+    entity['remarks'] = [entity['remarks'], cells[5]].compact.join('; ') if cells[5] && !cells[5].empty?
 
     entities << entity
   end
@@ -66,6 +62,4 @@ def parse_jp_end_user_list
   puts "Wrote #{entities.length} YAML files to #{OUTPUT_DIR}"
 end
 
-if __FILE__ == $0
-  parse_jp_end_user_list
-end
+parse_jp_end_user_list if __FILE__ == $PROGRAM_NAME

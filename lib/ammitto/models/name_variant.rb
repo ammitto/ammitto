@@ -29,17 +29,17 @@ module Ammitto
     # JSON mapping - supports both snake_case (harmonized) and camelCase (legacy)
     json do
       map 'full_name', to: :full_name
-      map 'fullName', to: :full_name  # backward compatibility
+      map 'fullName', to: :full_name # backward compatibility
       map 'first_name', to: :first_name
-      map 'firstName', to: :first_name  # backward compatibility
+      map 'firstName', to: :first_name # backward compatibility
       map 'middle_name', to: :middle_name
-      map 'middleName', to: :middle_name  # backward compatibility
+      map 'middleName', to: :middle_name # backward compatibility
       map 'last_name', to: :last_name
-      map 'lastName', to: :last_name  # backward compatibility
+      map 'lastName', to: :last_name # backward compatibility
       map 'script', to: :script
       map 'language', to: :language
       map 'is_primary', to: :is_primary
-      map 'isPrimary', to: :is_primary  # backward compatibility
+      map 'isPrimary', to: :is_primary # backward compatibility
       map 'title', to: :title
       map 'function', to: :function
     end

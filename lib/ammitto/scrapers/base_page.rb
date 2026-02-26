@@ -173,7 +173,7 @@ module Ammitto
         return "#{match[1]}-#{match[2]}-#{match[3]}" if match
 
         # Try slash format: 2025/01/15
-        match = text.match(/(\d{4})\/(\d{2})\/(\d{2})/)
+        match = text.match(%r{(\d{4})/(\d{2})/(\d{2})})
         return "#{match[1]}-#{match[2]}-#{match[3]}" if match
 
         nil

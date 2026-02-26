@@ -72,11 +72,9 @@ module Ammitto
         Zip::File.open(@temp_file.path) do |zip_file|
           # Find the XML file (usually sdn.xml)
           xml_entry = zip_file.entries.find { |e| e.name =~ /\.xml$/i }
-          if xml_entry
-            xml_content = xml_entry.get_input_stream.read
-          else
-            raise "No XML file found in ZIP archive"
-          end
+          raise 'No XML file found in ZIP archive' unless xml_entry
+
+          xml_content = xml_entry.get_input_stream.read
         end
 
         xml_content

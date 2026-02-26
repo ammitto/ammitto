@@ -8,6 +8,9 @@
 /tmp/
 .idea
 
+# Test output
+/test-output/
+
 # rspec failure tracking
 .rspec_status
 Gemfile.lock

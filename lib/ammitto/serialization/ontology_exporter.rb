@@ -113,30 +113,43 @@ module Ammitto
       # Property definitions
       PROPERTIES = [
         { id: 'entityType', label: 'Entity Type', comment: 'The type of entity', domain: 'Entity', range: 'string' },
-        { id: 'names', label: 'Names', comment: 'Name variants for the entity', domain: 'Entity', range: 'Name', array: true },
-        { id: 'aliases', label: 'Aliases', comment: 'Alternative names or aliases', domain: 'Entity', range: 'Name', array: true },
-        { id: 'hasSanctionEntry', label: 'Has Sanction Entry', comment: 'Links to sanction record', domain: 'Entity', range: 'SanctionEntry', array: true },
-        { id: 'birthInfo', label: 'Birth Info', comment: 'Birth information', domain: 'PersonEntity', range: 'BirthInfo', array: true },
-        { id: 'nationalities', label: 'Nationalities', comment: 'Nationalities', domain: 'PersonEntity', range: 'Nationality', array: true },
-        { id: 'documents', label: 'Documents', comment: 'Identity documents', domain: 'PersonEntity', range: 'Identifier', array: true },
+        { id: 'names', label: 'Names', comment: 'Name variants for the entity', domain: 'Entity', range: 'Name',
+          array: true },
+        { id: 'aliases', label: 'Aliases', comment: 'Alternative names or aliases', domain: 'Entity', range: 'Name',
+          array: true },
+        { id: 'hasSanctionEntry', label: 'Has Sanction Entry', comment: 'Links to sanction record', domain: 'Entity',
+          range: 'SanctionEntry', array: true },
+        { id: 'birthInfo', label: 'Birth Info', comment: 'Birth information', domain: 'PersonEntity',
+          range: 'BirthInfo', array: true },
+        { id: 'nationalities', label: 'Nationalities', comment: 'Nationalities', domain: 'PersonEntity',
+          range: 'Nationality', array: true },
+        { id: 'documents', label: 'Documents', comment: 'Identity documents', domain: 'PersonEntity',
+          range: 'Identifier', array: true },
         { id: 'gender', label: 'Gender', comment: 'Gender', domain: 'PersonEntity', range: 'string' },
-        { id: 'registration', label: 'Registration', comment: 'Registration details', domain: 'OrganizationEntity', range: 'Registration' },
-        { id: 'addresses', label: 'Addresses', comment: 'Physical addresses', domain: 'Entity', range: 'Address', array: true },
+        { id: 'registration', label: 'Registration', comment: 'Registration details', domain: 'OrganizationEntity',
+          range: 'Registration' },
+        { id: 'addresses', label: 'Addresses', comment: 'Physical addresses', domain: 'Entity', range: 'Address',
+          array: true },
         { id: 'imo', label: 'IMO', comment: 'IMO number', domain: 'VesselEntity', range: 'string' },
         { id: 'mmsi', label: 'MMSI', comment: 'MMSI number', domain: 'VesselEntity', range: 'string' },
         { id: 'flag', label: 'Flag', comment: 'Flag state', domain: 'VesselEntity', range: 'string' },
         { id: 'tonnage', label: 'Tonnage', comment: 'Gross tonnage', domain: 'VesselEntity', range: 'integer' },
         { id: 'callSign', label: 'Call Sign', comment: 'Radio call sign', domain: 'VesselEntity', range: 'string' },
-        { id: 'entityId', label: 'Entity ID', comment: 'Reference to entity', domain: 'SanctionEntry', range: 'Entity' },
-        { id: 'authority', label: 'Authority', comment: 'Issuing authority', domain: 'SanctionEntry', range: 'Authority' },
-        { id: 'regime', label: 'Regime', comment: 'Sanctions regime', domain: 'SanctionEntry', range: 'SanctionRegime' },
-        { id: 'legalBases', label: 'Legal Bases', comment: 'Legal instruments', domain: 'SanctionEntry', range: 'LegalInstrument', array: true },
+        { id: 'entityId', label: 'Entity ID', comment: 'Reference to entity', domain: 'SanctionEntry',
+          range: 'Entity' },
+        { id: 'authority', label: 'Authority', comment: 'Issuing authority', domain: 'SanctionEntry',
+          range: 'Authority' },
+        { id: 'regime', label: 'Regime', comment: 'Sanctions regime', domain: 'SanctionEntry',
+          range: 'SanctionRegime' },
+        { id: 'legalBases', label: 'Legal Bases', comment: 'Legal instruments', domain: 'SanctionEntry',
+          range: 'LegalInstrument', array: true },
         { id: 'status', label: 'Status', comment: 'Current status', domain: 'SanctionEntry', range: 'string' },
         { id: 'listingDate', label: 'Listing Date', comment: 'Date listed', domain: 'SanctionEntry', range: 'date' },
         { id: 'name', label: 'Name', comment: 'Name', domain: 'Authority', range: 'string' },
         { id: 'countryCode', label: 'Country Code', comment: 'ISO country code', domain: 'Authority', range: 'string' },
         { id: 'code', label: 'Code', comment: 'Code identifier', domain: 'SanctionRegime', range: 'string' },
-        { id: 'identifier', label: 'Identifier', comment: 'Instrument identifier', domain: 'LegalInstrument', range: 'string' },
+        { id: 'identifier', label: 'Identifier', comment: 'Instrument identifier', domain: 'LegalInstrument',
+          range: 'string' },
         { id: 'title', label: 'Title', comment: 'Full title', domain: 'LegalInstrument', range: 'string' },
         { id: 'fullName', label: 'Full Name', comment: 'Full name', domain: 'Name', range: 'string' },
         { id: 'isPrimary', label: 'Is Primary', comment: 'Is primary name', domain: 'Name', range: 'boolean' },
@@ -162,9 +175,7 @@ module Ammitto
 
       # Set entity counts
       # @param counts [Hash] counts by entity type
-      def entity_counts=(counts)
-        @entity_counts = counts
-      end
+      attr_writer :entity_counts
 
       # Export ontology data to output directory
       # @param output_dir [String] output directory path

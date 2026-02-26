@@ -56,7 +56,7 @@ module Ammitto
           run_stats
         else
           puts "Unknown subcommand: #{subcommand}"
-          puts "Available: clone, pull, status, query, get, sources, stats"
+          puts 'Available: clone, pull, status, query, get, sources, stats'
         end
       end
 
@@ -74,12 +74,12 @@ module Ammitto
       # Clone the repository
       def run_clone
         force = options[:force] || false
-        puts "Cloning data repository..."
+        puts 'Cloning data repository...'
         puts "Local path: #{repo.local_path}"
         puts "Remote: #{repo.remote_url}"
 
         repo.clone(force: force)
-        puts "Clone complete!"
+        puts 'Clone complete!'
         puts "Use 'ammitto data sources' to list available sources"
       end
 
@@ -90,26 +90,26 @@ module Ammitto
           return
         end
 
-        puts "Pulling updates..."
+        puts 'Pulling updates...'
         repo.pull
-        puts "Pull complete!"
+        puts 'Pull complete!'
       end
 
       # Show repository status
       def run_status
-        puts "Data Repository Status"
-        puts "=" * 40
+        puts 'Data Repository Status'
+        puts '=' * 40
         puts "Local path: #{repo.local_path}"
         puts "Remote URL: #{repo.remote_url}"
         puts "Cloned: #{repo.cloned? ? 'Yes' : 'No'}"
 
-        if repo.cloned?
-          stats = repo.stats
-          puts "\nStatistics:"
-          puts "  Total entities: #{stats['total_entities'] || 'N/A'}"
-          puts "  Sources: #{stats['sources']&.keys&.length || 0}"
-          puts "  Generated at: #{stats['generated_at'] || 'N/A'}"
-        end
+        return unless repo.cloned?
+
+        stats = repo.stats
+        puts "\nStatistics:"
+        puts "  Total entities: #{stats['total_entities'] || 'N/A'}"
+        puts "  Sources: #{stats['sources']&.keys&.length || 0}"
+        puts "  Generated at: #{stats['generated_at'] || 'N/A'}"
       end
 
       # Query entities
@@ -127,7 +127,7 @@ module Ammitto
         criteria[:limit] = options[:limit] if options[:limit]
         criteria[:offset] = options[:offset] if options[:offset]
 
-        puts "Querying entities..." if options[:verbose]
+        puts 'Querying entities...' if options[:verbose]
         entities = repo.query(criteria)
 
         puts "Found #{entities.length} entities:"
@@ -135,7 +135,7 @@ module Ammitto
 
         entities.each do |entity|
           print_entity(entity)
-          puts "-" * 40
+          puts '-' * 40
         end
       end
 
@@ -148,7 +148,7 @@ module Ammitto
 
         id = args.first
         unless id
-          puts "Usage: ammitto data get <entity_id>"
+          puts 'Usage: ammitto data get <entity_id>'
           return
         end
 
@@ -156,7 +156,7 @@ module Ammitto
 
         if entity
           puts "Entity: #{id}"
-          puts "=" * 40
+          puts '=' * 40
           puts JSON.pretty_generate(entity)
         else
           puts "Entity not found: #{id}"
@@ -173,8 +173,8 @@ module Ammitto
         sources = repo.sources
         stats = repo.stats
 
-        puts "Available Sources:"
-        puts "=" * 40
+        puts 'Available Sources:'
+        puts '=' * 40
         sources.sort.each do |source|
           count = stats.dig('sources', source, 'entities') || 'N/A'
           puts "  #{source.ljust(15)} #{count.to_s.rjust(6)} entities"
@@ -192,12 +192,12 @@ module Ammitto
 
         stats = repo.stats
 
-        puts "Data Statistics"
-        puts "=" * 40
+        puts 'Data Statistics'
+        puts '=' * 40
         puts "Generated at: #{stats['generated_at'] || 'N/A'}"
         puts "Total entities: #{stats['total_entities'] || 0}"
         puts
-        puts "By Source:"
+        puts 'By Source:'
 
         stats['sources']&.each do |source, data|
           puts "  #{source.ljust(15)} #{data['entities'].to_s.rjust(6)} entities"
@@ -213,10 +213,10 @@ module Ammitto
         primary_name = (entity['names'] || []).find { |n| n['is_primary'] }
         puts "Name: #{primary_name&.dig('full_name') || 'N/A'}"
 
-        if entity['addresses']&.any?
-          addr = entity['addresses'].first
-          puts "Country: #{addr['country'] || 'N/A'}"
-        end
+        return unless entity['addresses']&.any?
+
+        addr = entity['addresses'].first
+        puts "Country: #{addr['country'] || 'N/A'}"
       end
     end
   end

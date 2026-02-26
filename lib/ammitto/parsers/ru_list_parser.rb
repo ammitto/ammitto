@@ -75,10 +75,8 @@ module Ammitto
       def parse_entry(lines, start_index)
         return nil if start_index >= lines.length
 
-        name_ru = nil
         name_en = nil
         position = nil
-        lines_consumed = 0
 
         # First line should be Russian name
         first_line = lines[start_index]
@@ -108,14 +106,14 @@ module Ammitto
           break if line.empty?
 
           # Dash indicates position
-          if line == '–' || line == '-'
+          if ['–', '-'].include?(line)
             lines_consumed += 1
             current_idx += 1
             next
           end
 
           # This should be the position
-          if lines_consumed > 1 && (lines[current_idx - 1] == '–' || lines[current_idx - 1] == '-')
+          if lines_consumed > 1 && ['–', '-'].include?(lines[current_idx - 1])
             position = line
             lines_consumed += 1
             break
@@ -144,11 +142,11 @@ module Ammitto
       # @return [String]
       def generate_id(name)
         slug = name
-                 .to_s
-                 .downcase
-                 .gsub(/[^a-z0-9]+/, '-')
-                 .gsub(/^-|-$/, '')
-                 .slice(0, 50)
+               .to_s
+               .downcase
+               .gsub(/[^a-z0-9]+/, '-')
+               .gsub(/^-|-$/, '')
+               .slice(0, 50)
 
         "ru-#{slug}"
       end

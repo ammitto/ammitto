@@ -59,10 +59,9 @@ module Ammitto
         }
 
         puts "[#{code}] Downloading from #{json_api_endpoint}" if verbose?
-        content = URI.open(json_api_endpoint, headers).read
+        URI.open(json_api_endpoint, headers).read
 
         # Return the raw JSON content - the fetch_command expects a string
-        content
       rescue StandardError => e
         puts "[#{code}] Error fetching WB data: #{e.message}" if verbose?
         raise
@@ -96,16 +95,16 @@ module Ammitto
         # Try to find JSON in script content
         doc.css('script').each do |script|
           content = script.text
-          if content.include?('debarredJsonResponse') || content.include?('SUPP_ID')
-            json_match = content.match(/\[\s*\{.*"SUPP_ID".*\}\s*\]/m)
-            if json_match
-              puts "[#{code}] Found JSON in script tag" if verbose?
-              return json_match[0]
-            end
+          next unless content.include?('debarredJsonResponse') || content.include?('SUPP_ID')
+
+          json_match = content.match(/\[\s*\{.*"SUPP_ID".*\}\s*\]/m)
+          if json_match
+            puts "[#{code}] Found JSON in script tag" if verbose?
+            return json_match[0]
           end
         end
 
-        raise "Could not find JSON data in World Bank page"
+        raise 'Could not find JSON data in World Bank page'
       end
 
       # Fetch and parse as JSON array

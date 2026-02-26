@@ -7,46 +7,10 @@ require_relative 'config/override_resolver'
 require_relative 'options/registry'
 
 module Ammitto
-  # Ontology subcommand CLI
-  class OntologyCLI < Thor
-    desc 'fetch', 'Download ontology schemas'
-    option :format, type: :string, default: 'jsonld', desc: 'Format (jsonld, ttl)'
-    def fetch
-      puts "Fetching ontology in #{options[:format]} format..."
-      # TODO: Implement ontology fetch
-    end
-
-    desc 'validate FILE', 'Validate RDF file against ontology'
-    def validate(file)
-      puts "Validating #{file}..."
-      # TODO: Implement validation
-    end
-
-    desc 'convert FILE', 'Convert between RDF formats'
-    option :to, type: :string, required: true, desc: 'Target format'
-    option :output, type: :string, desc: 'Output file'
-    def convert(file)
-      puts "Converting #{file} to #{options[:to]}..."
-      # TODO: Implement conversion
-    end
-
-    desc 'query SPARQL', 'Execute SPARQL query'
-    def query(sparql)
-      puts "Executing query: #{sparql}"
-      # TODO: Implement SPARQL query
-    end
-
-    desc 'stats', 'Show ontology statistics'
-    def stats
-      puts 'Ontology statistics:'
-      puts '  Classes: 25'
-      puts '  Properties: 80'
-      puts '  Individuals: 8,551'
-      # TODO: Calculate actual stats
-    end
+  # Namespace for command classes
+  module Cmd
   end
 
-  # Data subcommand CLI
   class DataCLI < Thor
     desc 'clone', 'Clone the data repository to local storage'
     option :force, type: :boolean, default: false, desc: 'Force re-clone'
@@ -300,11 +264,6 @@ module Ammitto
       require_relative 'cli/get_command'
       Cmd::GetCommand.new(options, id).run
     end
-
-    # ---- Ontology Command ----
-
-    desc 'ontology SUBCOMMAND', 'Ontology management commands'
-    subcommand 'ontology', OntologyCLI
 
     # ---- Data Command ----
 

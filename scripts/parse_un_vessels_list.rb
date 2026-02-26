@@ -36,7 +36,7 @@ def parse_un_vessels_list
       next if cells[0] == 'Otherinformation'
 
       # Skip rows that don't have vessel data (e.g., resolution references)
-      next unless cells[1] && cells[1].include?(':')
+      next unless cells[1]&.include?(':')
 
       # Extract vessel name from format "1: VESSEL NAME"
       vessel_name = cells[1].split(': ', 2).last&.strip
@@ -74,8 +74,8 @@ def parse_un_vessels_list
   OUTPUT_DIR.mkpath
 
   # Clear existing files (except index)
-  OUTPUT_DIR.glob('*.yaml').each { |f| f.delete }
-  OUTPUT_DIR.glob('un-vessel-*.yaml').each { |f| f.delete }
+  OUTPUT_DIR.glob('*.yaml').each(&:delete)
+  OUTPUT_DIR.glob('un-vessel-*.yaml').each(&:delete)
 
   vessels.each do |vessel|
     filename = OUTPUT_DIR / "#{vessel['id']}.yaml"
@@ -85,6 +85,4 @@ def parse_un_vessels_list
   puts "Wrote #{vessels.length} YAML files to #{OUTPUT_DIR}"
 end
 
-if __FILE__ == $0
-  parse_un_vessels_list
-end
+parse_un_vessels_list if __FILE__ == $PROGRAM_NAME

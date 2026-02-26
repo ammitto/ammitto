@@ -69,7 +69,7 @@ module Ammitto
         # Get display string
         # @return [String]
         def to_s
-          identifier || title || "Unknown instrument"
+          identifier || title || 'Unknown instrument'
         end
 
         # Convert to hash for JSON-LD serialization

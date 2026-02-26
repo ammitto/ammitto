@@ -20,7 +20,7 @@ module Ammitto
       # Sanctioned entity from Turkey List D
       class SanctionedEntity < Lutaml::Model::Serializable
         attribute :name, :string
-        attribute :entity_type, :string  # Individual, Entity
+        attribute :entity_type, :string # Individual, Entity
         attribute :program, :string
         attribute :remarks, :string
         attribute :listed_date, :string

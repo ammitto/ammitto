@@ -68,14 +68,14 @@ module Ammitto
         # https://webgate.ec.europa.eu/fsd/fsf/public/files/xmlFullSanctionsList_1_1/content?token=dG9rZW4tMjAxNw
         page.links.each do |link|
           href = link.href
-          next unless href&.include?('xmlFullSanctionsList') && href&.include?('token=')
+          next unless href&.include?('xmlFullSanctionsList') && href.include?('token=')
 
           match = href.match(/token=([^&]+)/)
-          if match
-            token = match[1]
-            puts "[#{code}] Found token in link: #{token[0..10]}..." if verbose
-            return token
-          end
+          next unless match
+
+          token = match[1]
+          puts "[#{code}] Found token in link: #{token[0..10]}..." if verbose
+          return token
         end
 
         # Try to find token in page content

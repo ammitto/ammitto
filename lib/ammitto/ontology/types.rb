@@ -71,17 +71,17 @@ module Ammitto
       # Name script/character set types (ISO 15924)
       # @return [Array<Symbol>]
       NAME_SCRIPTS = %i[
-        Latn    # Latin
-        Cyrl    # Cyrillic
-        Arab    # Arabic
-        Hani    # Han (Chinese/Japanese/Korean)
-        Hebr    # Hebrew
-        Beng    # Bengali
-        Deva    # Devanagari
-        Greek   # Greek
-        Kana    # Japanese Kana
-        Hang    # Korean Hangul
-        Thai    # Thai
+        Latn # Latin
+        Cyrl # Cyrillic
+        Arab # Arabic
+        Hani # Han (Chinese/Japanese/Korean)
+        Hebr # Hebrew
+        Beng # Bengali
+        Deva # Devanagari
+        Greek # Greek
+        Kana # Japanese Kana
+        Hang # Korean Hangul
+        Thai # Thai
         other
       ].freeze
 
@@ -157,12 +157,12 @@ module Ammitto
         return :other if type.nil?
 
         normalized = type.to_s.downcase
-                      .gsub(/[-_\s]+/, '_')
-                      .gsub(/passports?/, 'passport')
-                      .gsub(/national_?ids?/, 'national_id')
-                      .gsub(/tax_?ids?/, 'tax_id')
-                      .gsub(/drivers?_?licenses?/, 'drivers_license')
-                      .to_sym
+                         .gsub(/[-_\s]+/, '_')
+                         .gsub(/passports?/, 'passport')
+                         .gsub(/national_?ids?/, 'national_id')
+                         .gsub(/tax_?ids?/, 'tax_id')
+                         .gsub(/drivers?_?licenses?/, 'drivers_license')
+                         .to_sym
 
         IDENTIFICATION_TYPES.include?(normalized) ? normalized : :other
       end

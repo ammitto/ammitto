@@ -44,6 +44,7 @@ module Ammitto
         def active?(as_of: Date.today)
           return false if expiry_date && expiry_date < as_of
           return false if effective_date && effective_date > as_of
+
           true
         end
 
@@ -58,6 +59,7 @@ module Ammitto
         # @return [Integer, nil]
         def duration_days
           return nil unless effective_date && expiry_date
+
           (expiry_date - effective_date).to_i
         end
 

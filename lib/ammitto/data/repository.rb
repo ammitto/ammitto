@@ -34,7 +34,7 @@ module Ammitto
       DEFAULT_LOCAL_PATH = File.expand_path('~/.ammitto/data')
 
       # URL patterns for detecting git URLs
-      URL_PATTERN = /\A(?:https?|git):\/\/|git@/
+      URL_PATTERN = %r{\A(?:https?|git)://|git@}
 
       # @return [String] Local path for the repository
       attr_reader :local_path
@@ -92,11 +92,9 @@ module Ammitto
         log("Cloning #{remote_url} to #{local_path}")
         success, output = run_git_command('clone', '--depth', '1', remote_url, local_path)
 
-        unless success
-          raise Ammitto::Error, "Failed to clone repository: #{output}"
-        end
+        raise Ammitto::Error, "Failed to clone repository: #{output}" unless success
 
-        log("Clone complete")
+        log('Clone complete')
         true
       end
 
@@ -105,17 +103,15 @@ module Ammitto
       # @return [Boolean] true if pull succeeded
       def pull
         unless File.directory?(File.join(local_path, '.git'))
-          raise Ammitto::Error, "Repository not a git repository. Cannot pull."
+          raise Ammitto::Error, 'Repository not a git repository. Cannot pull.'
         end
 
         log("Pulling updates from #{remote_url}")
         success, output = run_git_command('-C', local_path, 'pull', '--ff-only')
 
-        unless success
-          raise Ammitto::Error, "Failed to pull updates: #{output}"
-        end
+        raise Ammitto::Error, "Failed to pull updates: #{output}" unless success
 
-        log("Pull complete")
+        log('Pull complete')
         true
       end
 
@@ -169,7 +165,7 @@ module Ammitto
       # @return [Array<Hash>] Array of all entities
       def load_all
         all_file = File.join(api_path, 'all.jsonld')
-        raise Ammitto::NotFoundError, "Combined data not found" unless File.exist?(all_file)
+        raise Ammitto::NotFoundError, 'Combined data not found' unless File.exist?(all_file)
 
         data = JSON.parse(File.read(all_file))
         data['@graph'] || []

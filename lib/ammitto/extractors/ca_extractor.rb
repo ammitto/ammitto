@@ -191,7 +191,7 @@ module Ammitto
       # @param node [Nokogiri::XML::Element]
       # @param entity_type [String]
       # @return [Hash, nil]
-      def extract_entry(node, entity_type)
+      def extract_entry(node, _entity_type)
         id = node.at_xpath('ID')&.text
         return nil unless id
 

@@ -196,23 +196,23 @@ module Ammitto
             convert_inline_node(value)
           else
             # Simple hash - convert to string representation
-            ['"""' + value.to_json + '"""']
+            ["\"\"\"#{value.to_json}\"\"\""]
           end
         when TrueClass
           ['"true"^^xsd:boolean']
         when FalseClass
           ['"false"^^xsd:boolean']
         when Integer
-          ['"' + value.to_s + '"^^xsd:integer']
+          ["\"#{value}\"^^xsd:integer"]
         when Float
-          ['"' + value.to_s + '"^^xsd:decimal']
+          ["\"#{value}\"^^xsd:decimal"]
         when String
           if value.start_with?('http://', 'https://')
             ["<#{value}>"]
           elsif value.match?(/^\d{4}-\d{2}-\d{2}$/)
-            ['"' + value + '"^^xsd:date']
+            ["\"#{value}\"^^xsd:date"]
           elsif value.match?(/^\d{4}-\d{2}-\d{2}T/)
-            ['"' + value + '"^^xsd:dateTime']
+            ["\"#{value}\"^^xsd:dateTime"]
           else
             [escape_string(value)]
           end
@@ -250,11 +250,11 @@ module Ammitto
       # @return [String] escaped string
       def escape_string(str)
         escaped = str.to_s
-                      .gsub('\\', '\\\\')
-                      .gsub('"', '\\"')
-                      .gsub("\n", '\\n')
-                      .gsub("\r", '\\r')
-                      .gsub("\t", '\\t')
+                     .gsub('\\', '\\\\')
+                     .gsub('"', '\\"')
+                     .gsub("\n", '\\n')
+                     .gsub("\r", '\\r')
+                     .gsub("\t", '\\t')
         "\"#{escaped}\""
       end
     end

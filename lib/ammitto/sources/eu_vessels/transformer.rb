@@ -53,9 +53,7 @@ module Ammitto
         def build_names(vessel)
           names = []
 
-          if vessel.vessel_name
-            names << create_name_variant(full_name: vessel.vessel_name, is_primary: true)
-          end
+          names << create_name_variant(full_name: vessel.vessel_name, is_primary: true) if vessel.vessel_name
 
           names
         end

@@ -68,9 +68,7 @@ module Ammitto
         def build_names(source)
           names = []
 
-          if source.name
-            names << create_name_variant(full_name: source.name, is_primary: true)
-          end
+          names << create_name_variant(full_name: source.name, is_primary: true) if source.name
 
           names
         end
@@ -130,7 +128,7 @@ module Ammitto
         # Build effects
         # @param source [Object] source model
         # @return [Array<SanctionEffect>]
-        def build_effects(source)
+        def build_effects(_source)
           # Turkey typically imposes asset freeze and entry ban
           [
             create_effect(effect_type: 'asset_freeze'),

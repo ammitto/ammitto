@@ -256,13 +256,13 @@ module Ammitto
         # Get all individuals
         # @return [Array<Target>]
         def individuals
-          targets.select { |t| t.individual }
+          targets.select(&:individual)
         end
 
         # Get all entities (organizations)
         # @return [Array<Target>]
         def entities
-          targets.select { |t| t.entity }
+          targets.select(&:entity)
         end
       end
     end

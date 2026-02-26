@@ -83,7 +83,7 @@ module Ammitto
 
         unless repo.cloned?
           puts "Data repository not found. Run 'ammitto data clone' first."
-          puts "Or set AMMITTO_DATA_REPOSITORY environment variable."
+          puts 'Or set AMMITTO_DATA_REPOSITORY environment variable.'
           return []
         end
 
@@ -132,9 +132,9 @@ module Ammitto
       # @param index [Integer] result index
       # @return [void]
       def print_result(result, index)
-        puts "=" * 60
+        puts '=' * 60
         puts "##{index} #{result.primary_name}"
-        puts "=" * 60
+        puts '=' * 60
         puts JSON.pretty_generate(result.to_h)
         puts
       end

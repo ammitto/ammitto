@@ -173,7 +173,7 @@ module Ammitto
       # @param node [Nokogiri::XML::Element]
       # @param entity_type [String] person or organization
       # @return [Hash, nil]
-      def extract_entry(node, entity_type)
+      def extract_entry(node, _entity_type)
         ref_num = node.at_xpath('REFERENCE_NUMBER')&.text
         return nil unless ref_num
 

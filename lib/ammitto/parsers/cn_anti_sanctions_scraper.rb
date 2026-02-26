@@ -44,7 +44,7 @@ module Ammitto
       def fetch_and_parse
         entities = []
 
-        puts "[CN Anti-Sanctions] Fetching index page..." if verbose
+        puts '[CN Anti-Sanctions] Fetching index page...' if verbose
 
         # Fetch index page
         index_page = agent.get(INDEX_URL)
@@ -86,11 +86,11 @@ module Ammitto
           next unless href
 
           # Look for links to notice pages
-          if href.include?('/web/') && (href.include?('反制') || href.include?('决定'))
-            # Make absolute URL
-            uri = URI.join(page.uri.to_s, href)
-            links << uri.to_s
-          end
+          next unless href.include?('/web/') && (href.include?('反制') || href.include?('决定'))
+
+          # Make absolute URL
+          uri = URI.join(page.uri.to_s, href)
+          links << uri.to_s
         end
 
         links.uniq
@@ -100,8 +100,6 @@ module Ammitto
       # @param url [String] the notice URL
       # @return [Array<Hash>] array of entity hashes
       def fetch_and_parse_notice(url)
-        entities = []
-
         notice_page = agent.get(url)
         content = notice_page.body
 
@@ -194,12 +192,12 @@ module Ammitto
 
         patterns.each do |pattern|
           match = text.match(pattern)
-          if match
-            begin
-              return Date.new(match[1].to_i, match[2].to_i, match[3].to_i)
-            rescue ArgumentError
-              next
-            end
+          next unless match
+
+          begin
+            return Date.new(match[1].to_i, match[2].to_i, match[3].to_i)
+          rescue ArgumentError
+            next
           end
         end
 
@@ -249,15 +247,9 @@ module Ammitto
       def extract_measures(text)
         measures = []
 
-        if text.include?('查封') || text.include?('冻结')
-          measures << 'asset_freeze'
-        end
-        if text.include?('禁止入境') || text.include?('不予签发签证')
-          measures << 'entry_ban'
-        end
-        if text.include?('禁止交易')
-          measures << 'transaction_ban'
-        end
+        measures << 'asset_freeze' if text.include?('查封') || text.include?('冻结')
+        measures << 'entry_ban' if text.include?('禁止入境') || text.include?('不予签发签证')
+        measures << 'transaction_ban' if text.include?('禁止交易')
 
         measures
       end
@@ -268,11 +260,11 @@ module Ammitto
       # @return [String]
       def generate_id(name, index)
         slug = name
-                 .to_s
-                 .downcase
-                 .gsub(/[^a-z0-9]+/, '-')
-                 .gsub(/^-|-$/, '')
-                 .slice(0, 50)
+               .to_s
+               .downcase
+               .gsub(/[^a-z0-9]+/, '-')
+               .gsub(/^-|-$/, '')
+               .slice(0, 50)
 
         "cn-as-#{slug}-#{index}"
       end

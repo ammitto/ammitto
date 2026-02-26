@@ -65,10 +65,10 @@ module Ammitto
         # @return [String]
         def to_s
           parts = []
-          parts << (circa ? "c. " : "")
+          parts << (circa ? 'c. ' : '')
           parts << date_label
-          parts << [city, region, country].compact.join(", ") if city || country
-          parts.join(" ")
+          parts << [city, region, country].compact.join(', ') if city || country
+          parts.join(' ')
         end
 
         private
@@ -76,6 +76,7 @@ module Ammitto
         def date_label
           return year.to_s if year && !date
           return date.to_s if date
+
           nil
         end
 

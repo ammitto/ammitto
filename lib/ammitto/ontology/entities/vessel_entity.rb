@@ -118,7 +118,7 @@ module Ammitto
         # @return [String]
         def info_summary
           parts = [name, imo_number, flag_state].compact
-          parts.join(" / ")
+          parts.join(' / ')
         end
 
         # Get gross tonnage (from tonnage object or legacy attribute)

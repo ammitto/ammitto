@@ -27,14 +27,14 @@ module Ammitto
     json do
       map 'id', to: :id
       map 'entity_type', to: :entity_type
-      map 'entityType', to: :entity_type  # backward compatibility
+      map 'entityType', to: :entity_type # backward compatibility
       map 'names', to: :names
       map 'source_references', to: :source_references
-      map 'sourceReferences', to: :source_references  # backward compatibility
+      map 'sourceReferences', to: :source_references # backward compatibility
       map 'linked_entities', to: :linked_entities
-      map 'linkedEntities', to: :linked_entities  # backward compatibility
+      map 'linkedEntities', to: :linked_entities # backward compatibility
       map 'same_as', to: :same_as
-      map 'sameAs', to: :same_as  # backward compatibility
+      map 'sameAs', to: :same_as # backward compatibility
       map 'remarks', to: :remarks
     end
 

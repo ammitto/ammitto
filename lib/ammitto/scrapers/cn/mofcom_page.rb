@@ -81,12 +81,10 @@ module Ammitto
           links = find_announcement_links
 
           links.first(5).each do |link_info| # Limit to first 5 for testing
-            begin
-              announcement = fetch_and_parse_announcement(link_info[:url])
-              announcements << announcement if announcement
-            rescue StandardError => e
-              puts "[MofcomPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
-            end
+            announcement = fetch_and_parse_announcement(link_info[:url])
+            announcements << announcement if announcement
+          rescue StandardError => e
+            puts "[MofcomPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
           end
 
           announcements
@@ -147,7 +145,7 @@ module Ammitto
           parent = link.parent
           return nil unless parent
 
-          parent.text.scan(/\d{4}[-\/年]\d{1,2}[-\/月]\d{1,2}[日]?/).first
+          parent.text.scan(%r{\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?}).first
         end
 
         # Parse announcement link info
@@ -266,14 +264,14 @@ module Ammitto
               next if name.nil? || name.length < 2
 
               # Check if it looks like a company name
-              if name.match?(/公司|企业|集团|有限|责任|股份/)
-                entities << {
-                  index: match[0].to_i,
-                  chinese_name: name,
-                  english_name: nil,
-                  entity_type: 'organization'
-                }
-              end
+              next unless name.match?(/公司|企业|集团|有限|责任|股份/)
+
+              entities << {
+                index: match[0].to_i,
+                chinese_name: name,
+                english_name: nil,
+                entity_type: 'organization'
+              }
             end
           end
 

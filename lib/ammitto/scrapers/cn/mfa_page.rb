@@ -47,12 +47,10 @@ module Ammitto
           announcements = []
 
           links.first(5).each do |link_info| # Limit for testing
-            begin
-              announcement = fetch_and_parse_announcement(link_info[:url])
-              announcements << announcement if announcement
-            rescue StandardError => e
-              puts "[MfaPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
-            end
+            announcement = fetch_and_parse_announcement(link_info[:url])
+            announcements << announcement if announcement
+          rescue StandardError => e
+            puts "[MfaPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
           end
 
           announcements
@@ -110,7 +108,7 @@ module Ammitto
           match = url.match(/(\d{4})(\d{2})(\d{2})/)
           return "#{match[1]}-#{match[2]}-#{match[3]}" if match
 
-          match = url.match(/(\d{4})[-_\/](\d{2})[-_\/](\d{2})/)
+          match = url.match(%r{(\d{4})[-_/](\d{2})[-_/](\d{2})})
           return "#{match[1]}-#{match[2]}-#{match[3]}" if match
 
           nil
@@ -221,21 +219,21 @@ module Ammitto
             # Extract entities from line
             # Pattern: 1. 中文 (English)
             match = line.match(/^\s*(\d+)\.\s*(.+?)\s*[（(]\s*(.+?)\s*[)）]/)
-            if match
-              name_info = extract_bilingual_name("#{match[2]} (#{match[3]})")
+            next unless match
 
-              # Check for title after name
-              title_match = match.post_match&.match(/[，,]\s*(.+?)(?:[，,。\n]|$)/)
-              title = title_match ? clean_chinese_text(title_match[1]) : nil
+            name_info = extract_bilingual_name("#{match[2]} (#{match[3]})")
 
-              entities << {
-                index: match[0].to_i,
-                chinese_name: name_info[:chinese_name],
-                english_name: name_info[:english_name],
-                entity_type: current_entity_type || detect_entity_type(match[2]),
-                title: title
-              }
-            end
+            # Check for title after name
+            title_match = match.post_match&.match(/[，,]\s*(.+?)(?:[，,。\n]|$)/)
+            title = title_match ? clean_chinese_text(title_match[1]) : nil
+
+            entities << {
+              index: match[0].to_i,
+              chinese_name: name_info[:chinese_name],
+              english_name: name_info[:english_name],
+              entity_type: current_entity_type || detect_entity_type(match[2]),
+              title: title
+            }
           end
 
           entities
@@ -246,9 +244,7 @@ module Ammitto
         # @return [String] 'person' or 'organization'
         def detect_entity_type(name)
           # Organization keywords
-          if name.match?(/公司|企业|集团|有限|责任|股份|银行|基金|协会|中心/)
-            return 'organization'
-          end
+          return 'organization' if name.match?(/公司|企业|集团|有限|责任|股份|银行|基金|协会|中心/)
 
           # Default to person for names without organization keywords
           'person'

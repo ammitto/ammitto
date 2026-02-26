@@ -1,30 +1,39 @@
 # frozen_string_literal: true
-lib = File.expand_path("lib", __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require_relative "lib/ammitto/version"
 
-Gem::Specification.new do |s|
-  s.name          = "ammitto"
-  s.version       = Ammitto::VERSION
-  s.authors       = ["Ribose Inc."]
-  s.email         = ["open.source@ribose.com"]
-  s.homepage      = "https://github.com/ammitto/ammitto"
-  s.licenses      = "BSD-2-Clause"
-  s.summary       = "Amitto: retrieve sanctioned people and organizations from various published sources"
-  s.description   = "Amitto is a utility gem to retrieve sanctioned people and organizations from various published sources"
+require_relative 'lib/ammitto/version'
 
-  s.files         = Dir.chdir(File.expand_path(__dir__)) do
+Gem::Specification.new do |spec|
+  spec.name          = 'ammitto'
+  spec.version       = Ammitto::VERSION
+  spec.authors       = ['Ribose Inc.']
+  spec.email         = ['open.source@ribose.com']
+  spec.homepage      = 'https://github.com/ammitto/ammitto'
+  spec.licenses      = 'BSD-2-Clause'
+  spec.summary       = 'Ammitto: retrieve sanctioned entities from international sources'
+  spec.description   = 'Ammitto retrieves sanctioned people, organizations, vessels, and ' \
+                       'aircraft from various international sources including EU, UN, US, ' \
+                       'World Bank, and more.'
+
+  spec.files         = Dir.chdir(File.expand_path(__dir__)) do
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   end
-  s.platform      = Gem::Platform::RUBY
-  s.require_paths = ["lib"]
-  s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
+  spec.platform      = Gem::Platform::RUBY
+  spec.require_paths = ['lib']
+  spec.bindir = "exe"
+  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.required_ruby_version = Gem::Requirement.new('>= 2.7.0')
 
-  s.add_dependency "nokogiri", '1.10.10'
-  s.add_development_dependency "equivalent-xml", "~> 0.6"
-
-  s.extensions = ['ext/extconf.rb']
-
+  # Core dependencies
+  spec.add_dependency 'csv'
+  spec.add_dependency 'faraday', '~> 2.0'
+  spec.add_dependency 'json-ld', '~> 3.3'
+  spec.add_dependency 'lutaml-model', '~> 0.7'
+  spec.add_dependency 'mechanize', '~> 2.12'
+  spec.add_dependency 'moxml'
+  spec.add_dependency 'multi_json', '~> 1.15'
+  spec.add_dependency 'nokogiri', '>= 1.15'
+  spec.add_dependency 'rdf', '~> 3.3'
+  spec.add_dependency 'rdf-turtle', '~> 3.3'
+  spec.add_dependency 'roo', '~> 2.10'
+  spec.add_dependency 'thor', '~> 1.3'
 end
-
-

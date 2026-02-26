@@ -1,0 +1,628 @@
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'yaml'
+require 'json'
+require_relative '../serialization/json_ld_graph_exporter'
+require_relative '../serialization/search_index_exporter'
+require_relative '../serialization/ontology_exporter'
+
+module Ammitto
+  module Cmd
+    # Harmonize command - transform YAML source data to JSON-LD knowledge graph
+    #
+    # Reads YAML files from source directories, transforms them using
+    # transformers, and exports as a JSON-LD knowledge graph with:
+    # - Individual node files per entity, entry, instrument, regime, authority
+    # - Aggregated all.jsonld and all.ttl files
+    # - Index files for each node type
+    class HarmonizeCommand
+      # @return [Hash] command options
+      attr_reader :options
+
+      # @return [Array<Symbol>] sources to harmonize
+      attr_reader :sources
+
+      # @return [JsonLdGraphExporter] the graph exporter
+      attr_reader :exporter
+
+      # Initialize with options and sources
+      # @param options [Hash] command options
+      # @param sources [Array<String>] source codes
+      def initialize(options, sources)
+        @options = options
+        @sources = normalize_sources(sources)
+      end
+
+      # Execute the command
+      # @return [void]
+      def run
+        validate_sources!
+
+        if @sources.empty?
+          puts 'No sources to harmonize. Specify sources or use --all.'
+          return
+        end
+
+        harmonize_all
+      end
+
+      private
+
+      # Normalize source codes
+      # @param sources [Array<String>]
+      # @return [Array<Symbol>]
+      def normalize_sources(sources)
+        if options[:scan]
+          # Auto-detect data-* repositories
+          parent_dir = options[:sources_dir] || Config::Defaults::SOURCES_DIR
+          detected = Config::Defaults.detect_data_repositories(parent_dir)
+          puts "Auto-detected sources: #{detected.join(', ')}" if options[:verbose]
+          detected
+        elsif options[:all]
+          Config::Defaults::ALL_SOURCES
+        elsif sources.empty?
+          # Default to first source if none specified
+          [:uk]
+        else
+          sources.map(&:to_s).map(&:downcase).map(&:to_sym)
+        end
+      end
+
+      # Validate source codes
+      # @raise [ArgumentError] if invalid source
+      def validate_sources!
+        # Allow any detected source - validation is for explicitly provided sources
+        return if options[:scan]
+
+        # Check against known sources (hardcoded + potentially detected)
+        known_sources = Config::Defaults::ALL_SOURCES
+        invalid = @sources - known_sources
+        return if invalid.empty?
+
+        raise ArgumentError,
+              "Invalid sources: #{invalid.join(', ')}. " \
+              "Valid: #{known_sources.join(', ')}"
+      end
+
+      # Harmonize all sources
+      # @return [void]
+      def harmonize_all
+        output_dir = options[:output_dir] || './api/v1'
+
+        # Create exporters
+        @exporter = Serialization::JsonLdGraphExporter.new(output_dir: output_dir)
+        @search_indexer = Serialization::SearchIndexExporter.new
+        @ontology_exporter = Serialization::OntologyExporter.new
+
+        results = []
+
+        @sources.each do |source|
+          results << harmonize_source(source)
+        end
+
+        # Export all collected nodes to files
+        if results.any? { |r| r[:status] == :success }
+          puts 'Exporting knowledge graph...' if options[:verbose]
+          @exporter.export
+
+          puts 'Exporting search index...' if options[:verbose]
+          @search_indexer.export(output_dir)
+
+          puts 'Exporting ontology data...' if options[:verbose]
+          @ontology_exporter.export(output_dir)
+        end
+
+        print_summary(results)
+      end
+
+      # Harmonize a single source
+      # @param source [Symbol] source code
+      # @return [Hash] harmonize result
+      def harmonize_source(source)
+        puts "[#{source}] Harmonizing..." if options[:verbose]
+
+        input_dir = find_input_dir(source)
+        unless input_dir
+          puts "[#{source}] No input directory found. Run 'ammitto fetch' first." if options[:verbose]
+          return { code: source, status: :error, error: 'No input directory found' }
+        end
+
+        # Load YAML files
+        yaml_files = Dir.glob(File.join(input_dir, 'entities', '*.yaml'))
+        yaml_files = Dir.glob(File.join(input_dir, '*.yaml')) if yaml_files.empty?
+
+        # Filter out metadata files (starting with _)
+        yaml_files = yaml_files.reject { |f| File.basename(f).start_with?('_') }
+
+        return { code: source, status: :error, error: 'No YAML files found' } if yaml_files.empty?
+
+        # Parse and transform
+        entities_count = 0
+        entries_count = 0
+        errors = []
+
+        yaml_files.each do |file|
+          data = YAML.load_file(file)
+          next unless data
+
+          begin
+            result = transform_data(source, data)
+
+            if result[:entity] && result[:entry]
+              @exporter.add_node(
+                entity: result[:entity],
+                entry: result[:entry],
+                source: source
+              )
+
+              # Also add to search index
+              @search_indexer.add(result[:entity], result[:entry])
+
+              entities_count += 1
+              entries_count += 1
+            end
+          rescue StandardError => e
+            error_msg = "#{File.basename(file)}: #{e.message}"
+            puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
+            errors << error_msg
+          end
+        end
+
+        puts "[#{source}] Harmonized #{entities_count} entities" if options[:verbose]
+
+        result = { code: source, status: :success, entities: entities_count, entries: entries_count }
+        result[:errors] = errors if errors.any?
+        result
+      rescue StandardError => e
+        puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
+        { code: source, status: :error, error: e.message }
+      end
+
+      # Find input directory for source
+      # @param source [Symbol] source code
+      # @return [String, nil] input directory path
+      def find_input_dir(source)
+        # Check specified input_dir
+        if options[:input_dir]
+          return File.join(options[:input_dir], source.to_s) if Dir.exist?(File.join(options[:input_dir], source.to_s))
+          return options[:input_dir] if Dir.exist?(options[:input_dir])
+        end
+
+        # Check sources_dir - try both underscore and hyphen naming
+        if options[:sources_dir]
+          # Try underscore version first (eu_vessels -> data-eu_vessels)
+          processed_path = File.join(options[:sources_dir], "data-#{source}", 'processed')
+          return processed_path if Dir.exist?(processed_path)
+
+          # Try hyphen version (eu_vessels -> data-eu-vessels)
+          hyphen_source = source.to_s.gsub('_', '-')
+          processed_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'processed')
+          return processed_path if Dir.exist?(processed_path)
+
+          # Then check for raw/{date} directory
+          source_path = File.join(options[:sources_dir], "data-#{source}", 'raw')
+          return find_latest_subdir(source_path) if Dir.exist?(source_path)
+
+          # Try hyphen version for raw
+          source_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'raw')
+          return find_latest_subdir(source_path) if Dir.exist?(source_path)
+        end
+
+        # Check default cache location
+        cache_raw = File.join(cache_dir, 'raw', source.to_s)
+        return find_latest_subdir(cache_raw) if Dir.exist?(cache_raw)
+
+        nil
+      end
+
+      # Find latest subdirectory (by date)
+      # @param base_dir [String] base directory
+      # @return [String, nil] latest subdirectory
+      def find_latest_subdir(base_dir)
+        return nil unless Dir.exist?(base_dir)
+
+        subdirs = Dir.children(base_dir).select do |child|
+          path = File.join(base_dir, child)
+          Dir.exist?(path) && child.match?(/^\d{4}-\d{2}-\d{2}$/)
+        end.sort.reverse
+
+        return nil if subdirs.empty?
+
+        File.join(base_dir, subdirs.first)
+      end
+
+      # Transform data using appropriate transformer
+      # @param source [Symbol] source code
+      # @param data [Hash] source data
+      # @return [Hash] { entity: Hash, entry: Hash }
+      def transform_data(source, data)
+        require_relative '../transformers/registry'
+
+        transformer = Ammitto::Transformers::Registry.get(source)
+        return { entity: nil, entry: nil } unless transformer
+
+        # Transform based on source
+        case source
+        when :uk
+          transform_uk(transformer, data)
+        when :eu
+          transform_eu(transformer, data)
+        when :un
+          transform_un(transformer, data)
+        when :us
+          transform_us(transformer, data)
+        when :wb
+          transform_wb(transformer, data)
+        when :au
+          transform_au(transformer, data)
+        when :ca
+          transform_ca(transformer, data)
+        when :ch
+          transform_ch(transformer, data)
+        when :cn
+          transform_cn(transformer, data)
+        when :ru
+          transform_ru(transformer, data)
+        when :nz
+          transform_nz(transformer, data)
+        when :tr
+          transform_tr(transformer, data)
+        when :eu_vessels
+          transform_eu_vessels(transformer, data)
+        when :jp
+          transform_jp(transformer, data)
+        when :un_vessels
+          transform_un_vessels(transformer, data)
+        else
+          { entity: nil, entry: nil }
+        end
+      end
+
+      # Transform UK data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_uk(transformer, data)
+        require_relative '../sources/uk/designation'
+
+        designation = Ammitto::Sources::Uk::Designation.from_yaml(data.to_yaml)
+        result = transformer.transform(designation)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform EU data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_eu(transformer, data)
+        require_relative '../sources/eu/processed_entity'
+
+        entity = Ammitto::Sources::Eu::ProcessedEntity.from_yaml(data.to_yaml)
+        result = transformer.transform(entity)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform UN data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_un(transformer, data)
+        require_relative '../sources/un/individual'
+        require_relative '../sources/un/entity'
+
+        # Determine if individual or entity based on presence of person-specific fields
+        # UN data uses snake_case in YAML (first_name, not firstName)
+        is_individual = data.key?('gender') ||
+                        data.key?('date_of_birth') ||
+                        data.key?('place_of_birth') ||
+                        data.key?('documents') ||
+                        data.key?('nationalities') ||
+                        data.key?('fourth_name')
+
+        if is_individual
+          source = Ammitto::Sources::Un::Individual.from_yaml(data.to_yaml)
+          result = transformer.transform_individual(source)
+        else
+          source = Ammitto::Sources::Un::Entity.from_yaml(data.to_yaml)
+          result = transformer.transform_entity(source)
+        end
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform US data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_us(transformer, data)
+        require_relative '../sources/us/sdn_entry'
+
+        sdn_entry = Ammitto::Sources::Us::SdnEntry.from_yaml(data.to_yaml)
+        result = transformer.transform(sdn_entry)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform WB data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_wb(transformer, data)
+        require_relative '../sources/wb/sanctioned_firm'
+
+        firm = Ammitto::Sources::Wb::SanctionedFirm.from_yaml(data.to_yaml)
+        result = transformer.transform(firm)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform AU data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_au(transformer, data)
+        require_relative '../sources/au/sanctions_list'
+
+        # Check if individual or organization
+        source = if data['entity_type'] == 'Individual' || data.key?('dates_of_birth')
+                   Ammitto::Sources::Au::Individual.from_yaml(data.to_yaml)
+                 else
+                   Ammitto::Sources::Au::Organization.from_yaml(data.to_yaml)
+                 end
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform CA data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_ca(transformer, data)
+        require_relative '../sources/ca/sanctions_list'
+
+        # Use Record class - it handles both individuals and entities
+        # The YAML has given_name, not first_name
+        source = Ammitto::Sources::Ca::Record.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform CH data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_ch(transformer, data)
+        require_relative '../sources/ch/sanctions_list'
+
+        # Parse as Target which contains individual or entity
+        source = Ammitto::Sources::Ch::Target.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform CN data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_cn(transformer, data)
+        require_relative '../sources/cn/sanctions_list'
+
+        source = Ammitto::Sources::Cn::SanctionedEntity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform RU data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_ru(transformer, data)
+        require_relative '../sources/ru/sanctions_list'
+
+        source = Ammitto::Sources::Ru::SanctionedEntity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform NZ data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_nz(transformer, data)
+        require_relative '../sources/nz/sanctions_list'
+
+        # Determine type
+        source = case data['type']
+                 when 'Individual'
+                   Ammitto::Sources::Nz::Individual.from_yaml(data.to_yaml)
+                 when 'Ship'
+                   Ammitto::Sources::Nz::Ship.from_yaml(data.to_yaml)
+                 else
+                   Ammitto::Sources::Nz::Entity.from_yaml(data.to_yaml)
+                 end
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform TR data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_tr(transformer, data)
+        require_relative '../sources/tr/sanctions_list'
+
+        source = Ammitto::Sources::Tr::Entity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform EU Vessels data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_eu_vessels(transformer, data)
+        require_relative '../sources/eu_vessels/vessel'
+
+        source = Ammitto::Sources::EuVessels::Vessel.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform JP data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_jp(transformer, data)
+        require_relative '../sources/jp/entity'
+
+        source = Ammitto::Sources::Jp::Entity.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Transform UN Vessels data
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash]
+      def transform_un_vessels(transformer, data)
+        require_relative '../sources/un_vessels/vessel'
+
+        source = Ammitto::Sources::UnVessels::Vessel.from_yaml(data.to_yaml)
+        result = transformer.transform(source)
+
+        {
+          entity: entity_to_hash(result[:entity]),
+          entry: entry_to_hash(result[:entry])
+        }
+      end
+
+      # Convert entity to hash
+      # @param entity [Object] entity object
+      # @return [Hash]
+      def entity_to_hash(entity)
+        return {} unless entity
+
+        begin
+          hash = entity.respond_to?(:to_hash) ? entity.to_hash : entity.to_h
+          compact_hash(hash)
+        rescue StandardError => e
+          puts "Error converting entity to hash: #{e.message}" if options[:verbose]
+          {}
+        end
+      end
+
+      # Convert entry to hash
+      # @param entry [Object] entry object
+      # @return [Hash]
+      def entry_to_hash(entry)
+        return {} unless entry
+
+        begin
+          hash = entry.respond_to?(:to_hash) ? entry.to_hash : entry.to_h
+          compact_hash(hash)
+        rescue StandardError => e
+          puts "Error converting entry to hash: #{e.message}" if options[:verbose]
+          {}
+        end
+      end
+
+      # Remove nil values from hash recursively
+      # @param hash [Hash] hash to compact
+      # @return [Hash]
+      def compact_hash(hash)
+        return hash unless hash.is_a?(Hash)
+
+        hash.each_with_object({}) do |(k, v), result|
+          next if v.nil?
+
+          result[k] = case v
+                      when Hash
+                        compact_hash(v)
+                      when Array
+                        v.map { |item| item.is_a?(Hash) ? compact_hash(item) : item }.compact
+                      else
+                        v
+                      end
+        end
+      end
+
+      # Get cache directory
+      # @return [String]
+      def cache_dir
+        options[:cache_dir] || File.expand_path('~/.ammitto')
+      end
+
+      # Print summary of results
+      # @param results [Array<Hash>] harmonize results
+      # @return [void]
+      def print_summary(results)
+        success = results.count { |r| r[:status] == :success }
+        failed = results.count { |r| r[:status] == :error }
+
+        puts
+        puts "Harmonize complete: #{success} succeeded, #{failed} failed"
+
+        return unless failed.positive?
+
+        puts 'Failed sources:'
+        results.select { |r| r[:status] == :error }.each do |r|
+          puts "  #{r[:code]}: #{r[:error]}"
+        end
+      end
+    end
+  end
+end

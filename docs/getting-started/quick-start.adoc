@@ -1,0 +1,225 @@
+---
+layout: default
+title: Quick Start
+parent: Getting Started
+nav_order: 2
+permalink: /getting-started/quick-start/
+---
+= Quick Start
+
+== Purpose
+
+This page helps you get started with Ammitto quickly, covering the most common use cases.
+
+== Basic Usage
+
+=== Search for Entities
+
+The most common use case is searching for sanctioned entities:
+
+[source,ruby]
+----
+require 'ammitto'
+
+# Search across all sources
+results = Ammitto.search("Kim Jong")
+results.each do |entry|
+  puts "#{entry.name} - #{entry.source} (#{entry.entity_type})"
+end
+----
+
+=== Filter by Source
+
+[source,ruby]
+----
+# Search only UN and EU lists
+results = Ammitto.search("Putin", sources: [:un, :eu])
+----
+
+=== Filter by Entity Type
+
+[source,ruby]
+----
+# Search only for organizations
+results = Ammitto.search("Bank", entity_type: :organization)
+----
+
+== CLI Quick Start
+
+=== Search from Command Line
+
+[source,bash]
+----
+# Basic search
+ammitto search "Kim Jong"
+
+# Search with filters
+ammitto search "Bank" --type organization --source eu
+
+# Output as JSON
+ammitto search "Smith" --format json
+----
+
+=== Get Entity Details
+
+[source,bash]
+----
+# Get by reference
+ammitto get un/KPi.066
+
+# Get with full JSON-LD output
+ammitto get un/KPi.066 --format json
+----
+
+=== Fetch Latest Data
+
+[source,bash]
+----
+# Fetch from a specific source
+ammitto fetch eu --output-dir ./data
+
+# Fetch from all sources
+ammitto fetch --all
+----
+
+== Data Access
+
+=== Load from Data Repository
+
+[source,ruby]
+----
+# Access the data repository
+repo = Ammitto.data_repository
+
+# Get statistics
+stats = repo.stats
+puts "Total entities: #{stats[:total_entities]}"
+
+# Query entities
+entities = repo.query(name: "Smith", limit: 10)
+----
+
+=== Access Individual Entity
+
+[source,ruby]
+----
+# Get entity by ID
+entity = Ammitto.data_repository.get("un/KPi.066")
+
+puts entity.primary_name
+puts entity.entity_type
+puts entity.listed_date
+----
+
+== Working with JSON-LD
+
+=== Export to JSON-LD
+
+[source,ruby]
+----
+# Serialize an entity
+serializer = Ammitto::Serialization::JsonLdSerializer.new
+jsonld = serializer.serialize_entity(entity)
+puts jsonld.to_json
+----
+
+=== Export to RDF Formats
+
+[source,bash]
+----
+# Export all data to JSON-LD
+ammitto harmonize --all --output-dir ./api/v1
+
+# Creates:
+# ./api/v1/sources/un.jsonld
+# ./api/v1/sources/eu.jsonld
+# ./api/v1/all.jsonld
+# ./api/v1/all.ttl (Turtle format)
+----
+
+== Using the Search Index
+
+The lightweight search index (~8MB) enables fast client-side search:
+
+[source,ruby]
+----
+# Load the search index
+index = Ammitto::SearchIndexExporter.new
+index.load('./api/v1/search-index.json')
+
+# Search the index
+results = index.search("Kim")
+----
+
+=== Search Index Structure
+
+[source,json]
+----
+{
+  "metadata": {
+    "generated": "2025-02-26T00:00:00Z",
+    "totalEntities": 55908,
+    "sources": 15
+  },
+  "entities": [
+    {
+      "id": "https://www.ammitto.org/entity/un/KPi.066",
+      "ref": "un/KPi.066",
+      "type": "person",
+      "names": ["KIM, Jong Un", "金正恩"],
+      "primaryName": "KIM, Jong Un",
+      "country": "KP",
+      "regime": "dprk",
+      "authority": "un",
+      "status": "active"
+    }
+  ]
+}
+----
+
+== Common Patterns
+
+=== Compliance Screening
+
+[source,ruby]
+----
+# Screen a customer name
+def screen_customer(name)
+  results = Ammitto.search(name, limit: 5)
+  if results.any?
+    puts "Potential matches found:"
+    results.each do |r|
+      puts "  - #{r.name} (#{r.source}, #{r.entity_type})"
+    end
+  else
+    puts "No matches found"
+  end
+end
+----
+
+=== Batch Processing
+
+[source,ruby]
+----
+# Process multiple names
+names = ["John Smith", "Jane Doe", "Acme Corp"]
+names.each do |name|
+  results = Ammitto.search(name)
+  puts "#{name}: #{results.size} matches"
+end
+----
+
+=== Export to File
+
+[source,ruby]
+----
+# Export search results to JSON
+results = Ammitto.search("test")
+File.write('results.json', results.to_json)
+----
+
+== Next Steps
+
+* link:configuration.adoc[Configuration] - Configure Ammitto for your needs
+* link:../interfaces/ruby-api/[Ruby API] - Full API documentation
+* link:../interfaces/cli/[CLI Reference] - All CLI commands

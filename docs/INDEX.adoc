@@ -1,0 +1,185 @@
+---
+layout: default
+title: Home
+nav_order: 1
+---
+= Ammitto Documentation
+
+Ammitto provides unified access to global sanctions data from multiple international sources.
+
+== Purpose
+
+Ammitto aggregates sanctions data from official government sources worldwide and normalizes it into a consistent JSON-LD format. This makes it easier for:
+
+* **Compliance teams** to screen entities against multiple sanctions lists
+* **Researchers** to analyze sanctions patterns and trends
+* **Developers** to build applications using sanctions data
+* **Transparency advocates** to access and verify sanctions information
+
+== Features
+
+[cols="1,3"]
+|===
+| Feature | Description
+
+| *Multi-source aggregation*
+| Data from 15+ international sources including UN, EU, US, UK, and more
+
+| *Normalized format*
+| Consistent JSON-LD ontology regardless of source format
+
+| *Entity types*
+| Persons, organizations, vessels, and aircraft
+
+| *Full sanction details*
+| Legal bases, effects, reasons, status history
+
+| *Lightweight search*
+| Client-side search with ~8MB index instead of 70MB full data
+
+| *Ruby gem*
+| Easy integration with Ruby applications
+
+| *CLI tools*
+| Command-line interface for data fetching and processing
+
+| *Knowledge graph*
+| Individual JSON-LD node files with @id references
+|===
+
+== Getting Started
+
+.Start with the basics
+* link:getting-started/installation.adoc[Installation] - Install the Ammitto gem
+* link:getting-started/quick-start.adoc[Quick Start] - Get up and running quickly
+* link:getting-started/configuration.adoc[Configuration] - Configure Ammitto for your needs
+
+.Use the interfaces
+* link:interfaces/ruby-api/[Ruby API] - Use Ammitto in your Ruby applications
+* link:interfaces/cli/[Command Line] - Use Ammitto from the command line
+
+.Explore the data
+* link:sources/[Data Sources] - Learn about the available sanctions sources
+* link:reference/[API Reference] - Detailed API documentation
+* link:understanding/[Understanding] - Architecture and design decisions
+
+== Quick Example
+
+=== Ruby API
+
+[source,ruby]
+----
+require 'ammitto'
+
+# Configure Ammitto
+Ammitto.configure do |config|
+  config.cache_dir = '~/.ammitto'
+  config.verbose = true
+end
+
+# Search for entities
+results = Ammitto.search("Kim Jong", sources: [:un, :eu], limit: 10)
+results.each do |entity|
+  puts "#{entity.primary_name} (#{entity.entity_type})"
+end
+
+# Get a specific entity
+entity = Ammitto::Ontology.create_entity(:person, id: 'un/KPi.066')
+puts entity.primary_name
+----
+
+=== Command Line
+
+[source,bash]
+----
+# Search entities
+ammitto search "Kim Jong" --source un --limit 10
+
+# Get entity details
+ammitto get un/KPi.066 --format json
+
+# Fetch latest data
+ammitto fetch eu --format yaml --output-dir ./data
+
+# Harmonize to JSON-LD
+ammitto harmonize --all --combine --output-dir ./api/v1
+----
+
+== Data Sources
+
+Ammitto aggregates data from 15 international sources:
+
+[cols="1,2,1"]
+|===
+| Source | Description | Code
+
+| United Nations
+| UN Security Council Consolidated List
+| `un`
+
+| European Union
+| EU Sanctions Map
+| `eu`
+
+| United States
+| OFAC SDN and Consolidated Lists
+| `us`
+
+| United Kingdom
+| UK Sanctions List
+| `uk`
+
+| Australia
+| DFAT Consolidated List
+| `au`
+
+| Canada
+| SEMA and Special Economic Measures
+| `ca`
+
+| Switzerland
+| SECO Sanctions List
+| `ch`
+
+| China
+| MOFCOM and MFA Sanctions
+| `cn`
+
+| Russia
+| MID Unfriendly Countries List
+| `ru`
+
+| Turkey
+| Ministry of Foreign Affairs
+| `tr`
+
+| Japan
+| METI End User List
+| `jp`
+
+| New Zealand
+| MFAT Sanctions Register
+| `nz`
+
+| World Bank
+| Debarment List
+| `wb`
+|===
+
+See link:sources/[Data Sources] for detailed information about each source.
+
+== Project Status
+
+Ammitto is actively maintained and used in production.
+
+[cols="1,1"]
+|===
+| *Total Entities*
+| 55,000+
+
+| *Data Sources*
+| 15
+
+| *Countries Covered*
+| 190+
+|===

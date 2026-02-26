@@ -1,0 +1,355 @@
+---
+layout: default
+title: Data Sources
+nav_order: 4
+has_children: true
+permalink: /sources/
+---
+= Data Sources
+
+== Purpose
+
+Ammitto aggregates sanctions data from 15 international sources. This section documents each source's coverage, format, and special features.
+
+== Overview
+
+[cols="1,2,1,1,1"]
+|===
+| Code | Source | Entities | Format | Update Frequency
+
+| `un`
+| United Nations Security Council
+| 3,752
+| XML
+| Daily
+
+| `eu`
+| European Union
+| 23,440
+| XML/JSON
+| Daily
+
+| `us`
+| United States (OFAC)
+| 888
+| XML
+| Daily
+
+| `uk`
+| United Kingdom
+| 12,070
+| JSON
+| Daily
+
+| `au`
+| Australia (DFAT)
+| 5,544
+| XLSX
+| Weekly
+
+| `ca`
+| Canada
+| 0
+| XML
+| Weekly
+
+| `ch`
+| Switzerland (SECO)
+| 0
+| XML
+| Weekly
+
+| `cn`
+| China (MOFCOM)
+| 0
+| HTML
+| As published
+
+| `ru`
+| Russia (MID)
+| 0
+| HTML
+| As published
+
+| `tr`
+| Turkey
+| 550
+| HTML
+| As published
+
+| `jp`
+| Japan (METI)
+| 2,990
+| HTML/XLSX
+| Monthly
+
+| `nz`
+| New Zealand (MFAT)
+| 0
+| HTML
+| As published
+
+| `eu_vessels`
+| EU Vessel Sanctions
+| 1,194
+| XML/JSON
+| Daily
+
+| `un_vessels`
+| UN Vessel Sanctions
+| 0
+| XML
+| As published
+
+| `wb`
+| World Bank
+| 5,480
+| XLSX
+| As published
+|===
+
+== Source Details
+
+=== United Nations (`un`)
+
+*Provider:* UN Security Council Consolidated List
+*URL:* https://www.un.org/securitycouncil/sanctions/consolidated-list
+*Format:* XML
+
+The UN Security Council maintains sanctions lists for various regimes including:
+
+* DPRK (North Korea)
+* Iran
+* ISIL/Da'esh and Al-Qaida
+* Libya
+* Somalia
+* Taliban
+* Central African Republic
+* Democratic Republic of Congo
+* Sudan
+* Yemen
+* South Sudan
+* Mali
+* Guinea-Bissau
+
+[source,bash]
+----
+# Fetch UN data
+ammitto fetch un
+
+# Search UN entities
+ammitto search "Kim" --source un
+----
+
+=== European Union (`eu`)
+
+*Provider:* EU Sanctions Map
+*URL:* https://sanctionsmap.eu/
+*Format:* XML, JSON
+
+The EU provides comprehensive sanctions data through the Sanctions Map API, covering all EU sanctions regimes with detailed entity information.
+
+[source,bash]
+----
+# Fetch EU data
+ammitto fetch eu
+
+# Search EU entities
+ammitto search "Bank" --source eu --type organization
+----
+
+=== United States (`us`)
+
+*Provider:* Office of Foreign Assets Control (OFAC)
+*URL:* https://ofac.treasury.gov/sanctions-lists
+*Format:* XML
+
+OFAC maintains multiple lists:
+
+* SDN (Specially Designated Nationals)
+* Consolidated Sanctions List
+* FSE (Foreign Sanctions Evaders)
+* NS-PLC (Non-SDN Palestinian Legislative Council)
+* SSI (Sectoral Sanctions Identifications)
+
+[source,bash]
+----
+# Fetch US data
+ammitto fetch us
+
+# Search US entities
+ammitto search "Putin" --source us
+----
+
+=== United Kingdom (`uk`)
+
+*Provider:* Office of Financial Sanctions Implementation (OFSI)
+*URL:* https://www.gov.uk/government/publications/financial-sanctions-consolidated-list-of-targets
+*Format:* JSON
+
+The UK maintains an independent sanctions regime post-Brexit while also implementing UN and EU sanctions.
+
+[source,bash]
+----
+# Fetch UK data
+ammitto fetch uk
+
+# Search UK entities
+ammitto search "Russia" --source uk
+----
+
+=== Australia (`au`)
+
+*Provider:* Department of Foreign Affairs and Trade (DFAT)
+*URL:* https://www.dfat.gov.au/international-relations/security/sanctions
+*Format:* XLSX
+
+Australia implements UN Security Council sanctions and autonomous sanctions.
+
+[source,bash]
+----
+# Fetch Australia data
+ammitto fetch au
+
+# Search Australia entities
+ammitto search "Tehran" --source au
+----
+
+=== Canada (`ca`)
+
+*Provider:* Global Affairs Canada
+*URL:* https://www.international.gc.ca/world-monde/international_relations-relations_internationales/sanctions/index.aspx
+*Format:* XML
+
+[source,bash]
+----
+# Fetch Canada data
+ammitto fetch ca
+----
+
+=== Switzerland (`ch`)
+
+*Provider:* State Secretariat for Economic Affairs (SECO)
+*URL:* https://www.seco.admin.ch/seco/en/home/Aussenwirtschaftspolitik_Warenhandel/Wirtschaftsbeziehungen/exportkontrollen/sanktionen.html
+*Format:* XML
+
+[source,bash]
+----
+# Fetch Switzerland data
+ammitto fetch ch
+----
+
+=== China (`cn`)
+
+*Provider:* Ministry of Commerce (MOFCOM), Ministry of Foreign Affairs
+*URL:* Various official announcements
+*Format:* HTML
+
+China publishes sanctions through official announcements and maintains lists of sanctioned entities.
+
+[source,bash]
+----
+# Fetch China data
+ammitto fetch cn
+----
+
+=== Russia (`ru`)
+
+*Provider:* Ministry of Foreign Affairs (MID)
+*URL:* https://mid.ru/foreign_policy/international_safety/peacemaking/
+*Format:* HTML
+
+Russia maintains the "Unfriendly Countries" list and related sanctions.
+
+[source,bash]
+----
+# Fetch Russia data
+ammitto fetch ru
+----
+
+=== Turkey (`tr`)
+
+*Provider:* Ministry of Foreign Affairs
+*URL:* https://www.mfa.gov.tr/
+*Format:* HTML
+
+[source,bash]
+----
+# Fetch Turkey data
+ammitto fetch tr
+----
+
+=== Japan (`jp`)
+
+*Provider:* Ministry of Economy, Trade and Industry (METI)
+*URL:* https://www.meti.go.jp/policy/anpo/index.html
+*Format:* HTML, XLSX
+
+Japan maintains the End User List and implements UN sanctions.
+
+[source,bash]
+----
+# Fetch Japan data
+ammitto fetch jp
+----
+
+=== New Zealand (`nz`)
+
+*Provider:* Ministry of Foreign Affairs and Trade (MFAT)
+*URL:* https://www.mfat.govt.nz/en/peace-rights-and-security/sanctions/
+*Format:* HTML
+
+[source,bash]
+----
+# Fetch New Zealand data
+ammitto fetch nz
+----
+
+=== World Bank (`wb`)
+
+*Provider:* World Bank Group
+*URL:* https://www.worldbank.org/en/projects-operations/procurement/debarment-faq
+*Format:* XLSX
+
+The World Bank maintains a list of debarred firms and individuals for procurement fraud and corruption.
+
+[source,bash]
+----
+# Fetch World Bank data
+ammitto fetch wb
+----
+
+== Vessel Sources
+
+=== EU Vessels (`eu_vessels`)
+
+Vessel-specific sanctions from the European Union.
+
+[source,bash]
+----
+# Fetch EU vessel data
+ammitto fetch eu_vessels
+
+# Search vessels
+ammitto search "IMO 1234567" --source eu_vessels --type vessel
+----
+
+=== UN Vessels (`un_vessels`)
+
+Vessel-specific sanctions from the UN Security Council.
+
+[source,bash]
+----
+# Fetch UN vessel data
+ammitto fetch un_vessels
+----
+
+== Adding New Sources
+
+To add a new data source:
+
+. Create a fetcher in `lib/ammitto/extractors/`
+. Create a transformer in `lib/ammitto/transformers/`
+. Register the source in `lib/ammitto/sources/registry.rb`
+
+See link:../understanding/extending.adoc[Extending Ammitto] for details.

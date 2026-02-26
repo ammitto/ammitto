@@ -1,0 +1,116 @@
+---
+layout: default
+title: Installation
+parent: Getting Started
+nav_order: 1
+permalink: /getting-started/installation/
+---
+= Installation
+
+== Purpose
+
+This page describes how to install the Ammitto gem in your Ruby environment.
+
+== Requirements
+
+[cols="1,2"]
+|===
+| Requirement | Details
+
+| Ruby
+| 3.0 or higher (3.3 recommended)
+
+| Bundler
+| 2.0 or higher
+
+| Operating System
+| Linux, macOS, or Windows (with WSL recommended)
+|===
+
+== Install the Gem
+
+.Add to your Gemfile
+[source,ruby]
+----
+gem 'ammitto', github: 'lutaml/ammitto', branch: 'main'
+----
+
+.Install with Bundler
+[source,bash]
+----
+bundle install
+----
+
+.Or install globally
+[source,bash]
+----
+gem install specific_install
+gem specific_install https://github.com/lutaml/ammitto.git -b main
+----
+
+== Verify Installation
+
+[source,bash]
+----
+# Check version
+ammitto version
+# => ammitto 0.1.0
+
+# List available sources
+ammitto sources
+# => +----+----------------------+--------+-------+
+# => | au | Australia (DFAT)     | 5,544  | YAML  |
+# => | eu | European Union       | 23,440 | JSON  |
+# => ...
+----
+
+== Dependencies
+
+Ammitto depends on these gems (installed automatically):
+
+[cols="1,3"]
+|===
+| Gem | Purpose
+
+| `lutaml-model`
+| Data modeling with serialization
+
+| `faraday`
+| HTTP client for fetching data
+
+| `nokogiri`
+| XML/HTML parsing
+
+| `json-ld`
+| JSON-LD serialization
+
+| `rdf`
+| RDF data model
+
+| `thor`
+| CLI framework
+
+| `roo`
+| Excel/CSV parsing (for some sources)
+|===
+
+== Configuration Directory
+
+Ammitto stores cached data in `~/.ammitto/` by default:
+
+[source,bash]
+----
+~/.ammitto/
+├── cache/           # Downloaded raw data
+│   ├── un/
+│   ├── eu/
+│   └── ...
+└── sources/         # Processed data repositories
+----
+
+You can customize this location in your configuration.
+
+== Next Steps
+
+* link:quick-start.adoc[Quick Start] - Get up and running quickly
+* link:configuration.adoc[Configuration] - Configure Ammitto for your needs

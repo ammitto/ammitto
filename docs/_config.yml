@@ -1,0 +1,191 @@
+# Jekyll configuration for Ammitto documentation
+# Uses Just the Docs theme - https://just-the-docs.com/
+
+# Site settings
+title: Ammitto Documentation
+description: Unified access to global sanctions data from multiple international sources
+url: https://www.lutaml.org
+baseurl: /ammitto
+
+# Repository
+repository: lutaml/ammitto
+
+# Theme
+theme: just-the-docs
+remote_theme: just-the-docs/just-the-docs@v0.7.0
+color_scheme: light
+
+# Logo (uncomment if you have a logo)
+# logo: "/assets/images/logo.svg"
+# favicon_ico: "/assets/images/favicon.ico"
+
+# AsciiDoc support
+asciidoc: {}
+asciidoctor:
+  attributes:
+    idprefix: ''
+    idseparator: '-'
+    source-highlighter: rouge
+    icons: font
+    experimental: true
+    sectanchors: true
+    linkattrs: true
+    sectnums: true
+    toc: left
+    toclevels: 3
+
+# Search configuration
+search_enabled: true
+search:
+  heading_level: 3
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s/]+/
+  rel_url: true
+  button: true
+
+# Navigation
+nav_sort: case_insensitive
+nav_fold: true
+
+# External links
+aux_links:
+  "Source":
+    - "https://github.com/lutaml/ammitto"
+  "Report Issues":
+    - "https://github.com/lutaml/ammitto/issues"
+  "RubyGem":
+    - "https://rubygems.org/gems/ammitto"
+
+aux_links_new_tab: true
+
+# Back to top
+back_to_top: true
+back_to_top_text: "Back to top"
+
+# Heading anchors
+heading_anchors: true
+
+# Footer
+footer_content: 'Copyright &copy; 2025 Ribose. Distributed under the <a href="https://github.com/lutaml/ammitto/blob/main/LICENSE.txt">MIT License</a>.'
+
+# Footer last edit timestamp
+last_edit_timestamp: true
+last_edit_time_format: "%b %e %Y at %I:%M %p"
+
+# Enable code copy button
+enable_copy_code_button: true
+
+# Callouts
+callouts_level: quiet
+callouts:
+  highlight:
+    color: yellow
+  important:
+    title: Important
+    color: blue
+  new:
+    title: New
+    color: green
+  note:
+    title: Note
+    color: purple
+  warning:
+    title: Warning
+    color: red
+
+# Plugins
+plugins:
+  - jekyll-asciidoc
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Markdown settings (for any markdown files)
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+# Collections for organizing content
+collections:
+  # Core documentation pages
+  pages:
+    permalink: "/:path/"
+    output: true
+
+  # API documentation
+  interfaces:
+    permalink: "/:collection/:path/"
+    output: true
+
+  # Data sources
+  sources:
+    permalink: "/:collection/:path/"
+    output: true
+
+  # Features
+  features:
+    permalink: "/:collection/:path/"
+    output: true
+
+  # Reference documentation
+  reference:
+    permalink: "/:collection/:path/"
+    output: true
+
+  # Understanding/internal documentation
+  understanding:
+    permalink: "/:collection/:path/"
+    output: true
+
+# Just the Docs collection configuration
+just_the_docs:
+  collections:
+    pages:
+      name: Pages
+      nav_fold: false
+    interfaces:
+      name: Interfaces
+      nav_fold: true
+    sources:
+      name: Data Sources
+      nav_fold: true
+    features:
+      name: Features
+      nav_fold: true
+    reference:
+      name: Reference
+      nav_fold: true
+    understanding:
+      name: Understanding
+      nav_fold: true
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: default
+
+# Include additional files
+include:
+  - "*.adoc"
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .sass-cache
+  - .jekyll-cache
+  - .bundle
+  - README.md
+  - LICENSE
+  - .git
+  - .gitignore
+
+permalink: pretty

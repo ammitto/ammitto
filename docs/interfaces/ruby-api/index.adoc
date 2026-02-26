@@ -1,0 +1,336 @@
+---
+layout: default
+title: Ruby API
+parent: Interfaces
+nav_order: 1
+has_children: true
+permalink: /interfaces/ruby-api/
+---
+= Ruby API
+
+== Purpose
+
+This section documents the Ammitto Ruby API for programmatic access to sanctions data.
+
+== Module Methods
+
+The `Ammitto` module provides the main entry points:
+
+=== Configuration
+
+[source,ruby]
+----
+# Get current configuration
+config = Ammitto.configuration
+
+# Configure Ammitto
+Ammitto.configure do |config|
+  config.cache_dir = "~/.ammitto/cache"
+  config.verbose = true
+end
+
+# Reset configuration
+Ammitto.reset_configuration!
+----
+
+=== Search
+
+[source,ruby]
+----
+# Basic search
+results = Ammitto.search("Kim Jong")
+
+# With options
+results = Ammitto.search("Bank",
+  sources: [:un, :eu, :us],
+  entity_type: :organization,
+  limit: 50,
+  offset: 0
+)
+
+# Iterate results
+results.each do |entry|
+  puts "#{entry.name} (#{entry.source})"
+end
+----
+
+=== Cache Management
+
+[source,ruby]
+----
+# Refresh cache
+Ammitto.refresh_cache(sources: [:un, :eu])
+Ammitto.refresh_cache(all: true, force: true)
+
+# Check cache status
+status = Ammitto.cache_status
+# => { un: { status: :fresh, age: 3600 }, ... }
+----
+
+=== Available Sources
+
+[source,ruby]
+----
+# List available source codes
+sources = Ammitto.sources
+# => [:un, :eu, :us, :uk, :au, :ca, :ch, :cn, :ru, :tr, :jp, :nz, :wb]
+----
+
+=== Data Repository
+
+[source,ruby]
+----
+# Access the data repository
+repo = Ammitto.data_repository(
+  local_path: "./data",
+  verbose: true
+)
+
+# Get statistics
+stats = repo.stats
+# => { total_entities: 55908, sources: 15, ... }
+
+# Query entities
+entities = repo.query(name: "Smith", limit: 10)
+----
+
+== Core Classes
+
+=== Search::QueryBuilder
+
+Build complex search queries:
+
+[source,ruby]
+----
+builder = Ammitto::QueryBuilder.new("test",
+  sources: [:un, :eu],
+  limit: 100,
+  offset: 0
+)
+
+query = builder.build
+results = query.execute
+----
+
+=== Search::ResultSet
+
+Work with search results:
+
+[source,ruby]
+----
+results = Ammitto.search("test")
+
+# Check if empty
+results.empty?
+
+# Get count
+results.size
+
+# Filter by entity type
+persons = results.by_entity_type(:person)
+
+# Filter by authority
+un_results = results.by_authority(:un)
+
+# Filter by status
+active = results.by_status(:active)
+
+# Get unique values
+results.entity_types  # => [:person, :organization]
+results.authorities   # => [:un, :eu, :us]
+
+# Export
+results.to_json_ld
+results.to_json
+----
+
+== Entity Classes
+
+All entities inherit from `Ammitto::Ontology::Entities::Entity`.
+
+=== PersonEntity
+
+[source,ruby]
+----
+entity = Ammitto::Ontology.create_entity(:person,
+  id: 'un/KPi.066',
+  names: [{ full_name: 'KIM, Jong Un', is_primary: true }],
+  birth_info: [{ year: 1984, country: 'KP' }],
+  nationalities: ['KP']
+)
+
+# Attributes
+entity.id              # => "https://www.ammitto.org/entity/un/KPi.066"
+entity.entity_type     # => "person"
+entity.primary_name    # => "KIM, Jong Un"
+entity.birth_date      # => Date object or nil
+entity.birth_country   # => "KP"
+entity.deceased?       # => false
+
+# Methods
+entity.matches?("jong un")  # => true
+entity.person?              # => true
+entity.organization?        # => false
+----
+
+=== OrganizationEntity
+
+[source,ruby]
+----
+entity = Ammitto::Ontology.create_entity(:organization,
+  id: 'eu/EU.001',
+  names: [{ full_name: 'Acme Corp', is_primary: true }],
+  country: 'US',
+  registration_number: '12345'
+)
+
+# Attributes
+entity.country               # => "US"
+entity.registration_number   # => "12345"
+entity.legal_form            # => "Corporation"
+entity.dissolved?            # => false
+----
+
+=== VesselEntity
+
+[source,ruby]
+----
+entity = Ammitto::Ontology.create_entity(:vessel,
+  id: 'un-vessels/IMO123456',
+  names: [{ full_name: 'MV Example', is_primary: true }],
+  imo_number: '1234567',
+  flag_state: 'LR'
+)
+
+# Attributes
+entity.imo_number            # => "1234567"
+entity.mmsi                  # => Maritime Mobile Service Identity
+entity.call_sign             # => Radio call sign
+entity.flag_state            # => "LR"
+entity.vessel_type           # => "Cargo"
+entity.gross_tonnage         # => Integer
+----
+
+=== AircraftEntity
+
+[source,ruby]
+----
+entity = Ammitto::Ontology.create_entity(:aircraft,
+  id: 'un-aircraft/RA12345',
+  names: [{ full_name: 'RA-12345', is_primary: true }],
+  registration_number: 'RA-12345',
+  manufacturer: 'Boeing'
+)
+
+# Attributes
+entity.serial_number         # => Manufacturer serial number
+entity.registration_number   # => "RA-12345"
+entity.manufacturer          # => "Boeing"
+entity.model                 # => "737-800"
+entity.flag_state            # => "RU"
+----
+
+== Sanction Classes
+
+=== SanctionEntry
+
+[source,ruby]
+----
+entry = Ammitto::SanctionEntry.new(
+  id: 'entry/un/KPi.066',
+  entity_id: 'entity/un/KPi.066',
+  authority: { country_code: 'UN' },
+  regime: { code: 'dprk', name: 'DPRK' },
+  status: 'active'
+)
+
+# Attributes
+entry.id                # => Entry URI
+entry.entity_id         # => Entity URI
+entry.authority         # => Authority object
+entry.regime            # => SanctionRegime object
+entry.status            # => "active", "suspended", "delisted"
+entry.listed_date       # => Date
+
+# Status checks
+entry.active?           # => true
+entry.suspended?        # => false
+entry.terminated?       # => false
+
+# Methods
+entry.authority_code    # => "UN"
+entry.effect_types      # => ["asset_freeze", "travel_ban"]
+----
+
+=== Authority
+
+[source,ruby]
+----
+# Get authority by code
+authority = Ammitto::Ontology.authority(:un)
+
+authority.code          # => "UN"
+authority.name          # => "United Nations"
+authority.url           # => "https://www.un.org/..."
+
+# List all authorities
+Ammitto::Ontology.authority_codes
+# => [:un, :eu, :us, :uk, :au, :ca, ...]
+----
+
+== Serialization
+
+=== JSON-LD Serialization
+
+[source,ruby]
+----
+serializer = Ammitto::Serialization::JsonLdSerializer.new
+
+# Serialize entity
+jsonld = serializer.serialize_entity(entity)
+
+# Serialize entry
+jsonld = serializer.serialize_entry(entry)
+
+# Full document
+doc = serializer.serialize_document(
+  entities: [entity],
+  entries: [entry]
+)
+----
+
+=== Search Index Export
+
+[source,ruby]
+----
+exporter = Ammitto::Serialization::SearchIndexExporter.new
+
+# Add entities
+entities.each do |entity|
+  entry = entries[entity.id]
+  exporter.add(entity, entry)
+end
+
+# Export
+exporter.export('./api/v1')
+# Creates:
+#   ./api/v1/search-index.json
+#   ./api/v1/facets/authorities.json
+#   ./api/v1/facets/types.json
+#   ./api/v1/facets/countries.json
+----
+
+== Error Handling
+
+[source,ruby]
+----
+begin
+  results = Ammitto.search("test")
+rescue Ammitto::Errors::SourceNotFoundError => e
+  puts "Source not found: #{e.message}"
+rescue Ammitto::Errors::NetworkError => e
+  puts "Network error: #{e.message}"
+rescue Ammitto::Errors::ParseError => e
+  puts "Parse error: #{e.message}"
+end
+----

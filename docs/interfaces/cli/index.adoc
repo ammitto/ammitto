@@ -1,0 +1,449 @@
+---
+layout: default
+title: Command Line Interface
+parent: Interfaces
+nav_order: 2
+has_children: true
+permalink: /interfaces/cli/
+---
+= Command Line Interface
+
+== Purpose
+
+This section documents the Ammitto command-line interface for interacting with sanctions data.
+
+== Global Options
+
+These options apply to all commands:
+
+[cols="1,1,2"]
+|===
+| Option | Default | Description
+
+| `--verbose`
+| false
+| Enable verbose output
+
+| `--log-level LEVEL`
+| info
+| Set log level (debug, info, warn, error)
+
+| `--cache-dir DIR`
+| ~/.ammitto
+| Directory for caching data
+|===
+
+== Commands
+
+=== version
+
+Show the Ammitto version:
+
+[source,bash]
+----
+ammitto version
+# => ammitto 0.1.0
+----
+
+=== sources
+
+List available sanction sources:
+
+[source,bash]
+----
+# Table format (default)
+ammitto sources
+
+# JSON format
+ammitto sources --format json
+----
+
+.Output
+----
++----+----------------------+-------+
+| au | Australia (DFAT)     | 5,544 |
+| ca | Canada               | 1,234 |
+| eu | European Union       | 23,440|
+| ...                        |
++----+----------------------+-------+
+----
+
+=== status
+
+Show cache and data status:
+
+[source,bash]
+----
+# Table format (default)
+ammitto status
+
+# JSON format
+ammitto status --format json
+----
+
+.Output
+----
++----+----------+-------+---------------------+
+| au | fresh    | 5,544 | 2025-02-25 08:00:00 |
+| eu | stale    | 23,440| 2025-02-24 00:00:00 |
+| ...                              |
++----+----------+-------+---------------------+
+----
+
+=== fetch
+
+Download raw data from sources:
+
+[source,bash]
+----
+# Fetch a specific source
+ammitto fetch eu
+
+# Fetch multiple sources
+ammitto fetch eu un us
+
+# Fetch all sources
+ammitto fetch --all
+
+# Dry run (show what would be fetched)
+ammitto fetch eu --dry-run
+
+# Force re-download
+ammitto fetch eu --force
+
+# Specify output directory
+ammitto fetch eu --output-dir ./data
+
+# Specify format
+ammitto fetch eu --format yaml
+----
+
+.Options
+[cols="1,2"]
+|===
+| Option | Description
+
+| `--dry-run`
+| Show what would be done without making changes
+
+| `--force`
+| Force re-download even if cache is fresh
+
+| `--all`
+| Fetch all available sources
+
+| `--format FORMAT`
+| Output format: yaml (default), jsonld
+
+| `--output-dir DIR`
+| Output directory for fetched data
+|===
+
+=== harmonize
+
+Transform YAML source data to harmonized JSON-LD format:
+
+[source,bash]
+----
+# Harmonize a specific source
+ammitto harmonize eu
+
+# Harmonize all sources
+ammitto harmonize --all
+
+# Auto-detect data-* repositories
+ammitto harmonize --scan --sources-dir ../
+
+# Combine into single all.jsonld
+ammitto harmonize --all --combine
+
+# Specify output directory
+ammitto harmonize eu --output-dir ./api/v1
+----
+
+.Options
+[cols="1,2"]
+|===
+| Option | Description
+
+| `--input-dir DIR`
+| Input directory containing YAML files
+
+| `--sources-dir DIR`
+| Parent directory containing data-* repos
+
+| `--output-dir DIR`
+| Output directory for JSON-LD (default: ./api/v1)
+
+| `--all`
+| Harmonize all sources
+
+| `--scan`
+| Auto-detect data-* repositories
+
+| `--combine`
+| Create combined all.jsonld output
+|===
+
+=== process
+
+Process raw data into harmonized models:
+
+[source,bash]
+----
+# Process all fetched sources
+ammitto process
+
+# Process specific sources
+ammitto process eu un
+
+# Force reprocessing
+ammitto process --force
+----
+
+=== export
+
+Export data to specified format:
+
+[source,bash]
+----
+# Export as JSON-LD
+ammitto export jsonld
+
+# Export as Turtle (RDF)
+ammitto export ttl
+
+# Export all formats
+ammitto export all
+
+# Specify output directory
+ammitto export jsonld --output-dir ./data
+
+# Export specific sources
+ammitto export jsonld --sources eu,un,us
+----
+
+.Available formats
+[cols="1,2"]
+|===
+| Format | Description
+
+| `jsonld`
+| JSON-LD (primary format)
+
+| `ttl`
+| Turtle (RDF)
+
+| `nt`
+| N-Triples (RDF)
+
+| `rdfxml`
+| RDF/XML
+
+| `raw`
+| Source-specific YAML/JSON
+
+| `all`
+| Export all formats
+|===
+
+=== search
+
+Search entities by name:
+
+[source,bash]
+----
+# Basic search
+ammitto search "Kim Jong"
+
+# Filter by entity type
+ammitto search "Bank" --type organization
+
+# Filter by source
+ammitto search "Smith" --source eu
+
+# Limit results
+ammitto search "test" --limit 20
+
+# Output as JSON
+ammitto search "test" --format json
+----
+
+.Options
+[cols="1,2"]
+|===
+| Option | Description
+
+| `--type TYPE`
+| Entity type: person, organization, vessel, aircraft
+
+| `--source CODE`
+| Source code to filter by
+
+| `--limit N`
+| Maximum results (default: 50)
+
+| `--format FORMAT`
+| Output format: text (default), json
+
+| `--data-repository DIR`
+| Path to data repository
+|===
+
+=== get
+
+Get an entity by ID:
+
+[source,bash]
+----
+# Get by short path
+ammitto get un/KPi.066
+
+# Get by full URI
+ammitto get "https://www.ammitto.org/entity/un/KPi.066"
+
+# Output as JSON
+ammitto get un/KPi.066 --format json
+----
+
+.ID formats supported
+[cols="1,2"]
+|===
+| Format | Example
+
+| Full URI
+| `https://www.ammitto.org/entity/un/KPi.066`
+
+| Short path
+| `un/KPi.066` or `entity/un/KPi.066`
+
+| Reference number
+| `KPi.066` (source-specific)
+|===
+
+=== data
+
+Manage the data repository:
+
+[source,bash]
+----
+# Clone the data repository
+ammitto data clone
+
+# Pull latest updates
+ammitto data pull
+
+# Show repository status
+ammitto data status
+
+# Query entities
+ammitto data query --name "Smith" --limit 10
+
+# Get entity by ID
+ammitto data get eu-12345
+
+# List available sources
+ammitto data sources
+
+# Show data statistics
+ammitto data stats
+----
+
+.Query options
+[cols="1,2"]
+|===
+| Option | Description
+
+| `--name NAME`
+| Name to search for
+
+| `--source CODE`
+| Source code to filter by
+
+| `--type TYPE`
+| Entity type to filter by
+
+| `--country CODE`
+| Country code to filter by
+
+| `--limit N`
+| Maximum results
+
+| `--offset N`
+| Offset for pagination
+|===
+
+== Examples
+
+=== Daily Update Workflow
+
+[source,bash]
+----
+#!/bin/bash
+# Daily update script
+
+# Fetch latest data
+ammitto fetch --all --verbose
+
+# Harmonize to JSON-LD
+ammitto harmonize --all --combine --output-dir ./api/v1
+
+# Verify
+ammitto status
+----
+
+=== Compliance Screening
+
+[source,bash]
+----
+# Screen a customer
+CUSTOMER="John Smith"
+
+# Search across all sources
+RESULTS=$(ammitto search "$CUSTOMER" --format json)
+
+# Check for matches
+if echo "$RESULTS" | jq -e '.entities | length > 0' > /dev/null; then
+  echo "Potential matches found!"
+  echo "$RESULTS" | jq '.entities'
+else
+  echo "No matches found"
+fi
+----
+
+=== Export for Analysis
+
+[source,bash]
+----
+# Export EU data to JSON for analysis
+ammitto harmonize eu --output-dir ./export
+ammitto export jsonld --sources eu --output-dir ./export
+
+# Export all to Turtle for RDF tools
+ammitto export ttl --output-dir ./export
+----
+
+== Exit Codes
+
+[cols="1,2"]
+|===
+| Code | Meaning
+
+| 0
+| Success
+
+| 1
+| Error (see message)
+
+| 2
+| Invalid arguments
+
+| 3
+| Source not found
+
+| 4
+| Network error
+
+| 5
+| Parse error
+|===

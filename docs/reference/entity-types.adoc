@@ -1,0 +1,402 @@
+---
+layout: default
+title: Entity Types
+parent: Reference
+nav_order: 1
+permalink: /reference/entity-types/
+---
+= Entity Types
+
+== Purpose
+
+Ammitto supports four entity types in its ontology.
+
+== Overview
+
+[cols="1,1,2"]
+|===
+| Type | Icon | Description
+
+| `person`
+| user
+| Natural persons (individuals)
+
+| `organization`
+| building
+| Legal entities (companies, governments, etc.)
+
+| `vessel`
+| ship
+| Maritime vessels
+
+| `aircraft`
+| plane
+| Aircraft
+|===
+
+== Person Entity
+
+=== Attributes
+
+[cols="1,1,2"]
+|===
+| Attribute | Type | Description
+
+| `id`
+| String (URI)
+| Unique entity identifier
+
+| `entity_type`
+| String
+| Always `person`
+
+| `names`
+| NameVariant[]
+| Name variations (primary + aliases)
+
+| `birth_info`
+| BirthInfo[]
+| Birth date and location
+
+| `death_date`
+| Date
+| Date of death (if applicable)
+
+| `nationalities`
+| String[]
+| Country codes
+
+| `gender`
+| String
+| Gender (M/F/Other)
+
+| `identifications`
+| Identification[]
+| Identity documents
+
+| `addresses`
+| Address[]
+| Known addresses
+
+| `contact_info`
+| ContactInfo
+| Phone, email, etc.
+
+| `title`
+| String
+| Job title or honorific
+
+| `position`
+| String
+| Position held
+
+| `affiliation`
+| String
+| Organization affiliation
+|===
+
+=== Methods
+
+[source,ruby]
+----
+entity = Ammitto::Ontology::Entities::PersonEntity.new(...)
+
+# Type checks
+entity.person?         # => true
+entity.organization?   # => false
+entity.vessel?         # => false
+entity.aircraft?       # => false
+
+# Name access
+entity.primary_name    # => "KIM, Jong Un"
+entity.all_names       # => ["KIM, Jong Un", "金正恩", ...]
+
+# Birth info
+entity.birth_date      # => Date object or nil
+entity.birth_country   # => "KP"
+entity.primary_birth_info  # => BirthInfo object
+
+# Status
+entity.deceased?       # => true/false
+
+# Search
+entity.matches?("jong un")  # => true (case-insensitive)
+----
+
+=== JSON-LD Example
+
+[source,json]
+----
+{
+  "@id": "https://www.ammitto.org/entity/un/KPi.066",
+  "@type": "PersonEntity",
+  "entityType": "person",
+  "names": [
+    {
+      "@type": "NameVariant",
+      "fullName": "KIM, Jong Un",
+      "isPrimary": true
+    },
+    {
+      "@type": "NameVariant",
+      "fullName": "金正恩",
+      "language": "ko"
+    }
+  ],
+  "birthInfo": [
+    {
+      "@type": "BirthInfo",
+      "year": 1984,
+      "country": "KP"
+    }
+  ],
+  "nationalities": ["KP"],
+  "hasSanctionEntry": [
+    { "@id": "https://www.ammitto.org/entry/un/KPi.066" }
+  ]
+}
+----
+
+== Organization Entity
+
+=== Attributes
+
+[cols="1,1,2"]
+|===
+| Attribute | Type | Description
+
+| `id`
+| String (URI)
+| Unique entity identifier
+
+| `entity_type`
+| String
+| Always `organization`
+
+| `names`
+| NameVariant[]
+| Name variations
+
+| `registration_number`
+| String
+| Company registration
+
+| `incorporation_date`
+| Date
+| Date of incorporation
+
+| `dissolution_date`
+| Date
+| Date of dissolution
+
+| `legal_form`
+| String
+| Corporation, LLC, etc.
+
+| `country`
+| String
+| Country of incorporation
+
+| `identifications`
+| Identification[]
+| Registration documents
+
+| `addresses`
+| Address[]
+| Known addresses
+
+| `beneficial_owners`
+| EntityLink[]
+| Beneficial owners
+
+| `directors`
+| EntityLink[]
+| Directors
+
+| `parent_organization`
+| EntityLink
+| Parent company
+
+| `subsidiaries`
+| EntityLink[]
+| Subsidiary companies
+
+| `website`
+| String
+| Website URL
+
+| `sector`
+| String
+| Industry sector
+|===
+
+=== Methods
+
+[source,ruby]
+----
+entity = Ammitto::Ontology::Entities::OrganizationEntity.new(...)
+
+entity.organization?   # => true
+entity.dissolved?      # => true/false
+entity.primary_name    # => "Acme Corp"
+----
+
+== Vessel Entity
+
+=== Attributes
+
+[cols="1,1,2"]
+|===
+| Attribute | Type | Description
+
+| `id`
+| String (URI)
+| Unique entity identifier
+
+| `entity_type`
+| String
+| Always `vessel`
+
+| `names`
+| NameVariant[]
+| Vessel names
+
+| `imo_number`
+| String
+| IMO ship identification
+
+| `mmsi`
+| String
+| Maritime Mobile Service Identity
+
+| `call_sign`
+| String
+| Radio call sign
+
+| `flag_state`
+| String
+| Country of registration
+
+| `vessel_type`
+| String
+| Cargo, tanker, fishing, etc.
+
+| `tonnage`
+| Tonnage
+| GRT, GT, DWT, NT
+
+| `build_year`
+| Integer
+| Year built
+
+| `builder`
+| String
+| Shipyard/builder
+
+| `length`
+| Integer
+| Length in meters
+
+| `owner`
+| EntityLink
+| Owning company
+
+| `operator`
+| EntityLink
+| Operating company
+
+| `previous_names`
+| String[]
+| Previous names
+
+| `previous_flags`
+| String[]
+| Previous flag states
+|===
+
+=== Methods
+
+[source,ruby]
+----
+entity = Ammitto::Ontology::Entities::VesselEntity.new(...)
+
+entity.vessel?         # => true
+entity.imo_number      # => "1234567"
+entity.flag_state      # => "LR"
+----
+
+== Aircraft Entity
+
+=== Attributes
+
+[cols="1,1,2"]
+|===
+| Attribute | Type | Description
+
+| `id`
+| String (URI)
+| Unique entity identifier
+
+| `entity_type`
+| String
+| Always `aircraft`
+
+| `names`
+| NameVariant[]
+| Aircraft identifiers
+
+| `serial_number`
+| String
+| Manufacturer serial
+
+| `manufacturer`
+| String
+| Boeing, Airbus, etc.
+
+| `model`
+| String
+| 737-800, A320, etc.
+
+| `registration_number`
+| String
+| Tail number
+
+| `flag_state`
+| String
+| Country of registration
+
+| `build_year`
+| Integer
+| Year built
+
+| `aircraft_type`
+| String
+| Passenger, cargo, private
+
+| `engine_type`
+| String
+| Jet, turboprop, piston
+
+| `owner`
+| EntityLink
+| Owning company/person
+
+| `operator`
+| EntityLink
+| Operating airline
+
+| `previous_registrations`
+| String[]
+| Previous registrations
+|===
+
+=== Methods
+
+[source,ruby]
+----
+entity = Ammitto::Ontology::Entities::AircraftEntity.new(...)
+
+entity.aircraft?       # => true
+entity.registration_number  # => "RA-12345"
+entity.manufacturer    # => "Boeing"
+----

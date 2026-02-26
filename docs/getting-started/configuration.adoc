@@ -1,0 +1,281 @@
+---
+layout: default
+title: Configuration
+parent: Getting Started
+nav_order: 3
+permalink: /getting-started/configuration/
+---
+= Configuration
+
+== Purpose
+
+This page describes how to configure Ammitto for your environment and use cases.
+
+== Configuration Options
+
+Ammitto can be configured globally or per-operation:
+
+[source,ruby]
+----
+Ammitto.configure do |config|
+  # API and caching
+  config.api_base_url = "https://www.ammitto.com/api/v1"
+  config.cache_dir = "~/.ammitto/cache"
+  config.cache_ttl = 3600  # 1 hour
+
+  # Timeouts
+  config.connection_timeout = 10
+  config.read_timeout = 30
+
+  # Logging
+  config.verbose = true
+  config.logger = Rails.logger  # or any Logger instance
+
+  # Data directories
+  config.data_repository = "../data"
+  config.sources_dir = "../.."
+end
+----
+
+== Configuration Reference
+
+[cols="1,1,2,1"]
+|===
+| Option | Type | Description | Default
+
+| `api_base_url`
+| String
+| Base URL for the Ammitto API
+| `https://www.ammitto.com/api/v1`
+
+| `cache_dir`
+| String
+| Directory for caching downloaded data
+| `~/.ammitto/cache`
+
+| `cache_ttl`
+| Integer
+| Cache time-to-live in seconds
+| `3600`
+
+| `connection_timeout`
+| Integer
+| Connection timeout in seconds
+| `10`
+
+| `read_timeout`
+| Integer
+| Read timeout in seconds
+| `30`
+
+| `verbose`
+| Boolean
+| Enable verbose logging
+| `false`
+
+| `logger`
+| Logger
+| Custom logger instance
+| `nil`
+
+| `data_repository`
+| String
+| Directory for harmonized JSON-LD data
+| `../../../data`
+
+| `sources_dir`
+| String
+| Parent directory for source data repos
+| `../..`
+|===
+
+== Environment Variables
+
+Configuration can be overridden with environment variables:
+
+[cols="1,2"]
+|===
+| Variable | Description
+
+| `AMMITTO_API_BASE_URL`
+| Override `api_base_url`
+
+| `AMMITTO_CACHE_DIR`
+| Override `cache_dir`
+
+| `AMMITTO_CACHE_TTL`
+| Override `cache_ttl`
+
+| `AMMITTO_DATA_REPOSITORY`
+| Override `data_repository`
+
+| `AMMITTO_SOURCES_DIR`
+| Override `sources_dir`
+
+| `AMMITTO_VERBOSE`
+| Set to `true` for verbose mode
+
+| `AMMITTO_LOG_LEVEL`
+| Set log level (debug, info, warn, error)
+|===
+
+== CLI Configuration
+
+The CLI uses command-line options and environment variables:
+
+[source,bash]
+----
+# Use verbose mode
+ammitto --verbose search "test"
+
+# Specify cache directory
+ammitto --cache-dir ~/.ammitto fetch eu
+
+# Set log level
+ammitto --log-level debug fetch un
+----
+
+=== Config File
+
+Create `~/.ammitto/config.yml` for persistent CLI settings:
+
+[source,yaml]
+----
+cache_dir: ~/.ammitto/cache
+verbose: true
+log_level: info
+data_repository: ~/src/ammitto/data
+sources_dir: ~/src/ammitto
+----
+
+== Source Configuration
+
+Each data source has its own configuration:
+
+=== Available Sources
+
+[cols="1,1,2"]
+|===
+| Code | Name | Description
+
+| `un`
+| United Nations
+| UN Security Council Consolidated List
+
+| `eu`
+| European Union
+| EU Sanctions Map
+
+| `us`
+| United States
+| OFAC SDN and Consolidated Lists
+
+| `uk`
+| United Kingdom
+| UK Sanctions List
+
+| `au`
+| Australia
+| DFAT Consolidated List
+
+| `ca`
+| Canada
+| SEMA and Special Economic Measures
+
+| `ch`
+| Switzerland
+| SECO Sanctions List
+
+| `cn`
+| China
+| MOFCOM and MFA Sanctions
+
+| `ru`
+| Russia
+| MID Unfriendly Countries List
+
+| `tr`
+| Turkey
+| Ministry of Foreign Affairs
+
+| `jp`
+| Japan
+| METI End User List
+
+| `nz`
+| New Zealand
+| MFAT Sanctions Register
+
+| `wb`
+| World Bank
+| Debarment List
+
+| `eu_vessels`
+| EU Vessels
+| EU Vessel Sanctions
+
+| `un_vessels`
+| UN Vessels
+| UN Vessel Sanctions
+|===
+
+=== Fetching Specific Sources
+
+[source,ruby]
+----
+# Fetch a single source
+Ammitto.fetch(:eu)
+
+# Fetch multiple sources
+Ammitto.fetch(:un, :eu, :us)
+
+# Fetch all sources
+Ammitto.fetch(:all)
+----
+
+== Cache Management
+
+=== Refresh Cache
+
+[source,ruby]
+----
+# Refresh specific sources
+Ammitto.refresh_cache(sources: [:un, :eu])
+
+# Refresh all sources
+Ammitto.refresh_cache(all: true)
+
+# Force refresh even if cache is fresh
+Ammitto.refresh_cache(sources: [:un], force: true)
+----
+
+=== Check Cache Status
+
+[source,ruby]
+----
+status = Ammitto.cache_status
+status.each do |source, info|
+  puts "#{source}: #{info[:status]} (#{info[:age]}s old)"
+end
+----
+
+=== Clear Cache
+
+[source,bash]
+----
+# Clear all cached data
+rm -rf ~/.ammitto/cache/*
+----
+
+== Reset Configuration
+
+[source,ruby]
+----
+# Reset to defaults
+Ammitto.reset_configuration!
+----
+
+== Next Steps
+
+* link:../interfaces/ruby-api/[Ruby API] - Use the configured Ammitto in your code
+* link:../interfaces/cli/[CLI Reference] - CLI commands with configuration options

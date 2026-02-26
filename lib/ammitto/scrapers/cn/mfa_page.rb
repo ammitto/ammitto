@@ -28,7 +28,7 @@ module Ammitto
         # Initialize with options
         # @param options [Hash] scraper options
         def initialize(options = {})
-          super(options)
+          super
         end
 
         # The URL to scrape

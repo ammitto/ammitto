@@ -36,7 +36,7 @@ RSpec.describe Ammitto::Config::Defaults do
     let(:temp_dir) { Dir.mktmpdir('ammitto_config_test') }
 
     after do
-      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
+      FileUtils.rm_rf(temp_dir)
     end
 
     it 'returns empty array for non-existent directory' do

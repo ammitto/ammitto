@@ -92,7 +92,7 @@ module Ammitto
       end
 
       def convert_yaml_file(yaml_path, source_code)
-        data = YAML.safe_load(File.read(yaml_path), permitted_classes: [Date, Time])
+        data = YAML.safe_load_file(yaml_path, permitted_classes: [Date, Time])
         return nil unless data
 
         names = data['names'] || []

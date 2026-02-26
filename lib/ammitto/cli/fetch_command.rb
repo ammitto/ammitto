@@ -80,10 +80,8 @@ module Ammitto
       # Fetch all sources
       # @return [void]
       def fetch_all
-        results = []
-
-        @sources.each do |source|
-          results << fetch_source(source)
+        results = @sources.map do |source|
+          fetch_source(source)
         end
 
         print_summary(results)

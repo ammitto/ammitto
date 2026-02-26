@@ -69,9 +69,7 @@ module Ammitto
           raise unless retry_count <= max_retries
 
           wait_time = retry_count * 30
-          if verbose
-            puts "[#{code}] Error: #{e.message}, retrying in #{wait_time}s (attempt #{retry_count}/#{max_retries})..."
-          end
+          puts "[#{code}] Error: #{e.message}, retrying in #{wait_time}s (attempt #{retry_count}/#{max_retries})..." if verbose
           sleep(wait_time)
           retry
         end

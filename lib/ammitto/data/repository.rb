@@ -102,9 +102,7 @@ module Ammitto
       #
       # @return [Boolean] true if pull succeeded
       def pull
-        unless File.directory?(File.join(local_path, '.git'))
-          raise Ammitto::Error, 'Repository not a git repository. Cannot pull.'
-        end
+        raise Ammitto::Error, 'Repository not a git repository. Cannot pull.' unless File.directory?(File.join(local_path, '.git'))
 
         log("Pulling updates from #{remote_url}")
         success, output = run_git_command('-C', local_path, 'pull', '--ff-only')
@@ -288,7 +286,7 @@ module Ammitto
       #
       # @return [String, nil]
       def default_path_from_env
-        env_path = ENV['AMMITTO_DATA_REPOSITORY']
+        env_path = ENV.fetch('AMMITTO_DATA_REPOSITORY', nil)
         return nil if env_path.nil? || env_path.empty?
 
         env_path

@@ -103,7 +103,7 @@ module Ammitto
       end
 
       def load_yaml(file_path)
-        YAML.safe_load(File.read(file_path), permitted_classes: [Date, Time])
+        YAML.safe_load_file(file_path, permitted_classes: [Date, Time])
       rescue StandardError => e
         Logger.warn("Failed to load #{file_path}: #{e.message}")
         nil
@@ -379,9 +379,8 @@ module Ammitto
         Ammitto::RawSourceData.new(
           source_file: "#{source_code}-data",
           source_format: 'yaml',
-          source_specific_fields: data.reject do |k, _|
-            %w[names entity_type country birthdate address passport tax_id ref_number ref_type remark].include?(k)
-          end
+          source_specific_fields: data.except('names', 'entity_type', 'country', 'birthdate', 'address', 'passport', 'tax_id', 'ref_number',
+                                              'ref_type', 'remark')
         )
       end
 

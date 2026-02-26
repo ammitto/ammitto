@@ -241,15 +241,13 @@ module Ammitto
         # @param text [String]
         # @return [Array<Hash>]
         def extract_entities_from_text(text)
-          entities = []
-
           # Look for entity names in the announcement
           # Entities are often listed after phrases like "附件：" or "被列入...的实体："
 
           # Pattern 1: Numbered list with Chinese and English names
           # 1. 中文公司名 (English Company Name)
-          text.scan(/^\s*(\d+)\.\s*(.+?)\s*[（(]\s*(.+?)\s*[)）]/m).each do |match|
-            entities << {
+          entities = text.scan(/^\s*(\d+)\.\s*(.+?)\s*[（(]\s*(.+?)\s*[)）]/m).map do |match|
+            {
               index: match[0].to_i,
               chinese_name: clean_chinese_text(match[1]),
               english_name: match[2]&.strip,

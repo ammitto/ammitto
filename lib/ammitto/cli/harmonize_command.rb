@@ -95,10 +95,8 @@ module Ammitto
         @search_indexer = Serialization::SearchIndexExporter.new
         @ontology_exporter = Serialization::OntologyExporter.new
 
-        results = []
-
-        @sources.each do |source|
-          results << harmonize_source(source)
+        results = @sources.map do |source|
+          harmonize_source(source)
         end
 
         # Export all collected nodes to files

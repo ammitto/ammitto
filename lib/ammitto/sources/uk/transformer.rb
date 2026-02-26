@@ -153,11 +153,9 @@ module Ammitto
         # @param designation [Ammitto::Sources::Uk::Designation]
         # @return [Array<NameVariant>]
         def transform_names(designation)
-          names = []
-
           # Primary and alias names
-          designation.names.each do |name|
-            names << create_name_variant(
+          names = designation.names.map do |name|
+            create_name_variant(
               full_name: name.full_name,
               first_name: name.name1,
               is_primary: name.primary_name?,

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-Dir['./spec/support/**/*.rb'].sort.each { |f| require f }
+Dir['./spec/support/**/*.rb'].each { |f| require f }
 
 require 'ammitto'
 

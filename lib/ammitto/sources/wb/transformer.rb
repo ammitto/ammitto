@@ -179,9 +179,7 @@ module Ammitto
         # @param firm [Ammitto::Sources::Wb::SanctionedFirm]
         # @return [String]
         def determine_status(firm)
-          if firm.debar_to_date && parse_wb_date(firm.debar_to_date) && parse_wb_date(firm.debar_to_date) < Date.today
-            return 'expired'
-          end
+          return 'expired' if firm.debar_to_date && parse_wb_date(firm.debar_to_date) && parse_wb_date(firm.debar_to_date) < Date.today
 
           # Check eligibility status
           case firm.supp_elig_stat&.upcase

@@ -36,4 +36,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'rdf-turtle', '~> 3.3'
   spec.add_dependency 'roo', '~> 2.10'
   spec.add_dependency 'thor', '~> 1.3'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 end

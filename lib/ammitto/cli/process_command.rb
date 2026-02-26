@@ -76,10 +76,8 @@ module Ammitto
       # Process all sources
       # @return [void]
       def process_all
-        results = []
-
-        @sources.each do |source|
-          results << process_source(source)
+        results = @sources.map do |source|
+          process_source(source)
         end
 
         print_summary(results)

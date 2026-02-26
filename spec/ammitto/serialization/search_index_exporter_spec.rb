@@ -11,7 +11,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
   let(:exporter) { described_class.new }
 
   after do
-    FileUtils.rm_rf(output_dir) if Dir.exist?(output_dir)
+    FileUtils.rm_rf(output_dir)
   end
 
   describe '#add' do

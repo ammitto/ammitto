@@ -84,7 +84,7 @@ module Ammitto
 
       # Ensure cache directory exists
       dir = File.dirname(cache_path)
-      FileUtils.mkdir_p(dir) unless Dir.exist?(dir)
+      FileUtils.mkdir_p(dir)
 
       # Download from API
       response = Faraday.get(api_endpoint)

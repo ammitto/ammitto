@@ -13,7 +13,7 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
   let(:exporter) { described_class.new(output_dir: output_dir, context_url: context_url) }
 
   after do
-    FileUtils.rm_rf(output_dir) if Dir.exist?(output_dir)
+    FileUtils.rm_rf(output_dir)
   end
 
   describe '#add_node' do

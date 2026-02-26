@@ -60,7 +60,7 @@ module Ammitto
       # @return [Ammitto::Data::Repository]
       def create_repository
         require_relative '../data/repository'
-        local_path = options[:data_repository] || ENV['AMMITTO_DATA_REPOSITORY']
+        local_path = options[:data_repository] || ENV.fetch('AMMITTO_DATA_REPOSITORY', nil)
         Ammitto::Data::Repository.new(
           local_path: local_path,
           verbose: options[:verbose]

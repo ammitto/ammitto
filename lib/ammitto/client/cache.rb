@@ -114,7 +114,7 @@ module Ammitto
       # Ensure cache directory exists
       def ensure_cache_dir
         sources_dir = File.join(cache_dir, 'cache', 'sources')
-        FileUtils.mkdir_p(sources_dir) unless Dir.exist?(sources_dir)
+        FileUtils.mkdir_p(sources_dir)
       rescue Errno::EACCES => e
         raise CacheError.new(
           "Cannot create cache directory: #{e.message}",

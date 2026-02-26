@@ -337,13 +337,9 @@ module Ammitto
           effects << { '@type' => 'SanctionEffect', 'effectType' => 'asset_freeze', 'scope' => 'full' }
         end
 
-        if row[:travel_ban] == 'TRUE'
-          effects << { '@type' => 'SanctionEffect', 'effectType' => 'entry_ban', 'scope' => 'full' }
-        end
+        effects << { '@type' => 'SanctionEffect', 'effectType' => 'entry_ban', 'scope' => 'full' } if row[:travel_ban] == 'TRUE'
 
-        if row[:arms_embargo] == 'TRUE'
-          effects << { '@type' => 'SanctionEffect', 'effectType' => 'arms_embargo', 'scope' => 'full' }
-        end
+        effects << { '@type' => 'SanctionEffect', 'effectType' => 'arms_embargo', 'scope' => 'full' } if row[:arms_embargo] == 'TRUE'
 
         if row[:maritime_restriction] == 'TRUE'
           effects << { '@type' => 'SanctionEffect', 'effectType' => 'maritime_restriction', 'scope' => 'full' }

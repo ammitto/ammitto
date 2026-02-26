@@ -200,7 +200,7 @@ module Ammitto
           # Check ENV
           option = OPTIONS[name]
           if option && option[:env]
-            env_value = ENV[option[:env]]
+            env_value = ENV.fetch(option[:env], nil)
             return parse_value(name, env_value) if env_value && !env_value.empty?
           end
 

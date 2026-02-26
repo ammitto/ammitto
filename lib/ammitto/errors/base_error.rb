@@ -55,7 +55,7 @@ module Ammitto
     def initialize(message, options = {})
       @status_code = options[:status_code]
       @url = options[:url]
-      super(message, options)
+      super
     end
 
     # @return [String] Full error message including status code and URL
@@ -82,7 +82,7 @@ module Ammitto
     # @option options [String] :path the cache path
     def initialize(message, options = {})
       @path = options[:path]
-      super(message, options)
+      super
     end
   end
 
@@ -106,7 +106,7 @@ module Ammitto
     def initialize(message, options = {})
       @field = options[:field]
       @errors = options[:errors]
-      super(message, options)
+      super
     end
   end
 
@@ -125,7 +125,7 @@ module Ammitto
     # @option options [String, Symbol] :source_code the source code
     def initialize(message, options = {})
       @source_code = options[:source_code]
-      super(message, options)
+      super
     end
   end
 
@@ -149,7 +149,7 @@ module Ammitto
     def initialize(message, options = {})
       @format = options[:format]
       @content = options[:content]
-      super(message, options)
+      super
     end
   end
 
@@ -168,7 +168,7 @@ module Ammitto
     # @option options [Class] :object_class the class of the object
     def initialize(message, options = {})
       @object_class = options[:object_class]
-      super(message, options)
+      super
     end
   end
 
@@ -187,7 +187,7 @@ module Ammitto
     # @option options [String] :id the resource ID
     def initialize(message, options = {})
       @resource_id = options[:id]
-      super(message, options)
+      super
     end
   end
 
@@ -206,7 +206,7 @@ module Ammitto
     # @option options [String] :key the configuration key
     def initialize(message, options = {})
       @key = options[:key]
-      super(message, options)
+      super
     end
   end
 end

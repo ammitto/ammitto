@@ -39,7 +39,7 @@ module Ammitto
         # Check if any Ammitto ENV variables are set
         # @return [Boolean]
         def any_set?
-          ENV_MAPPING.keys.any? { |key| ENV["#{PREFIX}#{key}"] }
+          ENV_MAPPING.keys.any? { |key| ENV.fetch("#{PREFIX}#{key}", nil) }
         end
 
         # Get configuration from environment
@@ -48,7 +48,7 @@ module Ammitto
           config = {}
 
           ENV_MAPPING.each do |key, env_var|
-            value = ENV["#{PREFIX}#{env_var}"]
+            value = ENV.fetch("#{PREFIX}#{env_var}", nil)
             next if value.nil? || value.empty?
 
             config[key] = parse_value(key, value)

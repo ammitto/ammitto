@@ -203,6 +203,7 @@ module Ammitto
     option :sources_dir, type: :string, desc: 'Parent directory containing data-* repos'
     option :output_dir, type: :string, default: './api/v1', desc: 'Output directory for JSON-LD'
     option :all, type: :boolean, default: false, desc: 'Harmonize all sources'
+    option :scan, type: :boolean, default: false, desc: 'Auto-detect data-* repositories'
     option :combine, type: :boolean, default: false, desc: 'Create combined all.jsonld'
     def harmonize(*sources)
       require_relative 'cli/harmonize_command'

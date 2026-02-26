@@ -13,7 +13,10 @@ It provides a unified JSON-LD based data model for querying sanctions data from 
 
 * **Unified Data Model** - Consistent JSON-LD schema across all sources
 * **Multiple Entity Types** - Supports persons, organizations, vessels, and aircraft
-* **10 Data Sources** - EU, UN, US (OFAC), World Bank, UK, Australia, Canada, Switzerland, China, and Russia
+* **15 Data Sources** - EU, UN, US (OFAC), World Bank, UK, Australia, Canada, Switzerland, China, Russia, Japan, New Zealand, Turkey, EU Vessels, UN Vessels
+* **Knowledge Graph Export** - Individual JSON-LD node files with @id references
+* **Lightweight Search Index** - Optimized search-index.json for client-side search
+* **Ontology Browser Data** - Classes, properties, hierarchy for schema exploration
 * **Rich Metadata** - Legal bases, effects, reasons, status history, and official announcements
 * **Local Caching** - Downloads and caches data locally for fast queries
 * **Search API** - Simple and powerful search interface
@@ -181,12 +184,17 @@ A `SanctionEntry` represents a single sanction against an entity, including:
 | UN | United Nations | scsanctions.un.org
 | US | United States (OFAC) | treasury.gov
 | WB | World Bank | worldbank.org
-| GB | United Kingdom (OFSI) | gov.uk
+| UK | United Kingdom (OFSI) | gov.uk
 | AU | Australia (DFAT) | dfat.gov.au
 | CA | Canada (SEFO) | international.gc.ca
 | CH | Switzerland (SECO) | seco.admin.ch
 | CN | China (MOFCOM/MFA) | mofcom.gov.cn, mfa.gov.cn
 | RU | Russia (MID) | mid.ru
+| JP | Japan (MOFA) | mofa.go.jp
+| NZ | New Zealand (MFAT) | mfat.govt.nz
+| TR | Turkey (Ministry of Interior) | icisleri.gov.tr
+| EU_VESSELS | EU Vessels List | webgate.ec.europa.eu
+| UN_VESSELS | UN Vessels List | scsanctions.un.org
 |===
 
 == For Ammitto Operators
@@ -283,7 +291,9 @@ The Ammitto data pipeline consists of four phases:
 | `ammitto/ammitto` | Core Ruby gem with CLI, source models, and transformers
 | `ammitto/data-uk` | UK (OFSI) sanctions data in YAML format
 | `ammitto/data-eu` | EU sanctions data in YAML format
+| `ammitto/data-eu-vessels` | EU vessels sanctions data in YAML format
 | `ammitto/data-un` | UN sanctions data in YAML format
+| `ammitto/data-un-vessels` | UN vessels sanctions data in YAML format
 | `ammitto/data-us` | US (OFAC) sanctions data in YAML format
 | `ammitto/data-wb` | World Bank debarments data in YAML format
 | `ammitto/data-au` | Australia (DFAT) sanctions data in YAML format
@@ -291,8 +301,11 @@ The Ammitto data pipeline consists of four phases:
 | `ammitto/data-ch` | Switzerland (SECO) sanctions data in YAML format
 | `ammitto/data-cn` | China (MOFCOM/MFA) sanctions data in YAML format
 | `ammitto/data-ru` | Russia (MID) sanctions data in YAML format
+| `ammitto/data-jp` | Japan (MOFA) sanctions data in YAML format
+| `ammitto/data-nz` | New Zealand (MFAT) sanctions data in YAML format
+| `ammitto/data-tr` | Turkey sanctions data in YAML format
 | `ammitto/data` | Central repo with harmonized JSON-LD output
-| `ammitto/ammitto.github.io` | Website serving the API
+| `ammitto/ammitto.github.io` | Website serving the API with search and ontology browser
 | `ammitto/schemas` | JSON-LD schema definitions
 |===
 
@@ -337,15 +350,35 @@ ammitto fetch uk --dry-run
 
 [source,shell]
 ----
-# Harmonize all sources from checked-out repos
-ammitto harmonize --all --sources-dir ./sources --output-dir ./api/v1 --combine --verbose
+# Auto-detect and harmonize all data-* repositories
+ammitto harmonize --scan --sources-dir /path/to/repos --output-dir ./api/v1 --verbose
 
 # Harmonize specific source
 ammitto harmonize uk --input-dir ../data-uk/processed --output-dir ./api/v1
 
-# Create combined all.jsonld
-ammitto harmonize --all --combine --output-dir ./api/v1
+# Create combined all.jsonld and all.ttl
+ammitto harmonize --scan --combine --output-dir ./api/v1
 ----
+
+The harmonization process generates:
+
+[cols="1,2"]
+|===
+| Output | Description
+
+| `api/v1/node/entity/{source}/{id}.jsonld` | Individual entity nodes
+| `api/v1/node/entry/{source}/{id}.jsonld` | Individual entry nodes
+| `api/v1/node/authority/{code}.jsonld` | Authority nodes (deduplicated)
+| `api/v1/node/regime/{code}.jsonld` | Regime nodes (deduplicated)
+| `api/v1/search-index.json` | Lightweight search index (~8MB vs 69MB full)
+| `api/v1/facets/*.json` | Facet counts for filters
+| `api/v1/ontology/classes.jsonld` | Ontology class definitions
+| `api/v1/ontology/properties.jsonld` | Ontology property definitions
+| `api/v1/ontology/hierarchy.json` | Class hierarchy tree
+| `api/v1/all.jsonld` | Combined JSON-LD graph
+| `api/v1/all.ttl` | Combined Turtle/RDF graph
+| `api/v1/stats.json` | Statistics and metadata
+|===
 
 ==== Check Status
 

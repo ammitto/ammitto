@@ -213,8 +213,13 @@ module Ammitto
         end
 
         def transform_birth_info(individual)
-          individual.dates_of_birth.map do |dob|
-            pob = individual.places_of_birth.first
+          dates = individual.dates_of_birth || []
+          places = individual.places_of_birth || []
+
+          return [] if dates.empty?
+
+          dates.map.with_index do |dob, idx|
+            pob = places[idx] || places.first
             # dob is a FlexibleDate object, use to_date method
             date = dob.respond_to?(:to_date) ? dob.to_date : parse_date(dob)
             create_birth_info(

@@ -3,19 +3,28 @@
 require 'fileutils'
 require 'yaml'
 require 'json'
+require_relative '../serialization/json_ld_graph_exporter'
+require_relative '../serialization/search_index_exporter'
+require_relative '../serialization/ontology_exporter'
 
 module Ammitto
   module Cmd
-    # Harmonize command - transform YAML source data to JSON-LD
+    # Harmonize command - transform YAML source data to JSON-LD knowledge graph
     #
     # Reads YAML files from source directories, transforms them using
-    # transformers, and exports as JSON-LD.
+    # transformers, and exports as a JSON-LD knowledge graph with:
+    # - Individual node files per entity, entry, instrument, regime, authority
+    # - Aggregated all.jsonld and all.ttl files
+    # - Index files for each node type
     class HarmonizeCommand
       # @return [Hash] command options
       attr_reader :options
 
       # @return [Array<Symbol>] sources to harmonize
       attr_reader :sources
+
+      # @return [JsonLdGraphExporter] the graph exporter
+      attr_reader :exporter
 
       # Initialize with options and sources
       # @param options [Hash] command options
@@ -44,7 +53,13 @@ module Ammitto
       # @param sources [Array<String>]
       # @return [Array<Symbol>]
       def normalize_sources(sources)
-        if options[:all]
+        if options[:scan]
+          # Auto-detect data-* repositories
+          parent_dir = options[:sources_dir] || Config::Defaults::SOURCES_DIR
+          detected = Config::Defaults.detect_data_repositories(parent_dir)
+          puts "Auto-detected sources: #{detected.join(', ')}" if options[:verbose]
+          detected
+        elsif options[:all]
           Config::Defaults::ALL_SOURCES
         elsif sources.empty?
           # Default to first source if none specified
@@ -57,25 +72,46 @@ module Ammitto
       # Validate source codes
       # @raise [ArgumentError] if invalid source
       def validate_sources!
-        invalid = @sources - Config::Defaults::ALL_SOURCES
+        # Allow any detected source - validation is for explicitly provided sources
+        return if options[:scan]
+
+        # Check against known sources (hardcoded + potentially detected)
+        known_sources = Config::Defaults::ALL_SOURCES
+        invalid = @sources - known_sources
         return if invalid.empty?
 
         raise ArgumentError,
               "Invalid sources: #{invalid.join(', ')}. " \
-              "Valid: #{Config::Defaults::ALL_SOURCES.join(', ')}"
+              "Valid: #{known_sources.join(', ')}"
       end
 
       # Harmonize all sources
       # @return [void]
       def harmonize_all
+        output_dir = options[:output_dir] || './api/v1'
+
+        # Create exporters
+        @exporter = Serialization::JsonLdGraphExporter.new(output_dir: output_dir)
+        @search_indexer = Serialization::SearchIndexExporter.new
+        @ontology_exporter = Serialization::OntologyExporter.new
+
         results = []
 
         @sources.each do |source|
           results << harmonize_source(source)
         end
 
-        # Create combined file if requested
-        create_combined_output if options[:combine] && results.length > 1
+        # Export all collected nodes to files
+        if results.any? { |r| r[:status] == :success }
+          puts 'Exporting knowledge graph...' if options[:verbose]
+          @exporter.export
+
+          puts 'Exporting search index...' if options[:verbose]
+          @search_indexer.export(output_dir)
+
+          puts 'Exporting ontology data...' if options[:verbose]
+          @ontology_exporter.export(output_dir)
+        end
 
         print_summary(results)
       end
@@ -102,8 +138,9 @@ module Ammitto
         return { code: source, status: :error, error: 'No YAML files found' } if yaml_files.empty?
 
         # Parse and transform
-        entities = []
-        entries = []
+        entities_count = 0
+        entries_count = 0
+        errors = []
 
         yaml_files.each do |file|
           data = YAML.load_file(file)
@@ -111,23 +148,32 @@ module Ammitto
 
           begin
             result = transform_data(source, data)
-            entities << result[:entity] if result[:entity]
-            entries << result[:entry] if result[:entry]
+
+            if result[:entity] && result[:entry]
+              @exporter.add_node(
+                entity: result[:entity],
+                entry: result[:entry],
+                source: source
+              )
+
+              # Also add to search index
+              @search_indexer.add(result[:entity], result[:entry])
+
+              entities_count += 1
+              entries_count += 1
+            end
           rescue StandardError => e
-            puts "[#{source}] Error processing #{File.basename(file)}: #{e.message}" if options[:verbose]
+            error_msg = "#{File.basename(file)}: #{e.message}"
+            puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
+            errors << error_msg
           end
         end
 
-        # Write JSON-LD output
-        output_dir = options[:output_dir] || './api/v1'
-        output_file = File.join(output_dir, 'sources', "#{source}.jsonld")
+        puts "[#{source}] Harmonized #{entities_count} entities" if options[:verbose]
 
-        FileUtils.mkdir_p(File.dirname(output_file))
-        write_jsonld(output_file, entities, entries)
-
-        puts "[#{source}] Harmonized #{entities.length} entities to #{output_file}" if options[:verbose]
-
-        { code: source, status: :success, entities: entities.length, entries: entries.length }
+        result = { code: source, status: :success, entities: entities_count, entries: entries_count }
+        result[:errors] = errors if errors.any?
+        result
       rescue StandardError => e
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         { code: source, status: :error, error: e.message }
@@ -552,74 +598,6 @@ module Ammitto
                         v
                       end
         end
-      end
-
-      # Write JSON-LD output file
-      # @param output_file [String] output file path
-      # @param entities [Array<Hash>] entities
-      # @param entries [Array<Hash>] entries
-      # @return [void]
-      def write_jsonld(output_file, entities, entries)
-        graph = []
-
-        entities.each do |entity|
-          graph << entity unless entity.empty?
-        end
-
-        entries.each do |entry|
-          graph << entry unless entry.empty?
-        end
-
-        output = {
-          '@context' => 'https://www.ammitto.org/ontology/context.jsonld',
-          '@graph' => graph
-        }
-
-        File.write(output_file, JSON.pretty_generate(output))
-      end
-
-      # Create combined output file
-      # @return [void]
-      def create_combined_output
-        output_dir = options[:output_dir] || './api/v1'
-        all_file = File.join(output_dir, 'all.jsonld')
-        stats_file = File.join(output_dir, 'stats.json')
-
-        all_graph = []
-        stats = {
-          generated_at: Time.now.utc.iso8601,
-          sources: {},
-          total_entities: 0
-        }
-
-        @sources.each do |source|
-          source_file = File.join(output_dir, 'sources', "#{source}.jsonld")
-          next unless File.exist?(source_file)
-
-          data = JSON.parse(File.read(source_file))
-          graph = data['@graph'] || []
-          entity_count = graph.count { |item| item['@type'] != 'SanctionEntry' }
-
-          stats[:sources][source.to_s] = {
-            entities: entity_count,
-            file: "sources/#{source}.jsonld"
-          }
-          stats[:total_entities] += entity_count
-
-          all_graph.concat(graph)
-        end
-
-        return if all_graph.empty?
-
-        output = {
-          '@context' => 'https://www.ammitto.org/ontology/context.jsonld',
-          '@graph' => all_graph
-        }
-
-        File.write(all_file, JSON.pretty_generate(output))
-        File.write(stats_file, JSON.pretty_generate(stats))
-        puts "[all] Combined output written to #{all_file}" if options[:verbose]
-        puts "[stats] Statistics written to #{stats_file}" if options[:verbose]
       end
 
       # Get cache directory

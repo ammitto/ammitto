@@ -48,6 +48,21 @@ module Ammitto
           allowed: Config::Defaults::ALL_SOURCES.map(&:to_s)
         },
 
+        sources_dir: {
+          type: :string,
+          default: Config::Defaults::SOURCES_DIR,
+          env: 'AMMITTO_SOURCES_DIR',
+          desc: 'Directory containing data-* repositories',
+          cli_flag: '--sources-dir DIR'
+        },
+
+        scan: {
+          type: :boolean,
+          default: false,
+          desc: 'Auto-detect data-* repositories',
+          cli_flag: '--scan'
+        },
+
         output_format: {
           type: :string,
           default: Config::Defaults::DEFAULT_OUTPUT_FORMAT,

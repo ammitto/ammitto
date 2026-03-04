@@ -4,11 +4,11 @@ require 'spec_helper'
 require 'ammitto/data/japan/meti/entity'
 require 'ammitto/data/japan/meti/transformer'
 
-RSpec.describe Ammitto::Data::Japan::METI::Transformer do
+RSpec.describe Ammitto::Data::Japan::Meti::Transformer do
   let(:transformer) { described_class.new }
 
   let(:source_entity) do
-    Ammitto::Data::Japan::METI::Entity.new(
+    Ammitto::Data::Japan::Meti::Entity.new(
       id: 'jp.meti.ful.1',
       name_en: "Al Qa'ida/Islamic Army",
       country_code: 'AF',
@@ -130,11 +130,11 @@ RSpec.describe Ammitto::Data::Japan::METI::Transformer do
     let(:regime) { transformer.send(:create_regime) }
 
     it 'creates regime with correct name' do
-      expect(regime.name).to eq('Japan METI Foreign User List')
+      expect(regime.name).to eq('Japan Meti Foreign User List')
     end
 
     it 'creates regime with correct code' do
-      expect(regime.code).to eq('JP-METI-FUL')
+      expect(regime.code).to eq('JP-Meti-FUL')
     end
   end
 

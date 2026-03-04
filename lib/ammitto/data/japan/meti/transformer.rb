@@ -7,15 +7,15 @@ require_relative 'foreign_user_list'
 module Ammitto
   module Data
     module Japan
-      module METI
-        # Transformer converts METI Foreign User List entities to harmonized ontology models
+      module Meti
+        # Transformer converts Meti Foreign User List entities to harmonized ontology models
         #
-        # The METI Foreign User List is primarily for export control purposes,
+        # The Meti Foreign User List is primarily for export control purposes,
         # not financial sanctions. It lists entities that may be involved in
         # WMD proliferation activities.
         #
         # @example Transforming an entity
-        #   transformer = Ammitto::Data::Japan::METI::Transformer.new
+        #   transformer = Ammitto::Data::Japan::Meti::Transformer.new
         #   result = transformer.transform(meti_entity)
         #   entity = result[:entity]    # OrganizationEntity
         #   entry = result[:entry]      # SanctionEntry
@@ -26,9 +26,9 @@ module Ammitto
             super(:jp_meti, list_type: 'foreign-user-list')
           end
 
-          # Transform a METI Entity to ontology models
+          # Transform a Meti Entity to ontology models
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity] the entity
+          # @param source [Ammitto::Data::Japan::Meti::Entity] the entity
           # @return [Hash] { entity: OrganizationEntity, entry: SanctionEntry }
           #
           def transform(source)
@@ -45,7 +45,7 @@ module Ammitto
 
           # Create harmonized organization entity
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Ammitto::OrganizationEntity]
           #
           def create_organization_entity(source)
@@ -61,7 +61,7 @@ module Ammitto
 
           # Build names array
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Array<Ammitto::NameVariant>]
           #
           def build_names(source)
@@ -100,7 +100,7 @@ module Ammitto
 
           # Build addresses array
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Array<Ammitto::Address>]
           #
           def build_addresses(source)
@@ -115,7 +115,7 @@ module Ammitto
 
           # Build source references
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Array<Ammitto::SourceReference>]
           #
           def build_source_references(source)
@@ -133,7 +133,7 @@ module Ammitto
 
           # Build remarks from WMD types
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [String, nil]
           #
           def build_remarks(source)
@@ -148,7 +148,7 @@ module Ammitto
 
           # Create sanction entry
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @param entity [Ammitto::OrganizationEntity] harmonized entity
           # @return [Ammitto::SanctionEntry]
           #
@@ -162,7 +162,7 @@ module Ammitto
               entry.effects = build_effects
               entry.period = create_period(source)
               entry.reasons = build_reasons(source)
-              entry.remarks = 'METI Foreign User List - Export Control'
+              entry.remarks = 'Meti Foreign User List - Export Control'
             end
           end
 
@@ -172,8 +172,8 @@ module Ammitto
           #
           def create_regime
             Ammitto::SanctionRegime.new(
-              name: 'Japan METI Foreign User List',
-              code: 'JP-METI-FUL'
+              name: 'Japan Meti Foreign User List',
+              code: 'JP-Meti-FUL'
             )
           end
 
@@ -182,7 +182,7 @@ module Ammitto
           # @return [Array<Ammitto::SanctionEffect>]
           #
           def build_effects
-            # METI Foreign User List is for export control
+            # Meti Foreign User List is for export control
             [
               create_effect(
                 effect_type: 'export_restriction',
@@ -193,7 +193,7 @@ module Ammitto
 
           # Build reasons from WMD types
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Array<Ammitto::SanctionReason>]
           #
           def build_reasons(source)
@@ -209,7 +209,7 @@ module Ammitto
 
           # Create period
           #
-          # @param source [Ammitto::Data::Japan::METI::Entity]
+          # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Ammitto::TemporalPeriod]
           #
           def create_period(source)

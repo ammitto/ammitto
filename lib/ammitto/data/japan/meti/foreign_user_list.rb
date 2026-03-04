@@ -7,17 +7,17 @@ require_relative 'entity'
 module Ammitto
   module Data
     module Japan
-      module METI
-        # ForeignUserList represents the METI Foreign User List (外国ユーザーリスト)
+      module Meti
+        # ForeignUserList represents the Meti Foreign User List (外国ユーザーリスト)
         #
         # This list contains organizations that may be involved in WMD proliferation.
-        # It is maintained by Japan's Ministry of Economy, Trade and Industry (METI)
+        # It is maintained by Japan's Ministry of Economy, Trade and Industry (Meti)
         # under the Foreign Exchange and Foreign Trade Act (FEFTA).
         #
         # The list is published as an Excel file and updated periodically.
         #
         # @example Loading from Excel file
-        #   list = Ammitto::Data::Japan::METI::ForeignUserList.from_xlsx('path/to/file.xlsx')
+        #   list = Ammitto::Data::Japan::Meti::ForeignUserList.from_xlsx('path/to/file.xlsx')
         #   puts "Loaded #{list.entities.count} entities"
         #
         # @example Iterating over entities

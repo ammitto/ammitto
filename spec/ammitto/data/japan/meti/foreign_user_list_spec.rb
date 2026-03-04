@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'tempfile'
 require 'ammitto/data/japan/meti/foreign_user_list'
 
-RSpec.describe Ammitto::Data::Japan::METI::ForeignUserList do
+RSpec.describe Ammitto::Data::Japan::Meti::ForeignUserList do
   let(:sample_xlsx) { 'spec/fixtures/japan/meti/sample_foreign_user_list.xlsx' }
 
   describe '.from_xlsx' do
@@ -128,8 +128,8 @@ RSpec.describe Ammitto::Data::Japan::METI::ForeignUserList do
     let(:list) do
       described_class.new(
         entities: [
-          Ammitto::Data::Japan::METI::Entity.new(id: 'jp.meti.ful.1', name_en: 'Entity 1'),
-          Ammitto::Data::Japan::METI::Entity.new(id: 'jp.meti.ful.2', name_en: 'Entity 2')
+          Ammitto::Data::Japan::Meti::Entity.new(id: 'jp.meti.ful.1', name_en: 'Entity 1'),
+          Ammitto::Data::Japan::Meti::Entity.new(id: 'jp.meti.ful.2', name_en: 'Entity 2')
         ]
       )
     end
@@ -148,9 +148,9 @@ RSpec.describe Ammitto::Data::Japan::METI::ForeignUserList do
     let(:list) do
       described_class.new(
         entities: [
-          Ammitto::Data::Japan::METI::Entity.new(id: '1', name_en: 'Entity 1', country_code: 'IR'),
-          Ammitto::Data::Japan::METI::Entity.new(id: '2', name_en: 'Entity 2', country_code: 'IR'),
-          Ammitto::Data::Japan::METI::Entity.new(id: '3', name_en: 'Entity 3', country_code: 'KP')
+          Ammitto::Data::Japan::Meti::Entity.new(id: '1', name_en: 'Entity 1', country_code: 'IR'),
+          Ammitto::Data::Japan::Meti::Entity.new(id: '2', name_en: 'Entity 2', country_code: 'IR'),
+          Ammitto::Data::Japan::Meti::Entity.new(id: '3', name_en: 'Entity 3', country_code: 'KP')
         ]
       )
     end
@@ -165,9 +165,9 @@ RSpec.describe Ammitto::Data::Japan::METI::ForeignUserList do
     let(:list) do
       described_class.new(
         entities: [
-          Ammitto::Data::Japan::METI::Entity.new(id: '1', name_en: 'Entity 1', wmd_types: %w[N M]),
-          Ammitto::Data::Japan::METI::Entity.new(id: '2', name_en: 'Entity 2', wmd_types: %w[N]),
-          Ammitto::Data::Japan::METI::Entity.new(id: '3', name_en: 'Entity 3', wmd_types: %w[C])
+          Ammitto::Data::Japan::Meti::Entity.new(id: '1', name_en: 'Entity 1', wmd_types: %w[N M]),
+          Ammitto::Data::Japan::Meti::Entity.new(id: '2', name_en: 'Entity 2', wmd_types: %w[N]),
+          Ammitto::Data::Japan::Meti::Entity.new(id: '3', name_en: 'Entity 3', wmd_types: %w[C])
         ]
       )
     end
@@ -186,7 +186,7 @@ RSpec.describe Ammitto::Data::Japan::METI::ForeignUserList do
         list_date: '2025-09-29',
         fetched_at: '2025-09-29T10:00:00Z',
         entities: [
-          Ammitto::Data::Japan::METI::Entity.new(id: 'jp.meti.ful.1', name_en: 'Test Entity')
+          Ammitto::Data::Japan::Meti::Entity.new(id: 'jp.meti.ful.1', name_en: 'Test Entity')
         ]
       )
     end

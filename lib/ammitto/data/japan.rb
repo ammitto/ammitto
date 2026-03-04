@@ -8,7 +8,7 @@ module Ammitto
       # Base module for Japan data sources
       #
       # Japan maintains several sanctions and export control lists:
-      # - METI: Ministry of Economy, Trade and Industry (Foreign User List)
+      # - Meti: Ministry of Economy, Trade and Industry (Foreign User List)
       # - MOFA: Ministry of Foreign Affairs (Travel Ban List)
       # - MOF: Ministry of Finance (Asset Freeze List)
       #
@@ -16,7 +16,7 @@ module Ammitto
       #   require 'ammitto/data/japan'
       #   require 'ammitto/data/japan/meti'
       #
-      #   extractor = Ammitto::Data::Japan::METI::Extractor.new
+      #   extractor = Ammitto::Data::Japan::Meti::Extractor.new
       #   data = extractor.fetch
       #
 

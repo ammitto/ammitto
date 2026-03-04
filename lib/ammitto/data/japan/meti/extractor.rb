@@ -8,23 +8,23 @@ require_relative 'foreign_user_list'
 module Ammitto
   module Data
     module Japan
-      module METI
-        # Extractor downloads the METI Foreign User List Excel file
+      module Meti
+        # Extractor downloads the Meti Foreign User List Excel file
         #
-        # The list is published as an Excel file on the METI website.
+        # The list is published as an Excel file on the Meti website.
         # This extractor uses Mechanize to navigate and download the file.
         #
         # @example Basic usage
-        #   extractor = Ammitto::Data::Japan::METI::Extractor.new
+        #   extractor = Ammitto::Data::Japan::Meti::Extractor.new
         #   xlsx_path = extractor.download
         #   list = extractor.fetch
         #
         # @example With output directory
-        #   extractor = Ammitto::Data::Japan::METI::Extractor.new(output_dir: './downloads')
+        #   extractor = Ammitto::Data::Japan::Meti::Extractor.new(output_dir: './downloads')
         #   xlsx_path = extractor.download
         #
         class Extractor
-          # @return [String] METI law page URL
+          # @return [String] Meti law page URL
           INDEX_URL = 'https://www.meti.go.jp/policy/anpo/law00.html'
 
           # @return [String, nil] Last downloaded file path
@@ -82,7 +82,7 @@ module Ammitto
 
             ful_link ||= page.links.find { |l| l.href&.match?(/\.xlsx?$/i) && l.text.include?('外国ユーザー') }
 
-            raise 'Could not find Foreign User List link on METI website' unless ful_link
+            raise 'Could not find Foreign User List link on Meti website' unless ful_link
 
             puts "[jp_meti] Found link: #{ful_link.text.strip} => #{ful_link.href}" if verbose?
 
@@ -127,7 +127,7 @@ module Ammitto
           # Get the authority name
           # @return [String]
           def authority_name
-            'Japan METI (Ministry of Economy, Trade and Industry)'
+            'Japan Meti (Ministry of Economy, Trade and Industry)'
           end
 
           # Get the API endpoint

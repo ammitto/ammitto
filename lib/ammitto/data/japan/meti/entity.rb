@@ -6,14 +6,14 @@ require 'ammitto/data/japan'
 module Ammitto
   module Data
     module Japan
-      module METI
-        # Entity represents a single entry in the METI Foreign User List
+      module Meti
+        # Entity represents a single entry in the Meti Foreign User List
         #
         # Each entity is an organization that may be involved in WMD proliferation.
         # The list is primarily for export control purposes.
         #
         # @example Creating an entity from parsed data
-        #   entity = Ammitto::Data::Japan::METI::Entity.new(
+        #   entity = Ammitto::Data::Japan::Meti::Entity.new(
         #     id: 'jp.meti.ful.1',
         #     name_en: 'Al Qa\'ida/Islamic Army',
         #     country_code: 'AF',

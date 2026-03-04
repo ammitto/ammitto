@@ -3,7 +3,7 @@
 require 'spec_helper'
 require 'ammitto/data/japan/meti/extractor'
 
-RSpec.describe Ammitto::Data::Japan::METI::Extractor do
+RSpec.describe Ammitto::Data::Japan::Meti::Extractor do
   let(:extractor) { described_class.new(verbose: true) }
 
   describe '#code' do
@@ -14,12 +14,12 @@ RSpec.describe Ammitto::Data::Japan::METI::Extractor do
 
   describe '#authority_name' do
     it 'returns the authority name' do
-      expect(extractor.authority_name).to eq('Japan METI (Ministry of Economy, Trade and Industry)')
+      expect(extractor.authority_name).to eq('Japan Meti (Ministry of Economy, Trade and Industry)')
     end
   end
 
   describe '#api_endpoint' do
-    it 'returns the METI index URL' do
+    it 'returns the Meti index URL' do
       expect(extractor.api_endpoint).to eq('https://www.meti.go.jp/policy/anpo/law00.html')
     end
   end
@@ -28,7 +28,7 @@ RSpec.describe Ammitto::Data::Japan::METI::Extractor do
     it 'returns authority hash with correct values' do
       expect(extractor.authority).to eq({
                                           id: 'jp_meti',
-                                          name: 'Japan METI (Ministry of Economy, Trade and Industry)',
+                                          name: 'Japan Meti (Ministry of Economy, Trade and Industry)',
                                           country_code: 'JP'
                                         })
     end
@@ -67,7 +67,7 @@ RSpec.describe Ammitto::Data::Japan::METI::Extractor do
 
       list = extractor.fetch
 
-      expect(list).to be_a(Ammitto::Data::Japan::METI::ForeignUserList)
+      expect(list).to be_a(Ammitto::Data::Japan::Meti::ForeignUserList)
       expect(list.entities.count).to be > 0
       expect(list.source_file).to match(/\.xlsx$/)
       expect(list.source_url).to match(/meti\.go\.jp/)

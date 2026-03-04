@@ -3,7 +3,7 @@
 require 'spec_helper'
 require 'ammitto/data/japan/meti/entity'
 
-RSpec.describe Ammitto::Data::Japan::METI::Entity do
+RSpec.describe Ammitto::Data::Japan::Meti::Entity do
   let(:entity) do
     described_class.new(
       id: 'jp.meti.ful.1',

@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative '../utils/iri_sanitizer'
+require_relative '../utils/list_types_registry'
+
 module Ammitto
   module Transformers
     # BaseTransformer provides common functionality for transforming
@@ -7,6 +10,14 @@ module Ammitto
     #
     # Each source (UK, EU, UN, US, WB) should have its own transformer
     # that inherits from this base class.
+    #
+    # == Normalized IRI Structure
+    #
+    # Entities are LIST-AGNOSTIC (can appear on multiple lists):
+    #   https://www.ammitto.org/entity/{source}/{local_id}
+    #
+    # Entries are LIST-SPECIFIC (junction records linking entity to list):
+    #   https://www.ammitto.org/entry/{source}/{list_type}/{local_id}
     #
     # @example Creating a transformer
     #   class UkTransformer < BaseTransformer
@@ -19,12 +30,14 @@ module Ammitto
     #   end
     #
     class BaseTransformer
-      attr_reader :source_code
+      attr_reader :source_code, :list_type
 
-      # Initialize with source code
+      # Initialize with source code and optional list type
       # @param source_code [Symbol] the source identifier (e.g., :uk, :eu)
-      def initialize(source_code)
+      # @param list_type [String, nil] optional list type (e.g., "consolidated-list")
+      def initialize(source_code, list_type: nil)
         @source_code = source_code.to_sym
+        @list_type = list_type || default_list_type
       end
 
       # Transform source model to ontology models
@@ -43,18 +56,78 @@ module Ammitto
 
       protected
 
-      # Generate a unique entity ID
-      # @param reference_number [String] the source reference number
-      # @return [String] the full URI
-      def generate_entity_id(reference_number)
-        "https://www.ammitto.org/entity/#{source_code}/#{sanitize_id(reference_number)}"
+      # Generate a unique entity ID (LIST-AGNOSTIC).
+      # Entities can appear on multiple lists, so no list_type in IRI.
+      #
+      # @param local_id [String] the local entity identifier
+      # @return [String] the full entity URI
+      #
+      # @example
+      #   generate_entity_id("mitsubishi-heavy-industries")
+      #   # => "https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries"
+      #
+      def generate_entity_id(local_id)
+        Utils::IriSanitizer.entity_iri(source_code.to_s, local_id)
       end
 
-      # Generate a unique sanction entry ID
-      # @param reference_number [String] the source reference number
-      # @return [String] the full URI
-      def generate_entry_id(reference_number)
-        "https://www.ammitto.org/entry/#{source_code}/#{sanitize_id(reference_number)}"
+      # Generate a unique entry ID (LIST-SPECIFIC).
+      # Entries link entities to specific lists.
+      #
+      # @param local_id [String] the local entry identifier
+      # @param entry_list_type [String, nil] optional list type override
+      # @return [String] the full entry URI
+      #
+      # @example
+      #   generate_entry_id("mitsubishi-heavy-industries")
+      #   # => "https://www.ammitto.org/entry/cn/import-export-control-list/mitsubishi-heavy-industries"
+      #
+      def generate_entry_id(local_id, entry_list_type: nil)
+        effective_list_type = entry_list_type || list_type || default_list_type
+        Utils::IriSanitizer.entry_iri(source_code.to_s, effective_list_type, local_id)
+      end
+
+      # Generate a list type IRI.
+      #
+      # @param list_type_id [String, nil] optional list type override
+      # @return [String] the full list URI
+      #
+      def generate_list_id(list_type_id: nil)
+        effective_list_type = list_type_id || list_type || default_list_type
+        Utils::IriSanitizer.list_type_iri(source_code.to_s, effective_list_type)
+      end
+
+      # Generate an announcement ID (LIST-AGNOSTIC).
+      #
+      # @param local_id [String] the local announcement identifier
+      # @return [String] the full announcement URI
+      #
+      def generate_announcement_id(local_id)
+        Utils::IriSanitizer.announcement_iri(source_code.to_s, local_id)
+      end
+
+      # Generate a legal instrument ID (LIST-AGNOSTIC).
+      #
+      # @param local_id [String] the local legal instrument identifier
+      # @return [String] the full legal instrument URI
+      #
+      def generate_legal_instrument_id(local_id)
+        Utils::IriSanitizer.legal_instrument_iri(source_code.to_s, local_id)
+      end
+
+      # Get the default list type for this source.
+      #
+      # @return [String, nil] the default list type or nil
+      #
+      def default_list_type
+        Utils::ListTypesRegistry.default_list_type(source_code.to_s)
+      end
+
+      # Get all available list types for this source.
+      #
+      # @return [Array<String>] list of available list types
+      #
+      def available_list_types
+        Utils::ListTypesRegistry.list_types_for(source_code.to_s)&.keys || []
       end
 
       # Get the authority for this source
@@ -67,7 +140,7 @@ module Ammitto
       # @param id [String] the raw ID
       # @return [String] sanitized ID
       def sanitize_id(id)
-        id.to_s.gsub(%r{[/\\]}, '-')
+        Utils::IriSanitizer.sanitize(id)
       end
 
       # Parse a date string safely
@@ -187,6 +260,27 @@ module Ammitto
           effect_type: effect_type,
           scope: scope,
           description: description
+        )
+      end
+
+      # Create a SanctionReason
+      # @param category [String] the reason category
+      # @param description [String, nil] description text
+      # @param language [String] language code (default: 'en')
+      # @return [SanctionReason] the reason
+      def create_reason(category:, description: nil, language: 'en')
+        descriptions = []
+        if description
+          descriptions << Ammitto::Ontology::ValueObjects::LocalizedString.new(
+            value: description,
+            language: language,
+            is_primary: true
+          )
+        end
+
+        Ammitto::SanctionReason.new(
+          category: category,
+          description: descriptions
         )
       end
 

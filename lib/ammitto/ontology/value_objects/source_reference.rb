@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -19,6 +20,12 @@ module Ammitto
       #   )
       #
       class SourceReference < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for SourceReference
+        neo4j_labels 'SourceReference'
+        neo4j_property :source_code, :reference_number, :resolution, :url, :fetched_at
+
         # Source identifier (eu, un, us, etc.)
         # @return [String, nil]
         attribute :source_code, :string

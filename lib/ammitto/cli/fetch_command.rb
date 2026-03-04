@@ -104,6 +104,24 @@ module Ammitto
         extractor = extractor_class.new
         extractor.verbose = options[:verbose] if extractor.respond_to?(:verbose=)
 
+        # Pass reference docs path for CN source
+        if source == :cn && extractor.respond_to?(:reference_docs_path=)
+          # Look for reference-docs in data-cn directory
+          data_cn_path = find_data_cn_path
+          if data_cn_path
+            ref_docs = File.join(data_cn_path, 'reference-docs')
+            puts "[DEBUG] Checking for reference docs at: #{ref_docs}" if options[:verbose]
+            if Dir.exist?(ref_docs)
+              puts "[DEBUG] Setting reference_docs_path to: #{ref_docs}" if options[:verbose]
+              extractor.reference_docs_path = ref_docs
+            elsif options[:verbose]
+              puts '[DEBUG] Reference docs directory does not exist'
+            end
+          elsif options[:verbose]
+            puts '[DEBUG] data-cn path not found'
+          end
+        end
+
         # Fetch and parse using source models if format is yaml
         format = options[:format] || 'yaml'
 
@@ -116,6 +134,26 @@ module Ammitto
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         puts e.backtrace.first(5).join("\n") if options[:verbose]
         error_result(source, e.message)
+      end
+
+      # Find data-cn path
+      # @return [String, nil]
+      def find_data_cn_path
+        # Check common locations
+        paths = [
+          File.join(options[:sources_dir] || '', 'data-cn'),
+          File.expand_path('../data-cn', Dir.pwd),
+          File.expand_path('../../data-cn', Dir.pwd),
+          File.expand_path('../../../data-cn', Dir.pwd),
+          '/Users/mulgogi/src/ammitto/data-cn'
+        ].compact
+
+        puts "[DEBUG] Looking for data-cn in: #{paths.inspect}" if options[:verbose]
+
+        found = paths.find { |p| Dir.exist?(p) }
+        puts "[DEBUG] Found data-cn at: #{found}" if options[:verbose] && found
+
+        found
       end
 
       # Fetch data using Lutaml::Model source models
@@ -152,6 +190,10 @@ module Ammitto
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"
                  puts "[#{source}] Data requires manual conversion from PDF"
                  model_class.from_pdf(content)
+               when :cn
+                 # CN returns already-parsed entities from reference docs or scraper
+                 # content is a Hash with :entities and :announcements
+                 build_cn_sanctions_list(content)
                else
                  # XML sources - content is already a string from extractor
                  model_class.from_xml(content)
@@ -347,6 +389,9 @@ module Ammitto
         when :un_vessels
           require_relative '../sources/un_vessels'
           Ammitto::Sources::UnVessels::SanctionsList
+        when :cn
+          require_relative '../sources/cn/sanctions_list'
+          Ammitto::Sources::Cn::SanctionsList
         end
       rescue LoadError
         nil
@@ -368,6 +413,57 @@ module Ammitto
       # @return [String]
       def cache_dir
         options[:cache_dir] || File.expand_path('~/.ammitto')
+      end
+
+      # Build CN SanctionsList from parsed hash data
+      # @param content [Hash] parsed data with :entities and :announcements
+      # @return [Ammitto::Sources::Cn::SanctionsList]
+      def build_cn_sanctions_list(content)
+        require_relative '../sources/cn/sanctions_list'
+
+        # Group entities by announcement
+        entities_by_announcement = {}
+        (content[:entities] || []).each do |entity_data|
+          key = entity_data[:announcement_number] || 'unknown'
+          entities_by_announcement[key] ||= []
+          entities_by_announcement[key] << entity_data
+        end
+
+        # Build announcements with entities
+        announcements = entities_by_announcement.map do |ann_num, entities|
+          # Build SanctionedEntity objects
+          entities.map do |entity_data|
+            Ammitto::Sources::Cn::SanctionedEntity.new(
+              chinese_name: entity_data[:chinese_name],
+              english_name: entity_data[:english_name],
+              entity_type: entity_data[:entity_type] || 'organization',
+              list_type: entity_data[:list_type],
+              announcement_number: entity_data[:announcement_number],
+              announcement_date: entity_data[:announcement_date]&.to_s,
+              measures: entity_data[:measures] || [],
+              legal_basis: entity_data[:legal_basis] || [],
+              source_url: entity_data[:source_url],
+              title: entity_data[:title]
+            )
+          end
+
+          # Find matching announcement data
+          ann_data = (content[:announcements] || []).find { |a| a[:number] == ann_num } || {}
+
+          Ammitto::Sources::Cn::Announcement.from_parsed_data(
+            announcement_number: ann_num,
+            date: ann_data[:date]&.to_s,
+            title: ann_data[:title],
+            issuing_authority: ann_data[:issuing_authority],
+            list_type: entities.first&.dig(:list_type),
+            legal_basis: entities.first&.dig(:legal_basis) || [],
+            measures: entities.first&.dig(:measures) || [],
+            source_url: ann_data[:source_url],
+            entities: entities
+          )
+        end
+
+        Ammitto::Sources::Cn::SanctionsList.new(announcements: announcements)
       end
 
       # Create error result hash

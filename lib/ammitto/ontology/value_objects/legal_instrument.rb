@@ -17,7 +17,7 @@ module Ammitto
       #     identifier: "Council Regulation (EU) No 269/2014",
       #     title: "restrictive measures in respect of actions...",
       #     issuing_body: "Council of the European Union",
-      #     issuance_date: Date.new(2014, 3, 17),
+      #     publish_date: Date.new(2014, 3, 17),
       #     url: "https://eur-lex.europa.eu/..."
       #   )
       #
@@ -38,9 +38,9 @@ module Ammitto
         # @return [String, nil]
         attribute :issuing_body, :string
 
-        # Date of issuance/publication
+        # Date of publication
         # @return [Date, nil]
-        attribute :issuance_date, :date
+        attribute :publish_date, :date
 
         # Date of entry into force
         # @return [Date, nil]
@@ -53,6 +53,10 @@ module Ammitto
         # Programme/regime code this instrument belongs to
         # @return [String, nil]
         attribute :programme, :string
+
+        # Language code (e.g., "zh-Hans", "en")
+        # @return [String, nil]
+        attribute :lang, :string
 
         # Check if instrument has meaningful content
         # @return [Boolean]
@@ -80,10 +84,11 @@ module Ammitto
           hash[:identifier] = identifier if identifier
           hash[:title] = title if title
           hash[:issuing_body] = issuing_body if issuing_body
-          hash[:issuance_date] = issuance_date.to_s if issuance_date
+          hash[:publish_date] = publish_date.to_s if publish_date
           hash[:effective_date] = effective_date.to_s if effective_date
           hash[:url] = url if url
           hash[:programme] = programme if programme
+          hash[:lang] = lang if lang
           hash
         end
 
@@ -93,10 +98,11 @@ module Ammitto
           map :identifier, to: :identifier
           map :title, to: :title
           map :issuing_body, to: :issuing_body
-          map :issuance_date, to: :issuance_date
+          map :publish_date, to: :publish_date
           map :effective_date, to: :effective_date
           map :url, to: :url
           map :programme, to: :programme
+          map :lang, to: :lang
         end
 
         # YAML mapping
@@ -105,10 +111,11 @@ module Ammitto
           map :identifier, to: :identifier
           map :title, to: :title
           map :issuing_body, to: :issuing_body
-          map :issuance_date, to: :issuance_date
+          map :publish_date, to: :publish_date
           map :effective_date, to: :effective_date
           map :url, to: :url
           map :programme, to: :programme
+          map :lang, to: :lang
         end
       end
     end

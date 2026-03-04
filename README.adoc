@@ -366,12 +366,14 @@ The harmonization process generates:
 |===
 | Output | Description
 
-| `api/v1/node/entity/{source}/{id}.jsonld` | Individual entity nodes
-| `api/v1/node/entry/{source}/{id}.jsonld` | Individual entry nodes
+| `api/v1/node/entity/{source}/{id}.jsonld` | Individual entity nodes (list-agnostic)
+| `api/v1/node/entry/{source}/{list_type}/{id}.jsonld` | Individual entry nodes (list-specific)
+| `api/v1/node/list/{source}/{list_type}.jsonld` | List definition nodes
 | `api/v1/node/authority/{code}.jsonld` | Authority nodes (deduplicated)
 | `api/v1/node/regime/{code}.jsonld` | Regime nodes (deduplicated)
 | `api/v1/search-index.json` | Lightweight search index (~8MB vs 69MB full)
-| `api/v1/facets/*.json` | Facet counts for filters
+| `api/v1/facets/*.json` | Facet counts for filters (includes list_types.json)
+| `api/v1/by-list/{source}/{list_type}.jsonld` | Entries grouped by list type
 | `api/v1/ontology/classes.jsonld` | Ontology class definitions
 | `api/v1/ontology/properties.jsonld` | Ontology property definitions
 | `api/v1/ontology/hierarchy.json` | Class hierarchy tree
@@ -379,6 +381,35 @@ The harmonization process generates:
 | `api/v1/all.ttl` | Combined Turtle/RDF graph
 | `api/v1/stats.json` | Statistics and metadata
 |===
+
+=== IRI Structure
+
+The knowledge graph uses normalized IRIs:
+
+----
+# Entities - LIST-AGNOSTIC (can appear on multiple lists)
+https://www.ammitto.org/entity/{source}/{local_id}
+
+# Entries - LIST-SPECIFIC (junction records linking entity to list)
+https://www.ammitto.org/entry/{source}/{list_type}/{local_id}
+
+# Lists
+https://www.ammitto.org/list/{source}/{list_type}
+
+# Announcements - LIST-AGNOSTIC
+https://www.ammitto.org/announcement/{source}/{local_id}
+
+# Legal Instruments - LIST-AGNOSTIC
+https://www.ammitto.org/legal_instrument/{source}/{local_id}
+----
+
+Example IRIs:
+
+----
+https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries
+https://www.ammitto.org/entry/cn/import-export-control-list/mitsubishi-heavy-industries
+https://www.ammitto.org/list/cn/import-export-control-list
+----
 
 ==== Check Status
 

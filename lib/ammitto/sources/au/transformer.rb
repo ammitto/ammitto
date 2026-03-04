@@ -109,6 +109,33 @@ module Ammitto
           end
         end
 
+        # Transform from a hash (e.g., from YAML) by detecting entity type
+        # This handles the case where YAML data has 'type' field instead of
+        # being instantiated as the correct source model class.
+        # @param data [Hash] entity data from YAML
+        # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        def transform_from_hash(data)
+          require_relative 'sanctions_list'
+
+          # Detect entity type from data
+          # YAML uses 'type' field with values: person, organization, vessel
+          entity_type = data['type'] || data['entity_type']
+
+          # Determine source model class based on type or data content
+          source = if entity_type == 'person' || entity_type == 'Individual' ||
+                      data.key?('dates_of_birth') || data.key?('birth_info') ||
+                      data.key?('person_details')
+                     Ammitto::Sources::Au::Individual.from_yaml(data.to_yaml)
+                   elsif entity_type == 'vessel' || entity_type == 'Vessel' ||
+                         data.key?('vessel_details') || data.key?('imo_number')
+                     Ammitto::Sources::Au::Vessel.from_yaml(data.to_yaml)
+                   else
+                     Ammitto::Sources::Au::Organization.from_yaml(data.to_yaml)
+                   end
+
+          transform(source)
+        end
+
         private
 
         def create_person_entity(individual)

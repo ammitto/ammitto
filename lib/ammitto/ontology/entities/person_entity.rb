@@ -23,6 +23,36 @@ module Ammitto
       #   )
       #
       class PersonEntity < Entity
+        # Neo4j labels: include both specific type and base Entity
+        neo4j_labels 'Person', 'Entity'
+        neo4j_property :birth_date, :birth_year, :gender, :title, :position, :affiliation, :death_date
+
+        # Name variants are stored as separate nodes
+        neo4j_relationship :names,
+                           type: 'HAS_NAME',
+                           target_class: 'Name',
+                           target_key: :id
+
+        neo4j_relationship :birth_info,
+                           type: 'BORN_IN',
+                           target_class: 'Country',
+                           target_key: :code
+
+        neo4j_relationship :nationalities,
+                           type: 'HAS_NATIONALITY',
+                           target_class: 'Country',
+                           target_key: :code
+
+        neo4j_relationship :identifications,
+                           type: 'HAS_IDENTIFIER',
+                           target_class: 'Identifier',
+                           target_key: :id
+
+        neo4j_relationship :addresses,
+                           type: 'HAS_ADDRESS',
+                           target_class: 'Address',
+                           target_key: :id
+
         # Name variants for this person
         # @return [Array<NameVariant>]
         attribute :names, ValueObjects::NameVariant, collection: true

@@ -20,6 +20,28 @@ module Ammitto
       #   )
       #
       class OrganizationEntity < Entity
+        # Neo4j labels: include both specific type and base Entity
+        neo4j_labels 'Organization', 'Entity'
+        neo4j_property :organization_type, :registration_number, :incorporation_country,
+                       :incorporation_date, :industry, :website, :dissolution_date,
+                       :legal_form, :country, :country_iso_code, :sector
+
+        # Names are stored as separate nodes
+        neo4j_relationship :names,
+                           type: 'HAS_NAME',
+                           target_class: 'Name',
+                           target_key: :id
+
+        neo4j_relationship :addresses,
+                           type: 'HAS_ADDRESS',
+                           target_class: 'Address',
+                           target_key: :id
+
+        neo4j_relationship :identifications,
+                           type: 'HAS_IDENTIFIER',
+                           target_class: 'Identifier',
+                           target_key: :id
+
         # Name variants for this organization
         # @return [Array<NameVariant>]
         attribute :names, ValueObjects::NameVariant, collection: true

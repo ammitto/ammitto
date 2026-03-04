@@ -74,7 +74,7 @@ RSpec.describe Ammitto::Authority do
     it 'returns all registered authorities' do
       authorities = described_class.all
       expect(authorities).to be_an(Array)
-      expect(authorities.size).to eq(10)
+      expect(authorities.size).to eq(11)
     end
   end
 end

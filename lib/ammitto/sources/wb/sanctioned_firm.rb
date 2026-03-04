@@ -11,6 +11,7 @@ module Ammitto
         attribute :supp_id, :integer
         attribute :supp_name, :string
         attribute :supp_type_code, :string
+        attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :supp_pre_acrn, :string
         attribute :supp_post_acrn, :string
         attribute :land1, :string
@@ -70,6 +71,7 @@ module Ammitto
           map 'supp_id', to: :supp_id
           map 'supp_name', to: :supp_name
           map 'supp_type_code', to: :supp_type_code
+          map 'entity_type', to: :entity_type
           map 'supp_pre_acrn', to: :supp_pre_acrn
           map 'supp_post_acrn', to: :supp_post_acrn
           map 'land1', to: :land1
@@ -96,7 +98,10 @@ module Ammitto
         end
 
         # Helper methods
+        # Compute entity_type from supp_type_code if not set
         def entity_type
+          return @entity_type if @entity_type && !@entity_type.empty?
+
           supp_type_code == 'I' ? 'person' : 'organization'
         end
 

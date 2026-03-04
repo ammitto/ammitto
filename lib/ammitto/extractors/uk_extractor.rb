@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize, Metrics/PerceivedComplexity
+# rubocop:disable Metrics/MethodLength
 
 require_relative 'base_extractor'
 require_relative 'registry'
@@ -397,7 +397,7 @@ module Ammitto
   end
 end
 
-# rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/AbcSize, Metrics/PerceivedComplexity
+# rubocop:enable Metrics/MethodLength
 
 # Register the extractor
 Ammitto::Extractors::Registry.register(:uk, Ammitto::Extractors::UkExtractor)

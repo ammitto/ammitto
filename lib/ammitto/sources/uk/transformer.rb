@@ -75,7 +75,107 @@ module Ammitto
           @current_designation = nil
         end
 
+        # Transform from processed YAML entity (simplified format)
+        # @param processed [Ammitto::Sources::Uk::ProcessedEntity]
+        # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        def transform_from_processed(processed)
+          entity = create_entity_from_processed(processed)
+          entry = create_entry_from_processed(processed)
+
+          entity.add_sanction_entry(entry)
+
+          {
+            entity: entity,
+            entry: entry
+          }
+        end
+
         private
+
+        # Create entity from processed YAML data
+        # @param processed [Ammitto::Sources::Uk::ProcessedEntity]
+        # @return [PersonEntity, OrganizationEntity, VesselEntity]
+        def create_entity_from_processed(processed)
+          if processed.individual?
+            create_person_from_processed(processed)
+          elsif processed.vessel?
+            create_vessel_from_processed(processed)
+          else
+            create_organization_from_processed(processed)
+          end
+        end
+
+        # Create person entity from processed data
+        # @param processed [Ammitto::Sources::Uk::ProcessedEntity]
+        # @return [PersonEntity]
+        def create_person_from_processed(processed)
+          Ammitto::PersonEntity.new(
+            id: generate_entity_id(processed.id),
+            entity_type: 'person',
+            names: transform_processed_names(processed.names),
+            remarks: processed.remarks
+          )
+        end
+
+        # Create organization entity from processed data
+        # @param processed [Ammitto::Sources::Uk::ProcessedEntity]
+        # @return [OrganizationEntity]
+        def create_organization_from_processed(processed)
+          Ammitto::OrganizationEntity.new(
+            id: generate_entity_id(processed.id),
+            entity_type: 'organization',
+            names: transform_processed_names(processed.names),
+            remarks: processed.remarks
+          )
+        end
+
+        # Create vessel entity from processed data
+        # @param processed [Ammitto::Sources::Uk::ProcessedEntity]
+        # @return [VesselEntity]
+        def create_vessel_from_processed(processed)
+          Ammitto::VesselEntity.new(
+            id: generate_entity_id(processed.id),
+            entity_type: 'vessel',
+            names: transform_processed_names(processed.names),
+            remarks: processed.remarks
+          )
+        end
+
+        # Create entry from processed data
+        # @param processed [Ammitto::Sources::Uk::ProcessedEntity]
+        # @return [SanctionEntry]
+        def create_entry_from_processed(processed)
+          Ammitto::SanctionEntry.new(
+            id: generate_entry_id(processed.id),
+            entity_id: generate_entity_id(processed.id),
+            authority: authority,
+            regime: create_regime(code: 'UK_OFSI', name: 'UK Sanctions'),
+            effects: [create_effect(effect_type: 'asset_freeze', scope: 'full')],
+            status: 'active',
+            reference_number: processed.reference_number,
+            remarks: processed.remarks,
+            raw_source_data: create_raw_source_data(
+              source_format: 'yaml',
+              source_specific_fields: {
+                'uk:id' => processed.id,
+                'uk:type' => processed.type
+              }
+            )
+          )
+        end
+
+        # Transform processed names to NameVariant objects
+        # @param names [Array<Ammitto::Sources::Uk::ProcessedName>]
+        # @return [Array<NameVariant>]
+        def transform_processed_names(names)
+          names.map do |name|
+            create_name_variant(
+              full_name: name.full_name,
+              is_primary: name.primary?,
+              script: name.script || 'Latn'
+            )
+          end
+        end
 
         # Create the appropriate entity type based on designation
         # @param designation [Ammitto::Sources::Uk::Designation]

@@ -322,8 +322,9 @@ module Ammitto
             'identifier' => base.identifier,
             'title' => base.title,
             'issuingBody' => base.issuing_body,
-            'issuanceDate' => base.issuance_date,
-            'url' => base.url
+            'publishDate' => base.publish_date,
+            'url' => base.url,
+            'lang' => base.lang
           }.compact
         end
       end
@@ -402,10 +403,17 @@ module Ammitto
           '@type' => 'OfficialAnnouncement',
           'title' => announcement.title,
           'url' => announcement.url,
-          'publishedDate' => announcement.published_date,
+          'publishDate' => announcement.publish_date,
+          'publishTime' => announcement.publish_time,
           'author' => announcement.author,
           'authorDate' => announcement.author_date,
           'documentType' => announcement.document_type,
+          'documentId' => announcement.document_id,
+          'signatory' => announcement.signatory,
+          'signatoryTitle' => announcement.signatory_title,
+          'publisher' => announcement.publisher,
+          'authority' => announcement.authority,
+          'content' => announcement.content,
           'language' => announcement.language
         }.compact
       end

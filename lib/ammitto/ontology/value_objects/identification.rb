@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 require_relative '../types'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -21,6 +22,12 @@ module Ammitto
       #   )
       #
       class Identification < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for Identification
+        neo4j_labels 'Identifier'
+        neo4j_property :type, :number, :issuing_country, :issue_date, :expiry_date
+
         # Type of identification document
         # @return [Symbol, String, nil]
         attribute :type, :string

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -21,6 +22,12 @@ module Ammitto
       #   )
       #
       class BirthInfo < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for BirthInfo
+        neo4j_labels 'BirthInfo'
+        neo4j_property :date, :circa, :year, :city, :region, :country, :country_iso_code
+
         # Exact or approximate birth date
         # @return [Date, nil]
         attribute :date, :date

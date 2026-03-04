@@ -90,8 +90,18 @@ module Ammitto
       def harmonize_all
         output_dir = options[:output_dir] || './api/v1'
 
+        # Find legal instruments directory
+        instruments_dir = find_instruments_dir
+
+        # Find supporting data directory
+        supporting_dir = find_supporting_dir
+
         # Create exporters
-        @exporter = Serialization::JsonLdGraphExporter.new(output_dir: output_dir)
+        @exporter = Serialization::JsonLdGraphExporter.new(
+          output_dir: output_dir,
+          instruments_dir: instruments_dir,
+          supporting_dir: supporting_dir
+        )
         @search_indexer = Serialization::SearchIndexExporter.new
         @ontology_exporter = Serialization::OntologyExporter.new
 
@@ -126,12 +136,26 @@ module Ammitto
           return { code: source, status: :error, error: 'No input directory found' }
         end
 
-        # Load YAML files
-        yaml_files = Dir.glob(File.join(input_dir, 'entities', '*.yaml'))
-        yaml_files = Dir.glob(File.join(input_dir, '*.yaml')) if yaml_files.empty?
+        # Load YAML files from multiple possible locations
+        yaml_files = []
+
+        # Check for entities subdirectory
+        yaml_files += Dir.glob(File.join(input_dir, 'entities', '*.yaml'))
+        yaml_files += Dir.glob(File.join(input_dir, 'entities', '*.yml'))
+
+        # Check for root directory
+        yaml_files += Dir.glob(File.join(input_dir, '*.yaml'))
+        yaml_files += Dir.glob(File.join(input_dir, '*.yml'))
+
+        # Check for nested subdirectories (data-cn format: sources/sanction-lists/*/)
+        yaml_files += Dir.glob(File.join(input_dir, '*', '*.yaml'))
+        yaml_files += Dir.glob(File.join(input_dir, '*', '*.yml'))
 
         # Filter out metadata files (starting with _)
         yaml_files = yaml_files.reject { |f| File.basename(f).start_with?('_') }
+
+        # Remove duplicates (in case same file exists in both locations)
+        yaml_files = yaml_files.uniq
 
         return { code: source, status: :error, error: 'No YAML files found' } if yaml_files.empty?
 
@@ -141,21 +165,26 @@ module Ammitto
         errors = []
 
         yaml_files.each do |file|
-          data = YAML.load_file(file)
+          data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
           next unless data
 
           begin
             result = transform_data(source, data)
 
-            if result[:entity] && result[:entry]
+            # Handle both single result and array of results
+            results = result.is_a?(Array) ? result : [result]
+
+            results.each do |r|
+              next unless r[:entity] && r[:entry]
+
               @exporter.add_node(
-                entity: result[:entity],
-                entry: result[:entry],
+                entity: r[:entity],
+                entry: r[:entry],
                 source: source
               )
 
               # Also add to search index
-              @search_indexer.add(result[:entity], result[:entry])
+              @search_indexer.add(r[:entity], r[:entry])
 
               entities_count += 1
               entries_count += 1
@@ -198,6 +227,14 @@ module Ammitto
           processed_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'processed')
           return processed_path if Dir.exist?(processed_path)
 
+          # Check for sources/sanction-lists directory (data-cn format)
+          sources_lists_path = File.join(options[:sources_dir], "data-#{source}", 'sources', 'sanction-lists')
+          return sources_lists_path if Dir.exist?(sources_lists_path)
+
+          # Try hyphen version for sources
+          sources_lists_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'sources', 'sanction-lists')
+          return sources_lists_path if Dir.exist?(sources_lists_path)
+
           # Then check for raw/{date} directory
           source_path = File.join(options[:sources_dir], "data-#{source}", 'raw')
           return find_latest_subdir(source_path) if Dir.exist?(source_path)
@@ -228,6 +265,54 @@ module Ammitto
         return nil if subdirs.empty?
 
         File.join(base_dir, subdirs.first)
+      end
+
+      # Find legal instruments directory
+      # @return [String, nil] path to instruments directory
+      def find_instruments_dir
+        # Check sources_dir first
+        sources_dir = options[:sources_dir]
+        if sources_dir
+          # Check for data-cn format: sources/legal-instruments/
+          instruments_path = File.join(sources_dir, 'data-cn', 'sources', 'legal-instruments')
+          return instruments_path if Dir.exist?(instruments_path)
+        end
+
+        # Check based on input_dir (sibling directory to legal-instruments)
+        input_dir = options[:input_dir]
+        if input_dir
+          # input_dir might be .../sources/sanction-lists
+          # so legal-instruments would be at .../sources/legal-instruments
+          parent_dir = File.dirname(input_dir)
+          instruments_path = File.join(parent_dir, 'legal-instruments')
+          return instruments_path if Dir.exist?(instruments_path)
+        end
+
+        nil
+      end
+
+      # Find supporting data directory (document types, organizations)
+      # @return [String, nil] path to supporting directory
+      def find_supporting_dir
+        # Check sources_dir first
+        sources_dir = options[:sources_dir]
+        if sources_dir
+          # Check for data-cn format: sources/supporting/
+          supporting_path = File.join(sources_dir, 'data-cn', 'sources', 'supporting')
+          return supporting_path if Dir.exist?(supporting_path)
+        end
+
+        # Check based on input_dir (sibling directory to supporting)
+        input_dir = options[:input_dir]
+        if input_dir
+          # input_dir might be .../sources/sanction-lists
+          # so supporting would be at .../sources/supporting
+          parent_dir = File.dirname(input_dir)
+          supporting_path = File.join(parent_dir, 'supporting')
+          return supporting_path if Dir.exist?(supporting_path)
+        end
+
+        nil
       end
 
       # Transform data using appropriate transformer
@@ -377,15 +462,7 @@ module Ammitto
       # @param data [Hash] source data
       # @return [Hash]
       def transform_au(transformer, data)
-        require_relative '../sources/au/sanctions_list'
-
-        # Check if individual or organization
-        source = if data['entity_type'] == 'Individual' || data.key?('dates_of_birth')
-                   Ammitto::Sources::Au::Individual.from_yaml(data.to_yaml)
-                 else
-                   Ammitto::Sources::Au::Organization.from_yaml(data.to_yaml)
-                 end
-        result = transformer.transform(source)
+        result = transformer.transform_from_hash(data)
 
         {
           entity: entity_to_hash(result[:entity]),
@@ -431,16 +508,69 @@ module Ammitto
       # Transform CN data
       # @param transformer [Object] transformer instance
       # @param data [Hash] source data
-      # @return [Hash]
+      # @return [Hash, Array<Hash>] single result or array of results
       def transform_cn(transformer, data)
-        require_relative '../sources/cn/sanctions_list'
+        # Check if this is the new data-cn YAML format
+        if data.key?('announcement') && data.key?('sanction_details')
+          transform_cn_announcement(transformer, data)
+        elsif data.key?('announcement') && data.key?('measure_modifications')
+          transform_cn_modification(transformer, data)
+        else
+          # Old format - single entity
+          require_relative '../sources/cn/sanctions_list'
 
-        source = Ammitto::Sources::Cn::SanctionedEntity.from_yaml(data.to_yaml)
-        result = transformer.transform(source)
+          source = Ammitto::Sources::Cn::SanctionedEntity.from_yaml(data.to_yaml)
+          result = transformer.transform(source)
 
+          {
+            entity: entity_to_hash(result[:entity]),
+            entry: entry_to_hash(result[:entry])
+          }
+        end
+      end
+
+      # Transform CN announcement (new YAML format)
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Array<Hash>] array of transformation results
+      def transform_cn_announcement(transformer, data)
+        require_relative '../sources/cn/announcement'
+
+        announcement = Ammitto::Sources::Cn::Announcement.from_hash(data)
+        result = transformer.transform_announcement(announcement)
+
+        # Export SanctionGroup if present
+        @exporter.add_group(result[:group], source: :cn) if result[:group]
+
+        # Return array of entity/entry pairs
+        result[:entities].zip(result[:entries]).map do |entity, entry|
+          {
+            entity: entity_to_hash(entity),
+            entry: entry_to_hash(entry)
+          }
+        end
+      end
+
+      # Transform CN modification (new YAML format)
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Hash] modification data (no entities)
+      def transform_cn_modification(transformer, data)
+        require_relative '../sources/cn/measure_modification'
+
+        modification = Ammitto::Sources::Cn::MeasureModification.from_hash(data)
+        result = transformer.transform_modification(modification)
+
+        # Return empty entity/entry - modifications are handled separately
         {
-          entity: entity_to_hash(result[:entity]),
-          entry: entry_to_hash(result[:entry])
+          entity: nil,
+          entry: nil,
+          modifications: result[:modifications]&.map do |m|
+            m.to_hash
+          rescue StandardError
+            m
+          end,
+          announcement: result[:announcement]&.to_hash
         }
       end
 

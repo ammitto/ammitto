@@ -195,7 +195,7 @@ module Ammitto
           Ammitto::OfficialAnnouncement.new(
             title: "Announcement #{source_entity.announcement_number}",
             url: source_entity.source_url,
-            published_date: parse_date(source_entity.announcement_date),
+            publish_date: parse_date(source_entity.announcement_date),
             language: 'ru'
           )
         end

@@ -3,6 +3,7 @@
 require 'lutaml/model'
 require_relative '../types'
 require_relative '../value_objects'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -15,6 +16,10 @@ module Ammitto
       # Each entity has a unique URI identifier and can have multiple
       # sanction entries from different authorities.
       #
+      # Neo4j labels are derived from class hierarchy:
+      #   PersonEntity -> [:Person, :Entity]
+      #   OrganizationEntity -> [:Organization, :Entity]
+      #
       # @example Creating an entity
       #   entity = PersonEntity.new(
       #     id: "https://www.ammitto.org/entity/eu/EU.123.45",
@@ -23,6 +28,15 @@ module Ammitto
       #   )
       #
       class Entity < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for Entity
+        neo4j_labels 'Entity'
+        neo4j_property :entity_type, :remarks
+        neo4j_relationship :sanction_entries,
+                           type: 'HAS_ENTRY',
+                           target_class: 'SanctionEntry',
+                           target_key: :id
         # Unique URI identifier for the entity
         # @return [String]
         attribute :id, :string

@@ -59,6 +59,11 @@ module Ammitto
               'SanctionEffect' => { '@id' => 'SanctionEffect' },
               'LegalInstrument' => { '@id' => 'LegalInstrument' },
               'OfficialAnnouncement' => { '@id' => 'OfficialAnnouncement' },
+              'LocalizedString' => { '@id' => 'LocalizedString' },
+              'LegalCitation' => { '@id' => 'LegalCitation' },
+              'SanctionList' => { '@id' => 'SanctionList' },
+              'SanctionGroup' => { '@id' => 'SanctionGroup' },
+              'SanctionPeriodModification' => { '@id' => 'SanctionPeriodModification' },
 
               # Entity attributes
               'names' => { '@id' => 'schema:name', '@container' => '@set' },
@@ -207,7 +212,63 @@ module Ammitto
               'dissolutionDate' => { '@id' => 'dissolutionDate', '@type' => 'xsd:date' },
               'country' => { '@id' => 'country' },
               'countryIsoCode' => { '@id' => 'countryIsoCode' },
-              'sector' => { '@id' => 'sector' }
+              'sector' => { '@id' => 'sector' },
+
+              # LocalizedString properties
+              'value' => { '@id' => 'value' },
+              'lang' => { '@id' => 'lang' },
+              'script' => { '@id' => 'script' },
+              'isPrimary' => { '@id' => 'isPrimary', '@type' => 'xsd:boolean' },
+              'isTransliteration' => { '@id' => 'isTransliteration', '@type' => 'xsd:boolean' },
+              'transliterationSystem' => { '@id' => 'transliterationSystem' },
+
+              # LegalCitation properties
+              'legalInstrumentId' => { '@id' => 'legalInstrumentId', '@type' => '@id' },
+              'articles' => { '@id' => 'articles', '@container' => '@set' },
+              'sections' => { '@id' => 'sections', '@container' => '@set' },
+              'paragraphs' => { '@id' => 'paragraphs', '@container' => '@set' },
+              'citationType' => { '@id' => 'citationType' },
+              'context' => { '@id' => 'context' },
+              'quotedText' => { '@id' => 'quotedText', '@container' => '@set' },
+
+              # SanctionList properties
+              'source' => { '@id' => 'source' },
+              'code' => { '@id' => 'code' },
+              'description' => { '@id' => 'description' },
+              'description_zh' => { '@id' => 'description_zh' },
+              'description_en' => { '@id' => 'description_en' },
+              'establishedDate' => { '@id' => 'establishedDate', '@type' => 'xsd:date' },
+              'metadata' => { '@id' => 'metadata' },
+              'legalCitations' => { '@id' => 'legalCitation', '@container' => '@set' },
+
+              # SanctionGroup properties
+              'announcementId' => { '@id' => 'announcementId', '@type' => '@id' },
+              'listId' => { '@id' => 'listId', '@type' => '@id' },
+              'entryIds' => { '@id' => 'entryId', '@type' => '@id', '@container' => '@set' },
+              'sharedMeasures' => { '@id' => 'sharedMeasure', '@container' => '@set' },
+              'sharedReasons' => { '@id' => 'sharedReason', '@container' => '@set' },
+              'effectiveTime' => { '@id' => 'effectiveTime' },
+              'entityCount' => { '@id' => 'entityCount', '@type' => 'xsd:integer' },
+              'notes' => { '@id' => 'notes' },
+
+              # SanctionPeriodModification properties
+              'targetAnnouncementId' => { '@id' => 'targetAnnouncementId', '@type' => '@id' },
+              'targetAnnouncementDate' => { '@id' => 'targetAnnouncementDate', '@type' => 'xsd:date' },
+              'affectedEntityCount' => { '@id' => 'affectedEntityCount', '@type' => 'xsd:integer' },
+              'affectedEntityNames' => { '@id' => 'affectedEntityName', '@container' => '@set' },
+              'action' => { '@id' => 'action' },
+              'untilDate' => { '@id' => 'untilDate', '@type' => 'xsd:date' },
+              'untilTime' => { '@id' => 'untilTime' },
+              'durationDays' => { '@id' => 'durationDays', '@type' => 'xsd:integer' },
+              'durationDescription' => { '@id' => 'durationDescription' },
+              'reason' => { '@id' => 'reason', '@container' => '@set' },
+
+              # OfficialAnnouncement new properties
+              'sanctionGroupIds' => { '@id' => 'sanctionGroupId', '@type' => '@id', '@container' => '@set' },
+              'modifications' => { '@id' => 'modification', '@container' => '@set' },
+
+              # SanctionEntry new properties
+              'groupId' => { '@id' => 'groupId', '@type' => '@id' }
             }
           }
         end

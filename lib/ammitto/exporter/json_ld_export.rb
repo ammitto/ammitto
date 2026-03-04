@@ -315,7 +315,7 @@ module Ammitto
             identifier: reg['number_title'],
             title: reg['number_title'],
             issuing_body: 'Council of the European Union',
-            issuance_date: reg['publication_date'],
+            publish_date: reg['publication_date'],
             url: reg['publication_url']
           )
         end

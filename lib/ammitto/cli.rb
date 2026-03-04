@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'thor'
+require 'ammitto' # Ensure core library is loaded (sets up XML adapter, etc.)
 require_relative 'config/defaults'
 require_relative 'config/env_provider'
 require_relative 'config/override_resolver'
@@ -288,6 +289,25 @@ module Ammitto
         ammitto data sources                  # List sources
     DESC
     subcommand 'data', DataCLI
+
+    # ---- Source Command ----
+
+    desc 'source COUNTRY SUBCOMMAND', 'Fetch data from country-specific sources'
+    long_desc <<~DESC
+      Fetch sanction data from specific country authorities.
+
+      Countries:
+        japan - Japan authorities (METI, MOFA, MOF)
+
+      Examples:
+        ammitto source japan fetch meti              # Fetch METI Foreign User List
+        ammitto source japan fetch meti --verbose    # Fetch with verbose output
+        ammitto source japan fetch meti --output-dir ./data  # Save to custom directory
+    DESC
+    def source(country, *args)
+      require_relative 'cli/source_command'
+      Cmd::SourceCommand.start([country] + args)
+    end
 
     # ---- Helper Methods ----
 

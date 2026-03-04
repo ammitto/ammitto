@@ -395,6 +395,7 @@ module Ammitto
       # Base class for all sanctioned entities
       class BaseEntity < Lutaml::Model::Serializable
         attribute :reference, :string # Base reference number
+        attribute :entity_type, :string # Serialized to YAML for entity type detection
         attribute :names, Name, collection: true
         attribute :address, :string
         attribute :additional_info, :string
@@ -432,10 +433,6 @@ module Ammitto
           return if names.any? { |n| n.text == name.text }
 
           names << name
-        end
-
-        def entity_type
-          raise NotImplementedError, 'Subclasses must implement entity_type'
         end
 
         def merge_row(row)
@@ -477,12 +474,21 @@ module Ammitto
 
       # Sanctioned individual (natural person)
       class Individual < BaseEntity
+        attribute :entity_type, :string, default: 'person'
         attribute :dates_of_birth, FlexibleDate, collection: true
         attribute :places_of_birth, Location, collection: true
         attribute :citizenships, :string, collection: true
 
-        def entity_type
-          EntityType::INDIVIDUAL
+        yaml do
+          map 'reference', to: :reference
+          map 'entity_type', to: :entity_type
+          map 'names', to: :names
+          map 'address', to: :address
+          map 'additional_info', to: :additional_info
+          map 'sanction', to: :sanction
+          map 'dates_of_birth', to: :dates_of_birth
+          map 'places_of_birth', to: :places_of_birth
+          map 'citizenships', to: :citizenships
         end
 
         def birth_years
@@ -528,6 +534,7 @@ module Ammitto
         def self.from_csv_row(row)
           entity = new(
             reference: parse_base_reference(row['Reference']),
+            entity_type: 'person',
             names: [],
             address: row['Address'],
             additional_info: row['Additional Information'],
@@ -547,13 +554,21 @@ module Ammitto
 
       # Sanctioned organization (legal entity)
       class Organization < BaseEntity
-        def entity_type
-          EntityType::ORGANIZATION
+        attribute :entity_type, :string, default: 'organization'
+
+        yaml do
+          map 'reference', to: :reference
+          map 'entity_type', to: :entity_type
+          map 'names', to: :names
+          map 'address', to: :address
+          map 'additional_info', to: :additional_info
+          map 'sanction', to: :sanction
         end
 
         def self.from_csv_row(row)
           entity = new(
             reference: parse_base_reference(row['Reference']),
+            entity_type: 'organization',
             names: [],
             address: row['Address'],
             additional_info: row['Additional Information'],
@@ -570,16 +585,25 @@ module Ammitto
 
       # Sanctioned vessel (ship)
       class Vessel < BaseEntity
+        attribute :entity_type, :string, default: 'vessel'
         attribute :imo_number, :string
         attribute :previous_names, :string, collection: true
 
-        def entity_type
-          EntityType::VESSEL
+        yaml do
+          map 'reference', to: :reference
+          map 'entity_type', to: :entity_type
+          map 'names', to: :names
+          map 'address', to: :address
+          map 'additional_info', to: :additional_info
+          map 'sanction', to: :sanction
+          map 'imo_number', to: :imo_number
+          map 'previous_names', to: :previous_names
         end
 
         def self.from_csv_row(row)
           entity = new(
             reference: parse_base_reference(row['Reference']),
+            entity_type: 'vessel',
             names: [],
             address: nil, # Vessels don't have addresses
             additional_info: row['Additional Information'],

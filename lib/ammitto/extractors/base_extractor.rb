@@ -24,6 +24,9 @@ module Ammitto
     #   end
     #
     class BaseExtractor
+      # @return [Boolean] verbose output mode
+      attr_accessor :verbose
+
       # Get the source code
       # @return [Symbol]
       def code

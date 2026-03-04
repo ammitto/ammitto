@@ -1,0 +1,43 @@
+{
+  "@context": {
+    "@vocab": "https://www.ammitto.org/ontology/",
+    "id": "@id",
+    "type": "@type",
+    "entity_type": {
+      "@id": "entityType",
+      "@type": "@vocab"
+    },
+    "names": {
+      "@id": "name",
+      "@container": "@set"
+    },
+    "full_name": "name",
+    "is_primary": "isPrimaryName",
+    "script": "script",
+    "status": "entryStatus",
+    "listed_date": {
+      "@id": "listedDate",
+      "@type": "http://www.w3.org/2001/XMLSchema#date"
+    },
+    "delisted_date": {
+      "@id": "delistedDate",
+      "@type": "http://www.w3.org/2001/XMLSchema#date"
+    },
+    "measures": {
+      "@id": "measure",
+      "@container": "@set"
+    },
+    "source": "dataSource",
+    "source_url": "sourceUrl",
+    "issuing_authority": "issuingAuthority",
+    "legal_instruments": {
+      "@id": "legalInstrument",
+      "@container": "@set"
+    },
+    "announcements": {
+      "@id": "announcement",
+      "@container": "@set"
+    }
+  },
+  "@graph": []
+}

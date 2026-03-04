@@ -17,6 +17,7 @@ module Ammitto
         attribute :country, :string
         attribute :last_name, :string
         attribute :given_name, :string
+        attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :date_of_birth_or_ship_build_date, :string
         attribute :schedule, :string
         attribute :item, :string
@@ -38,6 +39,7 @@ module Ammitto
           map 'country', to: :country
           map 'last_name', to: :last_name
           map 'given_name', to: :given_name
+          map 'entity_type', to: :entity_type
           map 'date_of_birth_or_ship_build_date', to: :date_of_birth_or_ship_build_date
           map 'schedule', to: :schedule
           map 'item', to: :item
@@ -59,6 +61,8 @@ module Ammitto
         # Get entity type based on content
         # @return [String] 'person' or 'organization'
         def entity_type
+          return @entity_type if @entity_type && !@entity_type.empty?
+
           # If has LastName/GivenName, it's a person
           if last_name || given_name
             'person'

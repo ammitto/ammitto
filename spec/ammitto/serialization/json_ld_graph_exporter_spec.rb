@@ -92,7 +92,7 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
         'entityType' => 'person'
       }
       entry = {
-        '@id' => 'https://www.ammitto.org/entry/un/KPi.066',
+        '@id' => 'https://www.ammitto.org/entry/un/consolidated-list/KPi.066',
         '@type' => 'SanctionEntry',
         'entityId' => 'https://www.ammitto.org/entity/un/KPi.066',
         'authority' => { 'name' => 'UN', 'countryCode' => 'UN' },
@@ -106,7 +106,7 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       exporter.export
 
       expect(Dir.exist?(File.join(output_dir, 'node', 'entity', 'un'))).to be true
-      expect(Dir.exist?(File.join(output_dir, 'node', 'entry', 'un'))).to be true
+      expect(Dir.exist?(File.join(output_dir, 'node', 'entry', 'un', 'consolidated-list'))).to be true
       expect(Dir.exist?(File.join(output_dir, 'node', 'authority'))).to be true
       expect(Dir.exist?(File.join(output_dir, 'node', 'regime'))).to be true
     end
@@ -125,11 +125,11 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     it 'exports individual entry node files with @id references' do
       exporter.export
 
-      entry_file = File.join(output_dir, 'node', 'entry', 'un', 'KPi.066.jsonld')
+      entry_file = File.join(output_dir, 'node', 'entry', 'un', 'consolidated-list', 'KPi.066.jsonld')
       expect(File.exist?(entry_file)).to be true
 
       data = JSON.parse(File.read(entry_file))
-      expect(data['@id']).to eq('https://www.ammitto.org/entry/un/KPi.066')
+      expect(data['@id']).to eq('https://www.ammitto.org/entry/un/consolidated-list/KPi.066')
       expect(data['authority']).to eq({ '@id' => 'https://www.ammitto.org/authority/un' })
       expect(data['regime']).to eq({ '@id' => 'https://www.ammitto.org/regime/dprk' })
     end

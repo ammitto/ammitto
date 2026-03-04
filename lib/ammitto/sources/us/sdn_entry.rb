@@ -21,6 +21,7 @@ module Ammitto
         attribute :first_name, :string
         attribute :last_name, :string
         attribute :sdn_type, :string
+        attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :program_list, ProgramList
         attribute :aka_list, AkaList
         attribute :address_list, AddressList
@@ -55,6 +56,7 @@ module Ammitto
           map 'first_name', to: :first_name
           map 'last_name', to: :last_name
           map 'sdn_type', to: :sdn_type
+          map 'entity_type', to: :entity_type
           map 'program_list', to: :program_list
           map 'aka_list', to: :aka_list
           map 'address_list', to: :address_list
@@ -75,7 +77,10 @@ module Ammitto
           full_name.to_s.strip.empty? ? last_name : full_name
         end
 
+        # Compute entity_type from sdn_type if not set
         def entity_type
+          return @entity_type if @entity_type && !@entity_type.empty?
+
           case sdn_type.to_s.strip
           when /Individual/i then 'person'
           when /Vessel/i then 'vessel'

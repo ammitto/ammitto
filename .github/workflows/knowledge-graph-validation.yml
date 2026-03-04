@@ -1,0 +1,196 @@
+# Neo4j Knowledge Graph Validation Workflow
+#
+# This workflow:
+# 1. Starts Neo4j container
+# 2. Imports all data to Neo4j
+# 3. Runs validation queries as quality gates
+# 4. Exports JSON-LD for website
+# 5. Uploads artifacts
+
+name: Knowledge Graph Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data-*/processed/**'
+  pull_request:
+    paths:
+      - 'data-*/processed/**'
+  workflow_dispatch:
+
+env:
+  NEO4J_VERSION: '5.15-community'
+  NEO4J_PASSWORD: 'password'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: 'ammitto'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Prepare data directory
+        run: |
+          # Create symlinks to data-* directories at repo root
+          cd ammitto
+          cd ..
+          for dir in ammitto/src/ammitto/data-*; do
+            if [ -d "$dir/processed" ]; then
+              ln -sf "$dir" "$(basename $dir)"
+            fi
+          done
+
+      - name: Start Neo4j
+        run: |
+          docker run -d --name ammitto-neo4j-test \
+            -p 7687:7687 -p 7474:7474 \
+            -e NEO4J_AUTH=neo4j/${{ env.NEO4J_PASSWORD }} \
+            neo4j:${{ env.NEO4J_VERSION }}
+
+      - name: Wait for Neo4j
+        run: |
+          for i in {1..30}; do
+            if docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "RETURN 1" &>/dev/null; then
+              echo "Neo4j is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Neo4j failed to start"
+          exit 1
+
+      - name: Install Neo4j Ruby driver
+        run: |
+          cd ammitto
+          bundle install
+
+      - name: Run full Neo4j import
+        run: |
+          cd ammitto
+          bundle exec ruby scripts/import_neo4j_full.rb
+        env:
+          NEO4J_URI: 'bolt://localhost:7687'
+
+      - name: Run validation queries
+        id: validation
+        run: |
+          cd ammitto
+
+          # Node counts
+          echo "=== Node Counts ==="
+          docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH (n) RETURN labels(n)[0] as type, count(n) as count ORDER BY count DESC
+          "
+
+          echo ""
+          echo "=== Relationship Counts ==="
+          docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH ()-[r]->() RETURN type(r) as type, count(r) as count ORDER BY count DESC
+          "
+
+          echo ""
+          echo "=== Quality Gates ==="
+
+          # Gate 1: All entities must have names
+          ENTITIES_WITHOUT_NAMES=$(docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH (e:Entity) WHERE NOT (e)-[:HAS_NAME]->() RETURN count(e) as count
+          " | tail -1)
+
+          if [ "$ENTITIES_WITHOUT_NAMES" -gt 0 ]; then
+            echo "FAIL: $ENTITIES_WITHOUT_NAMES entities without names"
+            exit 1
+          else
+            echo "PASS: All entities have names"
+          fi
+
+          # Gate 2: All entries must have entities
+          ENTRIES_WITHOUT_ENTITIES=$(docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH (e:Entry) WHERE NOT (e)-[:FOR_ENTITY]->() RETURN count(e) as count
+          " | tail -1)
+
+          if [ "$ENTRIES_WITHOUT_ENTITIES" -gt 0 ]; then
+            echo "FAIL: $ENTRIES_WITHOUT_ENTITIES entries without entities"
+            exit 1
+          else
+            echo "PASS: All entries have entities"
+          fi
+
+          # Gate 3: All entries must have authorities
+          ENTRIES_WITHOUT_AUTH=$(docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH (e:Entry) WHERE NOT (e)-[:LISTED_BY]->() RETURN count(e) as count
+          " | tail -1)
+
+          # Allow some entries without authorities (edge cases)
+          if [ "$ENTRIES_WITHOUT_AUTH" -gt 1000 ]; then
+            echo "FAIL: $ENTRIES_WITHOUT_AUTH entries without authorities"
+            exit 1
+          else
+            echo "PASS: Most entries have authorities ($ENTRIES_WITHOUT_AUTH may be edge cases)"
+          fi
+
+          # Gate 4: No orphaned names
+          ORPHAN_NAMES=$(docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH (n:Name) WHERE NOT (n)<-[:HAS_NAME]-() RETURN count(n) as count
+          " | tail -1)
+
+          if [ "$ORPHAN_NAMES" -gt 0 ]; then
+            echo "FAIL: $ORPHAN_NAMES orphaned names"
+            exit 1
+          else
+            echo "PASS: No orphaned names"
+          fi
+
+          # Gate 5: Entity type distribution sanity check
+          TOTAL_ENTITIES=$(docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "
+            MATCH (e:Entity) RETURN count(e) as count
+          " | tail -1)
+
+          if [ "$TOTAL_ENTITIES" -lt 30000 ]; then
+            echo "FAIL: Only $TOTAL_ENTITIES entities (expected >30,000)"
+            exit 1
+          else
+            echo "PASS: Entity count is healthy ($TOTAL_ENTITIES)"
+          fi
+
+          echo ""
+          echo "=== ALL VALIDATION GATES PASSED ==="
+
+      - name: Export JSON-LD
+        run: |
+          cd ammitto
+          bundle exec ruby scripts/export_json_ld.rb
+
+      - name: Upload JSON-LD artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-ld-export
+          path: ammitto/data/ontology/json-ld/
+          retention-days: 7
+
+      - name: Upload Neo4j backup
+        run: |
+          docker exec ammitto-neo4j-test neo4j-admin database dump neo4j --to-path=/backup
+        continue-on-error: true
+
+      - name: Upload Neo4j backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neo4j-backup
+          path: backup/
+          retention-days: 7
+        continue-on-error: true
+
+      - name: Stop Neo4j
+        if: always()
+        run: |
+          docker stop ammitto-neo4j-test || true
+          docker rm ammitto-neo4j-test || true

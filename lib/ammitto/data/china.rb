@@ -77,6 +77,12 @@ module Ammitto
 end
 
 # Load submodules
+# Load utilities
+require_relative 'china/schema_loader'
+require_relative 'china/schema_resolver'
+require_relative 'china/loader'
+
+# Load core models
 require_relative 'china/announcement'
 require_relative 'china/entity'
 require_relative 'china/list'

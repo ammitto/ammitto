@@ -1,0 +1,103 @@
+# JSON Schema for China Legal Instruments
+# For IDE yaml-language-server support, keep the comment reference above
+---
+title: China Legal Instrument
+description: Schema for validating Chinese legal instrument YAML files (laws, regulations, provisions)
+type: object
+required:
+  - title
+  - content
+properties:
+  id:
+    type: string
+    pattern: "^[a-z0-9-/]+$"
+    description: Unique identifier for the legal instrument (e.g., "cn/npc-anti-foreign-sanctions-law")
+  title:
+    description: Title of the legal instrument (localized)
+    oneOf:
+      - type: string
+        description: Simple title string (backward compatibility)
+      - type: array
+        minItems: 1
+        items:
+          type: object
+          minProperties: 1
+          properties:
+            zh-Hans:
+              type: string
+              description: Chinese title (Simplified)
+            en:
+              type: string
+              description: English title
+          additionalProperties: false
+  url:
+    type: string
+    format: uri
+    description: URL to the official source document
+  type:
+    type: string
+    description: Type of document (e.g., "全国人民代表大会常务委员会公告", "商务部规章")
+  document_id:
+    type: string
+    description: Official document ID (e.g., "商务部令第4号")
+  lang:
+    type: string
+    pattern: "^[a-z]{2,3}(-[A-Za-z]{4})?(-[A-Z]{2})?$"
+    description: Language code (e.g., "zh-Hans", "en")
+    default: zh-Hans
+  publish_date:
+    type: string
+    format: date
+    description: Date of publication (YYYY-MM-DD)
+  effective_date:
+    type: string
+    format: date
+    description: Date when the legal instrument takes effect (YYYY-MM-DD)
+  approval_history:
+    type: array
+    items:
+      type: string
+    description: History of approval events
+  content:
+    type: array
+    minItems: 1
+    items:
+      $ref: '#/definitions/ContentItem'
+    description: Structured content of the legal instrument
+
+definitions:
+  ContentItem:
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum:
+          - chapter
+          - clause
+          - numbered-list
+          - list-item
+        description: Type of content item
+      index:
+        type: integer
+        minimum: 1
+        description: Sequential index of the item
+      label:
+        type: string
+        description: Label for the item (e.g., "第一章", "第一条", "（一）")
+      title:
+        type: string
+        description: Title of the item (for chapters, e.g., "总则", "法律责任")
+      content:
+        description: Nested content - can be strings or structured items
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              oneOf:
+                - type: string
+                - $ref: '#/definitions/ContentItem'
+    additionalProperties: false
+
+additionalProperties: false

@@ -53,3 +53,4 @@ end
 
 # Load submodules
 require_relative 'japan/meti'
+require_relative 'japan/mof/mof'

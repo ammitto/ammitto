@@ -8,12 +8,15 @@ rescue LoadError
   # json-schema not available - validation will be skipped
 end
 
+require_relative 'schema_loader'
+require_relative 'schema_resolver'
+
 module Ammitto
   module Data
-    module China
-      # Validates China source YAML files against JSON schemas
+    module Japan
+      # Validates Japan source YAML files against JSON schemas
       #
-      # Validator provides comprehensive validation of China sanctions data files
+      # Validator provides comprehensive validation of Japan sanctions data files
       # against JSON schemas. It supports multiple schema types and provides
       # detailed error reporting.
       #
@@ -122,9 +125,9 @@ module Ammitto
 
         private
 
-        # Default schemas directory (ammitto/schemas/china)
+        # Default schemas directory (ammitto/schemas/japan)
         def default_schemas_dir
-          File.expand_path('../../../../schemas/china', __dir__)
+          File.expand_path('../../../schemas/japan', __dir__)
         end
 
         # Load a YAML file with error handling

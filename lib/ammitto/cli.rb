@@ -309,6 +309,27 @@ module Ammitto
       Cmd::SourceCommand.start([country] + args)
     end
 
+    # ---- Validate Command ----
+
+    desc 'validate SUBCOMMAND', 'Validate data files against schemas'
+    long_desc <<~DESC
+      Validate source data files against JSON schemas.
+
+      Subcommands:
+        china  - Validate China sanctions data
+        list   - List files and detected schema types
+        schema - Show schema information
+
+      Examples:
+        ammitto validate china                          # Validate all China files
+        ammitto validate china sources/ --verbose       # With detailed output
+        ammitto validate list                           # List files and schemas
+    DESC
+    def validate(*args)
+      require_relative 'cli/validate_command'
+      Cmd::ValidateCommand.start(args)
+    end
+
     # ---- Helper Methods ----
 
     private

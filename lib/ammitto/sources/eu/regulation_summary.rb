@@ -19,7 +19,7 @@ module Ammitto
 
         xml do
           root 'regulationSummary'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'regulationType', to: :regulation_type
           map_attribute 'publicationDate', to: :publication_date

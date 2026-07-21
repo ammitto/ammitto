@@ -22,7 +22,7 @@ module Ammitto
 
         xml do
           root 'identification'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'identificationTypeCode', to: :identification_type_code
           map_attribute 'number', to: :number

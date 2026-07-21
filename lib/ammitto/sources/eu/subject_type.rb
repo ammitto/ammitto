@@ -15,7 +15,7 @@ module Ammitto
 
         xml do
           root 'subjectType'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'code', to: :code
           map_attribute 'classificationCode', to: :classification_code

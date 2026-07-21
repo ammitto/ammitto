@@ -35,7 +35,7 @@ module Ammitto
 
         xml do
           root 'sanctionEntity'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'euReferenceNumber', to: :eu_reference_number
           map_attribute 'logicalId', to: :logical_id

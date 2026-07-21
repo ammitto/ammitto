@@ -33,7 +33,7 @@ module Ammitto
 
         xml do
           root 'birthdate'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'birthdate', to: :birthdate
           map_attribute 'circa', to: :circa

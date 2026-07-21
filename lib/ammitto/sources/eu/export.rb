@@ -18,7 +18,7 @@ module Ammitto
 
         xml do
           root 'export'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'generationDate', to: :generation_date
           map_attribute 'globalFileId', to: :global_file_id

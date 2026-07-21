@@ -25,7 +25,7 @@ module Ammitto
 
         xml do
           root 'regulation'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'regulationType', to: :regulation_type
           map_attribute 'organisationType', to: :organisation_type

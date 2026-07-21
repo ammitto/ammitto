@@ -30,7 +30,7 @@ module Ammitto
 
         xml do
           root 'nameAlias'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'firstName', to: :first_name
           map_attribute 'middleName', to: :middle_name

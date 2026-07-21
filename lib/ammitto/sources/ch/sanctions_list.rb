@@ -74,6 +74,10 @@ module Ammitto
 
         def to_iso_date
           return nil unless year
+          # Year-only or year-month dates must not render as "1975-00-00" —
+          # emit the known precision only
+          return year.to_s unless month
+          return "#{year}-#{month.to_s.rjust(2, '0')}" unless day
 
           "#{year}-#{month.to_s.rjust(2, '0')}-#{day.to_s.rjust(2, '0')}"
         end

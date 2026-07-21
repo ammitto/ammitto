@@ -107,7 +107,7 @@ module Ammitto
           [Ammitto::SourceReference.new(
             source_code: 'nz',
             reference_number: ref_num,
-            fetched_at: Time.now.utc.iso8601
+            retrieved_at: Time.now.utc.iso8601
           )]
         end
 
@@ -135,7 +135,11 @@ module Ammitto
             entry.entity_id = entity.id
             entry.authority = authority
             entry.regime = create_regime
-            entry.status = map_status(source.sanction_status)
+            entry.status = if deleted_record?(source)
+                             'delisted'
+                           else
+                             map_status(source.sanction_status)
+                           end
             entry.effects = build_effects(source)
             entry.period = create_period(source)
           end
@@ -153,11 +157,22 @@ module Ammitto
         # Map status
         # @param status [String]
         # @return [String]
+        # NZ register ships carry an explicit deleted flag/date; those records
+        # must not harmonize as active sanctions
+        # @param source [Object] source model
+        # @return [Boolean]
+        def deleted_record?(source)
+          (source.respond_to?(:record_deleted_flag) && !source.record_deleted_flag.to_s.strip.empty?) ||
+            (source.respond_to?(:date_record_deleted) && source.date_record_deleted)
+        end
+
         def map_status(status)
           case status&.downcase
-          when 'sanctioned'
+          when 'deleted', 'removed', 'revoked', 'lapsed'
+            'delisted'
+          else
+            'active'
           end
-          'active'
         end
 
         # Build effects

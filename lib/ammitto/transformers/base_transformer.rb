@@ -206,8 +206,9 @@ module Ammitto
       # @param country [String, nil] birth country
       # @param country_iso_code [String, nil] ISO country code
       # @return [BirthInfo] the birth info
+      # rubocop:disable Metrics/ParameterLists
       def create_birth_info(date: nil, circa: false, city: nil, region: nil, country: nil,
-                            country_iso_code: nil)
+                            country_iso_code: nil, year: nil)
         parsed_date = date.is_a?(Date) ? date : parse_date(date)
 
         Ammitto::BirthInfo.new(
@@ -216,9 +217,11 @@ module Ammitto
           city: city,
           region: region,
           country: country,
-          country_iso_code: country_iso_code
+          country_iso_code: country_iso_code,
+          year: year || parsed_date&.year
         )
       end
+      # rubocop:enable Metrics/ParameterLists
 
       # Create a SanctionRegime
       # @param name [String, nil] regime name

@@ -65,7 +65,7 @@ module Ammitto
           [Ammitto::SourceReference.new(
             source_code: 'eu_vessels',
             reference_number: vessel.imo_number,
-            fetched_at: Time.now.utc.iso8601
+            retrieved_at: Time.now.utc.iso8601
           )]
         end
 

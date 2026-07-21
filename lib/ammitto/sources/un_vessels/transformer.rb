@@ -45,7 +45,7 @@ module Ammitto
             entity.imo_number = vessel.imo_number
             entity.flag_state = vessel.flag_state
             entity.build_year = vessel.build_year
-            entity.tonnage = vessel.tonnage
+            entity.gross_tonnage = vessel.tonnage
             entity.source_references = build_source_references(vessel)
           end
         end
@@ -74,9 +74,13 @@ module Ammitto
           ref = Ammitto::SourceReference.new(
             source_code: 'un_vessels',
             reference_number: vessel.imo_number,
-            fetched_at: Time.now.utc.iso8601
+            retrieved_at: Time.now.utc.iso8601
           )
-          ref.resolution = vessel.resolution if vessel.resolution
+          # SourceReference (models layer) has no resolution attribute yet —
+          # that field belongs to the ontology contract (A4 step 5). Guard the
+          # write; the resolution is preserved via the entry's regime and
+          # raw source data.
+          ref.resolution = vessel.resolution if vessel.resolution && ref.respond_to?(:resolution=)
           [ref]
         end
 

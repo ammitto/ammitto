@@ -16,7 +16,12 @@ module Ammitto
         # @param target [Ammitto::Sources::Ch::Target]
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
         def transform(target)
-          if target.individual
+          # The fetch pipeline saves bare Identity records (SanctionsList
+          # #all_identities); full Target records only occur when parsing the
+          # original SECO XML directly.
+          if target.is_a?(Ammitto::Sources::Ch::Identity)
+            transform_identity(target)
+          elsif target.individual
             transform_individual(target)
           elsif target.entity
             transform_entity(target)
@@ -63,6 +68,33 @@ module Ammitto
           { entity: entity, entry: entry }
         end
 
+        # Transform a bare Identity record (the shape the fetch pipeline
+        # saves as YAML). Identity#person? (given-name parts) or a birth date
+        # signals a person; otherwise the record is treated as an organization.
+        # @param identity [Ammitto::Sources::Ch::Identity]
+        # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        def transform_identity(identity)
+          entity = if identity.person? || identity.day_month_year
+                     Ammitto::PersonEntity.new(
+                       id: generate_entity_id(identity.ssid),
+                       entity_type: 'person',
+                       names: transform_names_from_identity(identity),
+                       birth_info: transform_birth_info(identity)
+                     )
+                   else
+                     Ammitto::OrganizationEntity.new(
+                       id: generate_entity_id(identity.ssid),
+                       entity_type: 'organization',
+                       names: transform_names_from_identity(identity)
+                     )
+                   end
+
+          entry = create_entry(identity, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
+        end
+
         def transform_from_minimal(target)
           entity = Ammitto::OrganizationEntity.new(
             id: generate_entity_id(target.ssid),
@@ -92,8 +124,10 @@ module Ammitto
           dmy = identity.day_month_year
           return [] unless dmy.year
 
+          # Year-only Swiss records keep their year even when no full date
+          # can be parsed
           date_str = dmy.to_iso_date
-          [create_birth_info(date: parse_date(date_str))]
+          [create_birth_info(date: parse_date(date_str), year: dmy.year&.to_i)]
         end
 
         def create_entry(target, entity_id)
@@ -109,8 +143,9 @@ module Ammitto
               source_format: 'xml',
               source_specific_fields: {
                 'ch:ssid' => target.ssid,
-                'ch:sanctions_set_id' => target.sanctions_set_id
-              }
+                'ch:sanctions_set_id' =>
+                  (target.sanctions_set_id if target.respond_to?(:sanctions_set_id))
+              }.compact
             )
           )
         end

@@ -45,7 +45,7 @@ module Ammitto
           links = find_announcement_links
           announcements = []
 
-          links.first(5).each do |link_info| # Limit for testing
+          links.each do |link_info|
             announcement = fetch_and_parse_announcement(link_info[:url])
             announcements << announcement if announcement
           rescue StandardError => e

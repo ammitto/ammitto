@@ -208,8 +208,8 @@ module Ammitto
         def transform_vessel_names(vessel)
           names = transform_names(vessel.names)
 
-          # Add previous names as aliases
-          vessel.previous_names.each do |prev_name|
+          # Add previous names as aliases (absent in YAML round-trips)
+          (vessel.previous_names || []).each do |prev_name|
             names << create_name_variant(
               full_name: prev_name,
               script: 'Latn',

@@ -68,7 +68,7 @@ module Ammitto
         invalid = @sources - Config::Defaults::ALL_SOURCES
         return if invalid.empty?
 
-        raise ArgumentError,
+        raise Thor::Error,
               "Invalid sources: #{invalid.join(', ')}. " \
               "Valid: #{Config::Defaults::ALL_SOURCES.join(', ')}"
       end

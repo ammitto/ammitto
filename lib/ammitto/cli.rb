@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'thor'
-require 'ammitto' # Ensure core library is loaded (sets up XML adapter, etc.)
+require_relative 'version'
 require_relative 'config/defaults'
 require_relative 'config/env_provider'
 require_relative 'config/override_resolver'
@@ -88,16 +88,18 @@ module Ammitto
   #   ammitto data query --name "Smith"
   #
   class CLI < Thor
-    # Disable Thor's default handling of unknown options
+    # Exit nonzero on command failure — required so CI/cron health gates can
+    # detect failed runs instead of treating them as success
     def self.exit_on_failure?
-      false
+      true
     end
 
     # Map common mistakes to correct commands
     map %w[--version -v] => :version
 
-    # Register common options for all commands
-    Options::Registry.register_thor_options(self, %i[verbose log_level cache_dir])
+    # Register common options for all commands (--log-level was removed:
+    # it was declared but never honored anywhere)
+    Options::Registry.register_thor_options(self, %i[verbose cache_dir])
 
     # ---- Version Command ----
 
@@ -133,14 +135,12 @@ module Ammitto
       If no sources are specified with --all, fetches the specified sources only.
 
       Examples:
-        ammitto fetch                           # Fetch first source
         ammitto fetch uk --format yaml          # Fetch UK data as YAML
         ammitto fetch uk --output-dir ./data    # Save to specific directory
         ammitto fetch --all                     # Fetch all sources
         ammitto fetch eu un --dry-run           # Show what would be fetched
     DESC
     option :dry_run, type: :boolean, default: false, desc: 'Show what would be done'
-    option :force, type: :boolean, default: false, desc: 'Force re-download'
     option :all, type: :boolean, default: false, desc: 'Fetch all available sources'
     option :format, type: :string, default: 'yaml', desc: 'Output format (yaml, jsonld)'
     option :output_dir, type: :string, desc: 'Output directory for YAML files'
@@ -188,9 +188,12 @@ module Ammitto
         ammitto process --force        # Force reprocessing
     DESC
     option :force, type: :boolean, default: false, desc: 'Force reprocessing'
-    def process(*sources)
-      require_relative 'cli/process_command'
-      Cmd::ProcessCommand.new(options, sources).run
+    def process(*_sources)
+      # The process pipeline implementation was removed in a5124d3; its role
+      # is covered by `harmonize`. Deprecated: command removal planned for 2.0.
+      raise Thor::Error,
+            'The `process` command is no longer supported. ' \
+            'Use `ammitto harmonize` to transform fetched YAML into JSON-LD.'
     end
 
     # ---- Export Command ----

@@ -52,7 +52,7 @@ module Ammitto
 
         return if valid.include?(format)
 
-        raise ArgumentError,
+        raise Thor::Error,
               "Invalid format: #{format}. " \
               "Valid: #{valid.join(', ')}"
       end
@@ -125,7 +125,7 @@ module Ammitto
         require_relative '../serialization/rdf_serializer'
 
         sources.each do |source|
-          cache_file = File.join(cache_dir, 'cache', 'sources', source.to_s, "#{source}.jsonld")
+          cache_file = File.join(cache_dir, 'cache', 'sources', "#{source}.jsonld")
           next unless File.exist?(cache_file)
 
           # Load entities from cache
@@ -158,7 +158,7 @@ module Ammitto
         all_entities = []
 
         sources.each do |source|
-          cache_file = File.join(cache_dir, 'cache', 'sources', source.to_s, "#{source}.jsonld")
+          cache_file = File.join(cache_dir, 'cache', 'sources', "#{source}.jsonld")
           next unless File.exist?(cache_file)
 
           all_entities.concat(load_entities_from_cache(cache_file))

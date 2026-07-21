@@ -39,7 +39,7 @@ module Ammitto
         # Check if any Ammitto ENV variables are set
         # @return [Boolean]
         def any_set?
-          ENV_MAPPING.keys.any? { |key| ENV.fetch("#{PREFIX}#{key}", nil) }
+          ENV_MAPPING.keys.any? { |key| ENV.fetch("#{PREFIX}#{key.to_s.upcase}", nil) }
         end
 
         # Get configuration from environment

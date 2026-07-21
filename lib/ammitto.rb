@@ -31,16 +31,21 @@ require_relative 'ammitto/models'
 # Sources
 require_relative 'ammitto/sources/registry'
 require_relative 'ammitto/sources/base_source'
-require_relative 'ammitto/sources/eu/source'
-require_relative 'ammitto/sources/un/source'
-require_relative 'ammitto/sources/us/source'
-require_relative 'ammitto/sources/wb/source'
-require_relative 'ammitto/sources/uk/source'
-require_relative 'ammitto/sources/au/source'
-require_relative 'ammitto/sources/ca/source'
-require_relative 'ammitto/sources/ch/source'
-require_relative 'ammitto/sources/cn/source'
-require_relative 'ammitto/sources/ru/source'
+require_relative 'ammitto/sources/eu_source'
+require_relative 'ammitto/sources/un_source'
+require_relative 'ammitto/sources/us_source'
+require_relative 'ammitto/sources/wb_source'
+require_relative 'ammitto/sources/uk_source'
+require_relative 'ammitto/sources/au_source'
+require_relative 'ammitto/sources/ca_source'
+require_relative 'ammitto/sources/ch_source'
+require_relative 'ammitto/sources/cn_source'
+require_relative 'ammitto/sources/ru_source'
+require_relative 'ammitto/sources/tr_source'
+require_relative 'ammitto/sources/nz_source'
+require_relative 'ammitto/sources/jp_source'
+require_relative 'ammitto/sources/eu_vessels_source'
+require_relative 'ammitto/sources/un_vessels_source'
 
 # Client
 require_relative 'ammitto/client/api_client'
@@ -103,8 +108,8 @@ module Ammitto
     # @option options [Integer] :offset offset for pagination
     # @return [ResultSet] the search results
     def search(term, options = {})
-      query = QueryBuilder.new(term, options).build
-      ResultSet.new(query.execute)
+      query = Search::QueryBuilder.new(term, options).build
+      Search::ResultSet.new(query.execute)
     end
 
     # Refresh the local cache
@@ -115,14 +120,14 @@ module Ammitto
     # @option options [Boolean] :force force refresh even if cache is fresh
     # @return [Hash] status of each source refresh
     def refresh_cache(options = {})
-      CacheManager.refresh(options)
+      Client::CacheManager.refresh(options)
     end
 
     # Get cache status
     #
     # @return [Hash] status of cached sources
     def cache_status
-      CacheManager.status
+      Client::CacheManager.status
     end
 
     # Get list of available source codes

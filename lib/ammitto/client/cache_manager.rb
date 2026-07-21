@@ -66,7 +66,7 @@ module Ammitto
 
           content = File.read(path)
           MultiJson.load(content)
-        rescue JSON::ParserError
+        rescue MultiJson::ParseError
           nil
         end
 

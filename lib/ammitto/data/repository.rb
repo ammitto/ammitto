@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'json'
 require 'open3'
+require_relative '../errors/base_error'
 
 module Ammitto
   module Data
@@ -194,7 +195,7 @@ module Ammitto
           entities = entities.select do |e|
             names = e['names'] || []
             names.any? do |n|
-              n['full_name']&.downcase&.include?(name_lower)
+              (n['fullName'] || n['full_name'])&.downcase&.include?(name_lower)
             end
           end
         end
@@ -203,7 +204,7 @@ module Ammitto
         if criteria[:type]
           type_lower = criteria[:type].downcase
           entities = entities.select do |e|
-            e['entity_type']&.downcase == type_lower
+            (e['entityType'] || e['entity_type'])&.downcase == type_lower
           end
         end
 
@@ -239,22 +240,22 @@ module Ammitto
         entities = load_all
 
         # Try exact match first
-        entity = entities.find { |e| e['id'] == id }
+        entity = entities.find { |e| node_id(e) == id }
         return entity if entity
 
         # Try with full URI prefix
         full_id = normalize_id(id)
-        entity = entities.find { |e| e['id'] == full_id }
+        entity = entities.find { |e| node_id(e) == full_id }
         return entity if entity
 
         # Try matching end of ID (e.g., "un/KPi.066")
-        entity = entities.find { |e| e['id']&.end_with?(id) }
+        entity = entities.find { |e| node_id(e)&.end_with?(id) }
         return entity if entity
 
         # Try matching reference number in source_references
         entities.find do |e|
-          refs = e['source_references'] || []
-          refs.any? { |r| r['reference_number'] == id }
+          refs = e['sourceReferences'] || e['source_references'] || []
+          refs.any? { |r| (r['referenceNumber'] || r['reference_number']) == id }
         end
       end
 
@@ -275,14 +276,22 @@ module Ammitto
       # @param pull [Boolean] Whether to pull updates
       # @return [Boolean]
       def ensure_available(pull: false)
-        return true if cloned?
-
-        clone
-        self.pull if pull
+        if cloned?
+          self.pull if pull
+        else
+          clone
+        end
         true
       end
 
       private
+
+      # Node identifier — JSON-LD graphs use '@id'; older exports used 'id'
+      # @param node [Hash]
+      # @return [String, nil]
+      def node_id(node)
+        node['@id'] || node['id']
+      end
 
       # Get default path from environment variable
       #

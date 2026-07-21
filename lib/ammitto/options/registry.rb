@@ -26,7 +26,7 @@ module Ammitto
           env: 'AMMITTO_CACHE_DIR',
           desc: 'Directory for caching data',
           cli_flag: '--cache-dir DIR',
-          cli_short: '-c DIR'
+          cli_short: '-c'
         },
 
         api_base_url: {
@@ -35,7 +35,7 @@ module Ammitto
           env: 'AMMITTO_API_BASE_URL',
           desc: 'Base URL for Ammitto API',
           cli_flag: '--api-url URL',
-          cli_short: '-u URL'
+          cli_short: '-u'
         },
 
         sources: {
@@ -44,7 +44,7 @@ module Ammitto
           env: 'AMMITTO_SOURCES',
           desc: 'Sanction sources to process',
           cli_flag: '--sources SOURCE1,SOURCE2',
-          cli_short: '-s SOURCES',
+          cli_short: '-s',
           allowed: Config::Defaults::ALL_SOURCES.map(&:to_s)
         },
 
@@ -69,7 +69,7 @@ module Ammitto
           env: 'AMMITTO_OUTPUT_FORMAT',
           desc: 'Output format',
           cli_flag: '--format FORMAT',
-          cli_short: '-f FORMAT',
+          cli_short: '-f',
           allowed: Config::Defaults::OUTPUT_FORMATS
         },
 
@@ -79,7 +79,7 @@ module Ammitto
           env: 'AMMITTO_OUTPUT_DIR',
           desc: 'Output directory for exports',
           cli_flag: '--output-dir DIR',
-          cli_short: '-o DIR'
+          cli_short: '-o'
         },
 
         log_level: {

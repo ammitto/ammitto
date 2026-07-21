@@ -48,11 +48,14 @@ module Ammitto
       # @param sources [Array<String>]
       # @return [Array<Symbol>]
       def normalize_sources(sources)
-        if sources.empty? || options[:all]
-          Config::Defaults::ALL_SOURCES
-        else
-          sources.map(&:to_s).map(&:downcase).map(&:to_sym)
+        return Config::Defaults::ALL_SOURCES if options[:all]
+
+        if sources.empty?
+          raise Thor::Error,
+                'No sources specified. Pass source codes (e.g. `ammitto fetch uk eu`) or use --all.'
         end
+
+        sources.map(&:to_s).map(&:downcase).map(&:to_sym)
       end
 
       # Validate source codes
@@ -61,7 +64,7 @@ module Ammitto
         invalid = @sources - Config::Defaults::ALL_SOURCES
         return if invalid.empty?
 
-        raise ArgumentError,
+        raise Thor::Error,
               "Invalid sources: #{invalid.join(', ')}. " \
               "Valid: #{Config::Defaults::ALL_SOURCES.join(', ')}"
       end

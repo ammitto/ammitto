@@ -97,8 +97,8 @@ module Ammitto
       def to_json_ld
         serializer = Serialization::JsonLdSerializer.new
         serializer.serialize_document(
-          entities: entries.select { |e| e.is_a?(Entity) },
-          entries: entries.select { |e| e.is_a?(SanctionEntry) }
+          entities: entries.grep(Entity),
+          entries: entries.grep(SanctionEntry)
         )
       end
 
@@ -149,33 +149,69 @@ module Ammitto
       end
 
       def build_person(hash)
-        PersonEntity.new(symbolize_keys(hash))
+        PersonEntity.new(normalize_model_hash(hash))
       end
 
       def build_organization(hash)
-        OrganizationEntity.new(symbolize_keys(hash))
+        OrganizationEntity.new(normalize_model_hash(hash))
       end
 
       def build_vessel(hash)
-        VesselEntity.new(symbolize_keys(hash))
+        VesselEntity.new(normalize_model_hash(hash))
       end
 
       def build_aircraft(hash)
-        AircraftEntity.new(symbolize_keys(hash))
+        AircraftEntity.new(normalize_model_hash(hash))
       end
 
       def build_sanction_entry(hash)
-        SanctionEntry.new(symbolize_keys(hash))
+        SanctionEntry.new(normalize_model_hash(hash))
       end
 
       def build_entity(hash)
-        Entity.new(symbolize_keys(hash))
+        Entity.new(normalize_model_hash(hash))
       end
 
-      def symbolize_keys(hash)
-        return hash unless hash.is_a?(Hash)
+      # Recursively convert a JSON-LD hash (camelCase, @id/@type keywords)
+      # into model attribute keys. snake_case input passes through unchanged,
+      # so both the canonical camelCase shape and legacy snake_case data build
+      # fully-populated models.
+      # @param hash [Hash]
+      # @return [Hash<Symbol, Object>]
+      def normalize_model_hash(hash)
+        hash.each_with_object({}) do |(k, v), out|
+          key = normalize_model_key(k)
+          next if key.nil?
 
-        hash.transform_keys(&:to_sym)
+          out[key] = normalize_model_value(key, v)
+        end
+      end
+
+      # @param key [String, Symbol]
+      # @return [Symbol, nil] nil for JSON-LD keywords that are not attributes
+      def normalize_model_key(key)
+        str = key.to_s
+        return :id if ['@id', 'id'].include?(str)
+        return nil if ['@type', '@context'].include?(str)
+
+        str.gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase.to_sym
+      end
+
+      # @param key [Symbol] normalized key
+      # @param value [Object]
+      # @return [Object]
+      def normalize_model_value(key, value)
+        # Provenance payloads are opaque — never rewrite their keys
+        return value if key == :source_specific_fields
+
+        case value
+        when Hash
+          normalize_model_hash(value)
+        when Array
+          value.map { |item| item.is_a?(Hash) ? normalize_model_hash(item) : item }
+        else
+          value
+        end
       end
     end
   end

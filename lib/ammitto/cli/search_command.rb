@@ -91,7 +91,7 @@ module Ammitto
         entities = repo.query(criteria)
 
         entities.map do |entity|
-          SearchResult.new(entity, entity['source'] || detect_source(entity['id']))
+          SearchResult.new(entity, entity['source'] || detect_source(entity['@id'] || entity['id']))
         end
       end
 
@@ -165,14 +165,14 @@ module Ammitto
         # @return [String]
         def primary_name
           names = data['names'] || []
-          primary = names.find { |n| n['is_primary'] } || names.first
+          primary = names.find { |n| n['isPrimary'] || n['is_primary'] } || names.first
           primary&.dig('full_name') || primary&.dig('fullName') || 'Unknown'
         end
 
         # Get entity type
         # @return [String]
         def entity_type
-          data['entity_type'] || data['entityType'] || 'unknown'
+          data['entityType'] || data['entity_type'] || 'unknown'
         end
 
         # Get country

@@ -58,7 +58,7 @@ module Ammitto
       # Fetch the schema context
       # @return [Hash] the JSON-LD context
       def fetch_context
-        url = "#{base_url}/schema/context.jsonld"
+        url = "#{base_url}/context.jsonld"
         response = connection.get(url)
 
         unless response.success?

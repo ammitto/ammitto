@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'json'
 require 'time'
+require_relative '../schema/context'
 
 module Ammitto
   module Serialization
@@ -20,7 +21,7 @@ module Ammitto
       BASE_URI = 'https://www.ammitto.org/ontology'
 
       # Context URL
-      CONTEXT_URL = 'https://www.ammitto.org/ontology/context.jsonld'
+      CONTEXT_URL = Ammitto::Schema::Context::CONTEXT_URL
 
       # Class definitions
       CLASSES = [

@@ -328,8 +328,8 @@ module Ammitto
         # From birthInfo (camelCase)
         if entity['birthInfo'].is_a?(Array) && entity['birthInfo'].first
           birth = entity['birthInfo'].first
-          date = birth['date'] || birth['year']
-          return extract_year_from_date(date) if date
+          date = (birth['date'] || birth['year'])&.to_s
+          return date[0, 4] if date && date.length >= 4
         end
 
         # From birthDate

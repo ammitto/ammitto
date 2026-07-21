@@ -96,7 +96,8 @@ module Ammitto
 
         graph = build_rdf_graph
         graph.dump(:rdfxml)
-      rescue LoadError
+      rescue LoadError, RDF::WriterError
+        # rdf-rdfxml is not a dependency; deprecated format, removal at 2.0
         fallback_rdfxml
       end
 

@@ -1,0 +1,358 @@
+= Ammitto Architecture
+
+This document describes the end-to-end architecture of the Ammitto sanctions
+data platform: how data is scraped from international sanctions authorities,
+harmonized into a single canonical shape, aggregated, published, and exported
+into multiple structured formats for downstream consumers.
+
+== Design goals
+
+1. **One canonical shape for many sources.** Every jurisdiction publishes
+   sanctions data in its own format (XML, CSV, PDF, HTML, scraped web pages).
+   Ammitto normalizes all of them into a single JSON-LD ontology so consumers
+   need to learn only one model.
+2. **Source-of-truth preservation.** The original raw data is always
+   retained in `downloaded/` alongside reference documentation, so the
+   harmonization step is fully reproducible and auditable.
+3. **Multi-format export.** The same harmonized graph is rendered into
+   JSON-LD (primary), Turtle (RDF), a lightweight search index, ontology
+   browser data, and Neo4j import bundles — the audience picks the format
+   that fits their toolchain.
+4. **Composability across repositories.** Each jurisdiction lives in its
+   own `data-*` repository with a uniform layout, so the aggregator
+   (`ammitto/data`) can combine them without per-source special-casing.
+
+== System at a glance
+
+[cols="1,4"]
+|===
+| Repository | Role in the pipeline
+
+| `ammitto/ammitto` | Ruby gem. CLI for scraping, transforming, and exporting.
+| `ammitto/data-{source}` (15 repos) | Per-jurisdiction data: raw download, harmonized YAML, JSON-LD API.
+| `ammitto/data` | Aggregated knowledge graph across all sources.
+| `ammitto/ammitto.github.io` | Vue.js website that consumes the JSON-LD API.
+| `ammitto/schemas` | Canonical JSON Schema definitions for the data model.
+| `ammitto/infrastructure` | Deployment configuration.
+| `ammitto/adapters` | Integration adapters for downstream systems.
+|===
+
+== The pipeline
+
+The pipeline has five stages. Each stage produces a well-defined artifact
+that the next stage consumes.
+
+....
+┌────────────────────────────────────────────────────────────────────────────┐
+│  1. SCRAPE / DOWNLOAD                                                      │
+│     source authority (XML/CSV/PDF/HTML) → data-{source}/downloaded/        │
+└──────────────────────────────────────┬─────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼─────────────────────────────────────┐
+│  2. HARMONIZE (transform to unified YAML)                                  │
+│     downloaded/        → sources/ + processed/    [the "same shape"]       │
+│     Per-source extractors live in ammitto/lib/ammitto/sources/{source}/    │
+└──────────────────────────────────────┬─────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼─────────────────────────────────────┐
+│  3. EXPORT (per-source JSON-LD)                                            │
+│     sources/processed/ → api/                                              │
+│     Per-source exporters in ammitto/lib/ammitto/serialization/             │
+└──────────────────────────────────────┬─────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼─────────────────────────────────────┐
+│  4. AGGREGATE                                                              │
+│     data-{source}/api/ → data/api/v1/                                      │
+│     `ammitto harmonize --scan` auto-detects all data-* repos               │
+└──────────────────────────────────────┬─────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼─────────────────────────────────────┐
+│  5. PUBLISH + MULTI-FORMAT EXPORT                                          │
+│     data/api/v1/  →  ammitto.github.io (Vue website)                       │
+│                   →  JSON-LD, Turtle, search-index.json,                   │
+│                      ontology browser, Neo4j import                        │
+└────────────────────────────────────────────────────────────────────────────┘
+....
+
+== Stage 1 — Scrape / download
+
+Each sanctions authority publishes its list in a different format. The
+`ammitto fetch` CLI knows how to retrieve each one.
+
+CLI::
+  `ammitto fetch <source> --format yaml --output-dir processed`
+
+Inputs::
+  * Each source's public API endpoint, XML feed, CSV file, or PDF/HTML
+    reference docs (URLs configured in `lib/ammitto/sources/{source}/`).
+
+Outputs (per `data-{source}` repo)::
+
+  `downloaded/`::       Raw bytes exactly as fetched (XML, CSV, PDFs, HTML).
+  `reference-docs/`::   Source-side documentation that accompanies the data
+                        (PDFs, HTML, Markdown). Always retained for
+                        provenance — see source-preservation rule.
+
+== Stage 2 — Harmonize (produce the "same shape")
+
+This is the core normalization step. Each source has its own format and
+vocabulary; the harmonizer maps all of them into Ammitto's ontology.
+
+CLI::
+  `ammitto process <source>` (raw → harmonized YAML)
+  `ammitto harmonize <source>` (YAML → JSON-LD)
+
+Components (in `ammitto/lib/ammitto/`)::
+  * `sources/{source}/` — Source models and extractors (e.g.
+    `sources/eu/sanctions_list.rb`, `sources/us/sdn_entry.rb`).
+  * `extractors/` — Format-specific readers (XML, CSV, PDF→HTML).
+  * `parsers/` — Low-level parsing helpers.
+  * `scrapers/` — For sources without structured feeds.
+  * `transformers/` — Map source models → ontology entities.
+  * `ontology/` — The canonical domain model.
+
+Outputs (per `data-{source}` repo)::
+
+  `sources/`::           Harmonized source-of-truth YAML, organized by list.
+                         This is the canonical "same shape" all sources share.
+  `processed/`::         Per-entity YAML files (one entity per file), derived
+                         from `sources/`. Suitable for diff-based review.
+
+=== The canonical ontology
+
+Defined in `ammitto/lib/ammitto/ontology/`. JSON-LD serialization uses `@id`
+references so entities, entries, authorities, regimes, and instruments can
+link to each other across files.
+
+....
+Ontology
+├── Types (Enumerations)
+│   ├── EntityType (person, organization, vessel, aircraft)
+│   ├── IdentificationType (passport, national_id, tax_id, ...)
+│   ├── SanctionEffectType (asset_freeze, travel_ban, arms_embargo, ...)
+│   ├── SanctionStatus (active, delisted, expired)
+│   ├── LegalInstrumentType (regulation, decision, resolution, law)
+│   └── NameScript (Latn, Cyrl, Arab, Hani)
+│
+├── Value Objects (immutable)
+│   ├── NameVariant, Address, Identification, BirthInfo
+│   ├── LegalInstrument, SanctionEffect, TemporalPeriod, ContactInfo
+│
+├── Entities (with identity)
+│   ├── Entity (abstract)
+│   ├── PersonEntity, OrganizationEntity
+│   ├── VesselEntity, AircraftEntity
+│
+└── Sanction layer
+    ├── SanctionEntry (Entity ↔ Authority ↔ Regime ↔ Instrument)
+    ├── Authority, SanctionRegime, StatusHistory
+....
+
+== Stage 3 — Per-source JSON-LD export
+
+The harmonized YAML is serialized to JSON-LD and other formats.
+
+CLI::
+  `ammitto export <format>`
+
+Exporters (in `ammitto/lib/ammitto/serialization/`)::
+  * `json_ld_graph_exporter.rb` — Knowledge graph: one node file per
+    entity/entry/regime/authority/instrument, plus `all.jsonld`.
+  * `search_index_exporter.rb` — Lightweight search index (~8MB instead
+    of the full ~70MB graph) for client-side FlexSearch.
+  * `ontology_exporter.rb` — Class definitions, property definitions,
+    class hierarchy, example entities (for the ontology browser UI).
+  * `rdf_serializer.rb` / `turtle_exporter.rb` — RDF/Turtle output for
+    SPARQL consumers and RDF toolchains.
+  * `neo4j_exporter.rb` (and `neo4j_direct_importer.rb`) — Graph-database
+    import bundles for downstream graph analysis.
+
+Outputs (per `data-{source}` repo)::
+
+  `api/`::        JSON-LD output, structured the same way as the
+                  aggregated `data/api/v1/` directory.
+  `api/v1/`::     Alternate versioned layout (some repos use this).
+
+== Stage 4 — Aggregate
+
+The `ammitto/data` repo combines every `data-{source}` output into a single
+knowledge graph.
+
+CLI::
+  `ammitto harmonize --scan --sources-dir /path/to/parent`
+  (auto-detects all `data-*` repos and processes them together)
+
+Outputs (`data/api/v1/`)::
+
+  `node/{entity,entry,authority,regime,instrument}/`::
+    Individual JSON-LD node files (one per concept). Fetchable on-demand
+    by the website.
+  `by-{authority,regime,status,type}/`::
+    Slice indexes — entity IDs grouped by each dimension.
+  `facets/`::
+    Facet counts for filtering UI (`authorities.json`, `regimes.json`,
+    `types.json`, `countries.json`, `statuses.json`).
+  `ontology/`::
+    Class and property definitions for the ontology browser.
+  `sources/{source}.jsonld`::
+    Per-source aggregated file (e.g. `sources/eu.jsonld`).
+  `search-index.json`::     Lightweight search index.
+  `all.jsonld`::            Complete knowledge graph (~70MB).
+  `all.ttl`::               Turtle/RDF representation.
+  `stats.json`::            Entity counts per source.
+
+== Stage 5 — Publish and consume
+
+=== Website (`ammitto/ammitto.github.io`)
+
+Vue.js 3 + Tailwind site. Consumes the JSON-LD API from `data/api/v1/`.
+
+Pages::
+  * `/` — Landing page.
+  * `/search` — Loads `search-index.json`, indexes in FlexSearch, returns
+    instant results. Full entity detail fetched on click from
+    `node/entity/{source}/{id}.jsonld`.
+  * `/ontology` — Class hierarchy, property browser, example entities.
+    Sourced from `ontology/{classes,properties,hierarchy}.jsonld`.
+
+API surface (served as static JSON)::
+
+[cols="2,4"]
+|===
+| Endpoint | Description
+| `/api/v1/search-index.json` | Lightweight search payload
+| `/api/v1/node/entity/{source}/{ref}` | Single entity
+| `/api/v1/node/entry/{source}/{ref}` | Single sanction entry
+| `/api/v1/by-authority/{code}` | Entries by authority
+| `/api/v1/by-regime/{code}` | Entries by regime
+| `/api/v1/by-status/{status}` | Entries by status
+| `/api/v1/by-type/{type}` | Entities by type
+| `/api/v1/facets/{type}.json` | Facet counts
+| `/api/v1/ontology/classes.jsonld` | Ontology class definitions
+| `/api/v1/all.jsonld` | Complete graph
+| `/api/v1/all.ttl` | Turtle/RDF
+|===
+
+=== Multi-format exports (downstream consumers)
+
+[cols="2,3,3"]
+|===
+| Format | Use case | Producer
+| JSON-LD | Primary web API, semantic web | `JsonLdGraphExporter`
+| Turtle (.ttl) | RDF/SPARQL ecosystems | `TurtleExporter`
+| Search index | Client-side FlexSearch (~8MB) | `SearchIndexExporter`
+| Ontology browser data | UI class/property tree | `OntologyExporter`
+| Neo4j import | Graph database analysis | `Neo4jExporter`
+|===
+
+The same harmonized graph backs all formats — they are projections of one
+canonical model.
+
+== Data sources (15 jurisdictions)
+
+[cols="1,3,1,1"]
+|===
+| Code | Authority | Format | Repo
+| eu | European Union (FPI) | XML | `data-eu`
+| eu_vessels | EU / Denmark DMA | XML | `data-eu-vessels`
+| un | United Nations Security Council | XML | `data-un`
+| un_vessels | UN 1718 Committee | HTML/PDF | `data-un-vessels`
+| us | United States OFAC | XML | `data-us`
+| uk | United Kingdom OFSI | XML | `data-uk`
+| au | Australia DFAT | CSV | `data-au`
+| ca | Canada Global Affairs | XML | `data-ca`
+| ch | Switzerland SECO | XML | `data-ch`
+| cn | China MOFCOM/MFA | Markdown (manual) | `data-cn`
+| ru | Russia MID | Markdown | `data-ru`
+| jp | Japan METI | PDF→HTML | `data-jp`
+| nz | New Zealand MFAT | XML | `data-nz`
+| tr | Turkey HMB | XML | `data-tr`
+| wb | World Bank | XML | `data-wb`
+|===
+
+== CLI surface
+
+The `ammitto` gem exposes these subcommands (see `lib/ammitto/cli.rb` and
+`lib/ammitto/cli/`):
+
+[cols="2,4"]
+|===
+| Command | Purpose
+| `ammitto fetch [SOURCES]` | Download raw data from authorities.
+| `ammitto process [SOURCES]` | Convert raw data into harmonized YAML.
+| `ammitto harmonize [SOURCES]` | Produce JSON-LD output from YAML.
+| `ammitto export [FORMAT]` | Re-export harmonized data into a specific format.
+| `ammitto search QUERY` | Search entities by name.
+| `ammitto get ID` | Fetch a single entity by ID.
+| `ammitto sources` | List available sources.
+| `ammitto stats` | Show entity counts.
+| `ammitto status` | Cache and data status.
+| `ammitto clone` / `pull` | Manage the local `data` checkout.
+|===
+
+The `--scan` flag (on `fetch`, `process`, `harmonize`) auto-detects every
+`data-*` directory under a parent path, so the entire pipeline can run
+without enumerating sources explicitly.
+
+== CI/CD
+
+[cols="2,3"]
+|===
+| Repo | Workflows
+| `data-{source}` | `fetch.yml` (scheduled) — keeps `downloaded/` and
+  `processed/` current; commits changes back to main.
+| `data` | `harmonize.yml` — aggregates all sources, regenerates the
+  knowledge graph.
+| `ammitto` | `rake.yml` — test matrix across Ruby versions and platforms.
+| `ammitto.github.io` | `deploy.yml` — builds and publishes the site.
+|===
+
+== File-layout conventions
+
+Every `data-{source}` repo follows the same layout so the aggregator and CI
+can treat them uniformly:
+
+....
+data-{source}/
+├── downloaded/         # Stage 1: raw bytes from the source
+├── reference-docs/     # Source-side documentation (PDFs, HTML, MD)
+├── sources/            # Stage 2: harmonized YAML (canonical shape)
+├── processed/          # Stage 2: per-entity YAML files (derived)
+├── api/                # Stage 3: JSON-LD output (this repo's API)
+│   └── v1/             # Versioned layout (some repos)
+├── schemas/            # Source-specific schema supplements
+├── scripts/            # Source-specific helper scripts (e.g. PDF parsers)
+├── README.adoc         # Source data format + harmonized format docs
+└── update.log          # Fetch timestamps
+....
+
+== Provenance and the source-preservation rule
+
+The original raw data in `downloaded/` and `reference-docs/` is the
+canonical source. The harmonized YAML and JSON-LD outputs are *derived*
+from it. Source files must never be deleted to "clean up" — they are
+irreplaceable even when an upstream inlines or re-publishes their content.
+
+This matters for:
+
+* **Auditability** — A consumer of the JSON-LD must be able to trace any
+  field back to the original source bytes.
+* **Regeneration** — When the harmonization logic changes, the source
+  bytes are required to regenerate the derived outputs.
+* **Legal provenance** — Sanctions data carries legal weight; the
+  upstream artifact is the authoritative reference.
+
+== Roadmap and ongoing work
+
+* Issue #13 — Full harmonization plan (ontology coverage gaps, validator).
+* Issue #14 — Full-site knowledge graph (cross-source deduplication,
+  SPARQL endpoint).
+* Issue #15 — Harmonization plan (data-completeness verification,
+  additional export formats).
+
+== See also
+
+* link:../README.adoc[Gem README] — installation and Ruby API.
+* link:./INDEX.adoc[Docs index] — narrative documentation.
+* `data/README.adoc` — aggregated dataset layout.
+* `data-{source}/README.adoc` — per-source data format documentation.

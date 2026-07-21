@@ -60,6 +60,7 @@ module Ammitto
         @entities = []
         @facets = {
           authorities: Hash.new(0),
+          list_types: Hash.new(0),
           regimes: {},
           types: Hash.new(0),
           countries: Hash.new(0),
@@ -79,21 +80,26 @@ module Ammitto
         # Extract authority code from entry
         authority_code = extract_authority_code(entry)
         regime_code = extract_regime_code(entry)
+        list_type = extract_list_type(entry)
 
         # Extract names
         names = extract_names(entity)
         primary_name = extract_primary_name(entity)
 
+        # Support both camelCase and snake_case entity type
+        entity_type = entity['entityType'] || entity['entity_type'] || 'person'
+
         # Create search entity (lightweight)
         search_entity = {
           id: entity_id,
           ref: extract_ref(entity_id),
-          type: entity['entityType'] || entity['entity_type'] || 'person',
+          type: entity_type,
           names: names,
           primaryName: primary_name,
           country: extract_country(entity),
           regime: regime_code,
           authority: authority_code,
+          listType: list_type,
           status: entry['status'] || 'active',
           birthYear: extract_birth_year(entity),
           imo: extract_imo(entity)
@@ -171,6 +177,25 @@ module Ammitto
         nil
       end
 
+      # Extract list type from entry
+      # @param entry [Hash] entry data
+      # @return [String, nil] list type
+      def extract_list_type(entry)
+        return nil unless entry
+
+        # Check for list_type field (normalized structure)
+        return entry['list_type'] if entry['list_type']
+        return entry['listType'] if entry['listType']
+
+        # Try to extract from entry @id
+        entry_id = entry['@id'] || entry['id']
+        return nil unless entry_id
+
+        # Pattern: BASE_URI/entry/{source}/{list_type}/{local_id}
+        match = entry_id.match(%r{/entry/[^/]+/([^/]+)})
+        match ? match[1] : nil
+      end
+
       # Extract all names from entity
       # @param entity [Hash] entity data
       # @return [Array<String>] list of names
@@ -181,9 +206,15 @@ module Ammitto
         if entity['names'].is_a?(Array)
           entity['names'].each do |name|
             if name.is_a?(Hash)
+              # Support both camelCase and snake_case keys
               names << name['fullName'] if name['fullName']
+              names << name['full_name'] if name['full_name']
               names << name['lastName'] if name['lastName']
+              names << name['last_name'] if name['last_name']
               names << name['firstName'] if name['firstName']
+              names << name['first_name'] if name['first_name']
+              names << name['middleName'] if name['middleName']
+              names << name['middle_name'] if name['middle_name']
             elsif name.is_a?(String)
               names << name
             end
@@ -198,6 +229,8 @@ module Ammitto
           entity['aliases'].each do |alias_obj|
             if alias_obj.is_a?(Hash)
               names << alias_obj['name'] if alias_obj['name']
+              names << alias_obj['full_name'] if alias_obj['full_name']
+              names << alias_obj['fullName'] if alias_obj['fullName']
             elsif alias_obj.is_a?(String)
               names << alias_obj
             end
@@ -214,13 +247,19 @@ module Ammitto
         # From names array - find primary
         if entity['names'].is_a?(Array)
           primary = entity['names'].find do |name|
-            name.is_a?(Hash) && name['isPrimary'] == true
+            name.is_a?(Hash) && (name['isPrimary'] == true || name['is_primary'] == true)
           end
+          # Support both camelCase and snake_case
           return primary['fullName'] if primary&.dig('fullName')
+          return primary['full_name'] if primary&.dig('full_name')
         end
 
         # Fall back to first name
-        return entity['names'].first['fullName'] if entity['names'].is_a?(Array) && entity['names'].first.is_a?(Hash)
+        if entity['names'].is_a?(Array) && entity['names'].first.is_a?(Hash)
+          first = entity['names'].first
+          return first['fullName'] if first['fullName']
+          return first['full_name'] if first['full_name']
+        end
 
         # Fall back to name field
         entity['name']
@@ -234,6 +273,7 @@ module Ammitto
         if entity['nationalities'].is_a?(Array) && entity['nationalities'].first
           nat = entity['nationalities'].first
           return nat['countryCode'] if nat.is_a?(Hash) && nat['countryCode']
+          return nat['country_code'] if nat.is_a?(Hash) && nat['country_code']
           return nat if nat.is_a?(String)
         end
 
@@ -241,12 +281,14 @@ module Ammitto
         if entity['citizenships'].is_a?(Array) && entity['citizenships'].first
           cit = entity['citizenships'].first
           return cit['countryCode'] if cit.is_a?(Hash) && cit['countryCode']
+          return cit['country_code'] if cit.is_a?(Hash) && cit['country_code']
         end
 
         # From addresses
         if entity['addresses'].is_a?(Array) && entity['addresses'].first
           addr = entity['addresses'].first
           return addr['countryCode'] if addr.is_a?(Hash) && addr['countryCode']
+          return addr['country_code'] if addr.is_a?(Hash) && addr['country_code']
           return addr['country'] if addr.is_a?(Hash) && addr['country']
         end
 
@@ -254,6 +296,15 @@ module Ammitto
         if entity['birthInfo'].is_a?(Array) && entity['birthInfo'].first
           birth = entity['birthInfo'].first
           return birth['countryCode'] if birth.is_a?(Hash) && birth['countryCode']
+          return birth['country_code'] if birth.is_a?(Hash) && birth['country_code']
+          return birth['country'] if birth.is_a?(Hash) && birth['country']
+        end
+
+        # Also check birth_info (snake_case)
+        if entity['birth_info'].is_a?(Array) && entity['birth_info'].first
+          birth = entity['birth_info'].first
+          return birth['countryCode'] if birth.is_a?(Hash) && birth['countryCode']
+          return birth['country_code'] if birth.is_a?(Hash) && birth['country_code']
           return birth['country'] if birth.is_a?(Hash) && birth['country']
         end
 
@@ -264,37 +315,75 @@ module Ammitto
       # @param entity [Hash] entity data
       # @return [String, nil] birth year
       def extract_birth_year(entity)
-        return nil unless entity['entityType'] == 'person'
+        entity_type = entity['entityType'] || entity['entity_type']
+        return nil unless entity_type == 'person'
 
-        # From birth info
+        # From birth_info (snake_case)
+        if entity['birth_info'].is_a?(Array) && entity['birth_info'].first
+          birth = entity['birth_info'].first
+          date = birth['date'] || birth['year']
+          return extract_year_from_date(date) if date
+        end
+
+        # From birthInfo (camelCase)
         if entity['birthInfo'].is_a?(Array) && entity['birthInfo'].first
           birth = entity['birthInfo'].first
           date = birth['date'] || birth['year']
-          return date[0, 4] if date && date.length >= 4
+          return extract_year_from_date(date) if date
         end
 
         # From birthDate
-        return entity['birthDate'][0, 4] if entity['birthDate'] && (entity['birthDate'].length >= 4)
+        return extract_year_from_date(entity['birthDate']) if entity['birthDate']
+
+        # From birth_date (snake_case)
+        return extract_year_from_date(entity['birth_date']) if entity['birth_date']
 
         nil
+      end
+
+      # Extract year from date (handles both String and Date objects)
+      # @param date [String, Date, nil] date value
+      # @return [String, nil] year as string
+      def extract_year_from_date(date)
+        return nil unless date
+
+        case date
+        when String
+          date[0, 4] if date.length >= 4
+        when Date, DateTime, Time
+          date.year.to_s
+        else
+          date.to_s[0, 4] if date.to_s.length >= 4
+        end
       end
 
       # Extract IMO number from entity (vessels)
       # @param entity [Hash] entity data
       # @return [String, nil] IMO number
       def extract_imo(entity)
-        return nil unless entity['entityType'] == 'vessel'
+        entity_type = entity['entityType'] || entity['entity_type']
+        return nil unless entity_type == 'vessel'
 
         # From identifiers
         if entity['identifiers'].is_a?(Array)
           imo = entity['identifiers'].find do |id|
-            id.is_a?(Hash) && id['type']&.downcase == 'imo'
+            id.is_a?(Hash) && (id['type']&.downcase == 'imo' || id['document_type']&.downcase == 'imo')
           end
-          return imo['value'] if imo
+          return imo['value'] if imo && imo['value']
+          return imo['identification'] if imo && imo['identification']
+        end
+
+        # From identifications (snake_case)
+        if entity['identifications'].is_a?(Array)
+          imo = entity['identifications'].find do |id|
+            id.is_a?(Hash) && (id['type']&.downcase == 'imo' || id['document_type']&.downcase == 'imo')
+          end
+          return imo['value'] if imo && imo['value']
+          return imo['identification'] if imo && imo['identification']
         end
 
         # From imo field
-        entity['imo'] || entity['imoNumber']
+        entity['imo'] || entity['imoNumber'] || entity['imo_number']
       end
 
       # Update facet counts
@@ -304,6 +393,9 @@ module Ammitto
       def update_facets(search_entity, regime_code, entry)
         # Authority
         @facets[:authorities][search_entity[:authority]] += 1 if search_entity[:authority]
+
+        # List type
+        @facets[:list_types][search_entity[:listType]] += 1 if search_entity[:listType]
 
         # Regime
         if regime_code
@@ -360,6 +452,9 @@ module Ammitto
         # Authorities
         export_authority_facets(facets_dir)
 
+        # List types
+        export_list_type_facets(facets_dir)
+
         # Regimes
         export_regime_facets(facets_dir)
 
@@ -385,6 +480,31 @@ module Ammitto
         end.sort_by { |f| -f[:count] }
 
         File.write(File.join(dir, 'authorities.json'), JSON.generate(facets: facets_data))
+      end
+
+      # Export list type facets
+      # @param dir [String] facets directory
+      def export_list_type_facets(dir)
+        facets_data = @facets[:list_types].map do |code, count|
+          {
+            code: code,
+            name: format_list_type_name(code),
+            count: count
+          }
+        end.sort_by { |f| -f[:count] }
+
+        File.write(File.join(dir, 'list_types.json'), JSON.generate(facets: facets_data))
+      end
+
+      # Format list type code into display name
+      # @param code [String] list type code
+      # @return [String] formatted name
+      def format_list_type_name(code)
+        code.to_s
+            .gsub('-', ' ')
+            .split
+            .map(&:capitalize)
+            .join(' ')
       end
 
       # Export regime facets

@@ -12,8 +12,8 @@ module Ammitto
     # 2. 反制裁清单 (Anti-Sanctions List) - MFA
     # 3. 出口管制管控名单 (Export Control List) - MOFCOM
     #
-    # Data is published as HTML announcements, not structured XML/JSON.
-    # This extractor uses web scraping to fetch and parse the data.
+    # Data is read from local reference documents in data-cn/reference-docs/
+    # or can be fetched via web scraping if reference docs are not available.
     #
     # Source URLs:
     # - mofcom.gov.cn (商务部)
@@ -30,17 +30,49 @@ module Ammitto
         'China (MOFCOM/MFA)'
       end
 
-      # @return [String] API endpoint (uses web scraping)
+      # @return [String] API endpoint
       def api_endpoint
         'https://www.mofcom.gov.cn'
       end
 
+      # @return [String, nil] path to reference docs
+      attr_accessor :reference_docs_path
+
       # Fetch raw data from China sources
-      # Uses web scraping to fetch HTML announcements
+      # Uses local reference docs if available, otherwise web scraping
       # @return [Hash] { announcements: [...], entities: [...], errors: [...] }
       def fetch
-        puts "[#{code}] Fetching China sanctions data via web scraping..." if verbose?
+        # Try local reference docs first
+        if reference_docs_path && Dir.exist?(reference_docs_path)
+          puts "[#{code}] Fetching China sanctions from local reference docs..." if verbose?
+          return fetch_from_reference_docs
+        end
 
+        # Fall back to web scraping
+        puts "[#{code}] Fetching China sanctions via web scraping..." if verbose?
+        fetch_from_web
+      end
+
+      # Fetch from local reference documents
+      # @return [Hash]
+      def fetch_from_reference_docs
+        require_relative '../sources/cn/reference_docs_parser'
+
+        parser = Ammitto::Sources::Cn::ReferenceDocsParser.new(
+          reference_docs_path,
+          verbose: verbose?
+        )
+
+        @fetched_data = parser.parse_all
+
+        puts "[#{code}] Parsed #{@fetched_data[:entities].length} entities from reference docs" if verbose?
+
+        @fetched_data
+      end
+
+      # Fetch via web scraping (fallback)
+      # @return [Hash]
+      def fetch_from_web
         require_relative '../scrapers/cn/cn_sanctions_scraper'
 
         scraper = Ammitto::Scrapers::Cn::CnSanctionsScraper.new(
@@ -266,12 +298,6 @@ module Ammitto
         parts << "Title: #{data[:title]}" if data[:title]
 
         parts.empty? ? nil : parts.join('; ')
-      end
-
-      # Check if verbose mode is enabled
-      # @return [Boolean]
-      def verbose?
-        @verbose || ENV['AMMITTO_VERBOSE'] == 'true'
       end
     end
   end

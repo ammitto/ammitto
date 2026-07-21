@@ -9,6 +9,9 @@ require_relative 'sanction/authority'
 require_relative 'sanction/sanction_regime'
 require_relative 'sanction/sanction_reason'
 require_relative 'sanction/sanction_entry'
+require_relative 'sanction/sanction_list'
+require_relative 'sanction/sanction_group'
+require_relative 'sanction/sanction_period_modification'
 require_relative 'sanction/status_history'
 
 module Ammitto

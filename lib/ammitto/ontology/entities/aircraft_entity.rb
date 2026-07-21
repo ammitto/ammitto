@@ -21,6 +21,20 @@ module Ammitto
       #   )
       #
       class AircraftEntity < Entity
+        # Neo4j labels: include both specific type and base Entity
+        neo4j_labels 'Aircraft', 'Entity'
+
+        # Neo4j properties for aircraft-specific attributes
+        neo4j_property :name, :serial_number, :registration, :icao_24bit,
+                       :aircraft_type, :manufacturer, :build_year,
+                       :registration_country, :registered_owner, :operator
+
+        # Neo4j relationships
+        neo4j_relationship :registered_in,
+                           type: 'REGISTERED_IN',
+                           target_class: 'Country',
+                           target_key: :code
+
         # Aircraft name/tail number
         # @return [String, nil]
         attribute :name, :string

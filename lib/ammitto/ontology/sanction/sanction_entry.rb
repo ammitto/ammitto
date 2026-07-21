@@ -3,8 +3,10 @@
 require 'lutaml/model'
 require_relative 'authority'
 require_relative 'sanction_regime'
+require_relative 'sanction_period_modification'
 require_relative 'status_history'
 require_relative '../value_objects'
+require_relative '../value_objects/legal_citation'
 
 module Ammitto
   module Ontology
@@ -86,6 +88,18 @@ module Ammitto
         # @return [RawSourceData, nil]
         attribute :raw_source_data, :hash
 
+        # Reference to SanctionGroup (if part of collective sanction)
+        # @return [String, nil]
+        attribute :group_id, :string
+
+        # Modifications affecting this entry
+        # @return [Array<SanctionPeriodModification>, nil]
+        attribute :modifications, SanctionPeriodModification, collection: true
+
+        # Legal citations (specific to this entry)
+        # @return [Array<LegalCitation>, nil]
+        attribute :legal_citations, ValueObjects::LegalCitation, collection: true
+
         # Check if entry is active
         # @return [Boolean]
         def active?
@@ -119,28 +133,7 @@ module Ammitto
           self.status = new_status.to_s
         end
 
-        # Convert to hash for JSON-LD serialization
-        # @return [Hash]
-        def to_hash
-          hash = { id: id, entity_id: entity_id }
-          hash[:authority] = authority.to_hash if authority
-          hash[:regime] = regime.to_hash if regime
-          hash[:list_type] = list_type if list_type
-          hash[:legal_bases] = legal_bases.map(&:to_hash) if legal_bases&.any?
-          hash[:effects] = effects.map(&:to_hash) if effects&.any?
-          hash[:reasons] = reasons if reasons&.any?
-          hash[:period] = period.to_hash if period
-          hash[:status] = status if status
-          hash[:status_history] = status_history.map(&:to_hash) if status_history&.any?
-          hash[:reference_number] = reference_number if reference_number
-          hash[:remarks] = remarks if remarks
-          hash[:announcement] = announcement if announcement
-          hash[:raw_source_data] = raw_source_data if raw_source_data
-          hash
-        end
-
-        # JSON mapping
-        json do
+        key_value do
           map :id, to: :id
           map :entity_id, to: :entity_id
           map :authority, to: :authority
@@ -156,25 +149,9 @@ module Ammitto
           map :remarks, to: :remarks
           map :announcement, to: :announcement
           map :raw_source_data, to: :raw_source_data
-        end
-
-        # YAML mapping
-        yaml do
-          map :id, to: :id
-          map :entity_id, to: :entity_id
-          map :authority, to: :authority
-          map :regime, to: :regime
-          map :list_type, to: :list_type
-          map :legal_bases, to: :legal_bases
-          map :effects, to: :effects
-          map :reasons, to: :reasons
-          map :period, to: :period
-          map :status, to: :status
-          map :status_history, to: :status_history
-          map :reference_number, to: :reference_number
-          map :remarks, to: :remarks
-          map :announcement, to: :announcement
-          map :raw_source_data, to: :raw_source_data
+          map :group_id, to: :group_id
+          map :modifications, to: :modifications
+          map :legal_citations, to: :legal_citations
         end
       end
     end

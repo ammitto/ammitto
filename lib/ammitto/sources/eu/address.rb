@@ -26,7 +26,7 @@ module Ammitto
 
         xml do
           root 'address'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'street', to: :street
           map_attribute 'city', to: :city

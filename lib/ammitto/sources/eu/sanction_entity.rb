@@ -24,6 +24,7 @@ module Ammitto
         attribute :designation_details, :string
         attribute :united_nation_id, :string
         attribute :remark, :string
+        attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :regulations, Regulation, collection: true
         attribute :subject_type, SubjectType
         attribute :name_aliases, NameAlias, collection: true
@@ -34,7 +35,7 @@ module Ammitto
 
         xml do
           root 'sanctionEntity'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'euReferenceNumber', to: :eu_reference_number
           map_attribute 'logicalId', to: :logical_id
@@ -55,6 +56,7 @@ module Ammitto
           map 'logical_id', to: :logical_id
           map 'designation_details', to: :designation_details
           map 'united_nation_id', to: :united_nation_id
+          map 'entity_type', to: :entity_type
           map 'remark', to: :remark
           map 'regulations', to: :regulations
           map 'subject_type', to: :subject_type
@@ -65,9 +67,9 @@ module Ammitto
           map 'identifications', to: :identifications
         end
 
-        # Helper methods
+        # Compute entity_type from subject_type if not set
         def entity_type
-          subject_type&.code || 'organization'
+          @entity_type || subject_type&.code || 'organization'
         end
 
         def person?

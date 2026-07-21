@@ -22,7 +22,7 @@ module Ammitto
 
         xml do
           root 'citizenship'
-          namespace 'http://eu.europa.ec/fpi/fsd/export', nil
+          namespace 'http://eu.europa.ec/fpi/fsd/export'
 
           map_attribute 'region', to: :region
           map_attribute 'countryIso2Code', to: :country_iso2_code

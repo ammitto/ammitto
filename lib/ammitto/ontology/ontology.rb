@@ -28,6 +28,7 @@ require_relative 'types'
 require_relative 'value_objects'
 require_relative 'entities'
 require_relative 'sanction'
+require_relative 'schema'
 
 module Ammitto
   module Ontology

@@ -21,6 +21,18 @@ module Ammitto
       #   )
       #
       class VesselEntity < Entity
+        # Neo4j labels: include both specific type and base Entity
+        neo4j_labels 'Vessel', 'Entity'
+        neo4j_property :name, :imo_number, :mmsi_number, :call_sign, :flag_state,
+                       :build_year, :build_place, :vessel_type, :owner, :operator,
+                       :manager, :registered_owner, :technical_manager
+
+        # Flag state is a country relationship
+        neo4j_relationship :flag_state,
+                           type: 'FLAGGED_IN',
+                           target_class: 'Country',
+                           target_key: :code
+
         # Vessel name (primary)
         # @return [String, nil]
         attribute :name, :string

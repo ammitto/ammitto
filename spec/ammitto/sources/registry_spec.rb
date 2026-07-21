@@ -18,9 +18,9 @@ RSpec.describe Ammitto::Registry do
 
   describe '.get' do
     it 'returns registered source class' do
-      expect(described_class.get(:eu)).to eq(Ammitto::EuSource)
-      expect(described_class.get(:un)).to eq(Ammitto::UnSource)
-      expect(described_class.get(:us)).to eq(Ammitto::UsSource)
+      expect(described_class.get(:eu)).to eq(Ammitto::Sources::Eu::Source)
+      expect(described_class.get(:un)).to eq(Ammitto::Sources::Un::Source)
+      expect(described_class.get(:us)).to eq(Ammitto::Sources::Us::Source)
     end
 
     it 'returns nil for unregistered source' do
@@ -40,7 +40,7 @@ RSpec.describe Ammitto::Registry do
   describe '.instance' do
     it 'returns new instance of source' do
       instance = described_class.instance(:eu)
-      expect(instance).to be_a(Ammitto::EuSource)
+      expect(instance).to be_a(Ammitto::Sources::Eu::Source)
       expect(instance.code).to eq(:eu)
     end
   end

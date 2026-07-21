@@ -102,7 +102,9 @@ module Ammitto
       #
       # @return [Boolean] true if pull succeeded
       def pull
-        raise Ammitto::Error, 'Repository not a git repository. Cannot pull.' unless File.directory?(File.join(local_path, '.git'))
+        raise Ammitto::Error, 'Repository not a git repository. Cannot pull.' unless File.directory?(File.join(
+                                                                                                       local_path, '.git'
+                                                                                                     ))
 
         log("Pulling updates from #{remote_url}")
         success, output = run_git_command('-C', local_path, 'pull', '--ff-only')

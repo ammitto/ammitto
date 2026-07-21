@@ -1,0 +1,480 @@
+# Ammitto Knowledge Graph Schema
+#
+# This file is the SINGLE SOURCE OF TRUTH for the knowledge graph structure.
+# All Neo4j exports, imports, and validations are generated from this schema.
+#
+# Node Types:
+#   - primitive: string, integer, boolean, date, float
+#   - reference: another node type (creates relationship)
+#   - array: multiple values
+
+nodes:
+  Entity:
+    label: "Entity"
+    description: "Base class for all sanctionable entities"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      local_id:
+        type: string
+      source:
+        type: string
+        index: true
+      type:
+        type: string
+        index: true
+        enum: [person, organization, vessel, aircraft]
+      primary_name:
+        type: string
+        index: true
+      remarks:
+        type: string
+
+  Person:
+    label: "Person"
+    parent: Entity
+    description: "A human individual subject to sanctions"
+    properties:
+      birth_date:
+        type: date
+      birth_year:
+        type: integer
+      birth_place:
+        type: string
+      gender:
+        type: string
+
+  Organization:
+    label: "Organization"
+    parent: Entity
+    description: "A legal entity subject to sanctions"
+    properties:
+      business_type:
+        type: string
+      registration_number:
+        type: string
+
+  Vessel:
+    label: "Vessel"
+    parent: Entity
+    description: "A maritime vessel subject to sanctions"
+    properties:
+      imo:
+        type: string
+        index: true
+      mmsi:
+        type: string
+      flag:
+        type: string
+      tonnage:
+        type: integer
+      call_sign:
+        type: string
+      build_date:
+        type: date
+
+  Aircraft:
+    label: "Aircraft"
+    parent: Entity
+    description: "An aircraft subject to sanctions"
+    properties:
+      registration_number:
+        type: string
+      manufacturer:
+        type: string
+      model:
+        type: string
+      serial_number:
+        type: string
+
+  Entry:
+    label: "Entry"
+    description: "A sanction record linking an entity to its sanction details"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      local_id:
+        type: string
+      list_type:
+        type: string
+        index: true
+      status:
+        type: string
+        index: true
+        enum: [active, suspended, delisted, terminated, expired]
+      listed_date:
+        type: date
+      delisted_date:
+        type: date
+      measures:
+        type: string
+      remarks:
+        type: string
+
+  Authority:
+    label: "Authority"
+    description: "An issuing authority for sanctions"
+    properties:
+      code:
+        type: string
+        unique: true
+        required: true
+      name:
+        type: string
+      country_code:
+        type: string
+      url:
+        type: string
+
+  Announcement:
+    label: "Announcement"
+    description: "A publication or list update from an authority"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      local_id:
+        type: string
+      source:
+        type: string
+      title:
+        type: string
+      number:
+        type: string
+      date:
+        type: date
+      effective_date:
+        type: date
+      issuing_authority:
+        type: string
+
+  LegalInstrument:
+    label: "LegalInstrument"
+    description: "A legal basis for sanctions"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      local_id:
+        type: string
+      source:
+        type: string
+      name:
+        type: string
+      short_name:
+        type: string
+      enacted_date:
+        type: date
+      amended_date:
+        type: date
+
+  Country:
+    label: "Country"
+    description: "A country or territory (ISO 3166-1)"
+    properties:
+      code:
+        type: string
+        unique: true
+        required: true
+      name:
+        type: string
+
+  Regime:
+    label: "Regime"
+    description: "A sanctions regime"
+    properties:
+      code:
+        type: string
+        unique: true
+      name:
+        type: string
+      description:
+        type: string
+
+  Name:
+    label: "Name"
+    description: "A name variant for an entity"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      full_name:
+        type: string
+        index: true
+      is_primary:
+        type: boolean
+      script:
+        type: string
+      language:
+        type: string
+
+  Address:
+    label: "Address"
+    description: "A physical address"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      street:
+        type: string
+      city:
+        type: string
+      state:
+        type: string
+      postal_code:
+        type: string
+      care_of:
+        type: string
+
+  Identifier:
+    label: "Identifier"
+    description: "An identity document or identifier"
+    properties:
+      id:
+        type: string
+        unique: true
+        required: true
+      type:
+        type: string
+      value:
+        type: string
+      issue_date:
+        type: date
+      expiry_date:
+        type: date
+
+# Relationships define how nodes connect
+# Each relationship has: from, to, type, and optional properties
+relationships:
+  - name: FOR_ENTITY
+    from: Entry
+    to: Entity
+    type: FOR_ENTITY
+    description: "Entry is for this entity"
+    required: true
+
+  - name: LISTED_BY
+    from: Entry
+    to: Authority
+    type: LISTED_BY
+    description: "Entry is listed by this authority"
+    required: true
+
+  - name: PUBLISHED_IN
+    from: Entry
+    to: Announcement
+    type: PUBLISHED_IN
+    description: "Entry is published in this announcement"
+
+  - name: UNDER_REGIME
+    from: Entry
+    to: Regime
+    type: UNDER_REGIME
+    description: "Entry is under this sanctions regime"
+
+  - name: AUTHORIZED_BY
+    from: Entry
+    to: LegalInstrument
+    type: AUTHORIZED_BY
+    description: "Entry is authorized by this legal instrument"
+
+  - name: HAS_NAME
+    from: Entity
+    to: Name
+    type: HAS_NAME
+    description: "Entity has this name"
+    required: true
+
+  - name: HAS_ADDRESS
+    from: Entity
+    to: Address
+    type: HAS_ADDRESS
+    description: "Entity has this address"
+
+  - name: HAS_IDENTIFIER
+    from: Entity
+    to: Identifier
+    type: HAS_IDENTIFIER
+    description: "Entity has this identifier"
+
+  - name: HAS_NATIONALITY
+    from: Entity
+    to: Country
+    type: HAS_NATIONALITY
+    description: "Entity has this nationality"
+
+  - name: BORN_IN
+    from: Entity
+    to: Country
+    type: BORN_IN
+    description: "Entity was born in this country"
+
+  - name: IN_COUNTRY
+    from: Address
+    to: Country
+    type: IN_COUNTRY
+    description: "Address is in this country"
+
+  - name: ISSUED_BY
+    from: Identifier
+    to: Country
+    type: ISSUED_BY
+    description: "Identifier was issued by this country"
+
+  - name: LOCATED_IN
+    from: Authority
+    to: Country
+    type: LOCATED_IN
+    description: "Authority is located in this country"
+
+  - name: ISSUED
+    from: Authority
+    to: Announcement
+    type: ISSUED
+    description: "Authority issued this announcement"
+
+  - name: SAME_AS
+    from: Entity
+    to: Entity
+    type: SAME_AS
+    description: "Entity is the same as another entity"
+
+  - name: RELATED_TO
+    from: Entity
+    to: Entity
+    type: RELATED_TO
+    description: "Entity is related to another entity"
+
+# CSV file definitions - how data is organized in export
+csv_files:
+  nodes:
+    - name: entities
+      node: Entity
+      header: [id, local_id, source, type, primary_name, remarks]
+
+    - name: entries
+      node: Entry
+      header: [id, local_id, entity_id, authority_code, list_type, status, listed_date, delisted_date, measures]
+
+    - name: authorities
+      node: Authority
+      header: [code, name, country_code]
+
+    - name: announcements
+      node: Announcement
+      header: [id, local_id, source, title, number, date, effective_date, issuing_authority]
+
+    - name: legal_instruments
+      node: LegalInstrument
+      header: [id, local_id, source, name, short_name, enacted_date, amended_date]
+
+    - name: countries
+      node: Country
+      header: [code, name]
+
+    - name: regimes
+      node: Regime
+      header: [code, name, description]
+
+    - name: names
+      node: Name
+      header: [id, entity_id, full_name, is_primary, script, language]
+
+    - name: addresses
+      node: Address
+      header: [id, entity_id, street, city, state, postal_code, care_of]
+
+    - name: identifiers
+      node: Identifier
+      header: [id, entity_id, type, value, issue_date, expiry_date]
+
+  relationships:
+    - name: rel_entry_entity
+      relationship: FOR_ENTITY
+      header: [entry_id, entity_id]
+
+    - name: rel_entry_authority
+      relationship: LISTED_BY
+      header: [entry_id, authority_code]
+
+    - name: rel_entry_announcement
+      relationship: PUBLISHED_IN
+      header: [entry_id, announcement_id]
+
+    - name: rel_entry_regime
+      relationship: UNDER_REGIME
+      header: [entry_id, regime_code]
+
+    - name: rel_entity_name
+      relationship: HAS_NAME
+      header: [entity_id, name_id]
+
+    - name: rel_entity_address
+      relationship: HAS_ADDRESS
+      header: [entity_id, address_id]
+
+    - name: rel_entity_identifier
+      relationship: HAS_IDENTIFIER
+      header: [entity_id, identifier_id]
+
+    - name: rel_address_country
+      relationship: IN_COUNTRY
+      header: [address_id, country_code]
+
+    - name: rel_identifier_country
+      relationship: ISSUED_BY
+      header: [identifier_id, country_code]
+
+    - name: rel_authority_country
+      relationship: LOCATED_IN
+      header: [authority_code, country_code]
+
+# Validation rules
+validations:
+  - name: all_entries_have_entities
+    query: |
+      MATCH (entry:Entry)
+      WHERE NOT (entry)-[:FOR_ENTITY]->()
+      RETURN count(entry) as count
+    expected: 0
+    description: "All entries must be linked to an entity"
+
+  - name: all_entries_have_authorities
+    query: |
+      MATCH (entry:Entry)
+      WHERE NOT (entry)-[:LISTED_BY]->()
+      RETURN count(entry) as count
+    expected: 0
+    description: "All entries must be linked to an authority"
+
+  - name: all_entities_have_names
+    query: |
+      MATCH (e:Entity)
+      WHERE NOT (e)-[:HAS_NAME]->()
+      RETURN count(e) as count
+    expected: 0
+    description: "All entities must have at least one name"
+
+  - name: no_orphaned_names
+    query: |
+      MATCH (n:Name)
+      WHERE NOT (n)<-[:HAS_NAME]-()
+      RETURN count(n) as count
+    expected: 0
+    description: "No names should exist without an entity"
+
+  - name: valid_entity_types
+    query: |
+      MATCH (e:Entity)
+      WHERE NOT e.type IN ['person', 'organization', 'vessel', 'aircraft']
+      RETURN count(e) as count
+    expected: 0
+    description: "All entities must have a valid type"

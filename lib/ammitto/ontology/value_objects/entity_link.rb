@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -18,6 +19,13 @@ module Ammitto
       #   )
       #
       class EntityLink < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for EntityLink
+        neo4j_labels 'EntityLink'
+        neo4j_property :target_id, :relationship_type, :target_name, :target_type,
+                       :source, :from_date, :to_date, :note
+
         # Common relationship types
         RELATIONSHIPS = %w[
           owned_by

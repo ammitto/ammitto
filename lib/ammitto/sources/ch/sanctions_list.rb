@@ -100,6 +100,7 @@ module Ammitto
       class Identity < Lutaml::Model::Serializable
         attribute :ssid, :string
         attribute :main, :string
+        attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :names, Name, collection: true
         attribute :day_month_year, DayMonthYear
         attribute :addresses, Address, collection: true
@@ -116,6 +117,7 @@ module Ammitto
         yaml do
           map 'ssid', to: :ssid
           map 'main', to: :main
+          map 'entity_type', to: :entity_type
           map 'names', to: :names
           map 'day_month_year', to: :day_month_year
           map 'addresses', to: :addresses
@@ -125,11 +127,15 @@ module Ammitto
           names.first&.full_name
         end
 
+        # Check if this is a person based on name parts (without calling entity_type)
         def person?
           names.any? { |n| n.name_parts.any? { |p| p.name_part_type == 'given-name' } }
         end
 
+        # Compute entity_type if not set
         def entity_type
+          return @entity_type if @entity_type && !@entity_type.empty?
+
           person? ? 'person' : 'organization'
         end
       end
@@ -172,6 +178,7 @@ module Ammitto
       class Target < Lutaml::Model::Serializable
         attribute :ssid, :string
         attribute :sanctions_set_id, :string
+        attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :individual, Individual
         attribute :entity, Entity
 
@@ -186,6 +193,7 @@ module Ammitto
         yaml do
           map 'ssid', to: :ssid
           map 'sanctions_set_id', to: :sanctions_set_id
+          map 'entity_type', to: :entity_type
           map 'individual', to: :individual
           map 'entity', to: :entity
         end
@@ -198,7 +206,10 @@ module Ammitto
           identity&.full_name
         end
 
+        # Compute entity_type if not set
         def entity_type
+          return @entity_type if @entity_type && !@entity_type.empty?
+
           individual ? 'person' : 'organization'
         end
       end

@@ -4,6 +4,9 @@
 require 'lutaml/model'
 
 # Configure Lutaml::Model to use Nokogiri for XML parsing
+require 'moxml'
+Moxml::Adapter.load(:nokogiri)
+
 Lutaml::Model::Config.configure do |config|
   config.xml_adapter_type = :nokogiri
 end
@@ -22,51 +25,22 @@ require_relative 'ammitto/configuration'
 require_relative 'ammitto/logger'
 require_relative 'ammitto/errors/base_error'
 
-# Base models (must be loaded before entity types)
-require_relative 'ammitto/models/name_variant'
-require_relative 'ammitto/models/birth_info'
-require_relative 'ammitto/models/address'
-require_relative 'ammitto/models/identification'
-require_relative 'ammitto/models/entity_link'
-require_relative 'ammitto/models/contact_info'
-require_relative 'ammitto/models/source_reference'
-require_relative 'ammitto/models/tonnage'
-
-# Entity models (depend on base models)
-require_relative 'ammitto/models/entity'
-require_relative 'ammitto/models/person_entity'
-require_relative 'ammitto/models/organization_entity'
-require_relative 'ammitto/models/vessel_entity'
-require_relative 'ammitto/models/aircraft_entity'
-
-# Sanction base models (must be loaded before sanction_entry)
-require_relative 'ammitto/sanction/authority'
-require_relative 'ammitto/sanction/sanction_regime'
-require_relative 'ammitto/sanction/sanction_effect'
-require_relative 'ammitto/sanction/sanction_reason'
-require_relative 'ammitto/sanction/legal_instrument'
-require_relative 'ammitto/sanction/list_type'
-require_relative 'ammitto/sanction/temporal_period'
-require_relative 'ammitto/sanction/status_change'
-require_relative 'ammitto/sanction/official_announcement'
-require_relative 'ammitto/sanction/raw_source_data'
-
-# Sanction entry (depends on above)
-require_relative 'ammitto/sanction/sanction_entry'
+# All models (entities, value objects, sanctions) - uses autoload
+require_relative 'ammitto/models'
 
 # Sources
 require_relative 'ammitto/sources/registry'
 require_relative 'ammitto/sources/base_source'
-require_relative 'ammitto/sources/eu_source'
-require_relative 'ammitto/sources/un_source'
-require_relative 'ammitto/sources/us_source'
-require_relative 'ammitto/sources/wb_source'
-require_relative 'ammitto/sources/uk_source'
-require_relative 'ammitto/sources/au_source'
-require_relative 'ammitto/sources/ca_source'
-require_relative 'ammitto/sources/ch_source'
-require_relative 'ammitto/sources/cn_source'
-require_relative 'ammitto/sources/ru_source'
+require_relative 'ammitto/sources/eu/source'
+require_relative 'ammitto/sources/un/source'
+require_relative 'ammitto/sources/us/source'
+require_relative 'ammitto/sources/wb/source'
+require_relative 'ammitto/sources/uk/source'
+require_relative 'ammitto/sources/au/source'
+require_relative 'ammitto/sources/ca/source'
+require_relative 'ammitto/sources/ch/source'
+require_relative 'ammitto/sources/cn/source'
+require_relative 'ammitto/sources/ru/source'
 
 # Client
 require_relative 'ammitto/client/api_client'
@@ -75,6 +49,15 @@ require_relative 'ammitto/client/cache_manager'
 
 # Data repository
 require_relative 'ammitto/data/repository'
+require_relative 'ammitto/data/knowledge_graph_loader'
+
+# Country-specific data modules
+require_relative 'ammitto/data/china'
+
+# Country-specific data extractors
+
+# Utils
+require_relative 'ammitto/utils'
 
 # Search
 require_relative 'ammitto/search/query_builder'
@@ -82,6 +65,10 @@ require_relative 'ammitto/search/result_set'
 
 # Serialization
 require_relative 'ammitto/serialization/json_ld_serializer'
+
+# Ontology
+require_relative 'ammitto/ontology'
+require_relative 'ammitto/ontology/json_ld_context'
 
 # Schema
 require_relative 'ammitto/schema/context'
@@ -93,6 +80,7 @@ require_relative 'ammitto/transformers/registry'
 # Exporter
 require_relative 'ammitto/exporter/simple_exporter'
 require_relative 'ammitto/exporter/json_ld_export'
+require_relative 'ammitto/exporter/knowledge_graph_exporter'
 
 # Configure Moxml to use Nokogiri adapter (when needed)
 # Moxml::Configuration.adapter = :nokogiri
@@ -146,9 +134,9 @@ module Ammitto
 
     # Get the schema context
     #
-    # @return [Schema::Context] the schema context
+    # @return [Ontology::Schema::Context] the schema context
     def schema
-      Schema::Context
+      Ontology::Schema::Context
     end
 
     # Get the data repository

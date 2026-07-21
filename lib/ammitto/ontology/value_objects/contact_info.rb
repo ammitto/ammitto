@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -18,6 +19,12 @@ module Ammitto
       #   )
       #
       class ContactInfo < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for ContactInfo
+        neo4j_labels 'ContactInfo'
+        neo4j_property :email, :phone, :website, :fax
+
         # Email address
         # @return [String, nil]
         attribute :email, :string

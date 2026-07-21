@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -21,6 +22,13 @@ module Ammitto
       #   )
       #
       class Address < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for Address
+        neo4j_labels 'Address'
+        neo4j_property :street, :city, :region, :country, :country_iso_code,
+                       :postal_code, :po_box, :address_type
+
         # Street address (building number and street name)
         # @return [String, nil]
         attribute :street, :string

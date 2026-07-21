@@ -229,7 +229,7 @@ module Ammitto
               identifier: reg.number_title,
               title: reg.number_title,
               issuing_body: reg.organisation_type&.capitalize,
-              issuance_date: parse_date(reg.publication_date),
+              publish_date: parse_date(reg.publication_date),
               url: reg.publication_url
             )
           end

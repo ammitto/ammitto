@@ -1,0 +1,402 @@
+= Ammitto Knowledge Graph Structure
+
+== Overview
+
+The Ammitto Knowledge Graph uses a **normalized structure** that properly separates concerns between entities, sanctions lists, and the entries that link them together.
+
+== Design Principles
+
+=== Normalization
+
+The knowledge graph follows database normalization principles:
+
+. **Entities are list-agnostic** - A person or organization can appear on multiple sanctions lists
+. **Lists define sanctions regimes** - Each list has its own metadata and legal basis
+. **Entries are junction records** - They link entities to specific lists with list-specific data
+
+=== IRI Structure
+
+All resources are identified by HTTP IRIs following the pattern:
+
+----
+https://www.ammitto.org/{type}/{source}/{local_id}
+https://www.ammitto.org/{type}/{source}/{list_type}/{local_id}  (for entries only)
+----
+
+== Resource Types
+
+=== Entity (List-Agnostic)
+
+An entity represents a person, organization, vessel, or aircraft. Entities are **list-agnostic**, meaning the same entity can appear on multiple sanctions lists.
+
+**IRI Pattern:**
+----
+https://www.ammitto.org/entity/{source}/{local_id}
+----
+
+**Examples:**
+----
+https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries
+https://www.ammitto.org/entity/us/vladimir-putin
+https://www.ammitto.org/entity/eu/12345
+----
+
+**Properties:**
+
+[horizontal]
+`id`:: Local identifier (unique within source)
+`type`:: Entity type (`person`, `organization`, `vessel`, `aircraft`)
+`names`:: Array of name variants
+`source_references`:: References to source systems
+`person_details`:: Person-specific data (if type=person)
+`organization_details`:: Organization-specific data (if type=organization)
+`vessel_details`:: Vessel-specific data (if type=vessel)
+`remarks`:: Additional notes
+
+=== List
+
+A list represents a specific sanctions regime. Each source can have multiple lists.
+
+**IRI Pattern:**
+----
+https://www.ammitto.org/list/{source}/{list_type}
+----
+
+**Examples:**
+----
+https://www.ammitto.org/list/cn/import-export-control-list
+https://www.ammitto.org/list/us/sdn-list
+https://www.ammitto.org/list/uk/consolidated-list
+----
+
+**Properties:**
+
+[horizontal]
+`id`:: List type identifier
+`name`:: English name
+`name_chinese`:: Chinese name (if applicable)
+`name_russian`:: Russian name (if applicable)
+`authority`:: Issuing authority
+`description`:: List description
+`url`:: Official URL
+`established_date`:: Date list was established
+`legal_instrument_ids`:: Related legal instruments
+
+=== Entry (List-Specific)
+
+An entry is a **junction record** that links an entity to a specific list. Entries contain list-specific data like measures, dates, and status.
+
+**IRI Pattern:**
+----
+https://www.ammitto.org/entry/{source}/{list_type}/{local_id}
+----
+
+**Examples:**
+----
+https://www.ammitto.org/entry/cn/import-export-control-list/mitsubishi-heavy-industries
+https://www.ammitto.org/entry/cn/unreliable-entity-list/mitsubishi-heavy-industries
+https://www.ammitto.org/entry/us/sdn-list/vladimir-putin
+----
+
+NOTE: The same entity (`/entity/cn/mitsubishi-heavy-industries`) can have multiple entry IRIs when it appears on different lists.
+
+**Properties:**
+
+[horizontal]
+`id`:: Entry identifier
+`entity_id`:: Reference to entity (local ID)
+`list_type`:: Reference to list
+`announcement_id`:: Reference to announcement
+`status`:: Entry status (`active`, `delisted`, `exempted`)
+`listed_date`:: Date added to list
+`delisted_date`:: Date removed from list (if applicable)
+`measures`:: Array of sanctions measures
+`legal_instrument_ids`:: Related legal instruments
+
+=== Announcement (List-Agnostic)
+
+An announcement represents an official publication that can affect one or more lists.
+
+**IRI Pattern:**
+----
+https://www.ammitto.org/announcement/{source}/{local_id}
+----
+
+**Examples:**
+----
+https://www.ammitto.org/announcement/cn/mofcom-2026-11
+https://www.ammitto.org/announcement/eu/council-regulation-2024-123
+----
+
+=== Legal Instrument (List-Agnostic)
+
+A legal instrument represents a law, regulation, or resolution that authorizes sanctions.
+
+**IRI Pattern:**
+----
+https://www.ammitto.org/legal_instrument/{source}/{local_id}
+----
+
+**Examples:**
+----
+https://www.ammitto.org/legal_instrument/cn/export-control-law
+https://www.ammitto.org/legal_instrument/un/resolution-1267
+----
+
+== Directory Structure
+
+The knowledge graph data is stored in the following normalized directory structure:
+
+----
+data-{source}/processed/
+├── entities/                      # NORMALIZED - unique per source
+│   ├── entity-1.yaml
+│   ├── entity-2.yaml
+│   └── ...
+├── entries/                       # Links entity to list via list_type field
+│   ├── entry-entity-1-list-a.yaml
+│   ├── entry-entity-1-list-b.yaml   # Same entity, different list!
+│   └── ...
+├── announcements/                 # NORMALIZED - can affect multiple lists
+│   ├── announcement-1.yaml
+│   └── ...
+├── legal_instruments/             # NORMALIZED - can authorize multiple lists
+│   ├── instrument-1.yaml
+│   └── ...
+├── lists/                         # List definitions
+│   ├── list-type-a.yaml
+│   ├── list-type-b.yaml
+│   └── ...
+└── _index.yaml                    # Source metadata
+----
+
+== Example: China (CN)
+
+China has three sanctions lists. Here's how the normalized structure works:
+
+=== Lists
+
+[source,yaml]
+----
+# lists/anti-sanction-list.yaml
+id: anti-sanction-list
+source: cn
+name: Anti-Sanction List
+name_chinese: 反制裁清单
+authority: MFA
+
+# lists/import-export-control-list.yaml
+id: import-export-control-list
+source: cn
+name: Import-Export Control List
+name_chinese: 出口管制管控名单
+authority: MOFCOM
+----
+
+=== Entity (List-Agnostic)
+
+[source,yaml]
+----
+# entities/mitsubishi-heavy-industries.yaml
+id: mitsubishi-heavy-industries
+type: organization
+names:
+  - english: Mitsubishi Heavy Industries, Ltd.
+    is_primary: true
+organization_details:
+  country_of_registration: JP
+----
+
+=== Entries (Same Entity, Different Lists)
+
+[source,yaml]
+----
+# entries/entry-mitsubishi-heavy-industries-import-export.yaml
+id: entry-mitsubishi-heavy-industries-import-export
+entity_id: mitsubishi-heavy-industries
+list_type: import-export-control-list
+announcement_id: mofcom-2026-11
+status: active
+listed_date: "2024-05-01"
+measures:
+  - Export restriction
+
+# entries/entry-mitsubishi-heavy-industries-unreliable.yaml
+id: entry-mitsubishi-heavy-industries-unreliable
+entity_id: mitsubishi-heavy-industries        # Same entity!
+list_type: unreliable-entity-list             # Different list!
+announcement_id: mofcom-2025-02
+status: active
+listed_date: "2025-02-15"
+measures:
+  - Trade restriction
+  - Investment prohibition
+----
+
+== Navigation Patterns
+
+=== From Entry to Entity
+
+Given an entry IRI:
+----
+https://www.ammitto.org/entry/cn/import-export-control-list/mitsubishi-heavy-industries
+----
+
+Extract entity IRI:
+----
+https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries
+----
+
+Code:
+[source,ruby]
+----
+entity_iri = Ammitto::Utils::IriSanitizer.entity_iri_from_entry(entry_iri)
+----
+
+=== Find All Entries for an Entity
+
+Code:
+[source,ruby]
+----
+loader = Ammitto::Data::KnowledgeGraphLoader.new('/path/to/data-cn/processed')
+entries = loader.entries_for_entity('mitsubishi-heavy-industries')
+# Returns entries from both import-export-control-list and unreliable-entity-list
+----
+
+=== Find All Entries for a List
+
+Code:
+[source,ruby]
+----
+loader = Ammitto::Data::KnowledgeGraphLoader.new('/path/to/data-cn/processed')
+entries = loader.entries_for_list('import-export-control-list')
+----
+
+== Available List Types by Source
+
+[cols="1,3"]
+|===
+| Source | List Types
+
+| AU | consolidated-list
+| CA | consolidated-list
+| CH | consolidated-list
+| CN | anti-sanction-list, import-export-control-list, unreliable-entity-list
+| EU | consolidated-list
+| EU-VESSELS | vessel-sanctions-list
+| JP | end-user-list
+| NZ | consolidated-list
+| RU | stop-list
+| TR | consolidated-list
+| UK | consolidated-list
+| UN | consolidated-list
+| UN-VESSELS | vessel-sanctions-list
+| US | sdn-list, entity-list, nonproliferation-sanctions
+| WB | debarment-list
+|===
+
+== Data Flow Diagram
+
+----
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Entity    │◄────│    Entry    │────►│    List     │
+│ (agnostic)  │     │ (junction)  │     │  (defines)  │
+└─────────────┘     └─────────────┘     └─────────────┘
+      │                   │                    │
+      │                   │                    │
+      ▼                   ▼                    ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Source    │     │Announcement │     │   Legal     │
+│  Reference  │     │ (agnostic)  │     │ Instrument  │
+└─────────────┘     └─────────────┘     └─────────────┘
+----
+
+* An Entity can have multiple Entries (one per list)
+* An Entry links one Entity to one List
+* An Announcement can affect multiple Lists
+* A Legal Instrument can authorize multiple Lists
+
+== API Usage
+
+=== Generating IRIs
+
+[source,ruby]
+----
+# Entity IRI (list-agnostic)
+Ammitto::Ontology.entity_uri("cn", "mitsubishi-heavy-industries")
+# => "https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries"
+
+# Entry IRI (list-specific)
+Ammitto::Ontology.entry_uri("cn", "import-export-control-list", "mitsubishi-heavy-industries")
+# => "https://www.ammitto.org/entry/cn/import-export-control-list/mitsubishi-heavy-industries"
+
+# List IRI
+Ammitto::Ontology.list_uri("cn", "import-export-control-list")
+# => "https://www.ammitto.org/list/cn/import-export-control-list"
+----
+
+=== Loading Knowledge Graph Data
+
+[source,ruby]
+----
+loader = Ammitto::Data::KnowledgeGraphLoader.new('/path/to/data-cn/processed')
+
+# Load all data
+entities = loader.load_entities
+entries = loader.load_entries
+lists = loader.load_lists
+
+# Get statistics
+stats = loader.stats
+# => { source: "cn", entities: 100, entries: 150, lists: 3, ... }
+
+# Validate integrity
+validation = loader.validate
+# => { valid: true, errors: [], warnings: [] }
+
+# Convert to harmonized format
+harmonized = loader.to_harmonized
+----
+
+=== Using IriSanitizer
+
+[source,ruby]
+----
+# Sanitize a local ID
+Ammitto::Utils::IriSanitizer.sanitize("Mitsubishi Heavy Industries")
+# => "mitsubishi-heavy-industries"
+
+# Parse an IRI
+parsed = Ammitto::Utils::IriSanitizer.parse_iri("https://www.ammitto.org/entity/cn/id")
+# => { type: "entity", source: "cn", local_id: "id" }
+
+# Extract entity from entry
+Ammitto::Utils::IriSanitizer.entity_iri_from_entry(
+  "https://www.ammitto.org/entry/cn/list/id"
+)
+# => "https://www.ammitto.org/entity/cn/id"
+----
+
+== Schema Version
+
+Current schema version: `3.0`
+
+The `_index.yaml` file contains metadata about the knowledge graph:
+
+[source,yaml]
+----
+source: cn
+schema_version: '3.0'
+structure: normalized_knowledge_graph
+list_types:
+  - anti-sanction-list
+  - import-export-control-list
+  - unreliable-entity-list
+counts:
+  entities: 100
+  entries: 150
+  announcements: 5
+  legal_instruments: 3
+  lists: 3
+fetched_at: "2024-01-15T10:30:00Z"
+----

@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 require_relative '../types'
+require_relative '../neo4j_adapter'
 
 module Ammitto
   module Ontology
@@ -23,6 +24,13 @@ module Ammitto
       #   )
       #
       class NameVariant < Lutaml::Model::Serializable
+        include Neo4jAdapter
+
+        # Neo4j configuration for NameVariant
+        neo4j_labels 'Name'
+        neo4j_property :full_name, :first_name, :middle_name, :last_name,
+                       :title, :function, :script, :language, :is_primary
+
         # Full name (complete name as a single string)
         # @return [String, nil]
         attribute :full_name, :string

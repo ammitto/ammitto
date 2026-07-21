@@ -1,0 +1,52 @@
+# JSON Schema for Organizations
+# For IDE yaml-language-server support, keep the comment reference above
+---
+title: Organizations
+description: Schema for validating organization taxonomy YAML files
+type: object
+required:
+  - organizations
+properties:
+  organizations:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          pattern: "^[a-z0-9-/]+$"
+          description: Unique identifier for the organization (e.g., "cn/ministry-of-commerce")
+        name:
+          type: object
+          minProperties: 1
+          properties:
+            zh-Hans:
+              type: string
+              description: Chinese name (Simplified)
+            en:
+              type: string
+              description: English name
+          additionalProperties: false
+        parent_id:
+          type: string
+          description: Optional parent organization ID
+        type:
+          type: string
+          enum:
+            - ministry
+            - department
+            - agency
+            - committee
+            - office
+            - working_mechanism
+          description: Type of organization
+        url:
+          type: string
+          format: uri
+          description: Official website URL
+      additionalProperties: false
+additionalProperties: false

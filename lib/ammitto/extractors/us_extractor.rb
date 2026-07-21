@@ -53,6 +53,15 @@ module Ammitto
       # @return [String] raw XML content
       def fetch
         require 'open-uri'
+
+        # Use legacy XML URL (simpler format that matches our model)
+        puts "[#{code}] Downloading SDN list from #{LEGACY_SDN_URL}..." if verbose
+
+        URI.open(LEGACY_SDN_URL, 'User-Agent' => 'Mozilla/5.0').read
+      rescue StandardError
+        puts "[#{code}] Legacy URL failed, trying ZIP format..." if verbose
+
+        # Fallback to ZIP format
         require 'tempfile'
         require 'zip'
 

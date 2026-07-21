@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'json'
 require 'time'
+require 'yaml'
 require_relative 'json_ld_serializer'
 require_relative 'turtle_exporter'
 
@@ -49,15 +50,31 @@ module Ammitto
       # @return [Hash] collected authorities keyed by code
       attr_reader :authorities
 
+      # @return [Hash] collected groups keyed by ID
+      attr_reader :groups
+
+      # @return [Hash] collected document types keyed by ID
+      attr_reader :document_types
+
+      # @return [Hash] collected organizations keyed by ID
+      attr_reader :organizations
+
       # @return [Hash] statistics
       attr_reader :stats
+
+      # @return [Hash] loaded legal instruments from YAML files
+      attr_reader :loaded_instruments
 
       # Initialize the graph exporter
       # @param output_dir [String] directory for output files
       # @param context_url [String] URL to the JSON-LD context
-      def initialize(output_dir:, context_url: nil)
+      # @param instruments_dir [String, nil] directory containing legal instrument YAML files
+      # @param supporting_dir [String, nil] directory containing supporting YAML files
+      def initialize(output_dir:, context_url: nil, instruments_dir: nil, supporting_dir: nil)
         @output_dir = output_dir
         @context_url = context_url || "#{BASE_URI}/ontology/context.jsonld"
+        @instruments_dir = instruments_dir
+        @supporting_dir = supporting_dir
 
         # Node collectors
         @entities = {}
@@ -65,6 +82,10 @@ module Ammitto
         @instruments = {}
         @regimes = {}
         @authorities = {}
+        @groups = {}
+        @document_types = {}
+        @organizations = {}
+        @loaded_instruments = {}
 
         # Statistics tracking
         @stats = {
@@ -74,12 +95,204 @@ module Ammitto
           total_entries: 0,
           total_instruments: 0,
           total_regimes: 0,
-          total_authorities: 0
+          total_authorities: 0,
+          total_groups: 0,
+          total_document_types: 0,
+          total_organizations: 0
         }
 
         # Serializer for generating node data
         @serializer = JsonLdSerializer.new
+
+        # Load legal instruments if directory provided
+        load_legal_instruments if @instruments_dir
+
+        # Load supporting data if directory provided
+        load_supporting_data if @supporting_dir
       end
+
+      # Load legal instruments from YAML files
+      # @return [void]
+      def load_legal_instruments
+        return unless @instruments_dir && Dir.exist?(@instruments_dir)
+
+        Dir.glob(File.join(@instruments_dir, '**', '*.yml')).each do |file|
+          load_instrument_file(file)
+        end
+        Dir.glob(File.join(@instruments_dir, '**', '*.yaml')).each do |file|
+          load_instrument_file(file)
+        end
+      end
+
+      # Load a single legal instrument YAML file
+      # @param file [String] path to YAML file
+      # @return [void]
+      def load_instrument_file(file)
+        data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
+        return unless data && data['id']
+
+        # Store by the ID (e.g., "cn/mofcom-unreliable-entity-list-provisions")
+        @loaded_instruments[data['id']] = data
+      rescue StandardError => e
+        puts "Warning: Could not load instrument #{file}: #{e.message}" if ENV['VERBOSE']
+      end
+
+      # Load supporting data (document types, organizations) from YAML files
+      # @return [void]
+      def load_supporting_data
+        return unless @supporting_dir && Dir.exist?(@supporting_dir)
+
+        # Load document types
+        doc_types_file = File.join(@supporting_dir, 'document-types.yml')
+        load_document_types_file(doc_types_file) if File.exist?(doc_types_file)
+
+        # Load organizations
+        orgs_file = File.join(@supporting_dir, 'organizations.yml')
+        load_organizations_file(orgs_file) if File.exist?(orgs_file)
+      end
+
+      # Load document types from YAML file
+      # @param file [String] path to YAML file
+      # @return [void]
+      def load_document_types_file(file)
+        data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
+        return unless data && data['document_types']
+
+        data['document_types'].each do |type_data|
+          next unless type_data['id']
+
+          type_id = type_data['id']
+          iri = "#{BASE_URI}/document-type/#{type_id}"
+
+          # Build name array from LocalizedString format
+          names = []
+          if type_data['name']
+            if type_data['name']['zh-Hans']
+              names << {
+                'value' => type_data['name']['zh-Hans'],
+                'lang' => 'zh',
+                'script' => 'Hani',
+                'isPrimary' => true
+              }
+            end
+            if type_data['name']['en']
+              names << {
+                'value' => type_data['name']['en'],
+                'lang' => 'en',
+                'script' => 'Latn',
+                'isPrimary' => false
+              }
+            end
+          end
+
+          @document_types[iri] = {
+            '@context' => @context_url,
+            '@id' => iri,
+            '@type' => 'DocumentType',
+            'identifier' => type_id,
+            'name' => names
+          }.compact
+        end
+
+        @stats[:total_document_types] = @document_types.length
+      rescue StandardError => e
+        puts "Warning: Could not load document types #{file}: #{e.message}" if ENV['VERBOSE']
+      end
+
+      # Load organizations from YAML file
+      # @param file [String] path to YAML file
+      # @return [void]
+      def load_organizations_file(file)
+        data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
+        return unless data && data['organizations']
+
+        data['organizations'].each do |org_data|
+          next unless org_data['id']
+
+          org_id = org_data['id']
+          iri = "#{BASE_URI}/organization/#{org_id}"
+
+          # Build name array from LocalizedString format
+          names = []
+          if org_data['name']
+            if org_data['name']['zh-Hans']
+              names << {
+                'value' => org_data['name']['zh-Hans'],
+                'lang' => 'zh',
+                'script' => 'Hani',
+                'isPrimary' => true
+              }
+            end
+            if org_data['name']['en']
+              names << {
+                'value' => org_data['name']['en'],
+                'lang' => 'en',
+                'script' => 'Latn',
+                'isPrimary' => false
+              }
+            end
+          end
+
+          @organizations[iri] = {
+            '@context' => @context_url,
+            '@id' => iri,
+            '@type' => 'Organization',
+            'identifier' => org_id,
+            'name' => names,
+            'type' => org_data['type'],
+            'parentId' => org_data['parent_id'],
+            'url' => org_data['url']
+          }.compact
+        end
+
+        @stats[:total_organizations] = @organizations.length
+      rescue StandardError => e
+        puts "Warning: Could not load organizations #{file}: #{e.message}" if ENV['VERBOSE']
+      end
+
+      # Add a document type to the graph
+      # @param document_type [DocumentType, Hash] the document type object or hash
+      # @return [void]
+      def add_document_type(document_type)
+        return unless document_type
+
+        type_hash = document_type.respond_to?(:to_hash) ? document_type.to_hash : document_type
+        type_id = type_hash['@id'] || type_hash['id']
+        return unless type_id
+
+        @document_types[type_id] = type_hash
+        @stats[:total_document_types] = @document_types.length
+      end
+
+      # Add an organization to the graph
+      # @param organization [Organization, Hash] the organization object or hash
+      # @return [void]
+      def add_organization(organization)
+        return unless organization
+
+        org_hash = organization.respond_to?(:to_hash) ? organization.to_hash : organization
+        org_id = org_hash['@id'] || org_hash['id']
+        return unless org_id
+
+        @organizations[org_id] = org_hash
+        @stats[:total_organizations] = @organizations.length
+      end
+
+      # Add a sanction group to the graph
+      # @param group [SanctionGroup, Hash] the group object or hash
+      # @param source [Symbol] source code (currently unused, for future extensibility)
+      # rubocop:disable Lint/UnusedMethodArgument
+      def add_group(group, source:)
+        return unless group
+
+        group_hash = group.respond_to?(:to_hash) ? group.to_hash : group
+        group_id = group_hash['@id'] || group_hash['id']
+        return unless group_id
+
+        @groups[group_id] = group_hash
+        @stats[:total_groups] = @groups.length
+      end
+      # rubocop:enable Lint/UnusedMethodArgument
 
       # Add a transformed result to the graph
       # @param entity [Hash] entity hash
@@ -123,6 +336,9 @@ module Ammitto
         export_authority_nodes
         export_regime_nodes
         export_instrument_nodes
+        export_group_nodes
+        export_document_type_nodes
+        export_organization_nodes
         export_entity_nodes
         export_entry_nodes
 
@@ -136,7 +352,7 @@ module Ammitto
 
         puts "Exported #{@entities.length} entities, #{@entries.length} entries, " \
              "#{@instruments.length} instruments, #{@regimes.length} regimes, " \
-             "#{@authorities.length} authorities"
+             "#{@authorities.length} authorities, #{@groups.length} groups"
       end
 
       private
@@ -147,11 +363,16 @@ module Ammitto
         dirs = [
           File.join(@output_dir, 'node', 'entity'),
           File.join(@output_dir, 'node', 'entry'),
-          File.join(@output_dir, 'node', 'instrument'),
+          File.join(@output_dir, 'node', 'legal-instrument'),
           File.join(@output_dir, 'node', 'regime'),
           File.join(@output_dir, 'node', 'authority'),
+          File.join(@output_dir, 'node', 'group'),
+          File.join(@output_dir, 'node', 'document-type'),
+          File.join(@output_dir, 'node', 'organization'),
+          File.join(@output_dir, 'node', 'list'),
           File.join(@output_dir, 'by-authority'),
           File.join(@output_dir, 'by-regime'),
+          File.join(@output_dir, 'by-list'),
           File.join(@output_dir, 'by-status'),
           File.join(@output_dir, 'by-type')
         ]
@@ -219,38 +440,111 @@ module Ammitto
       end
 
       # Extract legal instruments from entry and deduplicate
+      # Handles both legacy 'legalBases' and 'legalCitations' fields
       # @param entry [Hash] entry hash
       # @param source_code [String] source code
       # @return [void]
       def extract_instruments(entry, source_code)
+        # Process legacy legalBases format (has 'identifier' field)
         bases = entry['legalBases']
-        return unless bases&.any?
+        if bases&.any?
+          entry['legalBases'] = bases.map do |base|
+            next base unless base.is_a?(Hash)
 
-        entry['legalBases'] = bases.map do |base|
-          next base unless base.is_a?(Hash)
+            identifier = base['identifier']
+            next base unless identifier
 
-          identifier = base['identifier']
-          next base unless identifier
+            # Create a normalized identifier for the ID
+            normalized_id = normalize_identifier(identifier)
+            instrument_id = "#{BASE_URI}/legal-instrument/#{source_code}/#{normalized_id}"
 
-          # Create a normalized identifier for the ID
-          normalized_id = normalize_identifier(identifier)
-          instrument_id = "#{BASE_URI}/instrument/#{source_code}/#{normalized_id}"
+            # Store full instrument if not already present
+            @instruments[instrument_id] ||= {
+              '@context' => @context_url,
+              '@id' => instrument_id,
+              '@type' => 'LegalInstrument',
+              'type' => base['type'],
+              'identifier' => identifier,
+              'title' => base['title'],
+              'issuingBody' => base['issuingBody'],
+              'issuanceDate' => base['issuanceDate'],
+              'url' => base['url']
+            }.compact
 
-          # Store full instrument if not already present
-          @instruments[instrument_id] ||= {
-            '@context' => @context_url,
-            '@id' => instrument_id,
-            '@type' => 'LegalInstrument',
-            'type' => base['type'],
-            'identifier' => identifier,
-            'title' => base['title'],
-            'issuingBody' => base['issuingBody'],
-            'issuanceDate' => base['issuanceDate'],
-            'url' => base['url']
-          }.compact
+            # Return @id reference
+            { '@id' => instrument_id }
+          end
+        end
 
-          # Return @id reference
-          { '@id' => instrument_id }
+        # Process legal_citations format (has 'legal_instrument_id' field)
+        # Note: Field names may be snake_case in the exported JSON
+        citations = entry['legalCitations'] || entry['legal_citations']
+        if citations&.any?
+          entry['legal_citations'] = citations.map do |citation|
+            next citation unless citation.is_a?(Hash)
+
+            # Handle both camelCase and snake_case field names
+            instrument_iri = citation['legalInstrumentId'] || citation['legal_instrument_id']
+            next citation unless instrument_iri
+
+            # Extract source and local_id from IRI
+            # Format: https://www.ammitto.org/legal_instrument/{source}/{local_id}
+            match = instrument_iri.match(%r{#{Regexp.escape(BASE_URI)}/legal_instrument/([^/]+)/(.+)$})
+            next citation unless match
+
+            instr_source = match[1]
+            local_id = match[2]
+
+            # Create the canonical instrument ID (using /legal-instrument/)
+            instrument_id = "#{BASE_URI}/legal-instrument/#{instr_source}/#{local_id}"
+
+            # Look up loaded instrument metadata
+            loaded_key = "#{instr_source}/#{local_id}"
+            loaded_instr = @loaded_instruments[loaded_key] || {}
+
+            # Store full instrument if not already present
+            @instruments[instrument_id] ||= begin
+              # Process title - handle both string and LocalizedString array formats
+              title_data = loaded_instr['title']
+              name = if title_data.is_a?(Array)
+                       # Extract primary or English title from LocalizedString array
+                       en_title = title_data.find { |t| t['en'] }&.dig('en')
+                       zh_title = title_data.find { |t| t['zh-Hans'] }&.dig('zh-Hans')
+                       en_title || zh_title
+                     else
+                       title_data
+                     end
+
+              node = {
+                '@context' => @context_url,
+                '@id' => instrument_id,
+                '@type' => 'LegalInstrument',
+                'identifier' => local_id,
+                'name' => name,
+                'title' => loaded_instr['title'],
+                'type' => loaded_instr['type'],
+                'documentId' => loaded_instr['document_id'],
+                'url' => loaded_instr['url'],
+                'publishDate' => loaded_instr['publish_date'],
+                'effectiveDate' => loaded_instr['effective_date'],
+                'content' => loaded_instr['content'],
+                'articles' => citation['articles'],
+                'citationType' => citation['citationType'] || citation['citation_type'],
+                'lang' => loaded_instr['lang']
+              }.compact
+              node
+            end
+
+            # Return citation with instrument_id pointing to the canonical instrument ID
+            # This allows the Vue component to find the instrument via legal_instrument_id
+            {
+              'legal_instrument_id' => instrument_id,
+              'articles' => citation['articles'],
+              'citation_type' => citation['citationType'] || citation['citation_type']
+            }.compact
+          end
+          # Remove the old camelCase key if it existed
+          entry.delete('legalCitations')
         end
 
         @stats[:total_instruments] = @instruments.length
@@ -289,21 +583,25 @@ module Ammitto
       end
 
       # Export entry node files
+      # Entry structure: /entry/{source}/{list_type}/{local_id}.jsonld
       # @return [void]
       def export_entry_nodes
-        by_source = group_by_source(@entries)
+        by_source_and_list = group_entries_by_source_and_list
 
-        by_source.each do |source, entries|
-          source_dir = File.join(@output_dir, 'node', 'entry', source)
-          FileUtils.mkdir_p(source_dir)
+        by_source_and_list.each do |source, lists|
+          lists.each do |list_type, entries|
+            # Create directory: entry/{source}/{list_type}/
+            list_dir = File.join(@output_dir, 'node', 'entry', source, list_type)
+            FileUtils.mkdir_p(list_dir)
 
-          entries.each do |id, entry|
-            ref = extract_ref_from_id(id, 'entry')
-            next unless ref
+            entries.each do |id, entry|
+              ref = extract_entry_ref_from_id(id)
+              next unless ref
 
-            path = File.join(source_dir, "#{ref}.jsonld")
-            node = entry.merge('@context' => @context_url)
-            write_json(path, node)
+              path = File.join(list_dir, "#{ref}.jsonld")
+              node = entry.merge('@context' => @context_url)
+              write_json(path, node)
+            end
           end
         end
       end
@@ -314,7 +612,7 @@ module Ammitto
         by_source = group_instruments_by_source
 
         by_source.each do |source, instruments|
-          source_dir = File.join(@output_dir, 'node', 'instrument', source)
+          source_dir = File.join(@output_dir, 'node', 'legal-instrument', source)
           FileUtils.mkdir_p(source_dir)
 
           instruments.each do |id, instrument|
@@ -345,6 +643,82 @@ module Ammitto
         end
       end
 
+      # Export group node files
+      # Group structure: /group/{source}/{local_id}.jsonld
+      # @return [void]
+      def export_group_nodes
+        @groups.each do |group_id, group|
+          # Extract source and local ID from IRI using Registry
+          parts = group_id.to_s.split('/')
+          source = parts.find { |p| registered_source?(p) }
+          local_id = parts.last
+
+          if source
+            dir = File.join(@output_dir, 'node', 'group', source)
+            FileUtils.mkdir_p(dir)
+            path = File.join(dir, "#{local_id}.jsonld")
+          else
+            path = File.join(@output_dir, 'node', 'group', "#{local_id}.jsonld")
+          end
+
+          write_json(path, group)
+        end
+      end
+
+      # Check if a code is a registered source
+      # Uses the Registry to avoid hardcoding source codes (Open-Closed Principle)
+      # @param code [String] the code to check
+      # @return [Boolean]
+      def registered_source?(code)
+        Ammitto::Registry.registered?(code)
+      end
+
+      # Export document type node files
+      # Document type structure: /document-type/{source}/{local_id}.jsonld
+      # @return [void]
+      def export_document_type_nodes
+        @document_types.each do |type_id, type|
+          # Extract source and local ID from IRI
+          # Format: https://www.ammitto.org/document-type/{source}/{local_id}
+          parts = type_id.to_s.split('/')
+          source = parts.find { |p| registered_source?(p) }
+          local_id = parts.last
+
+          if source
+            dir = File.join(@output_dir, 'node', 'document-type', source)
+            FileUtils.mkdir_p(dir)
+            path = File.join(dir, "#{local_id}.jsonld")
+          else
+            path = File.join(@output_dir, 'node', 'document-type', "#{local_id}.jsonld")
+          end
+
+          write_json(path, type)
+        end
+      end
+
+      # Export organization node files
+      # Organization structure: /organization/{source}/{local_id}.jsonld
+      # @return [void]
+      def export_organization_nodes
+        @organizations.each do |org_id, org|
+          # Extract source and local ID from IRI
+          # Format: https://www.ammitto.org/organization/{source}/{local_id}
+          parts = org_id.to_s.split('/')
+          source = parts.find { |p| registered_source?(p) }
+          local_id = parts.last
+
+          if source
+            dir = File.join(@output_dir, 'node', 'organization', source)
+            FileUtils.mkdir_p(dir)
+            path = File.join(dir, "#{local_id}.jsonld")
+          else
+            path = File.join(@output_dir, 'node', 'organization', "#{local_id}.jsonld")
+          end
+
+          write_json(path, org)
+        end
+      end
+
       # Export index files for each node type
       # @return [void]
       def export_index_files
@@ -370,7 +744,7 @@ module Ammitto
           '@type' => 'Index',
           'nodes' => @instruments.keys.sort.map { |id| { '@id' => id } }
         }
-        write_json(File.join(@output_dir, 'node', 'instrument', 'index.jsonld'), instrument_index)
+        write_json(File.join(@output_dir, 'node', 'legal-instrument', 'index.jsonld'), instrument_index)
 
         # Regime index
         regime_index = {
@@ -387,6 +761,30 @@ module Ammitto
           'nodes' => @authorities.keys.sort.map { |code| { '@id' => "#{BASE_URI}/authority/#{code}" } }
         }
         write_json(File.join(@output_dir, 'node', 'authority', 'index.jsonld'), authority_index)
+
+        # Group index
+        group_index = {
+          '@context' => @context_url,
+          '@type' => 'Index',
+          'nodes' => @groups.keys.sort.map { |id| { '@id' => id } }
+        }
+        write_json(File.join(@output_dir, 'node', 'group', 'index.jsonld'), group_index)
+
+        # Document type index
+        document_type_index = {
+          '@context' => @context_url,
+          '@type' => 'Index',
+          'nodes' => @document_types.keys.sort.map { |id| { '@id' => id } }
+        }
+        write_json(File.join(@output_dir, 'node', 'document-type', 'index.jsonld'), document_type_index)
+
+        # Organization index
+        organization_index = {
+          '@context' => @context_url,
+          '@type' => 'Index',
+          'nodes' => @organizations.keys.sort.map { |id| { '@id' => id } }
+        }
+        write_json(File.join(@output_dir, 'node', 'organization', 'index.jsonld'), organization_index)
       end
 
       # Export aggregated files
@@ -397,6 +795,8 @@ module Ammitto
         all_graph.concat(@authorities.values)
         all_graph.concat(@regimes.values)
         all_graph.concat(@instruments.values)
+        all_graph.concat(@document_types.values)
+        all_graph.concat(@organizations.values)
         all_graph.concat(@entities.values.map { |e| e.merge('@context' => @context_url) })
         all_graph.concat(@entries.values.map { |e| e.merge('@context' => @context_url) })
 
@@ -423,12 +823,14 @@ module Ammitto
       # Creates lightweight index files with @id references grouped by:
       # - Authority (by-authority/{code}.jsonld)
       # - Regime (by-regime/{code}.jsonld)
+      # - List (by-list/{source}/{list_type}.jsonld)
       # - Status (by-status/{status}.jsonld)
       # - Entity type (by-type/{type}.jsonld)
       # @return [void]
       def export_data_slices
         export_slices_by_authority
         export_slices_by_regime
+        export_slices_by_list
         export_slices_by_status
         export_slices_by_entity_type
       end
@@ -507,6 +909,65 @@ module Ammitto
           '@type' => 'Index',
           'slice' => 'by-regime',
           'available' => by_regime.keys.sort.map { |code| "#{BASE_URI}/regime/#{code}" }
+        }
+        write_json(File.join(slices_dir, 'index.jsonld'), master)
+      end
+
+      # Export slices by list type
+      # Creates files at: by-list/{source}/{list_type}.jsonld
+      # @return [void]
+      def export_slices_by_list
+        slices_dir = File.join(@output_dir, 'by-list')
+
+        # Group entries by source and list_type
+        by_list = {}
+        @entries.each_key do |id|
+          # Extract source and list_type from entry ID
+          # Pattern: BASE_URI/entry/{source}/{list_type}/{local_id}
+          match = id.match(%r{#{Regexp.escape(BASE_URI)}/entry/([^/]+)/([^/]+)})
+          next unless match
+
+          source = match[1]
+          list_type = match[2]
+
+          by_list[source] ||= {}
+          by_list[source][list_type] ||= []
+          by_list[source][list_type] << { '@id' => id }
+        end
+
+        # Write index files for each source/list_type
+        by_list.each do |source, lists|
+          source_dir = File.join(slices_dir, source)
+          FileUtils.mkdir_p(source_dir)
+
+          lists.each do |list_type, entries|
+            index = {
+              '@context' => @context_url,
+              '@type' => 'Index',
+              'slice' => 'by-list',
+              'list' => { '@id' => "#{BASE_URI}/list/#{source}/#{list_type}" },
+              'entries' => entries
+            }
+            write_json(File.join(source_dir, "#{list_type}.jsonld"), index)
+          end
+
+          # Write source index
+          source_index = {
+            '@context' => @context_url,
+            '@type' => 'Index',
+            'slice' => 'by-list',
+            'source' => source,
+            'available' => lists.keys.sort.map { |lt| "#{BASE_URI}/list/#{source}/#{lt}" }
+          }
+          write_json(File.join(source_dir, 'index.jsonld'), source_index)
+        end
+
+        # Write master index
+        master = {
+          '@context' => @context_url,
+          '@type' => 'Index',
+          'slice' => 'by-list',
+          'sources' => by_list.keys.sort
         }
         write_json(File.join(slices_dir, 'index.jsonld'), master)
       end
@@ -620,19 +1081,47 @@ module Ammitto
       end
 
       # Group nodes by source
+      # Handles both entity and entry IRIs:
+      # - Entity: BASE_URI/entity/{source}/{local_id}
+      # - Entry: BASE_URI/entry/{source}/{list_type}/{local_id}
       # @param nodes [Hash] nodes keyed by ID
       # @return [Hash] nodes grouped by source code
       def group_by_source(nodes)
         result = {}
 
         nodes.each_key do |id|
-          # Extract source from ID like "https://www.ammitto.org/entity/un/KPi.066"
-          match = id.match(%r{#{Regexp.escape(BASE_URI)}/[^/]+/([^/]+)/})
+          # Extract source from ID
+          # Works for both:
+          # - "https://www.ammitto.org/entity/un/some-id"
+          # - "https://www.ammitto.org/entry/un/consolidated-list/some-id"
+          match = id.match(%r{#{Regexp.escape(BASE_URI)}/[^/]+/([^/]+)})
           next unless match
 
           source = match[1]
           result[source] ||= {}
           result[source][id] = nodes[id]
+        end
+
+        result
+      end
+
+      # Group entries by source and list type
+      # @return [Hash] entries grouped by source, then by list_type
+      def group_entries_by_source_and_list
+        result = {}
+
+        @entries.each do |id, entry|
+          # Extract source and list_type from entry ID
+          # Pattern: BASE_URI/entry/{source}/{list_type}/{local_id}
+          match = id.match(%r{#{Regexp.escape(BASE_URI)}/entry/([^/]+)/([^/]+)})
+          next unless match
+
+          source = match[1]
+          list_type = match[2]
+
+          result[source] ||= {}
+          result[source][list_type] ||= {}
+          result[source][list_type][id] = entry
         end
 
         result
@@ -644,8 +1133,8 @@ module Ammitto
         result = {}
 
         @instruments.each do |id, instrument|
-          # Extract source from ID like "https://www.ammitto.org/instrument/un/1718-2006"
-          match = id.match(%r{#{Regexp.escape(BASE_URI)}/instrument/([^/]+)/})
+          # Extract source from ID like "https://www.ammitto.org/legal-instrument/un/1718-2006"
+          match = id.match(%r{#{Regexp.escape(BASE_URI)}/legal-instrument/([^/]+)/})
           next unless match
 
           source = match[1]
@@ -666,12 +1155,23 @@ module Ammitto
         match ? match[1] : nil
       end
 
+      # Extract local_id reference from entry ID
+      # Entry IRIs include list_type: BASE_URI/entry/{source}/{list_type}/{local_id}
+      # @param id [String] full entry URI
+      # @return [String, nil] local_id part
+      def extract_entry_ref_from_id(id)
+        # Extract local_id from entry ID like:
+        # "https://www.ammitto.org/entry/cn/import-export-control-list/mitsubishi-heavy-industries"
+        match = id.match(%r{#{Regexp.escape(BASE_URI)}/entry/[^/]+/[^/]+/(.+)$})
+        match ? match[1] : nil
+      end
+
       # Extract identifier from instrument ID
       # @param id [String] full URI
       # @return [String, nil] identifier part
       def extract_instrument_identifier(id)
-        # Extract identifier from ID like "https://www.ammitto.org/instrument/un/1718-2006"
-        match = id.match(%r{#{Regexp.escape(BASE_URI)}/instrument/[^/]+/(.+)$})
+        # Extract identifier from ID like "https://www.ammitto.org/legal-instrument/un/1718-2006"
+        match = id.match(%r{#{Regexp.escape(BASE_URI)}/legal-instrument/[^/]+/(.+)$})
         match ? match[1] : nil
       end
 

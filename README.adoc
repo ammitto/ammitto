@@ -165,7 +165,7 @@ A `SanctionEntry` represents a single sanction against an entity, including:
                               │ Downloads from
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    www.ammitto.com/api/v1/                       │
+│                    ammitto.org/api/v1/                       │
 │                                                                  │
 │  /sources/eu.jsonld    /sources/un.jsonld    /sources/us.jsonld │
 │  /sources/gb.jsonld    /sources/cn.jsonld    /all.jsonld        │
@@ -266,14 +266,14 @@ The Ammitto data pipeline consists of four phases:
 │   Triggered by repository_dispatch from data repo                                    │
 │         │                                                                            │
 │         ▼                                                                            │
-│   https://www.ammitto.com/api/v1/*.jsonld                                            │
+│   https://ammitto.org/api/v1/*.jsonld                                            │
 │                                                                                      │
 │  ══════════════════════════════════════════════════════════════════════             │
 │                                                                                      │
 │  PHASE 4: GEM USERS                                                                  │
 │  ══════════════════════════════════════════════════════════════════════             │
 │                                                                                      │
-│   Ammitto.refresh_cache → Downloads from www.ammitto.com/api/                       │
+│   Ammitto.refresh_cache → Downloads from ammitto.org/api/                       │
 │   ~/.ammitto/cache/ → Local JSON-LD cache                                            │
 │   Ammitto.search("query") → Queries against cached data                              │
 │                                                                                      │
@@ -532,7 +532,7 @@ gh repo create ammitto/data-xx --public --description "Ammitto Data repository f
 | Variable | Description | Default
 
 | `AMMITTO_CACHE_DIR` | Local cache directory | `~/.ammitto`
-| `AMMITTO_API_BASE_URL` | API base URL | `https://www.ammitto.com/api/v1`
+| `AMMITTO_API_BASE_URL` | API base URL | `https://ammitto.org/api/v1`
 | `AMMITTO_LOG_LEVEL` | Logging level (debug, info, warn, error) | `info`
 | `AMMITTO_SOURCES` | Comma-separated sources to process | all sources
 |===

@@ -19,7 +19,7 @@ Ammitto can be configured globally or per-operation:
 ----
 Ammitto.configure do |config|
   # API and caching
-  config.api_base_url = "https://www.ammitto.com/api/v1"
+  config.api_base_url = "https://ammitto.org/api/v1"
   config.cache_dir = "~/.ammitto/cache"
   config.cache_ttl = 3600  # 1 hour
 
@@ -46,7 +46,7 @@ end
 | `api_base_url`
 | String
 | Base URL for the Ammitto API
-| `https://www.ammitto.com/api/v1`
+| `https://ammitto.org/api/v1`
 
 | `cache_dir`
 | String

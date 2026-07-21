@@ -108,9 +108,6 @@ ammitto fetch --all
 # Dry run (show what would be fetched)
 ammitto fetch eu --dry-run
 
-# Force re-download
-ammitto fetch eu --force
-
 # Specify output directory
 ammitto fetch eu --output-dir ./data
 
@@ -125,9 +122,6 @@ ammitto fetch eu --format yaml
 
 | `--dry-run`
 | Show what would be done without making changes
-
-| `--force`
-| Force re-download even if cache is fresh
 
 | `--all`
 | Fetch all available sources

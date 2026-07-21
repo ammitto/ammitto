@@ -53,7 +53,7 @@ gem install ammitto
 require 'ammitto'
 
 Ammitto.configure do |config|
-  config.api_base_url = "https://www.ammitto.com/api/v1"  # default
+  config.api_base_url = "https://ammitto.org/api/v1"       # default
   config.cache_dir = File.expand_path("~/.ammitto")       # default
   config.cache_ttl = 3600                                  # 1 hour, default
   config.verbose = true                                    # default: false
@@ -87,12 +87,10 @@ results = Ammitto.search("Kim Jong Un", sources: [:un, :us])
 # Search with pagination
 results = Ammitto.search("Putin", limit: 50, offset: 0)
 
-# Iterate results
-results.each do |entry|
-  puts "#{entry.display_name}"
-  puts "  Authority: #{entry.authority.name}"
-  puts "  Status: #{entry.status}"
-  puts "  Listed: #{entry.period.listed_date}"
+# Iterate results (entities)
+results.each do |entity|
+  puts entity.display_name
+  puts "  Type: #{entity.entity_type}"
 end
 ----
 
@@ -124,7 +122,7 @@ puts JSON.pretty_generate(json_ld)
 [source,ruby]
 ----
 Ammitto.sources
-# => [:au, :ca, :ch, :cn, :eu, :gb, :ru, :un, :us, :wb]
+# => [:au, :ca, :ch, :cn, :eu, :eu_vessels, :jp, :nz, :ru, :tr, :uk, :un, :un_vessels, :us, :wb]
 ----
 
 == Data Model

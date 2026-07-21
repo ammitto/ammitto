@@ -74,7 +74,15 @@ RSpec.describe Ammitto::Authority do
     it 'returns all registered authorities' do
       authorities = described_class.all
       expect(authorities).to be_an(Array)
-      expect(authorities.size).to eq(11)
+      expect(authorities.size).to eq(15)
+    end
+
+    it 'covers every source the gem advertises' do
+      require 'ammitto/config/defaults'
+      missing = Ammitto::Config::Defaults::ALL_SOURCES.reject do |code|
+        described_class.find(code.to_s)
+      end
+      expect(missing).to be_empty
     end
   end
 end

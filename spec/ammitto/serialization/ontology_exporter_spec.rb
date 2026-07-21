@@ -28,7 +28,7 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
       expect(File.exist?(classes_file)).to be true
 
       data = JSON.parse(File.read(classes_file))
-      expect(data['@context']).to eq('https://www.ammitto.org/ontology/context.jsonld')
+      expect(data['@context']).to eq('https://ammitto.org/api/v1/context.jsonld')
       expect(data['@graph']).to be_an(Array)
       expect(data['@graph'].length).to be > 0
     end
@@ -38,7 +38,7 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
       expect(File.exist?(properties_file)).to be true
 
       data = JSON.parse(File.read(properties_file))
-      expect(data['@context']).to eq('https://www.ammitto.org/ontology/context.jsonld')
+      expect(data['@context']).to eq('https://ammitto.org/api/v1/context.jsonld')
       expect(data['@graph']).to be_an(Array)
     end
 

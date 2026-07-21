@@ -2,6 +2,8 @@
 
 require 'lutaml/model'
 
+require_relative 'export_namespace'
+
 module Ammitto
   module Sources
     module Eu
@@ -22,7 +24,7 @@ module Ammitto
 
         xml do
           root 'citizenship'
-          namespace 'http://eu.europa.ec/fpi/fsd/export'
+          namespace ExportNamespace
 
           map_attribute 'region', to: :region
           map_attribute 'countryIso2Code', to: :country_iso2_code

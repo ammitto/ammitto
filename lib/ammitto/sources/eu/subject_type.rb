@@ -2,6 +2,8 @@
 
 require 'lutaml/model'
 
+require_relative 'export_namespace'
+
 module Ammitto
   module Sources
     module Eu
@@ -15,7 +17,7 @@ module Ammitto
 
         xml do
           root 'subjectType'
-          namespace 'http://eu.europa.ec/fpi/fsd/export'
+          namespace ExportNamespace
 
           map_attribute 'code', to: :code
           map_attribute 'classificationCode', to: :classification_code

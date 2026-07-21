@@ -2,6 +2,8 @@
 
 require 'lutaml/model'
 
+require_relative 'sdn_namespace'
+
 module Ammitto
   module Sources
     module Us
@@ -34,7 +36,7 @@ module Ammitto
 
         xml do
           root 'sdnEntry'
-          namespace 'https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/XML', nil
+          namespace SdnNamespace
 
           map_element 'uid', to: :uid
           map_element 'firstName', to: :first_name

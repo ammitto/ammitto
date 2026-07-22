@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'thor'
-require_relative 'version'
+require 'ammitto' # Ensure core library is loaded (sets up XML adapter, etc.)
 require_relative 'config/defaults'
 require_relative 'config/env_provider'
 require_relative 'config/override_resolver'

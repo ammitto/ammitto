@@ -56,5 +56,5 @@ module Ammitto
 end
 
 # Load all CN source models
-require_relative 'cn/sanctions_list'
+require_relative 'cn/source'
 require_relative 'cn/transformer'

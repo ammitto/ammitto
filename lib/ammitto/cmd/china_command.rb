@@ -35,7 +35,7 @@ module Ammitto
       private
 
       def fetch(source, _args)
-        require_relative '../../../data/china'
+        require_relative '../data/china'
 
         raise ArgumentError, "Source required. Available: #{available_sources.join(', ')}" unless source
 
@@ -57,7 +57,7 @@ module Ammitto
       end
 
       def validate
-        require_relative '../../../data/china/validator'
+        require_relative '../data/china/validator'
 
         sources_dir = @options[:sources] || File.join(Dir.pwd, 'sources')
         validator = Ammitto::Data::China::Validator.new

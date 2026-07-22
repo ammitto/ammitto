@@ -605,16 +605,9 @@ module Ammitto
         elsif data.key?('announcement') && data.key?('measure_modifications')
           transform_cn_modification(transformer, data)
         else
-          # Old format - single entity
-          require_relative '../sources/cn/sanctions_list'
-
-          source = Ammitto::Sources::Cn::SanctionedEntity.from_yaml(data.to_yaml)
-          result = transformer.transform(source)
-
-          {
-            entity: entity_to_hash(result[:entity]),
-            entry: entry_to_hash(result[:entry])
-          }
+          # The pre-#16 single-entity format is no longer supported; its
+          # model (Cn::SanctionedEntity) was removed with cn/sanctions_list
+          raise 'Unsupported CN source format (expected announcement-based YAML)'
         end
       end
 

@@ -96,6 +96,11 @@ module Ammitto
       def fetch_source(source)
         puts "[#{source}] Fetching..." if options[:verbose]
 
+        # CN has no automated fetch: its YAML is manually managed in data-cn
+        # (announcement-based reference docs). Reporting this explicitly beats
+        # the extractor path returning success without writing anything.
+        return error_result(source, 'CN data is manually managed in data-cn; automated fetch is not supported') if source == :cn
+
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class
 

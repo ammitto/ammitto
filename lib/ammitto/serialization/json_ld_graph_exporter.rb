@@ -68,10 +68,13 @@ module Ammitto
       # Initialize the graph exporter
       # @param output_dir [String] directory for output files
       # @param context_url [String] URL to the JSON-LD context
-      def initialize(output_dir:, context_url: nil, combine: true)
+      def initialize(output_dir:, context_url: nil, combine: true,
+                     instruments_dir: nil, supporting_dir: nil)
         @output_dir = output_dir
         @context_url = context_url || Ammitto::Schema::Context.context_url
         @combine = combine
+        @instruments_dir = instruments_dir
+        @supporting_dir = supporting_dir
 
         # Node collectors
         @entities = {}

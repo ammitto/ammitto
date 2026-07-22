@@ -27,6 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'csv'
   spec.add_dependency 'faraday', '~> 2.0'
   spec.add_dependency 'json-ld', '~> 3.3'
+  spec.add_dependency 'json-schema', '~> 4.0'
   spec.add_dependency 'lutaml-model', '~> 0.8.17'
   spec.add_dependency 'mechanize', '~> 2.12'
   spec.add_dependency 'moxml', '~> 0.1', '>= 0.1.25'

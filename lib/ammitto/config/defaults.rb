@@ -34,12 +34,6 @@ module Ammitto
       # All available sources
       ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru tr nz jp eu_vessels un_vessels].freeze
 
-      # Dormant sources: no working automated parse path yet (jp/un_vessels
-      # are PDF-based placeholders; cn/ru scrape HTML but have no YAML
-      # persistence). Health gates do not require entities from these, and
-      # they are excluded from zero-entity failure checks.
-      DORMANT_SOURCES = %i[jp un_vessels cn ru].freeze
-
       # Default output format
       DEFAULT_OUTPUT_FORMAT = 'jsonld'
 

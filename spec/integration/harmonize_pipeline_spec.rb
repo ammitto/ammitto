@@ -120,20 +120,47 @@ RSpec.describe 'harmonize pipeline (integration)' do
       .to raise_error(Thor::Error, /uk/)
   end
 
-  it 'does not fail the health gate for dormant sources' do
-    dormant = Ammitto::Config::Defaults::DORMANT_SOURCES
-    expect(dormant).to include(:jp, :un_vessels, :cn, :ru)
-  end
-
-  it 'exempts dormant zero-entity runs from every gate, including aggregates' do
+  it 'is strict by default: any zero-entity source fails the gate' do
     cmd = Ammitto::Cmd::HarmonizeCommand.new(
       { output_dir: File.join(@workdir, 'api', 'v1') }, ['jp']
     )
-    dormant_ok = [{ code: :jp, status: :success, entities: 0, entries: 0 }]
-    expect { cmd.send(:enforce_health_gates, dormant_ok) }.not_to raise_error
+    zero = [{ code: :jp, status: :success, entities: 0, entries: 0 }]
+    expect { cmd.send(:enforce_health_gates, zero) }
+      .to raise_error(Thor::Error, /jp: produced 0 entities/)
+  end
 
-    active_zero = [{ code: :uk, status: :success, entities: 0, entries: 0 }]
-    expect { cmd.send(:enforce_health_gates, active_zero) }
+  it 'exempts only the sources named in --allow-empty' do
+    cmd = Ammitto::Cmd::HarmonizeCommand.new(
+      { output_dir: File.join(@workdir, 'api', 'v1'), allow_empty: 'jp,cn' }, ['jp']
+    )
+    allowed = [{ code: :jp, status: :success, entities: 0, entries: 0 }]
+    expect { cmd.send(:enforce_health_gates, allowed) }.not_to raise_error
+
+    unlisted = [{ code: :uk, status: :success, entities: 0, entries: 0 }]
+    expect { cmd.send(:enforce_health_gates, unlisted) }
       .to raise_error(Thor::Error, /uk: produced 0 entities/)
+  end
+
+  it 'rejects unknown source codes in --allow-empty before any processing' do
+    write_eu_fixture(@workdir)
+    out = File.join(@workdir, 'api', 'v1')
+    cmd = Ammitto::Cmd::HarmonizeCommand.new(
+      { sources_dir: @workdir, output_dir: out, allow_empty: 'zz' }, ['eu']
+    )
+    expect { cmd.run }
+      .to raise_error(Thor::Error, /Unknown sources in --allow-empty: zz/)
+    expect(Dir.exist?(out)).to be(false) # failed fast: nothing was written
+  end
+
+  it 'exempts allowed sources from error-status and aggregate checks too' do
+    cmd = Ammitto::Cmd::HarmonizeCommand.new(
+      { output_dir: File.join(@workdir, 'api', 'v1'), allow_empty: 'jp' }, ['jp']
+    )
+    errored = [{ code: :jp, status: :error, error: 'No YAML files found' }]
+    expect { cmd.send(:enforce_health_gates, errored) }.not_to raise_error
+
+    produced_without_aggregate = [{ code: :jp, status: :success, entities: 3, entries: 3 }]
+    expect { cmd.send(:enforce_health_gates, produced_without_aggregate) }
+      .not_to raise_error
   end
 end

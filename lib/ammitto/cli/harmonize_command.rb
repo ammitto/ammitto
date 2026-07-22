@@ -121,8 +121,11 @@ module Ammitto
       # Health gates: a run that produced no data or swallowed errors must
       # exit nonzero so cron/CI cannot publish empty artifacts as success.
       # Strict by default; the caller opts individual sources out of the
-      # zero-entity requirement with --allow-empty (the raise-or-silence
-      # policy belongs to the invoking workflow, not to a hardcoded list).
+      # source-error, zero-entity, and missing-aggregate checks with
+      # --allow-empty (the raise-or-silence policy belongs to the invoking
+      # workflow, not to a hardcoded list). Per-file transform errors are
+      # never exempt: a file that exists but fails to transform is a data
+      # defect regardless of the source's status.
       # @param results [Array<Hash>] per-source results
       # @return [void]
       def enforce_health_gates(results)
@@ -133,13 +136,14 @@ module Ammitto
 
         results.each do |r|
           code = r[:code]
-          if r[:status] == :error
+          # Per-file errors are checked first and are never exempt
+          if r[:errors]&.any?
+            failures << "#{code}: #{r[:errors].length} file(s) failed to transform " \
+                        "(first: #{r[:errors].first})"
+          elsif r[:status] == :error
             failures << "#{code}: #{r[:error]}" unless allowed_empty.include?(code)
           elsif r[:entities].to_i.zero? && !allowed_empty.include?(code)
             failures << "#{code}: produced 0 entities"
-          elsif r[:errors]&.any?
-            failures << "#{code}: #{r[:errors].length} file(s) failed to transform " \
-                        "(first: #{r[:errors].first})"
           elsif !allowed_empty.include?(code) &&
                 !File.exist?(File.join(output_dir, 'sources', "#{code}.jsonld"))
             failures << "#{code}: per-source aggregate sources/#{code}.jsonld was not written"

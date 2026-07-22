@@ -225,8 +225,8 @@ module Ammitto
         # Get all names as a simple hash
         # @return [Hash{String => String}]
         def name_hash
-          names.each_with_object({}) do |name, hash|
-            hash[name.lang || 'value'] = name.value
+          names.to_h do |name|
+            [name.lang || 'value', name.value]
           end
         end
 

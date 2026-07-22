@@ -28,6 +28,29 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*.rb'
     - 'docs/**/*.rb'
+    - 'scripts/**/*.rb'
+
+# Defaults plus ja/en: ISO language codes mirroring the multilingual model
+# attributes
+Naming/MethodParameterName:
+  AllowedNames:
+    - as
+    - at
+    - by
+    - cc
+    - db
+    - id
+    - if
+    - in
+    - io
+    - ip
+    - of
+    - 'on'
+    - os
+    - pp
+    - to
+    - ja
+    - en
 
 Lint/ConstantDefinitionInBlock:
   Exclude:

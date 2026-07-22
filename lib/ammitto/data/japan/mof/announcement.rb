@@ -53,7 +53,7 @@ module Ammitto
             return if value.nil? || value.to_s.strip.empty?
 
             self.title ||= {}
-            self.title[lang.to_s] = value.to_s.strip
+            title[lang.to_s] = value.to_s.strip
           end
 
           # Convert to hash for YAML serialization

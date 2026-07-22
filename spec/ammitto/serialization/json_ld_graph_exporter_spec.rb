@@ -163,7 +163,7 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       expect(File.exist?(File.join(output_dir, 'node', 'entry', 'index.jsonld'))).to be true
       expect(File.exist?(File.join(output_dir, 'node', 'authority', 'index.jsonld'))).to be true
       expect(File.exist?(File.join(output_dir, 'node', 'regime', 'index.jsonld'))).to be true
-      expect(File.exist?(File.join(output_dir, 'node', 'instrument', 'index.jsonld'))).to be true
+      expect(File.exist?(File.join(output_dir, 'node', 'legal-instrument', 'index.jsonld'))).to be true
     end
 
     it 'exports all.jsonld aggregated file' do

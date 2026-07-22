@@ -74,7 +74,7 @@ RSpec.describe Ammitto::Authority do
     it 'returns all registered authorities' do
       authorities = described_class.all
       expect(authorities).to be_an(Array)
-      expect(authorities.size).to eq(15)
+      expect(authorities.size).to eq(16)
     end
 
     it 'covers every source the gem advertises' do

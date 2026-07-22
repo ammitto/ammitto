@@ -58,7 +58,7 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(entities.length).to eq(2)
 
     person = entities.find { |e| e['@type'] == 'PersonEntity' }
-    expect(person['@id']).to eq('https://www.ammitto.org/entity/eu/EU.55')
+    expect(person['@id']).to eq('https://www.ammitto.org/entity/eu/eu55')
     expect(person['entityType']).to eq('person')
     expect(person['names'].first['fullName']).to eq('John Doe')
     expect(person['names'].first).to have_key('isPrimary')

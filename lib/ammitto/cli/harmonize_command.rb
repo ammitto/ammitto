@@ -156,11 +156,13 @@ module Ammitto
               "Harmonize health gate failed:\n  #{failures.join("\n  ")}"
       end
 
-      # Sources the caller allows to produce zero entities (--allow-empty)
+      # Sources the caller exempts from the source-error, zero-entity, and
+      # missing-aggregate gates (--allow-empty). Per-file transform errors
+      # are never exempt.
       # @return [Array<Symbol>] validated source codes
       def allowed_empty_sources
         @allowed_empty_sources ||= begin
-          codes = options[:allow_empty].to_s.split(',').map { |c| c.strip.downcase.to_sym }.reject(&:empty?)
+          codes = options[:allow_empty].to_s.split(',').map { |c| c.strip.downcase.to_sym }.reject(&:empty?).uniq
           unknown = codes - Config::Defaults::ALL_SOURCES
           unless unknown.empty?
             raise Thor::Error,

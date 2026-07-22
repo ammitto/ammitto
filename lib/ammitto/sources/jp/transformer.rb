@@ -110,7 +110,7 @@ module Ammitto
           [Ammitto::SourceReference.new(
             source_code: 'jp',
             reference_number: source.reference_number,
-            fetched_at: Time.now.utc.iso8601
+            retrieved_at: Time.now.utc.iso8601
           )]
         end
 

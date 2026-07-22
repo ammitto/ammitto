@@ -56,8 +56,10 @@ module Ammitto
           results.concat(matches)
         end
 
-        # Apply pagination
-        results = results.slice(offset, limit) if limit
+        # Apply pagination (offset applies with or without a limit;
+        # past-the-end pages return [] rather than nil)
+        results = results.drop(offset) if offset.positive?
+        results = results.take(limit) if limit
 
         results
       end

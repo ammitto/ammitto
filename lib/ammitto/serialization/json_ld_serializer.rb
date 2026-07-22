@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require_relative '../schema/context'
 
 module Ammitto
   module Serialization
@@ -61,10 +62,11 @@ module Ammitto
       # @param entries [Array<SanctionEntry>] the entries
       # @return [Hash] JSON-LD document
       def serialize_document(entities: [], entries: [])
-        # Build a lookup map: entity_id => entry
-        entry_map = {}
+        # Build a lookup map: entity_id => [entries] — one entity can carry
+        # multiple sanction entries from different authorities
+        entry_map = Hash.new { |h, k| h[k] = [] }
         entries.each do |entry|
-          entry_map[entry.entity_id] = entry if entry.entity_id
+          entry_map[entry.entity_id] << entry if entry.entity_id
         end
 
         graph = []
@@ -72,8 +74,11 @@ module Ammitto
         entities.each do |entity|
           entity_hash = serialize_entity(entity)
 
-          # Link entity to its SanctionEntry
-          entity_hash['hasSanctionEntry'] = serialize_entry(entry_map[entity.id]) if entry_map.key?(entity.id)
+          # Link entity to all of its SanctionEntries
+          if entry_map.key?(entity.id)
+            serialized = entry_map[entity.id].map { |entry| serialize_entry(entry) }
+            entity_hash['hasSanctionEntry'] = serialized.length == 1 ? serialized.first : serialized
+          end
 
           graph << entity_hash
         end
@@ -161,10 +166,17 @@ module Ammitto
           'flagState' => vessel.flag_state,
           'flagStateIsoCode' => vessel.flag_state_iso_code,
           'vesselType' => vessel.vessel_type,
+          'vesselTypeCode' => vessel.vessel_type_code,
           'buildYear' => vessel.build_year,
+          'builder' => vessel.builder,
+          'length' => vessel.length,
           'tonnage' => vessel.tonnage ? serialize_tonnage(vessel.tonnage) : nil,
+          'grossTonnage' => vessel.gross_tonnage,
+          'deadweightTonnage' => vessel.deadweight_tonnage,
           'owner' => vessel.owner ? serialize_entity_link(vessel.owner) : nil,
           'operator' => vessel.operator ? serialize_entity_link(vessel.operator) : nil,
+          'registeredOwner' => vessel.registered_owner ? serialize_entity_link(vessel.registered_owner) : nil,
+          'technicalManager' => vessel.technical_manager ? serialize_entity_link(vessel.technical_manager) : nil,
           'previousNames' => vessel.previous_names || [],
           'previousFlags' => vessel.previous_flags || []
         }.compact

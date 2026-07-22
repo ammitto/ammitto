@@ -43,10 +43,11 @@ module Ammitto
 
         require 'open-uri'
 
+        # No explicit Accept-Encoding: setting it disables Net::HTTP's
+        # automatic gzip inflation and would hand gzip bytes to the XML parser
         headers = {
           'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          'Accept' => 'application/xml, text/xml, */*',
-          'Accept-Encoding' => 'gzip, deflate'
+          'Accept' => 'application/xml, text/xml, */*'
         }
 
         puts "[#{code}] Downloading from #{api_endpoint}..." if verbose

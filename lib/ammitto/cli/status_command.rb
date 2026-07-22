@@ -48,9 +48,10 @@ module Ammitto
       # @param source [Symbol] source code
       # @return [Hash] source status
       def source_status(source)
-        source_dir = File.join(cache_dir, 'cache', 'sources', source.to_s)
-        jsonld_file = File.join(source_dir, "#{source}.jsonld")
-        metadata_file = File.join(source_dir, 'metadata.json')
+        # Canonical cache layout is flat: cache/sources/<code>.jsonld
+        # (what Client::Cache writes; the per-source subdirectory layout was
+        # never produced by anything)
+        jsonld_file = File.join(cache_dir, 'cache', 'sources', "#{source}.jsonld")
 
         if File.exist?(jsonld_file)
           stat = File.stat(jsonld_file)
@@ -59,14 +60,6 @@ module Ammitto
             status: 'cached',
             entities: count_entities(jsonld_file),
             last_updated: stat.mtime.strftime('%Y-%m-%d')
-          }
-        elsif File.exist?(metadata_file)
-          metadata = JSON.parse(File.read(metadata_file))
-          {
-            code: source.to_s,
-            status: 'stale',
-            entities: metadata['entities'] || 0,
-            last_updated: metadata['last_updated'] || 'unknown'
           }
         else
           {

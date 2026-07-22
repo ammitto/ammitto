@@ -8,14 +8,16 @@ module Ammitto
     #
     # @example Getting the context
     #   Ammitto.schema.context_url
-    #   # => "https://ammitto.org/schema/v1/context.jsonld"
+    #   # => "https://ammitto.org/api/v1/context.jsonld"
     #
     #   Ammitto.schema.context
     #   # => { "@context" => { ... } }
     #
     class Context
       # JSON-LD context URL
-      CONTEXT_URL = 'https://ammitto.org/schema/v1/context.jsonld'
+      # Canonical context artifact: served by the website next to the data it
+      # describes (the /schema/v1/ and /ontology/ URIs never resolved)
+      CONTEXT_URL = 'https://ammitto.org/api/v1/context.jsonld'
 
       # Schema version
       VERSION = '1.0.0'

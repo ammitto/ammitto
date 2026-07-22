@@ -127,14 +127,14 @@ puts jsonld.to_json
 
 [source,bash]
 ----
-# Export all data to JSON-LD
-ammitto harmonize --all --output-dir ./api/v1
+# Export all data to JSON-LD (--combine adds the merged all.jsonld/all.ttl)
+ammitto harmonize --all --combine --output-dir ./api/v1
 
 # Creates:
 # ./api/v1/sources/un.jsonld
 # ./api/v1/sources/eu.jsonld
-# ./api/v1/all.jsonld
-# ./api/v1/all.ttl (Turtle format)
+# ./api/v1/all.jsonld   (with --combine)
+# ./api/v1/all.ttl      (with --combine, Turtle format)
 ----
 
 == Using the Search Index

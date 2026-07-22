@@ -128,7 +128,7 @@ module Ammitto
             reference_number: individual.reference_number,
             regime_code: individual.un_list_type,
             listed_on: individual.listed_on,
-            last_updated: individual.last_day_updated&.value,
+            last_updated: individual.last_day_updated&.value&.last,
             remarks: individual.comments1,
             source_specific_fields: {
               'un:dataId' => individual.dataid,
@@ -147,7 +147,7 @@ module Ammitto
             reference_number: entity.reference_number,
             regime_code: entity.un_list_type,
             listed_on: entity.listed_on,
-            last_updated: entity.last_day_updated&.value,
+            last_updated: entity.last_day_updated&.value&.last,
             remarks: entity.comments1,
             source_specific_fields: {
               'un:dataId' => entity.dataid,

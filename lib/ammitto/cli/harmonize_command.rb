@@ -6,6 +6,7 @@ require 'json'
 require_relative '../serialization/json_ld_graph_exporter'
 require_relative '../serialization/search_index_exporter'
 require_relative '../serialization/ontology_exporter'
+require_relative '../serialization/json_ld_serializer'
 
 module Ammitto
   module Cmd
@@ -39,10 +40,7 @@ module Ammitto
       def run
         validate_sources!
 
-        if @sources.empty?
-          puts 'No sources to harmonize. Specify sources or use --all.'
-          return
-        end
+        raise Thor::Error, 'No sources to harmonize. Specify sources or use --all.' if @sources.empty?
 
         harmonize_all
       end
@@ -62,8 +60,7 @@ module Ammitto
         elsif options[:all]
           Config::Defaults::ALL_SOURCES
         elsif sources.empty?
-          # Default to first source if none specified
-          [:uk]
+          []
         else
           sources.map(&:to_s).map(&:downcase).map(&:to_sym)
         end
@@ -80,7 +77,7 @@ module Ammitto
         invalid = @sources - known_sources
         return if invalid.empty?
 
-        raise ArgumentError,
+        raise Thor::Error,
               "Invalid sources: #{invalid.join(', ')}. " \
               "Valid: #{known_sources.join(', ')}"
       end
@@ -90,17 +87,10 @@ module Ammitto
       def harmonize_all
         output_dir = options[:output_dir] || './api/v1'
 
-        # Find legal instruments directory
-        instruments_dir = find_instruments_dir
-
-        # Find supporting data directory
-        supporting_dir = find_supporting_dir
-
-        # Create exporters
+        # Create exporters (--combine controls all.jsonld/all.ttl emission)
         @exporter = Serialization::JsonLdGraphExporter.new(
           output_dir: output_dir,
-          instruments_dir: instruments_dir,
-          supporting_dir: supporting_dir
+          combine: options[:combine] == true
         )
         @search_indexer = Serialization::SearchIndexExporter.new
         @ontology_exporter = Serialization::OntologyExporter.new
@@ -122,6 +112,61 @@ module Ammitto
         end
 
         print_summary(results)
+        enforce_health_gates(results)
+      end
+
+      # Health gates: a run that produced no data or swallowed errors must
+      # exit nonzero so cron/CI cannot publish empty artifacts as success.
+      # Dormant sources (no automated parse path yet) are exempt from the
+      # zero-entity requirement.
+      # @param results [Array<Hash>] per-source results
+      # @return [void]
+      def enforce_health_gates(results)
+        dormant = Config::Defaults::DORMANT_SOURCES
+        failures = []
+
+        output_dir = options[:output_dir] || './api/v1'
+
+        results.each do |r|
+          code = r[:code]
+          if r[:status] == :error
+            failures << "#{code}: #{r[:error]}" unless dormant.include?(code)
+          elsif r[:entities].to_i.zero? && !dormant.include?(code)
+            failures << "#{code}: produced 0 entities"
+          elsif r[:errors]&.any?
+            failures << "#{code}: #{r[:errors].length} file(s) failed to transform " \
+                        "(first: #{r[:errors].first})"
+          elsif !dormant.include?(code) &&
+                !File.exist?(File.join(output_dir, 'sources', "#{code}.jsonld"))
+            failures << "#{code}: per-source aggregate sources/#{code}.jsonld was not written"
+          end
+        end
+
+        return if failures.empty?
+
+        raise Thor::Error,
+              "Harmonize health gate failed:\n  #{failures.join("\n  ")}"
+      end
+
+      # Write the per-source JSON-LD aggregate (sources/<code>.jsonld)
+      # @param source [Symbol] source code
+      # @param graph [Array<Hash>] entity and entry hashes
+      # @return [void]
+      def write_source_aggregate(source, graph)
+        output_dir = options[:output_dir] || './api/v1'
+        sources_dir = File.join(output_dir, 'sources')
+        FileUtils.mkdir_p(sources_dir)
+
+        # Dedupe by @id with last-wins semantics — the same winner rule the
+        # global exporter uses (hash assignment), so per-source and global
+        # artifacts agree on duplicate ids
+        deduped = graph.to_h { |node| [node['@id'] || node.object_id, node] }.values
+
+        document = {
+          '@context' => Schema::Context.context_url,
+          '@graph' => deduped
+        }
+        File.write(File.join(sources_dir, "#{source}.jsonld"), JSON.pretty_generate(document))
       end
 
       # Harmonize a single source
@@ -163,6 +208,7 @@ module Ammitto
         entities_count = 0
         entries_count = 0
         errors = []
+        source_graph = []
 
         yaml_files.each do |file|
           data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
@@ -171,12 +217,7 @@ module Ammitto
           begin
             result = transform_data(source, data)
 
-            # Handle both single result and array of results
-            results = result.is_a?(Array) ? result : [result]
-
-            results.each do |r|
-              next unless r[:entity] && r[:entry]
-
+            if result[:entity]&.key?('@id') && result[:entry]&.key?('@id')
               @exporter.add_node(
                 entity: r[:entity],
                 entry: r[:entry],
@@ -186,6 +227,8 @@ module Ammitto
               # Also add to search index
               @search_indexer.add(r[:entity], r[:entry])
 
+              source_graph << result[:entity]
+              source_graph << result[:entry]
               entities_count += 1
               entries_count += 1
             end
@@ -195,6 +238,10 @@ module Ammitto
             errors << error_msg
           end
         end
+
+        # Per-source aggregate: required by BaseSource downloads and
+        # Data::Repository#load_source (artifact-topology contract)
+        write_source_aggregate(source, source_graph) if entities_count.positive?
 
         puts "[#{source}] Harmonized #{entities_count} entities" if options[:verbose]
 
@@ -383,9 +430,11 @@ module Ammitto
       # @param data [Hash] source data
       # @return [Hash]
       def transform_eu(transformer, data)
-        require_relative '../sources/eu/processed_entity'
+        require_relative '../sources/eu/sanction_entity'
 
-        entity = Ammitto::Sources::Eu::ProcessedEntity.from_yaml(data.to_yaml)
+        # The fetch pipeline saves Eu::SanctionEntity YAML (one per record);
+        # parsing with ProcessedEntity collapsed every EU id and dropped names
+        entity = Ammitto::Sources::Eu::SanctionEntity.from_yaml(data.to_yaml)
         result = transformer.transform(entity)
 
         {
@@ -462,7 +511,18 @@ module Ammitto
       # @param data [Hash] source data
       # @return [Hash]
       def transform_au(transformer, data)
-        result = transformer.transform_from_hash(data)
+        require_relative '../sources/au/sanctions_list'
+
+        # Detect record type: vessels carry imo_number, individuals carry
+        # dates_of_birth; the rest are organizations
+        source = if data.key?('imo_number')
+                   Ammitto::Sources::Au::Vessel.from_yaml(data.to_yaml)
+                 elsif data.key?('dates_of_birth')
+                   Ammitto::Sources::Au::Individual.from_yaml(data.to_yaml)
+                 else
+                   Ammitto::Sources::Au::Organization.from_yaml(data.to_yaml)
+                 end
+        result = transformer.transform(source)
 
         {
           entity: entity_to_hash(result[:entity]),
@@ -495,8 +555,9 @@ module Ammitto
       def transform_ch(transformer, data)
         require_relative '../sources/ch/sanctions_list'
 
-        # Parse as Target which contains individual or entity
-        source = Ammitto::Sources::Ch::Target.from_yaml(data.to_yaml)
+        # The fetch pipeline saves bare Identity records
+        # (SanctionsList#all_identities), not Target wrappers
+        source = Ammitto::Sources::Ch::Identity.from_yaml(data.to_yaml)
         result = transformer.transform(source)
 
         {
@@ -678,54 +739,34 @@ module Ammitto
         }
       end
 
-      # Convert entity to hash
-      # @param entity [Object] entity object
-      # @return [Hash]
+      # Serializer producing the canonical camelCase JSON-LD shape
+      # (@id/@type + context.jsonld terms). This is the single boundary
+      # between harmonized models and every exported artifact — the exporters,
+      # the search index, and the website all consume this vocabulary.
+      # @return [Ammitto::Serialization::JsonLdSerializer]
+      def json_ld_serializer
+        @json_ld_serializer ||= Ammitto::Serialization::JsonLdSerializer.new
+      end
+
+      # Convert entity model to its canonical JSON-LD hash. Serialization
+      # errors propagate to the per-file error collector — swallowing them
+      # here would let the health gates count empty nodes as success.
+      # @param entity [Object] entity model
+      # @return [Hash, nil]
       def entity_to_hash(entity)
-        return {} unless entity
+        return nil unless entity
 
-        begin
-          hash = entity.respond_to?(:to_hash) ? entity.to_hash : entity.to_h
-          compact_hash(hash)
-        rescue StandardError => e
-          puts "Error converting entity to hash: #{e.message}" if options[:verbose]
-          {}
-        end
+        # Per-node @context is dropped; exporters add it at document level
+        json_ld_serializer.serialize_entity(entity).except('@context')
       end
 
-      # Convert entry to hash
-      # @param entry [Object] entry object
-      # @return [Hash]
+      # Convert entry model to its canonical JSON-LD hash (errors propagate)
+      # @param entry [Object] entry model
+      # @return [Hash, nil]
       def entry_to_hash(entry)
-        return {} unless entry
+        return nil unless entry
 
-        begin
-          hash = entry.respond_to?(:to_hash) ? entry.to_hash : entry.to_h
-          compact_hash(hash)
-        rescue StandardError => e
-          puts "Error converting entry to hash: #{e.message}" if options[:verbose]
-          {}
-        end
-      end
-
-      # Remove nil values from hash recursively
-      # @param hash [Hash] hash to compact
-      # @return [Hash]
-      def compact_hash(hash)
-        return hash unless hash.is_a?(Hash)
-
-        hash.each_with_object({}) do |(k, v), result|
-          next if v.nil?
-
-          result[k] = case v
-                      when Hash
-                        compact_hash(v)
-                      when Array
-                        v.map { |item| item.is_a?(Hash) ? compact_hash(item) : item }.compact
-                      else
-                        v
-                      end
-        end
+        json_ld_serializer.serialize_entry(entry).except('@context')
       end
 
       # Get cache directory

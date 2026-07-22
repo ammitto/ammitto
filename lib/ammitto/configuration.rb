@@ -1,18 +1,20 @@
 # frozen_string_literal: true
 
+require_relative 'config/defaults'
+
 module Ammitto
   # Configuration class for Ammitto gem settings
   #
   # @example Basic configuration
   #   Ammitto.configure do |config|
-  #     config.api_base_url = "https://www.ammitto.com/api/v1"
+  #     config.api_base_url = "https://ammitto.org/api/v1"
   #     config.cache_dir = File.expand_path("~/.ammitto")
   #     config.cache_ttl = 3600
   #   end
   #
   # @example Accessing configuration
   #   Ammitto.configuration.api_base_url
-  #   # => "https://www.ammitto.com/api/v1"
+  #   # => "https://ammitto.org/api/v1"
   #
   class Configuration
     # @return [String] Base URL for the Ammitto API
@@ -42,8 +44,9 @@ module Ammitto
     # @return [String] Parent directory for source data repositories
     attr_accessor :sources_dir
 
-    # Default API base URL
-    DEFAULT_API_BASE_URL = 'https://www.ammitto.com/api/v1'
+    # Default API base URL (single source of truth: Config::Defaults —
+    # www.ammitto.com serves no API)
+    DEFAULT_API_BASE_URL = Config::Defaults::API_BASE_URL
 
     # Default cache directory
     DEFAULT_CACHE_DIR = File.expand_path('~/.ammitto')

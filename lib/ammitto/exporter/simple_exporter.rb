@@ -4,6 +4,7 @@ require 'yaml'
 require 'fileutils'
 require 'json'
 require 'date'
+require_relative '../schema/context'
 
 module Ammitto
   module Exporter
@@ -19,7 +20,7 @@ module Ammitto
         wb: 'wb-data'
       }.freeze
 
-      CONTEXT_URL = 'https://ammitto.org/schema/v1/context.jsonld'
+      CONTEXT_URL = Ammitto::Schema::Context::CONTEXT_URL
 
       attr_reader :base_dir, :output_dir
 
@@ -124,7 +125,9 @@ module Ammitto
 
         # Add optional fields
         entity['country'] = data['country'] if data['country'] && !data['country'].empty?
-        entity['birthDate'] = data['birthdate'] if data['birthdate'] && !data['birthdate'].empty?
+        # birthdate may be a Date (unquoted YAML) or a String
+        birthdate = data['birthdate']
+        entity['birthDate'] = birthdate.to_s unless birthdate.nil? || birthdate.to_s.empty?
         entity['remarks'] = data['remark'] if data['remark'] && !data['remark'].empty?
         entity['contact'] = data['contact'] if data['contact'] && !data['contact'].empty?
         entity['addresses'] = build_addresses(data['address']) if data['address']

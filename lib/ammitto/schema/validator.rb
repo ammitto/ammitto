@@ -119,6 +119,9 @@ module Ammitto
 
       # Get field value handling camelCase/snake_case
       def field_to_value(data, field)
+        # JSON-LD keyword form ('id' is emitted as '@id', 'type' as '@type')
+        return data["@#{field}"] if data.key?("@#{field}")
+
         # Try exact match first
         return data[field] if data.key?(field)
 

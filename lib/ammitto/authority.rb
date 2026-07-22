@@ -22,8 +22,12 @@ module Ammitto
       'ca' => { name: 'Canada (SEFO)', country_code: 'CA' },
       'ch' => { name: 'Switzerland (SECO)', country_code: 'CH' },
       'cn' => { name: 'China (MOFCOM/MFA)', country_code: 'CN' },
-      'jp_meti' => { name: 'Japan METI (Ministry of Economy, Trade and Industry)', country_code: 'JP' },
-      'ru' => { name: 'Russia (MID/CBR)', country_code: 'RU' }
+      'ru' => { name: 'Russia (MID/CBR)', country_code: 'RU' },
+      'tr' => { name: 'Turkey (Ministry of Interior)', country_code: 'TR' },
+      'nz' => { name: 'New Zealand (MFAT)', country_code: 'NZ' },
+      'jp' => { name: 'Japan (MOFA)', country_code: 'JP' },
+      'eu_vessels' => { name: 'European Union (Vessels)', country_code: 'EU' },
+      'un_vessels' => { name: 'United Nations (Vessels)', country_code: 'UN' }
     }.freeze
 
     attribute :id, :string                   # Authority identifier

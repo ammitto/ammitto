@@ -207,11 +207,11 @@ module Ammitto
       # Print an entity summary
       # @param entity [Hash] Entity data
       def print_entity(entity)
-        puts "ID: #{entity['id']}"
-        puts "Type: #{entity['entity_type']}"
+        puts "ID: #{entity['@id'] || entity['id']}"
+        puts "Type: #{entity['entityType'] || entity['entity_type']}"
 
-        primary_name = (entity['names'] || []).find { |n| n['is_primary'] }
-        puts "Name: #{primary_name&.dig('full_name') || 'N/A'}"
+        primary_name = (entity['names'] || []).find { |n| n['isPrimary'] || n['is_primary'] }
+        puts "Name: #{primary_name&.dig('fullName') || primary_name&.dig('full_name') || 'N/A'}"
 
         return unless entity['addresses']&.any?
 

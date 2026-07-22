@@ -121,7 +121,7 @@ module Ammitto
 
         return nil if predicates.empty?
 
-        "<#{id}>\n#{predicates.join(' ;\n')} ."
+        "<#{id}>\n#{predicates.join(" ;\n")} ."
       end
 
       # Expand type to full URI

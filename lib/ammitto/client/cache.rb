@@ -32,7 +32,7 @@ module Ammitto
 
         content = File.read(path)
         MultiJson.load(content)
-      rescue JSON::ParserError => e
+      rescue MultiJson::ParseError => e
         Logger.error("Failed to parse cache for #{source_code}: #{e.message}")
         nil
       end

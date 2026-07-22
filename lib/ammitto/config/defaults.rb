@@ -12,8 +12,9 @@ module Ammitto
       # Default cache directory
       CACHE_DIR = File.expand_path('~/.ammitto')
 
-      # Default API base URL
-      API_BASE_URL = 'https://www.ammitto.com/api/v1'
+      # Default API base URL (ammitto.org serves the API;
+      # www.ammitto.com only redirects the root and 404s /api/*)
+      API_BASE_URL = 'https://ammitto.org/api/v1'
 
       # Default cache TTL (1 hour in seconds)
       CACHE_TTL = 3600
@@ -32,6 +33,12 @@ module Ammitto
 
       # All available sources
       ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru tr nz jp eu_vessels un_vessels].freeze
+
+      # Dormant sources: no working automated parse path yet (jp/un_vessels
+      # are PDF-based placeholders; cn/ru scrape HTML but have no YAML
+      # persistence). Health gates do not require entities from these, and
+      # they are excluded from zero-entity failure checks.
+      DORMANT_SOURCES = %i[jp un_vessels cn ru].freeze
 
       # Default output format
       DEFAULT_OUTPUT_FORMAT = 'jsonld'

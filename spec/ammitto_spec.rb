@@ -30,7 +30,7 @@ RSpec.describe Ammitto do
   describe '.schema' do
     it 'returns the schema context' do
       expect(Ammitto.schema).to respond_to(:context_url)
-      expect(Ammitto.schema.context_url).to eq('https://ammitto.org/schema/v1/context.jsonld')
+      expect(Ammitto.schema.context_url).to eq('https://ammitto.org/api/v1/context.jsonld')
     end
   end
 

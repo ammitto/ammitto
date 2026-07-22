@@ -68,13 +68,10 @@ module Ammitto
       # Initialize the graph exporter
       # @param output_dir [String] directory for output files
       # @param context_url [String] URL to the JSON-LD context
-      # @param instruments_dir [String, nil] directory containing legal instrument YAML files
-      # @param supporting_dir [String, nil] directory containing supporting YAML files
-      def initialize(output_dir:, context_url: nil, instruments_dir: nil, supporting_dir: nil)
+      def initialize(output_dir:, context_url: nil, combine: true)
         @output_dir = output_dir
-        @context_url = context_url || "#{BASE_URI}/ontology/context.jsonld"
-        @instruments_dir = instruments_dir
-        @supporting_dir = supporting_dir
+        @context_url = context_url || Ammitto::Schema::Context.context_url
+        @combine = combine
 
         # Node collectors
         @entities = {}
@@ -303,24 +300,26 @@ module Ammitto
 
         source_code = source.to_s.downcase
 
-        # Store entity
+        # Store entity (count only first-seen ids so stats match the graph)
         entity_id = entity['@id'] || entity['id']
+        new_entity = entity_id && !@entities.key?(entity_id)
         if entity_id
           @entities[entity_id] = entity
-          @stats[:total_entities] += 1
+          @stats[:total_entities] += 1 if new_entity
         end
 
         # Store entry
         entry_id = entry['@id'] || entry['id']
+        new_entry = entry_id && !@entries.key?(entry_id)
         if entry_id
           @entries[entry_id] = entry
-          @stats[:total_entries] += 1
+          @stats[:total_entries] += 1 if new_entry
         end
 
-        # Track source stats
+        # Track source stats (same first-seen rule as the totals)
         @stats[:sources][source_code] ||= { entities: 0, entries: 0 }
-        @stats[:sources][source_code][:entities] += 1
-        @stats[:sources][source_code][:entries] += 1
+        @stats[:sources][source_code][:entities] += 1 if new_entity
+        @stats[:sources][source_code][:entries] += 1 if new_entry
 
         # Extract and deduplicate shared nodes
         extract_authority(entry, source_code)
@@ -344,7 +343,7 @@ module Ammitto
 
         export_index_files
         export_data_slices
-        export_aggregated_files
+        export_aggregated_files if @combine
         export_stats
         copy_context_file
 
@@ -1045,39 +1044,13 @@ module Ammitto
         write_json(File.join(slices_dir, 'index.jsonld'), master)
       end
 
-      # Copy context.jsonld to output directory
+      # Write context.jsonld to the output directory. The context is defined
+      # in code (Schema::Context) so the artifact is always present next to
+      # the data it describes — no file hunting across sibling checkouts.
       # @return [void]
       def copy_context_file
-        context_source = find_context_file_path
-        return unless context_source
-
         context_dest = File.join(@output_dir, 'context.jsonld')
-        FileUtils.cp(context_source, context_dest)
-      end
-
-      # Find the context.jsonld file path
-      # @return [String, nil] path to context file or nil
-      def find_context_file_path
-        # Try gem data directory
-        gem_root = begin
-          Gem::Specification.find_by_name('ammitto').gem_dir
-        rescue StandardError
-          nil
-        end
-        if gem_root
-          context_path = File.join(gem_root, 'data', 'ontology', 'context.jsonld')
-          return context_path if File.exist?(context_path)
-        end
-
-        # Try relative path from lib
-        lib_context = File.expand_path('../../../../data/ontology/context.jsonld', __dir__)
-        return lib_context if File.exist?(lib_context)
-
-        # Try project root context
-        project_context = File.expand_path('data/ontology/context.jsonld')
-        return project_context if File.exist?(project_context)
-
-        nil
+        File.write(context_dest, Ammitto::Schema::Context.to_json)
       end
 
       # Group nodes by source

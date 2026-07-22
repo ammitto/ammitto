@@ -333,7 +333,7 @@ module Ammitto
         end
 
         # Fallback: use grandparent directory name
-        dirname = File.basename(File.dirname(File.dirname(processed_dir)))
+        dirname = File.basename(File.dirname(processed_dir, 2))
         dirname.gsub(/^data-/, '')
       end
 

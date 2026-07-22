@@ -5,7 +5,7 @@ inherit_from: .rubocop_todo.yml
 # All project-specific additions and overrides should be specified in this file.
 
 AllCops:
-  TargetRubyVersion: 3.0
+  TargetRubyVersion: 3.3
   Rails:
     Enabled: false
   Layout:
@@ -51,6 +51,12 @@ Naming/MethodParameterName:
     - to
     - ja
     - en
+
+# Unsafe autocorrect rewrites substring-membership checks
+# (keywords.any? { |k| str.include?(k) }) into Array#intersect? with a String
+# argument, which raises TypeError at runtime.
+Style/ArrayIntersect:
+  Enabled: false
 
 Lint/ConstantDefinitionInBlock:
   Exclude:

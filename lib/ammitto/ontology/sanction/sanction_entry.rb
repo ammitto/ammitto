@@ -126,7 +126,8 @@ module Ammitto
         def add_status_change(new_status, date: Date.today, reason: nil)
           self.status_history ||= []
           status_history << StatusHistory.new(
-            status: status,
+            from_status: status,
+            to_status: new_status.to_s,
             date: date,
             reason: reason
           )

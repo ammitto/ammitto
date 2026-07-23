@@ -72,10 +72,22 @@ module Ammitto
         # @return [String]
         def to_s
           parts = []
-          parts << (circa ? 'c. ' : '')
-          parts << date_label
+          parts << 'c.' if circa
+          parts << date_label if date_label
           parts << [city, region, country].compact.join(', ') if city || country
           parts.join(' ')
+        end
+
+        def to_hash
+          hash = {}
+          hash[:date] = date.to_s if date
+          hash[:circa] = circa if circa
+          hash[:year] = year if year
+          hash[:city] = city if city
+          hash[:region] = region if region
+          hash[:country] = country if country
+          hash[:country_iso_code] = country_iso_code if country_iso_code
+          hash
         end
 
         private
@@ -89,17 +101,6 @@ module Ammitto
 
         # Convert to hash for JSON-LD serialization
         # @return [Hash]
-        def to_hash
-          hash = {}
-          hash[:date] = date.to_s if date
-          hash[:circa] = circa if circa
-          hash[:year] = year if year
-          hash[:city] = city if city
-          hash[:region] = region if region
-          hash[:country] = country if country
-          hash[:country_iso_code] = country_iso_code if country_iso_code
-          hash
-        end
 
         # JSON mapping
         json do

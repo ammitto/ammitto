@@ -74,7 +74,8 @@ module Ammitto
         def to_s
           parts = []
           parts << 'c.' if circa
-          parts << date_label if date_label
+          label = date_label
+          parts << label if label
           parts << [city, region, country].compact.join(', ') if city || country
           parts.join(' ')
         end

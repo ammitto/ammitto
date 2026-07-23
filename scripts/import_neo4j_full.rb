@@ -44,7 +44,7 @@ class FullNeo4jImporter
     connect
     sources = discover_sources
     if sources.empty?
-      abort 'No data-* repositories with processed/ data found — set ' \
+      abort 'No data-* repositories with processed/entities found — set ' \
             'AMMITTO_DATA_DIR or clone them next to the gem checkout'
     end
 
@@ -135,13 +135,14 @@ class FullNeo4jImporter
     puts "  Imported #{Ammitto::Ontology.authorities.size} authorities"
   end
 
-  # Find data-* repositories carrying processed/ data
+  # Find data-* repositories carrying importable entity data, matching
+  # what import_source actually requires
   # @return [Array<String>] matching directory paths
   def discover_sources
     base_dir = ENV['AMMITTO_DATA_DIR'].to_s
     base_dir = File.expand_path('../..', __dir__) if base_dir.empty?
     Dir.glob(File.join(base_dir, 'data-*'))
-       .select { |d| Dir.exist?(File.join(d, 'processed')) }
+       .select { |d| Dir.exist?(File.join(d, 'processed', 'entities')) }
   end
 
   def import_all_sources(sources)

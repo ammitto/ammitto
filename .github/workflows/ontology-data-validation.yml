@@ -56,10 +56,12 @@ jobs:
       # sibling-directory convention). Clone them next to the gem checkout
       # on every trigger except pull_request, where validation skips
       # gracefully instead.
+      # DATA_REPOS_TOKEN is optional: the data-* repos are public today,
+      # so github.token suffices; the secret takes over if that changes.
       - name: Clone data repositories
         if: github.event_name != 'pull_request'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.DATA_REPOS_TOKEN || github.token }}
         run: |
           repos=$(gh repo list ammitto --limit 100 --json name \
             --jq '.[].name | select(startswith("data-"))')

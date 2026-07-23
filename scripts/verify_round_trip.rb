@@ -14,7 +14,7 @@
 #
 # Exit codes:
 #   0 - Round-trip successful
-#   1 - Discrepancies found
+#   1 - Discrepancies found, or no data sources discovered
 #   2 - Cannot connect to Neo4j
 #
 # Usage:
@@ -65,6 +65,13 @@ class RoundTripVerifier
     # Find and verify sample entities from each source
     sources = Dir.glob(File.join(data_dir, 'data-*'))
                  .select { |d| Dir.exist?(File.join(d, 'processed', 'entities')) }
+
+    if sources.empty?
+      puts "ERROR: no data-* repositories with processed/entities found " \
+           "under #{data_dir} — set AMMITTO_DATA_DIR or clone them there"
+      disconnect
+      return 1
+    end
 
     sources.each do |source_dir|
       source = File.basename(source_dir).sub('data-', '')

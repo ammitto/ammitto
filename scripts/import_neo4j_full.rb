@@ -24,10 +24,14 @@ require 'ammitto/ontology'
 
 include Neo4j::Driver
 
+# Empty env values count as unset so defaults stay deterministic
+NEO4J_URI_DEFAULT =
+  ENV['NEO4J_URI'].to_s.empty? ? 'bolt://localhost:7688' : ENV.fetch('NEO4J_URI', nil)
+
 class FullNeo4jImporter
   BATCH_SIZE = 100
 
-  def initialize(uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'), username: 'neo4j', password: 'password')
+  def initialize(uri: NEO4J_URI_DEFAULT, username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -126,7 +130,8 @@ class FullNeo4jImporter
   end
 
   def import_all_sources
-    base_dir = ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__)
+    base_dir = ENV['AMMITTO_DATA_DIR'].to_s
+    base_dir = File.expand_path('../..', __dir__) if base_dir.empty?
     sources = Dir.glob(File.join(base_dir, 'data-*')).select { |d| Dir.exist?(File.join(d, 'processed')) }
 
     sources.each do |src_dir|

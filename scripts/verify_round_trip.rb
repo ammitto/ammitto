@@ -30,10 +30,18 @@ require 'ammitto/ontology'
 
 include Neo4j::Driver
 
-DEFAULT_DATA_DIR = ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__)
+# Empty env values count as unset so defaults stay deterministic
+DEFAULT_DATA_DIR =
+  if ENV['AMMITTO_DATA_DIR'].to_s.empty?
+    File.expand_path('../..', __dir__)
+  else
+    ENV.fetch('AMMITTO_DATA_DIR', nil)
+  end
+NEO4J_URI_DEFAULT =
+  ENV['NEO4J_URI'].to_s.empty? ? 'bolt://localhost:7688' : ENV.fetch('NEO4J_URI', nil)
 
 class RoundTripVerifier
-  def initialize(uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'), username: 'neo4j', password: 'password')
+  def initialize(uri: NEO4J_URI_DEFAULT, username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -332,7 +340,7 @@ end
 
 # Parse command line options
 options = {
-  uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'),
+  uri: NEO4J_URI_DEFAULT,
   username: 'neo4j',
   password: 'password',
   sample_size: 10,

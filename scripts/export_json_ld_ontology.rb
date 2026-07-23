@@ -22,10 +22,16 @@ require 'ammitto/ontology'
 
 include Neo4j::Driver
 
-DEFAULT_OUTPUT_DIR = File.join(
-  ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__),
-  'data', 'ontology', 'json-ld'
-)
+# Empty env values count as unset so defaults stay deterministic
+DEFAULT_DATA_DIR =
+  if ENV['AMMITTO_DATA_DIR'].to_s.empty?
+    File.expand_path('../..', __dir__)
+  else
+    ENV.fetch('AMMITTO_DATA_DIR', nil)
+  end
+DEFAULT_OUTPUT_DIR = File.join(DEFAULT_DATA_DIR, 'data', 'ontology', 'json-ld')
+NEO4J_URI_DEFAULT =
+  ENV['NEO4J_URI'].to_s.empty? ? 'bolt://localhost:7688' : ENV.fetch('NEO4J_URI', nil)
 
 class OntologyDrivenExporter
   # All entity classes that can be exported
@@ -36,7 +42,7 @@ class OntologyDrivenExporter
     Ammitto::Ontology::Entities::AircraftEntity
   ].freeze
 
-  def initialize(uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'), username: 'neo4j', password: 'password')
+  def initialize(uri: NEO4J_URI_DEFAULT, username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -317,7 +323,7 @@ end
 # Parse command line options
 options = {
   output_dir: DEFAULT_OUTPUT_DIR,
-  uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'),
+  uri: NEO4J_URI_DEFAULT,
   username: 'neo4j',
   password: 'password'
 }

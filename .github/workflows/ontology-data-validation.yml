@@ -29,6 +29,10 @@ on:
   pull_request:
     paths:
       - 'lib/ammitto/ontology/**'
+      - 'scripts/import_*.rb'
+      - 'scripts/export_*.rb'
+      - 'scripts/validate_*.rb'
+      - 'scripts/verify_*.rb'
       - '.github/workflows/ontology-data-validation.yml'
   workflow_dispatch:
   schedule:

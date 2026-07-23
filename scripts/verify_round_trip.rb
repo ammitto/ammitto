@@ -33,7 +33,7 @@ include Neo4j::Driver
 DEFAULT_DATA_DIR = ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__)
 
 class RoundTripVerifier
-  def initialize(uri: 'bolt://localhost:7688', username: 'neo4j', password: 'password')
+  def initialize(uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'), username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -332,7 +332,7 @@ end
 
 # Parse command line options
 options = {
-  uri: 'bolt://localhost:7688',
+  uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'),
   username: 'neo4j',
   password: 'password',
   sample_size: 10,

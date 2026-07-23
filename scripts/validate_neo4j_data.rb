@@ -31,7 +31,7 @@ include Neo4j::Driver
 class Neo4jDataValidator
   VALIDATION_TYPES = %w[all schema integrity orphans coverage].freeze
 
-  def initialize(uri: 'bolt://localhost:7688', username: 'neo4j', password: 'password')
+  def initialize(uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'), username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -438,7 +438,7 @@ end
 
 # Parse command line options
 options = {
-  uri: 'bolt://localhost:7688',
+  uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'),
   username: 'neo4j',
   password: 'password',
   validations: ['all']

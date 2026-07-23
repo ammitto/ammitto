@@ -31,7 +31,7 @@ class OntologyDrivenExporter
     Ammitto::Ontology::Entities::AircraftEntity
   ].freeze
 
-  def initialize(uri: 'bolt://localhost:7688', username: 'neo4j', password: 'password')
+  def initialize(uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'), username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -312,7 +312,7 @@ end
 # Parse command line options
 options = {
   output_dir: '/Users/mulgogi/src/ammitto/data/ontology/json-ld',
-  uri: 'bolt://localhost:7688',
+  uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'),
   username: 'neo4j',
   password: 'password'
 }

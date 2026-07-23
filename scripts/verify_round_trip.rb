@@ -67,7 +67,7 @@ class RoundTripVerifier
                  .select { |d| Dir.exist?(File.join(d, 'processed', 'entities')) }
 
     if sources.empty?
-      puts "ERROR: no data-* repositories with processed/entities found " \
+      puts 'ERROR: no data-* repositories with processed/entities found ' \
            "under #{data_dir} — set AMMITTO_DATA_DIR or clone them there"
       disconnect
       return 1

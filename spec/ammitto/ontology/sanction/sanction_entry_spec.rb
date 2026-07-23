@@ -32,6 +32,14 @@ RSpec.describe Ammitto::Ontology::Sanction::SanctionEntry do
       expect(change.reason).to eq('court order')
     end
 
+    it 'canonicalizes status casing before persisting' do
+      entry = described_class.new(id: 'e1')
+      entry.add_status_change('DELISTED')
+      expect(entry.status).to eq('delisted')
+      expect(entry).to be_delisted
+      expect(entry.status_history.first.to_status).to eq('delisted')
+    end
+
     it 'rejects blank and unknown statuses without mutating the entry' do
       entry = described_class.new(id: 'e1')
       [nil, '', 'vaporized'].each do |bad|

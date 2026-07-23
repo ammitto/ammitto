@@ -127,7 +127,7 @@ module Ammitto
         # @raise [ArgumentError] when new_status is blank or not a known
         #   sanction status
         def add_status_change(new_status, date: Date.today, reason: nil)
-          normalized = new_status.to_s
+          normalized = new_status.to_s.downcase
           unless Types.valid_status?(normalized)
             raise ArgumentError,
                   "invalid sanction status: #{new_status.inspect}"

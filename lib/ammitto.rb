@@ -79,6 +79,9 @@ require_relative 'ammitto/ontology/json_ld_context'
 require_relative 'ammitto/schema/context'
 require_relative 'ammitto/schema/validator'
 
+# Validation facade
+require_relative 'ammitto/validation'
+
 # Transformers
 require_relative 'ammitto/transformers/registry'
 

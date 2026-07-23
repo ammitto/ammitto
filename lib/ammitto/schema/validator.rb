@@ -2,6 +2,9 @@
 
 require 'json'
 
+require_relative '../ontology/types'
+require_relative '../status_change'
+
 module Ammitto
   module Schema
     # Validator validates JSON-LD data against Ammitto schemas
@@ -17,10 +20,13 @@ module Ammitto
       # Required fields for Entity
       ENTITY_REQUIRED = %w[id entityType names].freeze
 
-      # Valid entity types
-      ENTITY_TYPES = %w[person organization vessel aircraft].freeze
+      # Valid entity types (single source of truth: Ontology::Types)
+      ENTITY_TYPES = Ontology::Types::ENTITY_TYPES.map(&:to_s).freeze
 
-      # Valid statuses
+      # Valid statuses. Deliberately the harmonized StatusChange set,
+      # not Ontology::Types::SANCTION_STATUSES: the two sets differ
+      # (resumed/terminated/deceased vs pending) and this validator
+      # checks harmonized JSON-LD payloads.
       STATUSES = StatusChange::STATUSES
 
       # Validate a sanction entry

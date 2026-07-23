@@ -51,6 +51,7 @@ module Ammitto
       def resolve_all
         {
           cache_dir: resolve(:cache_dir),
+          sources_dir: resolve(:sources_dir),
           api_base_url: resolve(:api_base_url),
           log_level: resolve(:log_level),
           sources: resolve(:sources),
@@ -75,6 +76,7 @@ module Ammitto
       def default_value(key)
         case key
         when :cache_dir then Defaults::CACHE_DIR
+        when :sources_dir then Defaults::SOURCES_DIR
         when :api_base_url then Defaults::API_BASE_URL
         when :log_level then Defaults::LOG_LEVEL
         when :sources then Defaults::DEFAULT_SOURCES

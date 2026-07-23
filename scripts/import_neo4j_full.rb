@@ -126,7 +126,7 @@ class FullNeo4jImporter
   end
 
   def import_all_sources
-    base_dir = '/Users/mulgogi/src/ammitto'
+    base_dir = ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__)
     sources = Dir.glob(File.join(base_dir, 'data-*')).select { |d| Dir.exist?(File.join(d, 'processed')) }
 
     sources.each do |src_dir|

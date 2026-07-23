@@ -30,6 +30,8 @@ require 'ammitto/ontology'
 
 include Neo4j::Driver
 
+DEFAULT_DATA_DIR = ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__)
+
 class RoundTripVerifier
   def initialize(uri: 'bolt://localhost:7688', username: 'neo4j', password: 'password')
     @uri = uri
@@ -42,7 +44,7 @@ class RoundTripVerifier
     @failed = 0
   end
 
-  def run(sample_size: 10, data_dir: '/Users/mulgogi/src/ammitto')
+  def run(sample_size: 10, data_dir: DEFAULT_DATA_DIR)
     connect
 
     puts '=' * 60
@@ -334,7 +336,7 @@ options = {
   username: 'neo4j',
   password: 'password',
   sample_size: 10,
-  data_dir: '/Users/mulgogi/src/ammitto'
+  data_dir: DEFAULT_DATA_DIR
 }
 
 OptionParser.new do |opts|

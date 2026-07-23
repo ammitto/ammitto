@@ -20,16 +20,16 @@ on:
   push:
     branches: [main]
     paths:
-      - 'data-*/processed/**'
       - 'lib/ammitto/ontology/**'
       - 'scripts/import_*.rb'
       - 'scripts/export_*.rb'
       - 'scripts/validate_*.rb'
       - 'scripts/verify_*.rb'
+      - '.github/workflows/ontology-data-validation.yml'
   pull_request:
     paths:
-      - 'data-*/processed/**'
       - 'lib/ammitto/ontology/**'
+      - '.github/workflows/ontology-data-validation.yml'
   workflow_dispatch:
   schedule:
     - cron: '0 6 * * *'  # Daily validation at 6 AM UTC
@@ -48,26 +48,51 @@ jobs:
           path: 'ammitto'
           fetch-depth: 0
 
+      # The data lives in separate ammitto/data-* repositories (the gem's
+      # sibling-directory convention). Clone them next to the gem checkout
+      # on every trigger except pull_request, where validation skips
+      # gracefully instead.
+      - name: Clone data repositories
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repos=$(gh repo list ammitto --limit 100 --json name \
+            --jq '.[].name | select(startswith("data-"))')
+          if [ -z "$repos" ]; then
+            echo "::error::no ammitto/data-* repositories found"
+            exit 1
+          fi
+          for repo in $repos; do
+            gh repo clone "ammitto/$repo" "$repo" -- --depth 1
+          done
+
+      - name: Detect data availability
+        id: data
+        run: |
+          count=$(find . -maxdepth 2 -type d -path './data-*/processed' | wc -l)
+          if [ "$count" -gt 0 ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Found $count data-*/processed directories"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "PR context: data repositories are not cloned here." \
+              "Full validation runs on main, nightly, and manual dispatch."
+          else
+            echo "::error::data repositories cloned but no data-*/processed found"
+            exit 1
+          fi
+
       - name: Setup Ruby
+        if: steps.data.outputs.available == 'true'
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
           bundler-cache: true
           working-directory: 'ammitto'
 
-      - name: Prepare data directory
-        run: |
-          # Create symlinks to data-* directories at repo root
-          cd ammitto
-          cd ..
-          for dir in ammitto/data-*; do
-            if [ -d "$dir/processed" ]; then
-              ln -sf "$dir" "$(basename $dir)"
-            fi
-          done
-          ls -la | grep data-
-
       - name: Start Neo4j
+        if: steps.data.outputs.available == 'true'
         run: |
           docker run -d --name ammitto-neo4j-test \
             -p 7687:7687 -p 7474:7474 \
@@ -76,6 +101,7 @@ jobs:
             neo4j:${{ env.NEO4J_VERSION }}
 
       - name: Wait for Neo4j
+        if: steps.data.outputs.available == 'true'
         run: |
           for i in {1..30}; do
             if docker exec ammitto-neo4j-test cypher-shell -u neo4j -p ${{ env.NEO4J_PASSWORD }} "RETURN 1" &>/dev/null; then
@@ -87,23 +113,21 @@ jobs:
           echo "Neo4j failed to start"
           exit 1
 
-      - name: Install dependencies
-        run: |
-          cd ammitto
-          bundle install --jobs 4
-
       # Step 1: Import data using ontology classes
       - name: Import to Neo4j
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== IMPORTING DATA USING ONTOLOGY CLASSES ==="
           bundle exec ruby scripts/import_neo4j_full.rb
         env:
           NEO4J_URI: 'bolt://localhost:7687'
+          AMMITTO_DATA_DIR: ${{ github.workspace }}
 
       # Step 2: Validate schema compliance
       - name: Validate schema (property coverage)
         id: schema
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== SCHEMA VALIDATION ==="
@@ -116,6 +140,7 @@ jobs:
       # Step 3: Validate relationship integrity
       - name: Validate relationships (cross-link validity)
         id: integrity
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== RELATIONSHIP INTEGRITY ==="
@@ -128,6 +153,7 @@ jobs:
       # Step 4: Check for orphaned nodes
       - name: Detect orphaned nodes
         id: orphans
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== ORPHAN DETECTION ==="
@@ -139,6 +165,7 @@ jobs:
       # Step 5: Verify round-trip (import = export)
       - name: Round-trip verification
         id: roundtrip
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== ROUND-TRIP VERIFICATION ==="
@@ -146,10 +173,12 @@ jobs:
           bundle exec ruby scripts/verify_round_trip.rb --sample-size 50
         env:
           NEO4J_URI: 'bolt://localhost:7687'
+          AMMITTO_DATA_DIR: ${{ github.workspace }}
         continue-on-error: true
 
       # Step 6: Export using ontology classes
       - name: Export JSON-LD (ontology-driven)
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== EXPORTING JSON-LD USING ONTOLOGY CLASSES ==="
@@ -160,6 +189,7 @@ jobs:
       # Step 7: Generate coverage report
       - name: Generate coverage report
         id: coverage
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo "=== COVERAGE REPORT ==="
@@ -169,6 +199,7 @@ jobs:
 
       # Step 8: Quality gates summary
       - name: Quality gates summary
+        if: steps.data.outputs.available == 'true'
         run: |
           cd ammitto
           echo ""
@@ -200,6 +231,7 @@ jobs:
 
       # Upload artifacts
       - name: Upload JSON-LD export
+        if: steps.data.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: json-ld-ontology-export
@@ -208,7 +240,7 @@ jobs:
 
       - name: Upload validation logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.data.outputs.available == 'true'
         with:
           name: validation-logs
           path: |
@@ -217,7 +249,7 @@ jobs:
         continue-on-error: true
 
       - name: Stop Neo4j
-        if: always()
+        if: always() && steps.data.outputs.available == 'true'
         run: |
           docker stop ammitto-neo4j-test || true
           docker rm ammitto-neo4j-test || true

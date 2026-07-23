@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Entities::OrganizationEntity do
   let(:names) do

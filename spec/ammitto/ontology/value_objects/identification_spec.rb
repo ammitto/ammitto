@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::ValueObjects::Identification do
   describe '#present?' do

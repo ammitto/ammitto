@@ -8,9 +8,10 @@ module Ammitto
     module Sanction
       # Represents a status change in a sanction entry
       #
-      # @example Creating a status history entry
+      # @example Recording a status transition
       #   history = StatusHistory.new(
-      #     status: :delisted,
+      #     from_status: 'active',
+      #     to_status: 'delisted',
       #     date: Date.new(2023, 5, 15),
       #     reason: "Delisted following court order"
       #   )

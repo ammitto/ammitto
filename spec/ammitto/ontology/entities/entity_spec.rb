@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Entities::Entity do
   describe 'type predicates' do
-    it 'reflects entity_type exactly' do
-      expect(described_class.new(entity_type: 'person')).to be_person
-      expect(described_class.new(entity_type: 'organization')).to be_organization
-      expect(described_class.new(entity_type: 'vessel')).to be_vessel
-      expect(described_class.new(entity_type: 'aircraft')).to be_aircraft
+    it 'reflects entity_type exactly — one true predicate, three false' do
+      predicates = { 'person' => :person?, 'organization' => :organization?,
+                     'vessel' => :vessel?, 'aircraft' => :aircraft? }
+      predicates.each do |type, own|
+        entity = described_class.new(entity_type: type)
+        predicates.each_value do |predicate|
+          expect(entity.public_send(predicate)).to be(predicate == own),
+                                                   "#{type}: #{predicate}"
+        end
+      end
     end
 
     it 'is nothing in particular without a type' do

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Sanction::SanctionRegime do
   it 'carries code, name, and description' do
@@ -9,6 +8,7 @@ RSpec.describe Ammitto::Ontology::Sanction::SanctionRegime do
                                  description: 'UNSC 1718 measures')
     expect(regime.code).to eq('DPRK')
     expect(regime.name).to eq('North Korea sanctions')
+    expect(regime.description).to eq('UNSC 1718 measures')
   end
 
   describe '#to_hash' do

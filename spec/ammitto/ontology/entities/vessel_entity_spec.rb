@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Entities::VesselEntity do
   describe '#has_imo?' do

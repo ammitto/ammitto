@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Sanction::SanctionEntry do
   describe 'status' do
@@ -29,7 +28,17 @@ RSpec.describe Ammitto::Ontology::Sanction::SanctionEntry do
       change = entry.status_history.first
       expect(change.from_status).to eq('active')
       expect(change.to_status).to eq('suspended')
+      expect(change.date).to eq(Date.new(2026, 1, 1))
       expect(change.reason).to eq('court order')
+    end
+
+    it 'rejects blank and unknown statuses without mutating the entry' do
+      entry = described_class.new(id: 'e1')
+      [nil, '', 'vaporized'].each do |bad|
+        expect { entry.add_status_change(bad) }.to raise_error(ArgumentError)
+      end
+      expect(entry.status).to eq('active')
+      expect(entry.status_history).to be_nil
     end
   end
 

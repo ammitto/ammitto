@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Sanction::Authority do
   it 'carries id, name, country code, and url' do
     authority = described_class.new(id: 'ch', name: 'Switzerland (SECO)',
                                     country_code: 'CH', url: 'https://www.seco.admin.ch')
     expect(authority.id).to eq('ch')
+    expect(authority.name).to eq('Switzerland (SECO)')
     expect(authority.country_code).to eq('CH')
+    expect(authority.url).to eq('https://www.seco.admin.ch')
   end
 
   describe '#to_hash' do

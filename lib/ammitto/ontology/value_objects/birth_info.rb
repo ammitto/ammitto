@@ -60,7 +60,9 @@ module Ammitto
         # Check if birth info has meaningful content
         # @return [Boolean]
         def present?
-          [date, year, city, country].any? { |v| Utils::Presence.present?(v) }
+          [date, year, city, region, country].any? do |v|
+            Utils::Presence.present?(v)
+          end
         end
 
         # Get year of birth (from date or year field)
@@ -73,13 +75,16 @@ module Ammitto
         # @return [String]
         def to_s
           parts = []
-          parts << 'c.' if circa
           label = date_label
+          parts << 'c.' if circa && label
           parts << label if label
-          parts << [city, region, country].compact.join(', ') if city || country
+          place = [city, region, country].compact
+          parts << place.join(', ') unless place.empty?
           parts.join(' ')
         end
 
+        # Convert to hash for JSON-LD serialization
+        # @return [Hash]
         def to_hash
           hash = {}
           hash[:date] = date.to_s if date
@@ -100,9 +105,6 @@ module Ammitto
 
           nil
         end
-
-        # Convert to hash for JSON-LD serialization
-        # @return [Hash]
 
         # JSON mapping
         json do

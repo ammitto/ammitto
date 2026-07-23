@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::Entities::AircraftEntity do
   it 'is an aircraft by construction' do
@@ -12,7 +11,7 @@ RSpec.describe Ammitto::Ontology::Entities::AircraftEntity do
     it 'uses the name plus previous names' do
       aircraft = described_class.new(name: 'N12345', previous_names: ['EX-111'])
       expect(aircraft.primary_name).to eq('N12345')
-      expect(aircraft.all_names).to include('N12345', 'EX-111')
+      expect(aircraft.all_names).to eq(%w[N12345 EX-111])
     end
   end
 

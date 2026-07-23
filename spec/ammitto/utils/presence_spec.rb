@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/utils/presence'
 
 RSpec.describe Ammitto::Utils::Presence do
   describe '.blank?' do

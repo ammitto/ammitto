@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::ValueObjects::SanctionEffect do
   describe '#present?' do
@@ -25,8 +24,8 @@ RSpec.describe Ammitto::Ontology::ValueObjects::SanctionEffect do
     end
   end
 
-  describe 'real transformer vocabulary' do
-    it 'normalizes every effect type the transformers emit' do
+  describe 'transformer vocabulary snapshot' do
+    it 'normalizes the effect types transformers emitted as of this spec' do
       %w[aircraft_ban arms_embargo asset_freeze debarment entry_ban
          export_ban export_restriction financial_restriction import_ban
          investment_ban sectoral_sanction service_restriction
@@ -63,7 +62,8 @@ RSpec.describe Ammitto::Ontology::ValueObjects::SanctionEffect do
           node.each { |item| collect.call(item, in_measures, in_type, sink) }
         end
       end
-      schema_files = Dir[File.join(Ammitto.gem_dir, 'schemas', '*', '*announcement*.yml')]
+      schema_files = Dir[File.join(Ammitto.gem_dir, 'schemas', '**',
+                                   '*announcement*.{yml,yaml}')]
       expect(schema_files).not_to be_empty, 'no announcement schemas found — path changed?'
       schema_files.each do |file|
         file_values = []

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'ammitto'
-require 'ammitto/ontology'
 
 RSpec.describe Ammitto::Ontology::ValueObjects::BirthInfo do
   describe '#birth_year' do
@@ -17,10 +16,11 @@ RSpec.describe Ammitto::Ontology::ValueObjects::BirthInfo do
   end
 
   describe '#present?' do
-    it 'counts date, year, city, or country' do
+    it 'counts date, year, city, region, or country' do
       expect(described_class.new(year: 1964)).to be_present
       expect(described_class.new(city: 'Bern')).to be_present
-      expect(described_class.new(region: 'BE')).not_to be_present
+      expect(described_class.new(region: 'BE')).to be_present
+      expect(described_class.new(circa: true)).not_to be_present
     end
   end
 
@@ -28,6 +28,11 @@ RSpec.describe Ammitto::Ontology::ValueObjects::BirthInfo do
     it 'renders exact output with and without circa' do
       expect(described_class.new(year: 1964, circa: true).to_s).to eq('c. 1964')
       expect(described_class.new(year: 1964).to_s).to eq('1964')
+    end
+
+    it 'renders nothing for circa without a date, and region alone' do
+      expect(described_class.new(circa: true).to_s).to eq('')
+      expect(described_class.new(region: 'BE').to_s).to eq('BE')
     end
 
     it 'appends the place exactly, with no stray spacing' do

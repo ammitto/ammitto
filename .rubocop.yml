@@ -58,8 +58,9 @@ Naming/MethodParameterName:
 Style/ArrayIntersect:
   Enabled: false
 
-# Pure enumeration module: its length tracks the sanctions-domain
-# vocabulary (schema-driven), not code complexity
+# Centralized ontology vocabulary and normalization module: its length
+# tracks the sanctions-domain vocabulary (schema-driven), not code
+# complexity.
 Metrics/ModuleLength:
   Exclude:
     - 'lib/ammitto/ontology/types.rb'

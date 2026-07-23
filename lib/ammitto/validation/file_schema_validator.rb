@@ -60,6 +60,10 @@ module Ammitto
         Data::Japan::SchemaNotFoundError
       ].freeze
 
+      # Sentinel caching a schema type whose file is missing, so repeated
+      # lookups don't re-raise for every validated file
+      MissingSchema = Struct.new(:message)
+
       # @return [Symbol] registered country key (:china, :japan)
       attr_reader :country
 
@@ -218,13 +222,26 @@ module Ammitto
 
       # Load and cache a schema by type, recording load failures
       #
+      # Negative lookups are memoized too: the miss is cached as a
+      # {MissingSchema} and re-reported per file without reloading.
+      #
       # @param schema_type [Symbol] resolver-provided schema type
       # @param errors [Array<Hash>] error sink
       # @return [Hash, nil] the schema, or nil when unavailable
       def load_schema(schema_type, errors)
-        @schema_cache[schema_type] ||= @loader.load(schema_type)
-      rescue *MISSING_SCHEMA_ERRORS => e
-        errors << { message: e.message }
+        unless @schema_cache.key?(schema_type)
+          @schema_cache[schema_type] =
+            begin
+              @loader.load(schema_type)
+            rescue *MISSING_SCHEMA_ERRORS => e
+              MissingSchema.new(e.message)
+            end
+        end
+
+        cached = @schema_cache[schema_type]
+        return cached unless cached.is_a?(MissingSchema)
+
+        errors << { message: cached.message }
         nil
       end
 

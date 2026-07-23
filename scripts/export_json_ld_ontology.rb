@@ -22,6 +22,11 @@ require 'ammitto/ontology'
 
 include Neo4j::Driver
 
+DEFAULT_OUTPUT_DIR = File.join(
+  ENV['AMMITTO_DATA_DIR'] || File.expand_path('../..', __dir__),
+  'data', 'ontology', 'json-ld'
+)
+
 class OntologyDrivenExporter
   # All entity classes that can be exported
   ENTITY_CLASSES = [
@@ -47,7 +52,7 @@ class OntologyDrivenExporter
     }
   end
 
-  def run(output_dir: '/Users/mulgogi/src/ammitto/data/ontology/json-ld')
+  def run(output_dir: DEFAULT_OUTPUT_DIR)
     connect
 
     FileUtils.mkdir_p(output_dir)
@@ -311,7 +316,7 @@ end
 
 # Parse command line options
 options = {
-  output_dir: '/Users/mulgogi/src/ammitto/data/ontology/json-ld',
+  output_dir: DEFAULT_OUTPUT_DIR,
   uri: ENV.fetch('NEO4J_URI', 'bolt://localhost:7688'),
   username: 'neo4j',
   password: 'password'

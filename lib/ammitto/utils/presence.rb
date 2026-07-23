@@ -1,33 +1,33 @@
 # frozen_string_literal: true
 
-# Minimal presence predicates for the ontology layer, which calls
-# #present?/#blank? throughout. Semantics match ActiveSupport exactly, and
-# nothing is defined when ActiveSupport (or anything else) already provides
-# them, so consumers loading both see no conflict.
-unless Object.method_defined?(:blank?)
-  class Object
-    # @return [Boolean] true for nil, false, empty collections/strings
-    def blank?
-      respond_to?(:empty?) ? !!empty? : !self
-    end
-  end
-end
+module Ammitto
+  module Utils
+    # Presence predicates for the ontology layer, as explicit module
+    # functions — no core-class patching, so nothing leaks into consumers'
+    # runtimes. Semantics match ActiveSupport: nil, false, empty
+    # collections, and whitespace-only strings (Unicode included) are blank.
+    module Presence
+      module_function
 
-unless Object.method_defined?(:present?)
-  class Object
-    # @return [Boolean] inverse of #blank?
-    def present?
-      !blank?
-    end
-  end
-end
+      # @param value [Object]
+      # @return [Boolean] true when the value is nil, false, empty, or
+      #   whitespace-only
+      def blank?(value)
+        case value
+        when nil, false
+          true
+        when String
+          value.match?(/\A[[:space:]]*\z/)
+        else
+          value.respond_to?(:empty?) ? !!value.empty? : false
+        end
+      end
 
-class String
-  unless method_defined?(:blank?) && '  '.blank?
-    # Whitespace-only strings are blank (Unicode whitespace included,
-    # matching ActiveSupport)
-    def blank?
-      match?(/\A[[:space:]]*\z/)
+      # @param value [Object]
+      # @return [Boolean] inverse of .blank?
+      def present?(value)
+        !blank?(value)
+      end
     end
   end
 end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../types'
 
 module Ammitto
@@ -42,7 +43,7 @@ module Ammitto
         # Check if effect has meaningful content
         # @return [Boolean]
         def present?
-          effect_type.present?
+          Utils::Presence.present?(effect_type)
         end
 
         # Get type as normalized symbol

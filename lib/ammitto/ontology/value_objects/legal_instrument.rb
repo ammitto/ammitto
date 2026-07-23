@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../types'
 
 module Ammitto
@@ -61,7 +62,7 @@ module Ammitto
         # Check if instrument has meaningful content
         # @return [Boolean]
         def present?
-          [identifier, title].any?(&:present?)
+          [identifier, title].any? { |v| Utils::Presence.present?(v) }
         end
 
         # Get type as normalized symbol

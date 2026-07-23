@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
 module Ammitto
@@ -59,7 +60,7 @@ module Ammitto
         # Check if birth info has meaningful content
         # @return [Boolean]
         def present?
-          [date, year, city, country].any?(&:present?)
+          [date, year, city, country].any? { |v| Utils::Presence.present?(v) }
         end
 
         # Get year of birth (from date or year field)

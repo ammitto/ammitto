@@ -29,6 +29,13 @@ RSpec.describe Ammitto::Config::OverrideResolver do
     end
   end
 
+  # Run a block with every named ENV variable removed
+  def with_env_cleared(names, &block)
+    return yield if names.empty?
+
+    with_env(names.first, nil) { with_env_cleared(names[1..], &block) }
+  end
+
   describe ':sources_dir resolution' do
     it 'falls back to Defaults::SOURCES_DIR' do
       with_sources_env(nil, nil) do
@@ -120,6 +127,17 @@ RSpec.describe Ammitto::Config::OverrideResolver do
     it 'counts the alias in any_set?' do
       with_sources_env(nil, '/from-alias') do
         expect(Ammitto::Config::EnvProvider.any_set?).to be(true)
+      end
+    end
+
+    it 'does not count empty variables in any_set?' do
+      provider = Ammitto::Config::EnvProvider
+      names = (provider::ENV_MAPPING.values + provider::ENV_ALIASES.values)
+              .map { |var| "#{provider::PREFIX}#{var}" }
+      with_env_cleared(names) do
+        with_sources_env('', '') do
+          expect(provider.any_set?).to be(false)
+        end
       end
     end
   end

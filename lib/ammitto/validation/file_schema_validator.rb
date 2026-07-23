@@ -98,7 +98,8 @@ module Ammitto
       #
       # @param file_paths [Array<String>] paths to validate
       # @return [Result] with :total_files, :valid_files, :invalid_files
-      #   counts and per-file :file_errors groups in {Result#details}
+      #   counts, per-file :file_errors groups, and the validated
+      #   :files list (in validation order) in {Result#details}
       def validate_files(file_paths)
         groups = file_paths.filter_map do |file|
           errors = file_errors(file)
@@ -111,7 +112,8 @@ module Ammitto
             total_files: file_paths.length,
             valid_files: file_paths.length - groups.length,
             invalid_files: groups.length,
-            file_errors: groups
+            file_errors: groups,
+            files: file_paths
           }
         )
       end
@@ -125,7 +127,7 @@ module Ammitto
           return Result.failure(
             { message: "Sources directory not found: #{sources_dir}" },
             details: { total_files: 0, valid_files: 0, invalid_files: 0,
-                       file_errors: [] }
+                       file_errors: [], files: [] }
           )
         end
 

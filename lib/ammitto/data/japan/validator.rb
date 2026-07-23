@@ -65,9 +65,9 @@ module Ammitto
         # @return [Hash] Validation report
         def validate_all(sources_dir = nil)
           sources_dir ||= File.join(File.dirname(@schemas_dir), 'sources')
-          files = @facade.find_yaml_files(sources_dir)
           result = @facade.validate_directory(sources_dir)
-          @errors = last_file_errors(files, result)
+          @errors = last_file_errors(result.details.fetch(:files, []),
+                                     result)
           Validation::FileSchemaValidator.legacy_report(result)
         end
 

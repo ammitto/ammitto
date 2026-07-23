@@ -2,6 +2,7 @@
 
 require 'json'
 
+require_relative '../authority'
 require_relative '../ontology/types'
 require_relative '../status_change'
 

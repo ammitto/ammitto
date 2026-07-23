@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'lutaml/model'
+
 module Ammitto
   # Authority represents a sanctions-issuing authority
   #

@@ -42,11 +42,16 @@ module Ammitto
       ENV_ALIASES = { sources_dir: 'DATA_DIR' }.freeze
 
       class << self
-        # Check if any Ammitto ENV variables are set
+        # Check if any Ammitto ENV variable carries a usable value
+        #
+        # Mirrors {configuration}: variables set to an empty string are
+        # ignored there, so they do not count as set here either.
+        #
         # @return [Boolean]
         def any_set?
-          (ENV_MAPPING.values + ENV_ALIASES.values)
-            .any? { |env_var| ENV.fetch("#{PREFIX}#{env_var}", nil) }
+          ENV_MAPPING.any? do |key, env_var|
+            !env_value(env_var, ENV_ALIASES[key]).nil?
+          end
         end
 
         # Get configuration from environment

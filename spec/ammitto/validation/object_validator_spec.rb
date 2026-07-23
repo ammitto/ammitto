@@ -167,5 +167,16 @@ RSpec.describe Ammitto::Validation::ObjectValidator do
       expect(system(RbConfig.ruby, '-I', lib, '-e', script))
         .to be(true), 'ammitto/validation must load without full ammitto'
     end
+
+    it 'resolves Authority from a standalone require' do
+      lib = File.expand_path('../../../lib', __dir__)
+      script = 'require "ammitto/validation"; ' \
+               'r = Ammitto::Validation.object(' \
+               '{ "authority" => { "id" => "zz" } }, ' \
+               'type: :sanction_entry); ' \
+               'exit(r.errors.include?("Unknown authority: zz"))'
+      expect(system(RbConfig.ruby, '-I', lib, '-e', script))
+        .to be(true), 'Schema::Validator must load Authority itself'
+    end
   end
 end

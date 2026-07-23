@@ -62,6 +62,14 @@ RSpec.describe 'legacy validator shim #errors compatibility' do
     expect(validator.errors).to be_empty
   end
 
+  it 'keeps last-file semantics through validate_all' do
+    # Sorted glob order: bad-announcement.yml then good-announcement.yml,
+    # so the last validated file is the valid one.
+    report = validator.validate_all(File.dirname(@good))
+    expect(report[:invalid_files]).to eq(1)
+    expect(validator.errors).to be_empty
+  end
+
   it 'returns mutable structures through the legacy surfaces' do
     report = validator.validate_files([@good, @bad])
     expect { report[:errors].first[:errors].first[:message] = 'edited' }

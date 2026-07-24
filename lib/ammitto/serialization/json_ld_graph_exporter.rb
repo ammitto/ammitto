@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require 'digest'
 require 'fileutils'
 require 'json'
 require 'time'
 require 'yaml'
+require_relative '../errors/base_error'
 require_relative 'json_ld_serializer'
 require_relative 'turtle_exporter'
 
@@ -28,6 +30,17 @@ module Ammitto
     class JsonLdGraphExporter
       # Base URI for all node IDs
       BASE_URI = 'https://www.ammitto.org'
+
+      # Longest instrument slug (IRI tail) whose exported filename
+      # "#{slug}.jsonld" still fits the 255-byte filesystem filename
+      # limit (255 minus the 7-byte '.jsonld' suffix)
+      MAX_SLUG_BYTES = 248
+
+      # Slug prefix bytes kept when clamping an oversized slug
+      CLAMP_PREFIX_BYTES = 100
+
+      # Hex digest chars appended when clamping an oversized slug
+      CLAMP_DIGEST_CHARS = 12
 
       # @return [String] output directory
       attr_reader :output_dir
@@ -86,6 +99,7 @@ module Ammitto
         @document_types = {}
         @organizations = {}
         @loaded_instruments = {}
+        @instrument_slugs = {}
 
         # Statistics tracking
         @stats = {
@@ -458,7 +472,8 @@ module Ammitto
 
             # Create a normalized identifier for the ID
             normalized_id = normalize_identifier(identifier)
-            instrument_id = "#{BASE_URI}/legal-instrument/#{source_code}/#{normalized_id}"
+            instrument_id = instrument_iri(source_code, normalized_id,
+                                           identifier)
 
             # Store full instrument if not already present
             @instruments[instrument_id] ||= {
@@ -498,7 +513,7 @@ module Ammitto
             local_id = match[2]
 
             # Create the canonical instrument ID (using /legal-instrument/)
-            instrument_id = "#{BASE_URI}/legal-instrument/#{instr_source}/#{local_id}"
+            instrument_id = instrument_iri(instr_source, local_id, local_id)
 
             # Look up loaded instrument metadata
             loaded_key = "#{instr_source}/#{local_id}"
@@ -562,6 +577,65 @@ module Ammitto
                   .gsub(/-+/, '-')
                   .gsub(/^-|-$/, '')
                   .downcase
+      end
+
+      # Build the canonical IRI for a legal-instrument node. The IRI tail
+      # doubles as the node filename (export_instrument_nodes derives the
+      # filename from the IRI), so oversized slugs are clamped here to
+      # keep every derived filename within filesystem limits, and a slug
+      # registry guards against two distinct slugs silently sharing one
+      # IRI.
+      # @param source_code [String] source segment of the IRI
+      # @param slug [String] normalized identifier (pre-clamp identity)
+      # @param original [String] identifier the slug was derived from
+      # @return [String] canonical instrument IRI
+      def instrument_iri(source_code, slug, original)
+        final_slug = clamp_slug(slug)
+        iri = "#{BASE_URI}/legal-instrument/#{source_code}/#{final_slug}"
+        register_instrument_slug(iri, slug, original)
+        iri
+      end
+
+      # Clamp an oversized slug so its "#{slug}.jsonld" filename fits the
+      # 255-byte filesystem filename limit. Slugs within budget pass
+      # through untouched, so existing short IRIs never change. Oversized
+      # slugs become their first CLAMP_PREFIX_BYTES bytes (trimmed back
+      # to a character boundary, never splitting a multibyte character)
+      # plus '-' and the first CLAMP_DIGEST_CHARS hex chars of the
+      # SHA-256 of the full pre-truncation slug, which keeps slugs that
+      # share a prefix but differ later distinct.
+      # @param slug [String] normalized identifier
+      # @return [String] slug safe to use as IRI tail and filename
+      def clamp_slug(slug)
+        return slug if slug.bytesize <= MAX_SLUG_BYTES
+
+        prefix = slug.byteslice(0, CLAMP_PREFIX_BYTES)
+        # byteslice can cut through a multibyte character; drop trailing
+        # bytes until the prefix is valid again
+        prefix = prefix.byteslice(0, prefix.bytesize - 1) until prefix.valid_encoding?
+        "#{prefix}-#{Digest::SHA256.hexdigest(slug)[0, CLAMP_DIGEST_CHARS]}"
+      end
+
+      # Record which pre-clamp slug produced an instrument IRI, raising
+      # when a different slug maps to the same IRI: @instruments dedupes
+      # by IRI, and a digest-truncation collision must fail loudly
+      # instead of silently merging two distinct instruments. Identical
+      # slugs (including distinct originals normalizing to one slug) stay
+      # merged — that is the exporter's existing dedup semantics.
+      # @param iri [String] final instrument IRI
+      # @param slug [String] pre-clamp slug (the instrument identity)
+      # @param original [String] identifier the slug was derived from
+      # @return [void]
+      def register_instrument_slug(iri, slug, original)
+        existing = @instrument_slugs[iri]
+        if existing && existing[:slug] != slug
+          raise Ammitto::Error,
+                "Instrument slug collision on #{iri}: " \
+                "#{existing[:original].inspect} and #{original.inspect} " \
+                'clamp to the same slug'
+        end
+
+        @instrument_slugs[iri] ||= { slug: slug, original: original }
       end
 
       # Export entity node files

@@ -76,16 +76,16 @@ jobs:
       - name: Detect data availability
         id: data
         run: |
-          count=$(find . -maxdepth 2 -type d -path './data-*/processed' | wc -l)
+          count=$(find . -maxdepth 3 -type d -path './data-*/processed/entities' | wc -l)
           if [ "$count" -gt 0 ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
-            echo "Found $count data-*/processed directories"
+            echo "Found $count data-*/processed/entities directories"
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "PR context: data repositories are not cloned here." \
               "Full validation runs on main, nightly, and manual dispatch."
           else
-            echo "::error::data repositories cloned but no data-*/processed found"
+            echo "::error::data repositories cloned but no data-*/processed/entities found"
             exit 1
           fi
 

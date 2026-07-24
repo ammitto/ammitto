@@ -14,7 +14,9 @@
 #
 # Exit codes:
 #   0 - Round-trip successful
-#   1 - Discrepancies found
+#   1 - Verification failures (discrepancies, unloadable or non-entity
+#       YAML documents, entities missing from Neo4j, or nothing
+#       verified), or no data sources discovered
 #   2 - Cannot connect to Neo4j
 #
 # Usage:
@@ -24,14 +26,18 @@ $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
 require 'neo4j/driver'
 require 'yaml'
-require 'json'
 require 'optparse'
 require 'ammitto/ontology'
+require_relative 'support/env_defaults'
 
 include Neo4j::Driver
+include Ammitto::Ontology::Entities
 
 class RoundTripVerifier
-  def initialize(uri: 'bolt://localhost:7688', username: 'neo4j', password: 'password')
+  # Deterministic sampling so CI failures are reproducible run-to-run
+  SAMPLE_SEED = 42
+
+  def initialize(uri: NEO4J_URI_DEFAULT, username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -42,7 +48,19 @@ class RoundTripVerifier
     @failed = 0
   end
 
-  def run(sample_size: 10, data_dir: '/Users/mulgogi/src/ammitto')
+  def run(sample_size: 10, data_dir: DEFAULT_DATA_DIR)
+    # Discover sources before connecting — no live Neo4j is needed to
+    # learn there is nothing to verify
+    sources = Dir.glob(File.join(data_dir, 'data-*'))
+                 .select { |d| Dir.glob(File.join(d, 'processed', 'entities', '*.yaml')).any? }
+
+    if sources.empty?
+      puts 'ERROR: no data-* repositories with entity YAML files ' \
+           "(processed/entities/*.yaml) found under #{data_dir} — set " \
+           'AMMITTO_DATA_DIR or clone them there'
+      return 1
+    end
+
     connect
 
     puts '=' * 60
@@ -52,10 +70,7 @@ class RoundTripVerifier
     puts "Sample size: #{sample_size}"
     puts ''
 
-    # Find and verify sample entities from each source
-    sources = Dir.glob(File.join(data_dir, 'data-*'))
-                 .select { |d| Dir.exist?(File.join(d, 'processed', 'entities')) }
-
+    # Verify sample entities from each source
     sources.each do |source_dir|
       source = File.basename(source_dir).sub('data-', '')
       verify_source(source_dir, source, sample_size)
@@ -63,9 +78,10 @@ class RoundTripVerifier
 
     disconnect
 
-    print_report
+    success = @discrepancies.empty? && @failed.zero? && @verified.positive?
+    print_report(success)
 
-    @discrepancies.empty? ? 0 : 1
+    success ? 0 : 1
   end
 
   private
@@ -89,7 +105,8 @@ class RoundTripVerifier
 
     puts "\n--- Verifying #{source.upcase} ---"
 
-    entity_files = Dir.glob(File.join(entities_dir, '*.yaml')).sample(sample_size)
+    entity_files = Dir.glob(File.join(entities_dir, '*.yaml'))
+                      .sample(sample_size, random: Random.new(SAMPLE_SEED))
 
     entity_files.each do |entity_file|
       verify_entity(entity_file, source)
@@ -101,17 +118,25 @@ class RoundTripVerifier
       data = YAML.load_file(entity_file)
     rescue StandardError => e
       puts "  ⚠️  Cannot load #{File.basename(entity_file)}: #{e.message}"
+      @failed += 1
       return
     end
 
-    return unless data.is_a?(Hash) && data['id']
+    unless data.is_a?(Hash) && data['id']
+      puts "  ⚠️  Not an entity document: #{File.basename(entity_file)}"
+      @failed += 1
+      return
+    end
 
     entity_id = data['id']
     entity_type = data['entity_type'] || data['type'] || 'organization'
 
     # 1. Load original data into ontology class
     original = load_original_entity(data, entity_type)
-    return unless original
+    unless original
+      @failed += 1
+      return
+    end
 
     # 2. Load from Neo4j using ontology class
     loaded = load_from_neo4j(entity_id, entity_type)
@@ -292,49 +317,53 @@ class RoundTripVerifier
     val1 == val2
   end
 
-  def print_report
+  def print_report(success)
     puts "\n\n#{'=' * 60}"
     puts 'ROUND-TRIP VERIFICATION REPORT'
     puts '=' * 60
 
     puts "\nEntities verified: #{@verified}"
-    puts "Entities with discrepancies: #{@failed}"
+    puts "Entities with failures: #{@failed}"
 
-    if @discrepancies.empty?
+    if success
       puts "\n✓ ROUND-TRIP VERIFICATION PASSED"
       puts '  All imported data matches exported data'
       puts '  Import and export use the SAME ontology classes'
     else
       puts "\n✗ ROUND-TRIP VERIFICATION FAILED"
-      puts "\nDiscrepancies found: #{@discrepancies.size}"
+      puts '  No entities could be verified' if @verified.zero?
 
-      # Group by property
-      by_property = @discrepancies.group_by { |d| d[:property] }
+      if @discrepancies.any?
+        puts "\nDiscrepancies found: #{@discrepancies.size}"
 
-      by_property.each do |property, discreps|
-        puts "\n  Property: #{property}"
-        puts "  Affected entities: #{discreps.size}"
-        discreps.first(3).each do |d|
-          puts "    - #{d[:file]}: '#{d[:original]}' != '#{d[:loaded]}'"
+        # Group by property
+        by_property = @discrepancies.group_by { |d| d[:property] }
+
+        by_property.each do |property, discreps|
+          puts "\n  Property: #{property}"
+          puts "  Affected entities: #{discreps.size}"
+          discreps.first(3).each do |d|
+            puts "    - #{d[:file]}: '#{d[:original]}' != '#{d[:loaded]}'"
+          end
         end
-      end
 
-      puts "\n#{'-' * 60}"
-      puts 'ANALYSIS:'
-      puts "  If 'loaded' is nil: Property not imported to Neo4j"
-      puts "  If 'original' is nil: Extra property in Neo4j (not in source)"
-      puts '  If both have values: Values transformed incorrectly'
+        puts "\n#{'-' * 60}"
+        puts 'ANALYSIS:'
+        puts "  If 'loaded' is nil: Property not imported to Neo4j"
+        puts "  If 'original' is nil: Extra property in Neo4j (not in source)"
+        puts '  If both have values: Values transformed incorrectly'
+      end
     end
   end
 end
 
 # Parse command line options
 options = {
-  uri: 'bolt://localhost:7688',
+  uri: NEO4J_URI_DEFAULT,
   username: 'neo4j',
   password: 'password',
   sample_size: 10,
-  data_dir: '/Users/mulgogi/src/ammitto'
+  data_dir: DEFAULT_DATA_DIR
 }
 
 OptionParser.new do |opts|

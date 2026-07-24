@@ -9,6 +9,10 @@
 # Key principle: neo4j_property declarations are the SINGLE SOURCE OF TRUTH.
 # Whatever is declared gets exported. Nothing more, nothing less.
 #
+# Exit codes:
+#   0 - Export completed (zero exported entities logs a loud WARNING)
+#   1 - Unhandled error occurred (e.g. cannot connect to Neo4j)
+#
 # Usage:
 #   ruby scripts/export_json_ld_ontology.rb [--output-dir /path/to/output]
 
@@ -19,8 +23,12 @@ require 'json'
 require 'fileutils'
 require 'optparse'
 require 'ammitto/ontology'
+require_relative 'support/env_defaults'
 
 include Neo4j::Driver
+include Ammitto::Ontology::ValueObjects
+
+DEFAULT_OUTPUT_DIR = File.join(DEFAULT_DATA_DIR, 'data', 'ontology', 'json-ld')
 
 class OntologyDrivenExporter
   # All entity classes that can be exported
@@ -31,7 +39,7 @@ class OntologyDrivenExporter
     Ammitto::Ontology::Entities::AircraftEntity
   ].freeze
 
-  def initialize(uri: 'bolt://localhost:7688', username: 'neo4j', password: 'password')
+  def initialize(uri: NEO4J_URI_DEFAULT, username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
     @password = password
@@ -42,12 +50,11 @@ class OntologyDrivenExporter
       names: 0,
       addresses: 0,
       identifiers: 0,
-      birth_infos: 0,
-      errors: []
+      birth_infos: 0
     }
   end
 
-  def run(output_dir: '/Users/mulgogi/src/ammitto/data/ontology/json-ld')
+  def run(output_dir: DEFAULT_OUTPUT_DIR)
     connect
 
     FileUtils.mkdir_p(output_dir)
@@ -59,10 +66,17 @@ class OntologyDrivenExporter
     export_all_entities(output_dir)
     export_context(output_dir)
 
-    disconnect
-
+    # The coverage report queries Neo4j, so it must run before disconnect
     print_coverage_report
+
+    if @stats[:entities].zero?
+      puts "\nWARNING: zero entities were exported — the Neo4j graph " \
+           'contains no Person/Organization/Vessel/Aircraft nodes'
+    end
+
     puts "\nExport complete!"
+  ensure
+    disconnect
   end
 
   private
@@ -178,7 +192,7 @@ class OntologyDrivenExporter
     )
 
     addresses = result.map do |row|
-      addr = Ammitto::Ontology::ValueObjects::Address.from_neo4j_record(row['n'] || row['a'])
+      addr = Ammitto::Ontology::ValueObjects::Address.from_neo4j_record(row['a'])
       @stats[:addresses] += 1
       addr
     end
@@ -311,8 +325,8 @@ end
 
 # Parse command line options
 options = {
-  output_dir: '/Users/mulgogi/src/ammitto/data/ontology/json-ld',
-  uri: 'bolt://localhost:7688',
+  output_dir: DEFAULT_OUTPUT_DIR,
+  uri: NEO4J_URI_DEFAULT,
   username: 'neo4j',
   password: 'password'
 }

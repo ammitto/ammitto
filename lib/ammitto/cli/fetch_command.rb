@@ -112,24 +112,6 @@ module Ammitto
         extractor = extractor_class.new
         extractor.verbose = options[:verbose] if extractor.respond_to?(:verbose=)
 
-        # Pass reference docs path for CN source
-        if source == :cn && extractor.respond_to?(:reference_docs_path=)
-          # Look for reference-docs in data-cn directory
-          data_cn_path = find_data_cn_path
-          if data_cn_path
-            ref_docs = File.join(data_cn_path, 'reference-docs')
-            puts "[DEBUG] Checking for reference docs at: #{ref_docs}" if options[:verbose]
-            if Dir.exist?(ref_docs)
-              puts "[DEBUG] Setting reference_docs_path to: #{ref_docs}" if options[:verbose]
-              extractor.reference_docs_path = ref_docs
-            elsif options[:verbose]
-              puts '[DEBUG] Reference docs directory does not exist'
-            end
-          elsif options[:verbose]
-            puts '[DEBUG] data-cn path not found'
-          end
-        end
-
         # Fetch and parse using source models if format is yaml
         format = options[:format] || 'yaml'
 
@@ -142,26 +124,6 @@ module Ammitto
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         puts e.backtrace.first(5).join("\n") if options[:verbose]
         error_result(source, e.message)
-      end
-
-      # Find data-cn path
-      # @return [String, nil]
-      def find_data_cn_path
-        # Check common locations
-        paths = [
-          File.join(options[:sources_dir] || '', 'data-cn'),
-          File.expand_path('../data-cn', Dir.pwd),
-          File.expand_path('../../data-cn', Dir.pwd),
-          File.expand_path('../../../data-cn', Dir.pwd),
-          '/Users/mulgogi/src/ammitto/data-cn'
-        ].compact
-
-        puts "[DEBUG] Looking for data-cn in: #{paths.inspect}" if options[:verbose]
-
-        found = paths.find { |p| Dir.exist?(p) }
-        puts "[DEBUG] Found data-cn at: #{found}" if options[:verbose] && found
-
-        found
       end
 
       # Fetch data using Lutaml::Model source models
@@ -198,10 +160,6 @@ module Ammitto
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"
                  puts "[#{source}] Data requires manual conversion from PDF"
                  model_class.from_pdf(content)
-               when :cn
-                 # CN returns already-parsed entities from reference docs or scraper
-                 # content is a Hash with :entities and :announcements
-                 build_cn_sanctions_list(content)
                else
                  # XML sources - content is already a string from extractor
                  model_class.from_xml(content)
@@ -418,15 +376,6 @@ module Ammitto
       # @return [String]
       def cache_dir
         options[:cache_dir] || File.expand_path('~/.ammitto')
-      end
-
-      # Build CN SanctionsList from parsed hash data
-      # @param content [Hash] parsed data with :entities and :announcements
-      # @return [Ammitto::Sources::Cn::SanctionsList]
-      def build_cn_sanctions_list(_content)
-        # The SanctionsList model was removed with #16; CN data is manually
-        # managed in data-cn (announcement-based YAML)
-        raise 'CN sanctions list building is no longer supported'
       end
 
       # Create error result hash

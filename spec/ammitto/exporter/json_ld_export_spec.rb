@@ -50,7 +50,7 @@ RSpec.describe Ammitto::Exporter::JsonLdExport do
       expect(legal_bases.size).to eq(1)
       expect(legal_bases.first.type).to eq('regulation')
       expect(legal_bases.first.identifier).to eq('269/2014 (OJ L85)')
-      expect(legal_bases.first.issuance_date.to_s).to eq('2014-03-17')
+      expect(legal_bases.first.publish_date.to_s).to eq('2014-03-17')
     end
 
     it 'returns empty array when no regulations' do

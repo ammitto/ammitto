@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
-require_relative 'types'
-require_relative 'value_objects/name_variant'
-require_relative 'value_objects/source_provenance'
+require_relative '../types'
+require_relative '../value_objects/name_variant'
+require_relative '../value_objects/source_provenance'
+require_relative '../value_objects/harmonized_name'
+require_relative '../value_objects/harmonized_attributes'
 
 module Ammitto
   module Ontology

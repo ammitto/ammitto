@@ -140,7 +140,7 @@ module Ammitto
             return if value.nil? || value.to_s.strip.empty?
 
             self.name ||= {}
-            self.name[lang.to_s] = value.to_s.strip
+            name[lang.to_s] = value.to_s.strip
           end
 
           # Add a measure
@@ -192,7 +192,7 @@ module Ammitto
             return if value.to_s.strip == '不明'
 
             self.title ||= {}
-            self.title[lang.to_s] = value.to_s.strip
+            title[lang.to_s] = value.to_s.strip
           end
 
           # Add identification
@@ -208,7 +208,7 @@ module Ammitto
                   when 'id', 'id-card' then 'national_id'
                   else 'other'
                   end
-            self.identification[key] = number.to_s.strip
+            identification[key] = number.to_s.strip
           end
 
           # Add phone number

@@ -119,7 +119,7 @@ module Ammitto
         return nil unless node
 
         value = node[attr.to_s]&.strip
-        value&.empty? ? nil : value
+        value && value.empty? ? nil : value
       end
 
       # Clean Chinese text (remove extra whitespace, normalize punctuation)

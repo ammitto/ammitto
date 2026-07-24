@@ -325,6 +325,21 @@ module Ammitto
           #
           # @param value [String] The title string to split
           # @return [Hash] Hash with "ja" and/or "en" keys
+          # Split a newline-separated title into language parts by script
+          # @param str [String] multiline title
+          # @return [Hash] Hash with "ja" and/or "en" keys
+          def self.split_multiline_title(str)
+            result = {}
+            str.split("\n").map(&:strip).reject(&:empty?).each do |line|
+              if line.match?(/^[\p{Hiragana}\p{Katakana}\p{Han}]/)
+                result['ja'] = line
+              elsif line.match?(/^[A-Za-z"'(]/)
+                result['en'] = line
+              end
+            end
+            result
+          end
+
           def self.split_multilingual_title(value)
             return {} if value.nil? || value.to_s.strip.empty?
 
@@ -332,15 +347,7 @@ module Ammitto
 
             # Check for multiline format (newline separator)
             if str.include?("\n")
-              lines = str.split("\n").map(&:strip).reject(&:empty?)
-              result = {}
-              lines.each do |line|
-                if line.match?(/^[\p{Hiragana}\p{Katakana}\p{Han}]/)
-                  result['ja'] = line
-                elsif line.match?(/^[A-Za-z"'(]/)
-                  result['en'] = line
-                end
-              end
+              result = split_multiline_title(str)
               return result if result.size > 1
             end
 

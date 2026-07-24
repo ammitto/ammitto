@@ -21,12 +21,13 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
   spec.bindir = 'exe'
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
-  spec.required_ruby_version = Gem::Requirement.new('>= 3.0.0')
+  spec.required_ruby_version = Gem::Requirement.new('>= 3.3.0')
 
   # Core dependencies
   spec.add_dependency 'csv'
   spec.add_dependency 'faraday', '~> 2.0'
   spec.add_dependency 'json-ld', '~> 3.3'
+  spec.add_dependency 'json-schema', '~> 4.0'
   spec.add_dependency 'lutaml-model', '~> 0.8.17'
   spec.add_dependency 'mechanize', '~> 2.12'
   spec.add_dependency 'moxml', '~> 0.1', '>= 0.1.25'

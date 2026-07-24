@@ -23,11 +23,12 @@ module Ammitto
       'ch' => { name: 'Switzerland (SECO)', country_code: 'CH' },
       'cn' => { name: 'China (MOFCOM/MFA)', country_code: 'CN' },
       'ru' => { name: 'Russia (MID/CBR)', country_code: 'RU' },
-      'tr' => { name: 'Turkey (Ministry of Interior)', country_code: 'TR' },
+      'tr' => { name: 'Turkey (Ministry of Treasury and Finance)', country_code: 'TR' },
       'nz' => { name: 'New Zealand (MFAT)', country_code: 'NZ' },
-      'jp' => { name: 'Japan (MOFA)', country_code: 'JP' },
-      'eu_vessels' => { name: 'European Union (Vessels)', country_code: 'EU' },
-      'un_vessels' => { name: 'United Nations (Vessels)', country_code: 'UN' }
+      'jp' => { name: 'Japan (METI End-User List)', country_code: 'JP' },
+      'eu_vessels' => { name: 'EU Designated Vessels (via Denmark DMA)', country_code: 'EU' },
+      'un_vessels' => { name: 'UN Security Council (1718 Committee)', country_code: 'UN' },
+      'jp_meti' => { name: 'Japan METI (Ministry of Economy, Trade and Industry)', country_code: 'JP' }
     }.freeze
 
     attribute :id, :string                   # Authority identifier

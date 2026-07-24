@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'set'
 require_relative '../ontology/entities/harmonized_entity'
 require_relative '../ontology/value_objects/harmonized_name'
 require_relative '../ontology/value_objects/harmonized_attributes'

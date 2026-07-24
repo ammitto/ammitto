@@ -7,7 +7,7 @@ module Ammitto
       # Schema context information
       class Context
         # @return [String] the context URL
-        CONTEXT_URL = 'https://ammitto.org/schema/v1/context.jsonld'
+        CONTEXT_URL = 'https://ammitto.org/api/v1/context.jsonld'
 
         # Get the context URL
         # @return [String]

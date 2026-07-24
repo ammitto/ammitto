@@ -90,7 +90,9 @@ module Ammitto
         # Create exporters (--combine controls all.jsonld/all.ttl emission)
         @exporter = Serialization::JsonLdGraphExporter.new(
           output_dir: output_dir,
-          combine: options[:combine] == true
+          combine: options[:combine] == true,
+          instruments_dir: find_instruments_dir,
+          supporting_dir: find_supporting_dir
         )
         @search_indexer = Serialization::SearchIndexExporter.new
         @ontology_exporter = Serialization::OntologyExporter.new
@@ -216,22 +218,9 @@ module Ammitto
 
           begin
             result = transform_data(source, data)
-
-            if result[:entity]&.key?('@id') && result[:entry]&.key?('@id')
-              @exporter.add_node(
-                entity: r[:entity],
-                entry: r[:entry],
-                source: source
-              )
-
-              # Also add to search index
-              @search_indexer.add(r[:entity], r[:entry])
-
-              source_graph << result[:entity]
-              source_graph << result[:entry]
-              entities_count += 1
-              entries_count += 1
-            end
+            added = ingest_results(result, source, source_graph, errors, File.basename(file))
+            entities_count += added
+            entries_count += added
           rescue StandardError => e
             error_msg = "#{File.basename(file)}: #{e.message}"
             puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
@@ -251,6 +240,45 @@ module Ammitto
       rescue StandardError => e
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         { code: source, status: :error, error: e.message }
+      end
+
+      # Feed transformed results into the exporters. A source file may
+      # transform into one result or an array of results (e.g. CN
+      # announcements carrying multiple entities).
+      # @param result [Hash, Array<Hash>] transform output
+      # @param source [Symbol] source code
+      # @param source_graph [Array<Hash>] per-source aggregate collector
+      # @param errors [Array<String>] per-file error collector (health gates)
+      # @param filename [String] source file for error attribution
+      # @return [Integer] number of entity/entry pairs ingested
+      def ingest_results(result, source, source_graph, errors, filename)
+        results_list = result.is_a?(Array) ? result : [result]
+        added = 0
+
+        results_list.each do |r|
+          # Both halves absent is a designed skip (e.g. CN measure
+          # modifications); a non-Hash result or half-formed pair is a data
+          # defect and must surface through the health gates.
+          unless r.is_a?(Hash)
+            errors << "#{filename}: transform produced invalid result (#{r.class})"
+            next
+          end
+          next if r[:entity].nil? && r[:entry].nil?
+
+          unless r[:entity]&.key?('@id') && r[:entry]&.key?('@id')
+            errors << "#{filename}: transform produced incomplete entity/entry pair"
+            next
+          end
+
+          @exporter.add_node(entity: r[:entity], entry: r[:entry], source: source)
+          @search_indexer.add(r[:entity], r[:entry])
+
+          source_graph << r[:entity]
+          source_graph << r[:entry]
+          added += 1
+        end
+
+        added
       end
 
       # Find input directory for source
@@ -577,16 +605,9 @@ module Ammitto
         elsif data.key?('announcement') && data.key?('measure_modifications')
           transform_cn_modification(transformer, data)
         else
-          # Old format - single entity
-          require_relative '../sources/cn/sanctions_list'
-
-          source = Ammitto::Sources::Cn::SanctionedEntity.from_yaml(data.to_yaml)
-          result = transformer.transform(source)
-
-          {
-            entity: entity_to_hash(result[:entity]),
-            entry: entry_to_hash(result[:entry])
-          }
+          # The pre-#16 single-entity format is no longer supported; its
+          # model (Cn::SanctionedEntity) was removed with cn/sanctions_list
+          raise 'Unsupported CN source format (expected announcement-based YAML)'
         end
       end
 

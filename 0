@@ -1,5 +1,0 @@
-rake aborted!
-Don't know how to build task 'file' (See the list of available tasks with `rake --tasks`)
-/Users/mulgogi/.asdf/installs/ruby/3.3.2/bin/bundle:25:in `load'
-/Users/mulgogi/.asdf/installs/ruby/3.3.2/bin/bundle:25:in `<main>'
-(See full trace by running task with --trace)

@@ -96,6 +96,11 @@ module Ammitto
       def fetch_source(source)
         puts "[#{source}] Fetching..." if options[:verbose]
 
+        # CN has no automated fetch: its YAML is manually managed in data-cn
+        # (announcement-based reference docs). Reporting this explicitly beats
+        # the extractor path returning success without writing anything.
+        return error_result(source, 'CN data is manually managed in data-cn; automated fetch is not supported') if source == :cn
+
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class
 
@@ -392,9 +397,6 @@ module Ammitto
         when :un_vessels
           require_relative '../sources/un_vessels'
           Ammitto::Sources::UnVessels::SanctionsList
-        when :cn
-          require_relative '../sources/cn/sanctions_list'
-          Ammitto::Sources::Cn::SanctionsList
         end
       rescue LoadError
         nil
@@ -421,52 +423,10 @@ module Ammitto
       # Build CN SanctionsList from parsed hash data
       # @param content [Hash] parsed data with :entities and :announcements
       # @return [Ammitto::Sources::Cn::SanctionsList]
-      def build_cn_sanctions_list(content)
-        require_relative '../sources/cn/sanctions_list'
-
-        # Group entities by announcement
-        entities_by_announcement = {}
-        (content[:entities] || []).each do |entity_data|
-          key = entity_data[:announcement_number] || 'unknown'
-          entities_by_announcement[key] ||= []
-          entities_by_announcement[key] << entity_data
-        end
-
-        # Build announcements with entities
-        announcements = entities_by_announcement.map do |ann_num, entities|
-          # Build SanctionedEntity objects
-          entities.map do |entity_data|
-            Ammitto::Sources::Cn::SanctionedEntity.new(
-              chinese_name: entity_data[:chinese_name],
-              english_name: entity_data[:english_name],
-              entity_type: entity_data[:entity_type] || 'organization',
-              list_type: entity_data[:list_type],
-              announcement_number: entity_data[:announcement_number],
-              announcement_date: entity_data[:announcement_date]&.to_s,
-              measures: entity_data[:measures] || [],
-              legal_basis: entity_data[:legal_basis] || [],
-              source_url: entity_data[:source_url],
-              title: entity_data[:title]
-            )
-          end
-
-          # Find matching announcement data
-          ann_data = (content[:announcements] || []).find { |a| a[:number] == ann_num } || {}
-
-          Ammitto::Sources::Cn::Announcement.from_parsed_data(
-            announcement_number: ann_num,
-            date: ann_data[:date]&.to_s,
-            title: ann_data[:title],
-            issuing_authority: ann_data[:issuing_authority],
-            list_type: entities.first&.dig(:list_type),
-            legal_basis: entities.first&.dig(:legal_basis) || [],
-            measures: entities.first&.dig(:measures) || [],
-            source_url: ann_data[:source_url],
-            entities: entities
-          )
-        end
-
-        Ammitto::Sources::Cn::SanctionsList.new(announcements: announcements)
+      def build_cn_sanctions_list(_content)
+        # The SanctionsList model was removed with #16; CN data is manually
+        # managed in data-cn (announcement-based YAML)
+        raise 'CN sanctions list building is no longer supported'
       end
 
       # Create error result hash

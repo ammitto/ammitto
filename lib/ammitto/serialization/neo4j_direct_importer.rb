@@ -150,7 +150,7 @@ module Ammitto
                            .select { |d| File.directory?(d) }
                            .map { |d| File.basename(d) }
 
-            if list_dirs.any? { |d| %w[entities entries].include?(d) }
+            if list_dirs.intersect?(%w[entities entries])
               # Old structure (no list-type subdirectories)
               import_source(processed_dir, source, nil)
             else

@@ -39,6 +39,7 @@ module Ammitto
       # @return [void]
       def run
         validate_sources!
+        allowed_empty_sources # fail fast on unknown --allow-empty codes
 
         raise Thor::Error, 'No sources to harmonize. Specify sources or use --all.' if @sources.empty?
 
@@ -119,26 +120,31 @@ module Ammitto
 
       # Health gates: a run that produced no data or swallowed errors must
       # exit nonzero so cron/CI cannot publish empty artifacts as success.
-      # Dormant sources (no automated parse path yet) are exempt from the
-      # zero-entity requirement.
+      # Strict by default; the caller opts individual sources out of the
+      # source-error, zero-entity, and missing-aggregate checks with
+      # --allow-empty (the raise-or-silence policy belongs to the invoking
+      # workflow, not to a hardcoded list). Per-file transform errors are
+      # never exempt: a file that exists but fails to transform is a data
+      # defect regardless of the source's status.
       # @param results [Array<Hash>] per-source results
       # @return [void]
       def enforce_health_gates(results)
-        dormant = Config::Defaults::DORMANT_SOURCES
+        allowed_empty = allowed_empty_sources
         failures = []
 
         output_dir = options[:output_dir] || './api/v1'
 
         results.each do |r|
           code = r[:code]
-          if r[:status] == :error
-            failures << "#{code}: #{r[:error]}" unless dormant.include?(code)
-          elsif r[:entities].to_i.zero? && !dormant.include?(code)
-            failures << "#{code}: produced 0 entities"
-          elsif r[:errors]&.any?
+          # Per-file errors are checked first and are never exempt
+          if r[:errors]&.any?
             failures << "#{code}: #{r[:errors].length} file(s) failed to transform " \
                         "(first: #{r[:errors].first})"
-          elsif !dormant.include?(code) &&
+          elsif r[:status] == :error
+            failures << "#{code}: #{r[:error]}" unless allowed_empty.include?(code)
+          elsif r[:entities].to_i.zero? && !allowed_empty.include?(code)
+            failures << "#{code}: produced 0 entities"
+          elsif !allowed_empty.include?(code) &&
                 !File.exist?(File.join(output_dir, 'sources', "#{code}.jsonld"))
             failures << "#{code}: per-source aggregate sources/#{code}.jsonld was not written"
           end
@@ -148,6 +154,23 @@ module Ammitto
 
         raise Thor::Error,
               "Harmonize health gate failed:\n  #{failures.join("\n  ")}"
+      end
+
+      # Sources the caller exempts from the source-error, zero-entity, and
+      # missing-aggregate gates (--allow-empty). Per-file transform errors
+      # are never exempt.
+      # @return [Array<Symbol>] validated source codes
+      def allowed_empty_sources
+        @allowed_empty_sources ||= begin
+          codes = options[:allow_empty].to_s.split(',').map { |c| c.strip.downcase.to_sym }.reject(&:empty?).uniq
+          unknown = codes - Config::Defaults::ALL_SOURCES
+          unless unknown.empty?
+            raise Thor::Error,
+                  "Unknown sources in --allow-empty: #{unknown.join(', ')}. " \
+                  "Valid: #{Config::Defaults::ALL_SOURCES.join(', ')}"
+          end
+          codes
+        end
       end
 
       # Write the per-source JSON-LD aggregate (sources/<code>.jsonld)

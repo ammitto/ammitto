@@ -170,6 +170,10 @@ module Ammitto
     option :all, type: :boolean, default: false, desc: 'Harmonize all sources'
     option :scan, type: :boolean, default: false, desc: 'Auto-detect data-* repositories'
     option :combine, type: :boolean, default: false, desc: 'Create combined all.jsonld'
+    option :allow_empty, type: :string,
+                         desc: 'Sources exempt from the health gates: zero entities, source errors, ' \
+                               'and missing aggregates will not fail the run (comma-separated). ' \
+                               'Per-file transform errors always fail.'
     def harmonize(*sources)
       require_relative 'cli/harmonize_command'
       Cmd::HarmonizeCommand.new(options, sources).run

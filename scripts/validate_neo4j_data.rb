@@ -25,12 +25,11 @@ $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 require 'neo4j/driver'
 require 'optparse'
 require 'ammitto/ontology'
+require_relative 'support/env_defaults'
 
 include Neo4j::Driver
-
-# Empty env values count as unset so defaults stay deterministic
-NEO4J_URI_DEFAULT =
-  ENV['NEO4J_URI'].to_s.empty? ? 'bolt://localhost:7688' : ENV.fetch('NEO4J_URI', nil)
+include Ammitto::Ontology::Entities
+include Ammitto::Ontology::ValueObjects
 
 class Neo4jDataValidator
   VALIDATION_TYPES = %w[all schema integrity orphans coverage].freeze
@@ -51,12 +50,14 @@ class Neo4jDataValidator
 
     connect
 
-    validations.each do |type|
-      send("validate_#{type}")
-      @checks_run << type
+    begin
+      validations.each do |type|
+        send("validate_#{type}")
+        @checks_run << type
+      end
+    ensure
+      disconnect
     end
-
-    disconnect
 
     print_report
 
@@ -71,7 +72,9 @@ class Neo4jDataValidator
   rescue StandardError => e
     puts "ERROR: Cannot connect to Neo4j: #{e.message}"
     exit 2
-  ensure
+  end
+
+  def disconnect
     @session&.close
     @driver&.close
   end
@@ -351,7 +354,7 @@ class Neo4jDataValidator
 
   def check_orphan_entries
     result = @session.run(
-      'MATCH (e:Entry) WHERE NOT (e)<-[:FOR_ENTITY]-() RETURN count(e) as count'
+      'MATCH (e:Entry) WHERE NOT (e)-[:FOR_ENTITY]->(:Entity) RETURN count(e) as count'
     )
     count = result.first[:count]
 

@@ -12,6 +12,11 @@
 # - Authority nodes
 # - Country nodes
 #
+# Exit codes:
+#   0 - Import completed
+#   1 - No importable data found, zero entities imported, or an
+#       unhandled error occurred (e.g. cannot connect to Neo4j)
+#
 # Usage:
 #   ruby scripts/import_neo4j_full.rb
 
@@ -19,18 +24,12 @@ $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
 require 'neo4j/driver'
 require 'yaml'
-require 'json'
 require 'ammitto/ontology'
+require_relative 'support/env_defaults'
 
 include Neo4j::Driver
 
-# Empty env values count as unset so defaults stay deterministic
-NEO4J_URI_DEFAULT =
-  ENV['NEO4J_URI'].to_s.empty? ? 'bolt://localhost:7688' : ENV.fetch('NEO4J_URI', nil)
-
 class FullNeo4jImporter
-  BATCH_SIZE = 100
-
   def initialize(uri: NEO4J_URI_DEFAULT, username: 'neo4j', password: 'password')
     @uri = uri
     @username = username
@@ -41,19 +40,27 @@ class FullNeo4jImporter
   end
 
   def run
-    connect
+    # Discover sources before connecting — no live Neo4j is needed to
+    # learn there is no data to import
     sources = discover_sources
     if sources.empty?
-      abort 'No data-* repositories with processed/entities found — set ' \
-            'AMMITTO_DATA_DIR or clone them next to the gem checkout'
+      abort 'No data-* repositories with entity YAML files ' \
+            '(processed/entities/*.yaml) found — set AMMITTO_DATA_DIR ' \
+            'or clone them next to the gem checkout'
     end
 
+    connect
     setup_schema
     clear_existing_data
 
     import_countries
     import_authorities
     import_all_sources(sources)
+
+    if (@stats[:nodes]['Entity'] || 0).zero?
+      abort 'No entities were imported — the discovered data-* ' \
+            'repositories contain no importable entity YAML documents'
+    end
 
     validate_data
     print_stats
@@ -139,10 +146,8 @@ class FullNeo4jImporter
   # what import_source actually requires
   # @return [Array<String>] matching directory paths
   def discover_sources
-    base_dir = ENV['AMMITTO_DATA_DIR'].to_s
-    base_dir = File.expand_path('../..', __dir__) if base_dir.empty?
-    Dir.glob(File.join(base_dir, 'data-*'))
-       .select { |d| Dir.exist?(File.join(d, 'processed', 'entities')) }
+    Dir.glob(File.join(DEFAULT_DATA_DIR, 'data-*'))
+       .select { |d| Dir.glob(File.join(d, 'processed', 'entities', '*.yaml')).any? }
   end
 
   def import_all_sources(sources)

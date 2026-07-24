@@ -16,6 +16,10 @@
 
 name: Ontology Data Validation
 
+# Validation only reads repositories; keep the job token read-only
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -25,6 +29,7 @@ on:
       - 'scripts/export_*.rb'
       - 'scripts/validate_*.rb'
       - 'scripts/verify_*.rb'
+      - 'scripts/support/**'
       - '.github/workflows/ontology-data-validation.yml'
   pull_request:
     paths:
@@ -33,6 +38,7 @@ on:
       - 'scripts/export_*.rb'
       - 'scripts/validate_*.rb'
       - 'scripts/verify_*.rb'
+      - 'scripts/support/**'
       - '.github/workflows/ontology-data-validation.yml'
   workflow_dispatch:
   schedule:
@@ -235,22 +241,14 @@ jobs:
 
           echo "✓ ALL CRITICAL VALIDATIONS PASSED"
 
-      # Upload artifacts
+      # Upload artifacts — also on failure, so the export stays available
+      # for diagnosis
       - name: Upload JSON-LD export
-        if: steps.data.outputs.available == 'true'
+        if: always() && steps.data.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: json-ld-ontology-export
           path: /tmp/json-ld/
-          retention-days: 7
-
-      - name: Upload validation logs
-        uses: actions/upload-artifact@v4
-        if: always() && steps.data.outputs.available == 'true'
-        with:
-          name: validation-logs
-          path: |
-            ammitto/*.log
           retention-days: 7
         continue-on-error: true
 

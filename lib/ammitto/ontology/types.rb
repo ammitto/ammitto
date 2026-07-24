@@ -40,6 +40,42 @@ module Ammitto
         investment_ban
         technology_transfer_ban
         visa_suspension
+        aircraft_ban
+        debarment
+        entry_ban
+        export_restriction
+        sectoral_sanction
+        transport_sanction
+        vessel_ban
+        import_ban
+        export_ban
+        financial_restriction
+        service_restriction
+        technology_restriction
+        transaction_ban
+        allow_statement
+        cancel_stay_residence
+        cancel_work_permit
+        cooperate_investigation
+        export_license_requirement
+        fine
+        import_license_requirement
+        investigation
+        maritime_restriction
+        prohibit_cooperation
+        prohibit_data_transmission
+        prohibit_export_dual_use_items
+        prohibit_export_gene_sequencers
+        prohibit_export_specific_product
+        prohibit_import_export
+        prohibit_investment_new
+        prohibit_sensitive_information_provision
+        prohibit_transactions
+        prohibit_transfer_provide_dual_use_items
+        provide_information
+        report_violation
+        unreliable_entity_list
+        visa_ban
         other
       ].freeze
 
@@ -165,6 +201,26 @@ module Ammitto
                          .to_sym
 
         IDENTIFICATION_TYPES.include?(normalized) ? normalized : :other
+      end
+
+      # Normalize sanction effect type string
+      # @param type [String, Symbol, nil]
+      # @return [Symbol]
+      def self.normalize_effect_type(type)
+        return :other if type.nil?
+
+        normalized = type.to_s.downcase.gsub(/[-\s]+/, '_').to_sym
+        SANCTION_EFFECT_TYPES.include?(normalized) ? normalized : :other
+      end
+
+      # Normalize legal instrument type string
+      # @param type [String, Symbol, nil]
+      # @return [Symbol]
+      def self.normalize_instrument_type(type)
+        return :other if type.nil?
+
+        normalized = type.to_s.downcase.gsub(/[-\s]+/, '_').to_sym
+        LEGAL_INSTRUMENT_TYPES.include?(normalized) ? normalized : :other
       end
 
       # Normalize script detection from text

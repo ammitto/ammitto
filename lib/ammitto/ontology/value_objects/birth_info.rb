@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
 module Ammitto
@@ -59,7 +60,9 @@ module Ammitto
         # Check if birth info has meaningful content
         # @return [Boolean]
         def present?
-          [date, year, city, country].any?(&:present?)
+          [date, year, city, region, country].any? do |v|
+            Utils::Presence.present?(v)
+          end
         end
 
         # Get year of birth (from date or year field)
@@ -72,19 +75,12 @@ module Ammitto
         # @return [String]
         def to_s
           parts = []
-          parts << (circa ? 'c. ' : '')
-          parts << date_label
-          parts << [city, region, country].compact.join(', ') if city || country
+          label = date_label
+          parts << 'c.' if circa && label
+          parts << label if label
+          place = [city, region, country].compact
+          parts << place.join(', ') unless place.empty?
           parts.join(' ')
-        end
-
-        private
-
-        def date_label
-          return year.to_s if year && !date
-          return date.to_s if date
-
-          nil
         end
 
         # Convert to hash for JSON-LD serialization
@@ -99,6 +95,15 @@ module Ammitto
           hash[:country] = country if country
           hash[:country_iso_code] = country_iso_code if country_iso_code
           hash
+        end
+
+        private
+
+        def date_label
+          return year.to_s if year && !date
+          return date.to_s if date
+
+          nil
         end
 
         # JSON mapping

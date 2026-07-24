@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Ontology
@@ -52,7 +53,7 @@ module Ammitto
         # Check if reason has meaningful content
         # @return [Boolean]
         def present?
-          category.present? || description.present?
+          Utils::Presence.present?(category) || Utils::Presence.present?(description)
         end
 
         # Get category as normalized symbol

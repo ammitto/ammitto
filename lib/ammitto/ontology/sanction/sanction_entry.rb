@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../types'
 require_relative 'authority'
 require_relative 'sanction_regime'
 require_relative 'sanction_period_modification'
@@ -119,18 +120,27 @@ module Ammitto
         end
 
         # Add a status change to history
-        # @param new_status [Symbol, String]
+        # @param new_status [Symbol, String] one of Types::SANCTION_STATUSES
         # @param date [Date]
         # @param reason [String, nil]
         # @return [void]
+        # @raise [ArgumentError] when new_status is blank or not a known
+        #   sanction status
         def add_status_change(new_status, date: Date.today, reason: nil)
+          normalized = new_status.to_s.downcase
+          unless Types.valid_status?(normalized)
+            raise ArgumentError,
+                  "invalid sanction status: #{new_status.inspect}"
+          end
+
           self.status_history ||= []
           status_history << StatusHistory.new(
-            status: status,
+            from_status: status,
+            to_status: normalized,
             date: date,
             reason: reason
           )
-          self.status = new_status.to_s
+          self.status = normalized
         end
 
         key_value do

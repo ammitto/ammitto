@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../types'
 require_relative '../neo4j_adapter'
 
@@ -51,7 +52,7 @@ module Ammitto
         # Check if identification has meaningful content
         # @return [Boolean]
         def present?
-          number.present?
+          Utils::Presence.present?(number)
         end
 
         # Get type as normalized symbol

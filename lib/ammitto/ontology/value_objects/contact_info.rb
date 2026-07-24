@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
 module Ammitto
@@ -44,7 +45,7 @@ module Ammitto
         # Check if contact info has meaningful content
         # @return [Boolean]
         def present?
-          [email, phone, website, fax].any?(&:present?)
+          [email, phone, website, fax].any? { |v| Utils::Presence.present?(v) }
         end
 
         # Check if contact info is empty

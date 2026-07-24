@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
 module Ammitto
@@ -64,7 +65,7 @@ module Ammitto
         # Check if address has meaningful content
         # @return [Boolean]
         def present?
-          [street, city, region, country, postal_code].any?(&:present?)
+          [street, city, region, country, postal_code].any? { |v| Utils::Presence.present?(v) }
         end
 
         # Check if address is empty

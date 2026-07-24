@@ -44,6 +44,7 @@
 #    - IRI: /legal_instrument/{source}/{local_id}
 #
 
+require_relative 'utils/presence'
 require_relative 'ontology/types'
 require_relative 'ontology/value_objects'
 require_relative 'ontology/entities'

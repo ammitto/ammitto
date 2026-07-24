@@ -9,6 +9,9 @@ module Ammitto
     #
     # Supported environment variables:
     #   AMMITTO_CACHE_DIR - Directory for caching data
+    #   AMMITTO_SOURCES_DIR - Parent directory containing data-* repos
+    #     (AMMITTO_DATA_DIR is honored as an alias; the CI validation
+    #     scripts use that name for the same directory)
     #   AMMITTO_API_BASE_URL - Base URL for API
     #   AMMITTO_LOG_LEVEL - Log level (debug, info, warn, error)
     #   AMMITTO_SOURCES - Comma-separated list of sources
@@ -35,11 +38,20 @@ module Ammitto
         sources_dir: 'SOURCES_DIR'
       }.freeze
 
+      # Fallback ENV names consulted when the primary variable is unset
+      ENV_ALIASES = { sources_dir: 'DATA_DIR' }.freeze
+
       class << self
-        # Check if any Ammitto ENV variables are set
+        # Check if any Ammitto ENV variable carries a usable value
+        #
+        # Mirrors {configuration}: variables set to an empty string are
+        # ignored there, so they do not count as set here either.
+        #
         # @return [Boolean]
         def any_set?
-          ENV_MAPPING.keys.any? { |key| ENV.fetch("#{PREFIX}#{key.to_s.upcase}", nil) }
+          ENV_MAPPING.any? do |key, env_var|
+            !env_value(env_var, ENV_ALIASES[key]).nil?
+          end
         end
 
         # Get configuration from environment
@@ -48,8 +60,8 @@ module Ammitto
           config = {}
 
           ENV_MAPPING.each do |key, env_var|
-            value = ENV.fetch("#{PREFIX}#{env_var}", nil)
-            next if value.nil? || value.empty?
+            value = env_value(env_var, ENV_ALIASES[key])
+            next if value.nil?
 
             config[key] = parse_value(key, value)
           end
@@ -58,6 +70,18 @@ module Ammitto
         end
 
         private
+
+        # Read an ENV variable, falling back to its alias
+        # @param primary [String] primary variable name (without prefix)
+        # @param fallback [String, nil] alias name (without prefix)
+        # @return [String, nil] the value, or nil when unset/empty
+        def env_value(primary, fallback)
+          [primary, fallback].compact.each do |name|
+            value = ENV.fetch("#{PREFIX}#{name}", nil)
+            return value unless value.nil? || value.empty?
+          end
+          nil
+        end
 
         # Parse value based on option type
         # @param key [Symbol] option key

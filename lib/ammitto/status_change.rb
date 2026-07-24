@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'lutaml/model'
+
 module Ammitto
   # NoticeReference represents a reference to an official notice
   #

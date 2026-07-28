@@ -415,8 +415,10 @@ module Ammitto
       # - :eligible — the selection predicate: regular files from the
       #   legacy tiers (entities/ subdirectory, flat files, one-level
       #   list directories — data-cn format), plus a recursive tier
-      #   when those hold no regular direct YAML, reaching lists
-      #   nested more than one level deep (data-jp). Only regular
+      #   when the direct tiers (entities/ and flat files) hold no
+      #   regular YAML — one-level list files do not suppress it —
+      #   reaching lists nested more than one level deep (data-jp).
+      #   Only regular
       #   files count (a directory named like a YAML file must not
       #   make a candidate eligible), but eligibility is otherwise by
       #   name: malformed YAML stays eligible so source corruption

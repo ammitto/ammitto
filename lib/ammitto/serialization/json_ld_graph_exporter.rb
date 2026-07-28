@@ -590,10 +590,35 @@ module Ammitto
       # @param original [String] identifier the slug was derived from
       # @return [String] canonical instrument IRI
       def instrument_iri(source_code, slug, original)
+        # The legalCitations path derives BOTH the source and the slug
+        # from IRI text, and each becomes a path component under
+        # node/legal-instrument/ — so either spanning components (or
+        # being '.'/'..') means a malformed instrument IRI that would
+        # write outside the node layout. Fail loudly; multibyte slugs
+        # pass through untouched (normalizing here would collapse
+        # non-Latin identifiers to nothing).
+        [source_code.to_s, slug].each do |component|
+          next unless unusable_path_component?(component)
+
+          raise Ammitto::Error,
+                "Instrument identifier #{original.inspect} yields " \
+                "unusable path component #{component.inspect}"
+        end
+
         final_slug = clamp_slug(slug)
         iri = "#{BASE_URI}/legal-instrument/#{source_code}/#{final_slug}"
         register_instrument_slug(iri, slug, original)
         iri
+      end
+
+      # A path component is unusable when empty, containing separators
+      # or NUL, or a filesystem navigation name
+      # @param component [String] candidate path component
+      # @return [Boolean]
+      def unusable_path_component?(component)
+        component.empty? ||
+          component.match?(%r{[/\\\x00]}) ||
+          ['.', '..'].include?(component)
       end
 
       # Clamp an oversized slug so its "#{slug}.jsonld" filename fits the

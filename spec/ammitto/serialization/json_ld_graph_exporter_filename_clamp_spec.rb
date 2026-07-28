@@ -145,6 +145,47 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       expect(exporter.instruments.length).to eq(1)
     end
 
+    it 'raises on citation-derived slugs spanning path components' do
+      entity = {
+        '@id' => 'https://www.ammitto.org/entity/au/e9',
+        '@type' => 'PersonEntity'
+      }
+      entry = {
+        '@id' => 'https://www.ammitto.org/entry/au/consolidated/e9',
+        '@type' => 'SanctionEntry',
+        'legalCitations' => [{
+          'legalInstrumentId' =>
+            'https://www.ammitto.org/legal_instrument/au/../../escape/act-1'
+        }]
+      }
+
+      expect { exporter.add_node(entity: entity, entry: entry, source: :au) }
+        .to raise_error(Ammitto::Error, /unusable path component/)
+    end
+
+    it 'raises loudly when an identifier normalizes to an empty slug' do
+      expect { add_entry(exporter, 'e8', ['///']) }
+        .to raise_error(Ammitto::Error, /unusable path component/)
+    end
+
+    it 'raises on citation-derived sources escaping the node layout' do
+      entity = {
+        '@id' => 'https://www.ammitto.org/entity/au/e10',
+        '@type' => 'PersonEntity'
+      }
+      entry = {
+        '@id' => 'https://www.ammitto.org/entry/au/consolidated/e10',
+        '@type' => 'SanctionEntry',
+        'legalCitations' => [{
+          'legalInstrumentId' =>
+            'https://www.ammitto.org/legal_instrument/../act-1'
+        }]
+      }
+
+      expect { exporter.add_node(entity: entity, entry: entry, source: :au) }
+        .to raise_error(Ammitto::Error, /unusable path component/)
+    end
+
     it 'writes filenames equal to IRI tails for clamped and unclamped' do
       add_entry(exporter, 'e1', ['unscr-1718', 'a' * 300])
       exporter.export

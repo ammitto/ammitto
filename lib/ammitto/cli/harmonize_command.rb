@@ -200,32 +200,11 @@ module Ammitto
       def harmonize_source(source)
         puts "[#{source}] Harmonizing..." if options[:verbose]
 
-        input_dir = find_input_dir(source)
+        input_dir, yaml_files = find_input_dir(source)
         unless input_dir
           puts "[#{source}] No input directory found. Run 'ammitto fetch' first." if options[:verbose]
           return { code: source, status: :error, error: 'No input directory found' }
         end
-
-        # Load YAML files from multiple possible locations
-        yaml_files = []
-
-        # Check for entities subdirectory
-        yaml_files += Dir.glob(File.join(input_dir, 'entities', '*.yaml'))
-        yaml_files += Dir.glob(File.join(input_dir, 'entities', '*.yml'))
-
-        # Check for root directory
-        yaml_files += Dir.glob(File.join(input_dir, '*.yaml'))
-        yaml_files += Dir.glob(File.join(input_dir, '*.yml'))
-
-        # Check for nested subdirectories (data-cn format: sources/sanction-lists/*/)
-        yaml_files += Dir.glob(File.join(input_dir, '*', '*.yaml'))
-        yaml_files += Dir.glob(File.join(input_dir, '*', '*.yml'))
-
-        # Filter out metadata files (starting with _)
-        yaml_files = yaml_files.reject { |f| File.basename(f).start_with?('_') }
-
-        # Remove duplicates (in case same file exists in both locations)
-        yaml_files = yaml_files.uniq
 
         return { code: source, status: :error, error: 'No YAML files found' } if yaml_files.empty?
 
@@ -304,49 +283,207 @@ module Ammitto
         added
       end
 
-      # Find input directory for source
+      # Find input directory and its loadable YAML files for source
+      #
+      # Preference is eligibility-based, not existence-based: the first
+      # candidate holding at least one eligible YAML file wins, so a
+      # stale processed/ directory (empty or holding only _index.yaml)
+      # no longer shadows curated YAML under sources/sanction-lists/.
+      # When no candidate is eligible, the legacy existence-based chain
+      # decides and the legacy (non-recursive, unfiltered) file set is
+      # loaded, so failure and ingestion semantics for those
+      # directories stay unchanged. Selection and loading derive from
+      # one memoized resolution per directory (#resolve_yaml_files).
+      # @param source [Symbol] source code
+      # @return [Array(String, Array<String>), nil] directory and files
+      def find_input_dir(source)
+        explicit_input(source) || auto_input(source)
+      end
+
+      # Resolve the explicit --input-dir option, keeping the legacy
+      # precedence: the per-source subdirectory wins whenever it
+      # exists (a base holding per-source subdirectories must never be
+      # loaded as one source), then the base directory with its legacy
+      # file set. The subdirectory upgrades to the eligible set when
+      # one is found, so nested per-source layouts load; an explicit
+      # path that exists but holds nothing is still returned
+      # (surfacing "No YAML files found") rather than silently falling
+      # through to auto-detection, which would mask a mistyped path.
+      # @param source [Symbol] source code
+      # @return [Array(String, Array<String>), nil] directory and files
+      def explicit_input(source)
+        return nil unless options[:input_dir]
+
+        sub = File.join(options[:input_dir], source.to_s)
+        base = options[:input_dir]
+
+        if Dir.exist?(sub)
+          views = resolve_yaml_files(sub)
+          files = views[:eligible].any? ? views[:chosen] : views[:legacy]
+          return [sub, files]
+        end
+        return [base, resolve_yaml_files(base)[:legacy]] if Dir.exist?(base)
+
+        nil
+      end
+
+      # Auto-detection: the first candidate holding eligible YAML, or
+      # the legacy existence-based fallback. One memo per call keeps
+      # every directory resolved at most once, so the eligibility
+      # decision and the fallback's returned file list always come
+      # from the same resolution of that directory.
+      # @param source [Symbol] source code
+      # @return [Array(String, Array<String>), nil] directory and files
+      def auto_input(source)
+        views_by_dir = Hash.new do |memo, dir|
+          memo[dir] = resolve_yaml_files(dir)
+        end
+
+        candidate_input_dirs(source).each do |dir|
+          views = views_by_dir[dir]
+          return [dir, views[:chosen]] if views[:eligible].any?
+        end
+
+        dir = existing_input_dir(source)
+        dir ? [dir, views_by_dir[dir][:legacy]] : nil
+      end
+
+      # Auto-detection candidates in legacy order — processed/, then
+      # sources/sanction-lists/ (data-cn format), then raw/<latest
+      # date>, each for the underscore and hyphen repo namings, then
+      # the cache
+      # @param source [Symbol] source code
+      # @return [Array<String>] candidate directories
+      def candidate_input_dirs(source)
+        candidates = []
+
+        if options[:sources_dir]
+          %w[processed sources/sanction-lists].each do |subpath|
+            data_repo_names(source).each do |repo|
+              candidates << File.join(options[:sources_dir], repo, subpath)
+            end
+          end
+
+          data_repo_names(source).each do |repo|
+            raw_path = File.join(options[:sources_dir], repo, 'raw')
+            candidates << find_latest_subdir(raw_path)
+          end
+        end
+
+        candidates << find_latest_subdir(File.join(cache_dir, 'raw',
+                                                   source.to_s))
+        candidates.compact
+      end
+
+      # Underscore and hyphen data repository names for a source
+      # (eu_vessels -> data-eu_vessels, data-eu-vessels)
+      # @param source [Symbol] source code
+      # @return [Array<String>] unique data-* directory names
+      def data_repo_names(source)
+        ["data-#{source}", "data-#{source.to_s.gsub('_', '-')}"].uniq
+      end
+
+      # Legacy existence-based directory chain (including the
+      # historical early nil return for a raw/ directory without
+      # dated subdirectories)
       # @param source [Symbol] source code
       # @return [String, nil] input directory path
-      def find_input_dir(source)
-        # Check specified input_dir
-        if options[:input_dir]
-          return File.join(options[:input_dir], source.to_s) if Dir.exist?(File.join(options[:input_dir], source.to_s))
-          return options[:input_dir] if Dir.exist?(options[:input_dir])
-        end
-
-        # Check sources_dir - try both underscore and hyphen naming
+      def existing_input_dir(source)
         if options[:sources_dir]
-          # Try underscore version first (eu_vessels -> data-eu_vessels)
-          processed_path = File.join(options[:sources_dir], "data-#{source}", 'processed')
-          return processed_path if Dir.exist?(processed_path)
+          %w[processed sources/sanction-lists].each do |subpath|
+            data_repo_names(source).each do |repo|
+              path = File.join(options[:sources_dir], repo, subpath)
+              return path if Dir.exist?(path)
+            end
+          end
 
-          # Try hyphen version (eu_vessels -> data-eu-vessels)
-          hyphen_source = source.to_s.gsub('_', '-')
-          processed_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'processed')
-          return processed_path if Dir.exist?(processed_path)
-
-          # Check for sources/sanction-lists directory (data-cn format)
-          sources_lists_path = File.join(options[:sources_dir], "data-#{source}", 'sources', 'sanction-lists')
-          return sources_lists_path if Dir.exist?(sources_lists_path)
-
-          # Try hyphen version for sources
-          sources_lists_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'sources', 'sanction-lists')
-          return sources_lists_path if Dir.exist?(sources_lists_path)
-
-          # Then check for raw/{date} directory
-          source_path = File.join(options[:sources_dir], "data-#{source}", 'raw')
-          return find_latest_subdir(source_path) if Dir.exist?(source_path)
-
-          # Try hyphen version for raw
-          source_path = File.join(options[:sources_dir], "data-#{hyphen_source}", 'raw')
-          return find_latest_subdir(source_path) if Dir.exist?(source_path)
+          data_repo_names(source).each do |repo|
+            raw_path = File.join(options[:sources_dir], repo, 'raw')
+            return find_latest_subdir(raw_path) if Dir.exist?(raw_path)
+          end
         end
 
-        # Check default cache location
         cache_raw = File.join(cache_dir, 'raw', source.to_s)
         return find_latest_subdir(cache_raw) if Dir.exist?(cache_raw)
 
         nil
+      end
+
+      # Resolve a directory's YAML tiers once and derive the three
+      # views discovery uses, so the eligibility decision and the
+      # returned load list always come from the same resolution:
+      # - :eligible — the selection predicate: regular files from the
+      #   legacy tiers (entities/ subdirectory, flat files, one-level
+      #   list directories — data-cn format), plus a recursive tier
+      #   when the direct tiers (entities/ and flat files) hold no
+      #   regular YAML — one-level list files do not suppress it —
+      #   reaching lists nested more than one level deep (data-jp).
+      #   Only regular
+      #   files count (a directory named like a YAML file must not
+      #   make a candidate eligible), but eligibility is otherwise by
+      #   name: malformed YAML stays eligible so source corruption
+      #   surfaces through load errors and the health gates instead of
+      #   silently falling through to another directory.
+      # - :chosen — the load list for an eligibility winner: the
+      #   unfiltered legacy set (layout anomalies like a directory
+      #   named entity.yaml still surface as load errors exactly as
+      #   before) plus the recursive regular files.
+      # - :legacy — the loader's historical set (direct plus
+      #   one-level tiers, unfiltered, never recursive) for existence
+      #   fallbacks, keeping their semantics byte-identical.
+      # @param dir [String, nil] directory to inspect
+      # @return [Hash{Symbol=>Array<String>}] tier views
+      def resolve_yaml_files(dir)
+        empty = { eligible: [], chosen: [], legacy: [] }
+        return empty if dir.nil? || !Dir.exist?(dir)
+
+        direct = yaml_files_in(dir, 'entities') + yaml_files_in(dir)
+        one_level = yaml_files_in(dir, '*')
+        direct_regular = regular_files(direct)
+        recursive = if direct_regular.empty?
+                      regular_files(yaml_files_in(dir, '**'))
+                    else
+                      []
+                    end
+        legacy = (direct + one_level).uniq
+
+        {
+          eligible: (direct_regular + regular_files(one_level) +
+                     recursive).uniq,
+          chosen: (legacy + recursive).uniq,
+          legacy: legacy
+        }
+      end
+
+      # Eligible YAML files within a directory (see #resolve_yaml_files)
+      # @param dir [String, nil] directory to inspect
+      # @return [Array<String>] eligible YAML file paths
+      def eligible_yaml_files(dir)
+        resolve_yaml_files(dir)[:eligible]
+      end
+
+      # One glob tier of YAML entries, excluding metadata files
+      # (basename starting with "_"). Patterns are globbed relative to
+      # the directory (base:) so glob metacharacters in configured
+      # paths are treated literally.
+      # @param dir [String] directory to glob under
+      # @param segments [Array<String>] intermediate path segments
+      # @return [Array<String>] YAML entry paths
+      def yaml_files_in(dir, *segments)
+        patterns = %w[yaml yml].map do |ext|
+          File.join(*segments, "*.#{ext}")
+        end
+
+        patterns.flat_map { |pattern| Dir.glob(pattern, base: dir) }
+                .map { |relative| File.join(dir, relative) }
+                .reject { |f| File.basename(f).start_with?('_') }
+      end
+
+      # Restrict paths to regular files (following symlinks)
+      # @param paths [Array<String>] candidate paths
+      # @return [Array<String>] regular file paths
+      def regular_files(paths)
+        paths.select { |f| File.file?(f) }
       end
 
       # Find latest subdirectory (by date)

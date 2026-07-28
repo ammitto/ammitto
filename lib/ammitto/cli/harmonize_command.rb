@@ -27,6 +27,16 @@ module Ammitto
       # @return [JsonLdGraphExporter] the graph exporter
       attr_reader :exporter
 
+      # Quality floors: emptiness gates alone let one garbage entity pass
+      # (the us incident: a single nameless entity, exit 0, served as the
+      # entire dataset). Two per-source floors close that hole. Thresholds
+      # are operator policy: the unique-id floor catches catastrophic id
+      # collapse (jp: 86 files, 1 id) while tolerating moderate duplicate
+      # pairs that dedup handles; the named floor requires the served
+      # entities to be overwhelmingly identifiable.
+      MIN_UNIQUE_ID_RATIO = 0.5
+      MIN_NAMED_ENTITY_RATIO = 0.9
+
       # Initialize with options and sources
       # @param options [Hash] command options
       # @param sources [Array<String>] source codes
@@ -121,39 +131,207 @@ module Ammitto
       # Health gates: a run that produced no data or swallowed errors must
       # exit nonzero so cron/CI cannot publish empty artifacts as success.
       # Strict by default; the caller opts individual sources out of the
-      # source-error, zero-entity, and missing-aggregate checks with
-      # --allow-empty (the raise-or-silence policy belongs to the invoking
-      # workflow, not to a hardcoded list). Per-file transform errors are
-      # never exempt: a file that exists but fails to transform is a data
-      # defect regardless of the source's status.
+      # source-error, zero-entity, missing-aggregate, and quality-floor
+      # checks with --allow-empty (the raise-or-silence policy belongs to
+      # the invoking workflow, not to a hardcoded list). Per-file transform
+      # errors are never exempt: a file that exists but fails to transform
+      # is a data defect regardless of the source's status.
+      #
+      # Quality floors (per source, computed after the emptiness gates,
+      # attached to the per-source result as result[:quality]):
+      # - unique_id_ratio: deduplicated entity count (the stats.json
+      #   number) over ingested entity count; denominator is the count of
+      #   entity/entry pairs the source's files produced (multi-entity
+      #   files contribute one per pair). Floor: MIN_UNIQUE_ID_RATIO.
+      # - named_entity_ratio: entity nodes in the served per-source
+      #   aggregate carrying at least one non-empty name over all its
+      #   entity nodes. Floor: MIN_NAMED_ENTITY_RATIO.
       # @param results [Array<Hash>] per-source results
       # @return [void]
       def enforce_health_gates(results)
-        allowed_empty = allowed_empty_sources
-        failures = []
-
-        output_dir = options[:output_dir] || './api/v1'
-
-        results.each do |r|
-          code = r[:code]
-          # Per-file errors are checked first and are never exempt
-          if r[:errors]&.any?
-            failures << "#{code}: #{r[:errors].length} file(s) failed to transform " \
-                        "(first: #{r[:errors].first})"
-          elsif r[:status] == :error
-            failures << "#{code}: #{r[:error]}" unless allowed_empty.include?(code)
-          elsif r[:entities].to_i.zero? && !allowed_empty.include?(code)
-            failures << "#{code}: produced 0 entities"
-          elsif !allowed_empty.include?(code) &&
-                !File.exist?(File.join(output_dir, 'sources', "#{code}.jsonld"))
-            failures << "#{code}: per-source aggregate sources/#{code}.jsonld was not written"
-          end
-        end
-
+        evaluate_gates(results)
+        failures = results.flat_map { |r| r[:gate_failures] || [] }
         return if failures.empty?
 
         raise Thor::Error,
               "Harmonize health gate failed:\n  #{failures.join("\n  ")}"
+      end
+
+      # Evaluate the gates once per results set: attach quality metrics
+      # and per-source gate failures to each result, so the printed
+      # summary and the gate raise report the same classification (the
+      # summary and the gates receive the same results array in a run)
+      # @param results [Array<Hash>] per-source results (mutated)
+      # @return [void]
+      def evaluate_gates(results)
+        return if @gates_evaluated_results.equal?(results)
+
+        @gates_evaluated_results = results
+        output_dir = options[:output_dir] || './api/v1'
+
+        results.each do |r|
+          attach_quality_metrics(r, output_dir) if r[:status] == :success
+          r[:gate_failures] = source_gate_failures(r, output_dir)
+        end
+      end
+
+      # Gate failures for one per-source result
+      # @param result [Hash] per-source result
+      # @param output_dir [String] output directory
+      # @return [Array<String>] failure messages
+      def source_gate_failures(result, output_dir)
+        code = result[:code]
+
+        # Per-file errors are checked first and are never exempt
+        if result[:errors]&.any?
+          return ["#{code}: #{result[:errors].length} file(s) failed to transform " \
+                  "(first: #{result[:errors].first})"]
+        end
+        return [] if allowed_empty_sources.include?(code)
+
+        if result[:status] == :error
+          ["#{code}: #{result[:error]}"]
+        elsif result[:entities].to_i.zero?
+          ["#{code}: produced 0 entities"]
+        elsif !File.exist?(File.join(output_dir, 'sources', "#{code}.jsonld"))
+          ["#{code}: per-source aggregate sources/#{code}.jsonld was not written"]
+        else
+          quality_floor_failures(result)
+        end
+      end
+
+      # Compute quality metrics for a successful per-source result and
+      # attach them to the result hash (part of the per-source result
+      # contract; see #enforce_health_gates for definitions)
+      # @param result [Hash] per-source result (mutated)
+      # @param output_dir [String] output directory
+      # @return [void]
+      def attach_quality_metrics(result, output_dir)
+        metrics = {}
+        ingested = result[:entities].to_i
+        unique = @exporter&.stats&.dig(:sources, result[:code].to_s, :entities)
+
+        if unique && ingested.positive?
+          metrics[:unique_entities] = unique
+          metrics[:unique_id_ratio] = unique.to_f / ingested
+        end
+
+        metrics.merge!(aggregate_name_metrics(result[:code], output_dir))
+        result[:quality] = metrics
+      end
+
+      # Name metrics read from the served per-source aggregate. Every
+      # unusable document shape — unparseable JSON, a non-object root, a
+      # non-array @graph, or a graph without a single entity node — is
+      # reported as invalid so the gate fails closed instead of skipping
+      # the floors.
+      # @param code [Symbol] source code
+      # @param output_dir [String] output directory
+      # @return [Hash] name metrics (empty when the file is absent)
+      def aggregate_name_metrics(code, output_dir)
+        path = File.join(output_dir, 'sources', "#{code}.jsonld")
+        return {} unless File.exist?(path)
+
+        nodes = parse_aggregate_graph(path)
+        entity_nodes = nodes&.select do |n|
+          n.is_a?(Hash) && n['@id'].to_s.include?('/entity/')
+        end
+        return { aggregate_invalid: true } if entity_nodes.nil? ||
+                                              entity_nodes.empty?
+
+        named = entity_nodes.count { |n| named_entity_node?(n) }
+        {
+          entity_nodes: entity_nodes.length,
+          named_entities: named,
+          named_entity_ratio: named.to_f / entity_nodes.length
+        }
+      end
+
+      # @param path [String] aggregate file path
+      # @return [Array, nil] graph nodes, or nil for an unusable document
+      def parse_aggregate_graph(path)
+        document = JSON.parse(File.read(path))
+        return nil unless document.is_a?(Hash)
+
+        nodes = document['@graph']
+        nodes.is_a?(Array) ? nodes : nil
+      rescue JSON::ParserError
+        nil
+      end
+
+      # Whether an entity node carries at least one usable name string
+      # @param node [Hash] entity node from the aggregate
+      # @return [Boolean]
+      def named_entity_node?(node)
+        names = node['names']
+        named = names.is_a?(Array) &&
+                names.any? { |n| name_variant_present?(n) }
+
+        named || usable_name_string?(node['name'])
+      end
+
+      # Whether one name variant holds a usable name string
+      # @param variant [Hash, String, Object] name variant
+      # @return [Boolean]
+      def name_variant_present?(variant)
+        return usable_name_string?(variant) if variant.is_a?(String)
+        return false unless variant.is_a?(Hash)
+
+        %w[fullName firstName middleName lastName
+           full_name first_name middle_name last_name].any? do |key|
+          usable_name_string?(variant[key])
+        end
+      end
+
+      # Only non-blank Strings count as names — 0, {}, or [] in a name
+      # field must not make a malformed aggregate look fully named
+      # @param value [Object] candidate name value
+      # @return [Boolean]
+      def usable_name_string?(value)
+        value.is_a?(String) && !value.match?(/\A[[:space:]]*\z/)
+      end
+
+      # Quality-floor gate failures for one per-source result
+      # @param result [Hash] per-source result carrying :quality metrics
+      # @return [Array<String>] failure messages
+      def quality_floor_failures(result)
+        [invalid_aggregate_failure(result),
+         unique_id_floor_failure(result),
+         named_floor_failure(result)].compact
+      end
+
+      # @param result [Hash] per-source result
+      # @return [String, nil] failure message
+      def invalid_aggregate_failure(result)
+        return nil unless result.dig(:quality, :aggregate_invalid)
+
+        code = result[:code]
+        "#{code}: per-source aggregate sources/#{code}.jsonld " \
+          'is not a usable JSON-LD aggregate'
+      end
+
+      # @param result [Hash] per-source result
+      # @return [String, nil] failure message
+      def unique_id_floor_failure(result)
+        ratio = result.dig(:quality, :unique_id_ratio)
+        return nil unless ratio && ratio < MIN_UNIQUE_ID_RATIO
+
+        "#{result[:code]}: unique-id ratio #{format('%.2f', ratio)} " \
+          "below floor #{format('%.2f', MIN_UNIQUE_ID_RATIO)} " \
+          "(#{result.dig(:quality, :unique_entities)} unique of " \
+          "#{result[:entities].to_i} ingested entities)"
+      end
+
+      # @param result [Hash] per-source result
+      # @return [String, nil] failure message
+      def named_floor_failure(result)
+        ratio = result.dig(:quality, :named_entity_ratio)
+        return nil unless ratio && ratio < MIN_NAMED_ENTITY_RATIO
+
+        "#{result[:code]}: named-entity ratio #{format('%.2f', ratio)} " \
+          "below floor #{format('%.2f', MIN_NAMED_ENTITY_RATIO)} " \
+          "(#{result.dig(:quality, :named_entities)} named of " \
+          "#{result.dig(:quality, :entity_nodes)} served entities)"
       end
 
       # Sources the caller exempts from the source-error, zero-entity, and
@@ -956,22 +1134,51 @@ module Ammitto
         options[:cache_dir] || File.expand_path('~/.ammitto')
       end
 
-      # Print summary of results
+      # Print summary of results using the gate classification, so the
+      # summary can never print "succeeded" for a source the health gates
+      # are about to fail (error, per-file failures, or quality floors).
+      # Entity/entry totals come from the exporter's deduplicated stats so
+      # the log agrees with the published stats.json numbers.
       # @param results [Array<Hash>] harmonize results
       # @return [void]
       def print_summary(results)
-        success = results.count { |r| r[:status] == :success }
-        failed = results.count { |r| r[:status] == :error }
+        evaluate_gates(results)
+        clean, troubled = results.partition do |r|
+          r[:status] == :success && (r[:gate_failures] || []).empty?
+        end
 
         puts
-        puts "Harmonize complete: #{success} succeeded, #{failed} failed"
+        puts "Harmonize complete: #{clean.length} succeeded, #{troubled.length} failed"
+        print_graph_totals
 
-        return unless failed.positive?
+        return if troubled.empty?
 
         puts 'Failed sources:'
-        results.select { |r| r[:status] == :error }.each do |r|
-          puts "  #{r[:code]}: #{r[:error]}"
+        troubled.each do |r|
+          failure_lines(r).each { |line| puts "  #{line}" }
         end
+      end
+
+      # Failure lines for a troubled per-source result. Gate failures
+      # already carry the source code; an exempted (--allow-empty) errored
+      # source has none, so its error is reported directly.
+      # @param result [Hash] harmonize result
+      # @return [Array<String>]
+      def failure_lines(result)
+        failures = result[:gate_failures] || []
+        return failures if failures.any?
+
+        ["#{result[:code]}: #{result[:error] || 'failed'}"]
+      end
+
+      # Deduplicated entity/entry totals as exported (stats.json numbers)
+      # @return [void]
+      def print_graph_totals
+        stats = @exporter&.stats
+        return unless stats
+
+        puts "Graph totals: #{stats[:total_entities]} entities, " \
+             "#{stats[:total_entries]} entries (deduplicated)"
       end
     end
   end

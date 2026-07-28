@@ -145,6 +145,146 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
     end
   end
 
+  describe '#add deduplication' do
+    let(:entity) do
+      {
+        '@id' => 'https://www.ammitto.org/entity/cn/test',
+        'entityType' => 'organization',
+        'names' => [{ 'fullName' => 'Test Corp', 'isPrimary' => true }]
+      }
+    end
+
+    let(:entry) do
+      {
+        '@id' => 'https://www.ammitto.org/entry/cn/unreliable-entity-list/test',
+        'authority' => { '@id' => 'https://www.ammitto.org/authority/cn' },
+        'regime' => { '@id' => 'https://www.ammitto.org/regime/cn_unreliable', 'name' => 'CN' },
+        'status' => 'active'
+      }
+    end
+
+    it 'keeps one row per entity id for duplicate pairs' do
+      exporter.add(entity, entry)
+      exporter.add(entity, entry)
+
+      expect(exporter.entities.length).to eq(1)
+    end
+
+    it 'recounts every facet from the deduplicated rows' do
+      exporter.add(entity, entry)
+      exporter.add(entity, entry)
+
+      expect(exporter.facets[:authorities]['cn']).to eq(1)
+      expect(exporter.facets[:list_types]['unreliable-entity-list']).to eq(1)
+      expect(exporter.facets[:regimes]['cn_unreliable'][:count]).to eq(1)
+      expect(exporter.facets[:types]['organization']).to eq(1)
+      expect(exporter.facets[:statuses]['active']).to eq(1)
+    end
+
+    it 'unions names across repeated pairs' do
+      exporter.add(entity, entry)
+      exporter.add(entity.merge('names' => [{ 'fullName' => '测试公司' }]),
+                   entry)
+
+      row = exporter.entities.first
+      expect(row[:names]).to contain_exactly('Test Corp', '测试公司')
+    end
+
+    it 'fills fields missing from the first-seen row' do
+      exporter.add(entity, entry)
+      exporter.add(entity.merge('nationalities' => [{ 'countryCode' => 'CN' }]),
+                   entry)
+
+      expect(exporter.entities.first[:country]).to eq('CN')
+      expect(exporter.facets[:countries]['CN']).to eq(1)
+    end
+
+    it 'keeps first-seen values for fields both pairs carry' do
+      exporter.add(entity, entry)
+      exporter.add(entity, entry.merge('status' => 'delisted'))
+
+      expect(exporter.entities.first[:status]).to eq('active')
+      expect(exporter.facets[:statuses]).to eq('active' => 1)
+    end
+
+    it 'lets a later real status fill a first pair without one' do
+      exporter.add(entity, entry.except('status'))
+      exporter.add(entity, entry.merge('status' => 'delisted'))
+
+      expect(exporter.entities.first[:status]).to eq('delisted')
+      expect(exporter.facets[:statuses]).to eq('delisted' => 1)
+    end
+
+    it 'applies type and status defaults only after aggregation' do
+      exporter.add(entity.except('entityType'), entry.except('status'))
+
+      row = exporter.entities.first
+      expect(row[:type]).to eq('person')
+      expect(row[:status]).to eq('active')
+      expect(exporter.facets[:types]).to eq('person' => 1)
+    end
+
+    it 'treats blank strings as missing so later data can fill them' do
+      exporter.add(entity.merge('nationalities' => [{ 'countryCode' => '' }]),
+                   entry)
+      exporter.add(entity.merge('nationalities' => [{ 'countryCode' => 'CN' }]),
+                   entry)
+
+      expect(exporter.entities.first[:country]).to eq('CN')
+      expect(exporter.facets[:countries]).to eq('CN' => 1)
+    end
+
+    it 'drops wrong-typed scalar values instead of crashing the export' do
+      exporter.add(entity.merge('nationalities' => [{ 'countryCode' => 0 }]),
+                   entry.merge('status' => {}))
+
+      row = exporter.entities.first
+      expect(row[:country]).to be_nil
+      expect(row[:status]).to eq('active')
+      expect(exporter.facets[:countries]).to eq({})
+      expect { exporter.export(output_dir) }.not_to raise_error
+    end
+
+    it 'keeps wrong-typed regime names out of the facets' do
+      exporter.add(entity,
+                   entry.merge('regime' => {
+                                 '@id' => 'https://www.ammitto.org/regime/x',
+                                 'name' => { 'oops' => true }
+                               }))
+
+      expect(exporter.facets[:regimes]['x'][:name]).to be_nil
+      expect { exporter.export(output_dir) }.not_to raise_error
+    end
+
+    it 'coerces numeric IMO numbers to strings' do
+      vessel = {
+        '@id' => 'https://www.ammitto.org/entity/eu_vessels/v1',
+        'entityType' => 'vessel',
+        'names' => [{ 'fullName' => 'Test Vessel' }],
+        'identifiers' => [{ 'type' => 'IMO', 'value' => 9_111_111 }]
+      }
+
+      exporter.add(vessel, entry)
+
+      expect(exporter.entities.first[:imo]).to eq('9111111')
+    end
+
+    it 'exports deduplicated totals' do
+      exporter.add(entity, entry)
+      exporter.add(entity, entry)
+      exporter.export(output_dir)
+
+      data = JSON.parse(File.read(File.join(output_dir, 'search-index.json')))
+      expect(data['metadata']['totalEntities']).to eq(1)
+      expect(data['entities'].length).to eq(1)
+
+      facets = JSON.parse(
+        File.read(File.join(output_dir, 'facets', 'authorities.json'))
+      )
+      expect(facets['facets'].first['count']).to eq(1)
+    end
+  end
+
   describe '#export' do
     before do
       # Add some test entities

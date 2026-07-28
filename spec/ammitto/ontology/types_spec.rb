@@ -50,6 +50,48 @@ RSpec.describe Ammitto::Ontology::Types do
     it 'contains expected scripts' do
       expect(described_class::NAME_SCRIPTS).to include(:Latn, :Cyrl, :Arab, :Hani)
     end
+
+    it 'holds only ISO 15924 codes plus :other (no comment tokens)' do
+      described_class::NAME_SCRIPTS.each do |script|
+        expect(script.to_s).to match(/\A(?:[A-Z][a-z]{3}|other)\z/)
+      end
+    end
+
+    it 'uses the ISO 15924 code Grek, not the prose word Greek' do
+      expect(described_class::NAME_SCRIPTS).to include(:Grek)
+      expect(described_class::NAME_SCRIPTS).not_to include(:Greek)
+    end
+
+    it 'covers every script code the transformers and models emit' do
+      require 'ammitto/sources/au'
+
+      # Transformer literals plus the AU Script detector constants
+      transformer_literals = %i[Latn Cyrl Arab Hani Jpan]
+      script_module = Ammitto::Sources::Au::Script
+      emitted = script_module.constants
+                             .map { |c| script_module.const_get(c) }
+                             .grep(String)
+                             .map(&:to_sym) + transformer_literals
+
+      expect(described_class::NAME_SCRIPTS).to include(*emitted.uniq)
+    end
+  end
+
+  describe '.valid_script?' do
+    it 'rejects the comment token "#"' do
+      expect(described_class.valid_script?('#')).to be false
+    end
+
+    it 'rejects prose words from former inline comments' do
+      expect(described_class.valid_script?('Cyrillic')).to be false
+      expect(described_class.valid_script?('Greek')).to be false
+    end
+
+    it 'accepts Grek, Jpan, and Kore' do
+      expect(described_class.valid_script?('Grek')).to be true
+      expect(described_class.valid_script?(:Jpan)).to be true
+      expect(described_class.valid_script?('Kore')).to be true
+    end
   end
 
   describe '.valid_entity_type?' do
@@ -110,6 +152,13 @@ RSpec.describe Ammitto::Ontology::Types do
   describe '.detect_script' do
     it 'detects Cyrillic' do
       expect(described_class.detect_script('Иван Иванов')).to eq(:Cyrl)
+    end
+
+    it 'detects Greek as the ISO 15924 code Grek' do
+      script = described_class.detect_script('Αθήνα')
+
+      expect(script).to eq(:Grek)
+      expect(described_class.valid_script?(script)).to be true
     end
 
     it 'detects Arabic' do

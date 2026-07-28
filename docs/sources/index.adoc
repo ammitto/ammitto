@@ -247,11 +247,9 @@ ammitto fetch ch
 
 China publishes sanctions through official announcements and maintains lists of sanctioned entities.
 
-[source,bash]
-----
-# Fetch China data
-ammitto fetch cn
-----
+China data is manually managed in the `data-cn` repository as
+announcement-based reference documents; there is no automated fetch.
+`ammitto fetch cn` reports this and exits nonzero, and `--all` skips CN.
 
 === Russia (`ru`)
 

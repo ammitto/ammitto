@@ -132,16 +132,18 @@ module Ammitto
     long_desc <<~DESC
       Download raw sanction data from specified sources and save as YAML.
 
-      If no sources are specified with --all, fetches the specified sources only.
+      Pass source codes to fetch specific sources, or use --all to fetch
+      every automatable source (cn is skipped: it is manually managed).
 
       Examples:
         ammitto fetch uk --format yaml          # Fetch UK data as YAML
         ammitto fetch uk --output-dir ./data    # Save to specific directory
-        ammitto fetch --all                     # Fetch all sources
+        ammitto fetch --all                     # Fetch automatable sources
         ammitto fetch eu un --dry-run           # Show what would be fetched
     DESC
     option :dry_run, type: :boolean, default: false, desc: 'Show what would be done'
-    option :all, type: :boolean, default: false, desc: 'Fetch all available sources'
+    option :all, type: :boolean, default: false,
+                 desc: 'Fetch all automatable sources (skips cn)'
     option :format, type: :string, default: 'yaml', desc: 'Output format (yaml, jsonld)'
     option :output_dir, type: :string, desc: 'Output directory for YAML files'
     def fetch(*sources)

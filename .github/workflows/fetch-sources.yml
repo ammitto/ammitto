@@ -26,7 +26,6 @@ jobs:
       - name: Fetch latest data
         run: |
           bundle exec ammitto fetch ${{ github.event.inputs.sources != 'all' && github.event.inputs.sources || '' }} --verbose
-        continue-on-error: true
 
       - name: Process data
         run: bundle exec ammitto process --verbose

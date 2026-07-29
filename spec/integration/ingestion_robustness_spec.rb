@@ -213,6 +213,19 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       expect(result[:entry]['period']['listedDate'])
         .to eq(Date.new(2021, 2, 3))
     end
+
+    it 'prefers the canonical un_vessels date key over the row alias' do
+      # Both keys present: the yaml mapping reads 'date_designated', so
+      # from_hash has to resolve it the same way or the two parsers
+      # disagree on a file carrying the fetch-time alias as well
+      data = source_fixtures[:un_vessels].first
+                                         .merge('designation_date' =>
+                                                 '2024-01-01')
+
+      result = transform(:un_vessels, data)
+      expect(result[:entry]['period']['listedDate'])
+        .to eq(Date.new(2021, 2, 3))
+    end
   end
 
   # The from_hash migration claims every converted call site accepts

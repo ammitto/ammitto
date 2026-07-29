@@ -64,10 +64,10 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to be_nil
     end
 
-    it 'rejects a list smuggled into the reference number slot' do
+    it 'refuses a list smuggled into the reference number slot' do
       entity = build(name: 'TAMAS COMPANY', reference_number: [1])
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(entity.local_id).to be_nil
     end
 
     # A mapping is stringified by the model layer before #local_id sees it,
@@ -95,10 +95,29 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to be_nil
     end
 
-    it 'rejects an inspection form in the reference number slot' do
+    it 'refuses an inspection form in the reference number slot' do
       entity = build(name: 'TAMAS COMPANY', reference_number: [1].each)
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(entity.local_id).to be_nil
+    end
+
+    # A corrupt reference is evidence the record is broken, not evidence
+    # that Turkey left the cell empty, so it must never be re-addressed by
+    # the name — two same-named corrupt records would merge into one node.
+    it 'refuses same-named records carrying different bad containers' do
+      first = build(name: 'SAME NAME', reference_number: [1])
+      second = build(name: 'SAME NAME', reference_number: [2])
+
+      expect(first.local_id).to be_nil
+      expect(second.local_id).to be_nil
+    end
+
+    it 'refuses same-named records carrying different inspection forms' do
+      first = build(name: 'SAME NAME', reference_number: '#<Enumerator:0x1>')
+      second = build(name: 'SAME NAME', reference_number: '#<Enumerator:0x2>')
+
+      expect(first.local_id).to be_nil
+      expect(second.local_id).to be_nil
     end
 
     it 'accepts a numeric reference number cast from the spreadsheet' do
@@ -265,7 +284,7 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       )[:entity].id
 
       expect(stolen).not_to eq(real)
-      expect(stolen).to eq('https://www.ammitto.org/entity/tr/tamas-company')
+      expect(stolen).not_to eq('https://www.ammitto.org/entity/tr/tamas-company')
     end
 
     it 'never mixes a name-derived id with a numbered one' do
@@ -341,20 +360,6 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       reference = harmonize(numbered)[:entity]['sourceReferences'].first
 
       expect(reference['referenceNumber']).to eq('1')
-    end
-
-    # A malformed reference must never sanitize onto a number Turkey already
-    # assigned. Asserted through the routing seam, since that is the path a
-    # corrupt committed record would actually travel. The refusal itself is
-    # pinned at the model level, because once ingestion stops tolerating a
-    # missing local id these records raise here rather than return.
-    ['-1', '1-', '--1--', '1.0'].each do |hostile|
-      it "does not let reference #{hostile.inspect} claim record 1's IRI" do
-        record = unnumbered.merge('reference_number' => hostile)
-
-        expect(harmonize(record)[:entity]['@id'])
-          .not_to eq(harmonize(numbered)[:entity]['@id'])
-      end
     end
 
     it 'routes an unnumbered record to its own name-derived entity' do

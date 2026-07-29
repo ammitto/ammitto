@@ -99,11 +99,13 @@ module Ammitto
         # @return [String, nil] the local id, or nil when the record carries
         #   no identifier that can be trusted
         def local_id
-          reference = identifiable(reference_number)
-          return reference if reference&.match?(DECIMAL_REFERENCE)
-          return nil if reference
+          return nil if malformed?(reference_number)
 
-          fallback_name
+          reference = scalar_text(reference_number)
+          return fallback_name if reference.nil?
+          return reference if reference.match?(DECIMAL_REFERENCE)
+
+          nil
         end
 
         private
@@ -117,44 +119,48 @@ module Ammitto
         #
         # @return [String, nil]
         def fallback_name
-          str = identifiable(name)
+          return nil if malformed?(name)
+
+          str = scalar_text(name)
           return nil if str.nil?
           return nil if Utils::IriSanitizer.sanitize(str).match?(/\A\d+\z/)
 
           str
         end
 
-        # Whether a value can serve as an IRI segment.
+        # Whether a value is structurally corrupt rather than merely odd.
         #
-        # A value survives IRI sanitization only if it holds at least one
-        # ASCII alphanumeric character. Blank, whitespace-only,
-        # punctuation-only and non-Latin-only values are rejected so that
-        # callers stay loud about a genuinely unidentifiable record instead
-        # of collapsing several of them onto one placeholder IRI.
+        # Two shapes qualify. A container that survived assignment as a
+        # container: the model layer stringifies most of them, but a list
+        # stays a list, and +["1"].to_s+ sanitizes down to +1+. And a value
+        # the model stringified into Ruby's inspection fallback,
+        # +#<Enumerator:0x00007f...>+, which carries an object address and
+        # would mint a different IRI on every process.
         #
-        # Two shapes are refused before that test:
-        #
-        # Anything still Enumerable by the time it reaches here. The model
-        # layer stringifies most containers on assignment, but a list
-        # survives as a list, and +["1"].to_s+ sanitizes down to +1+ — so
-        # +reference_number: [1]+ would quietly claim the IRI of the record
-        # numbered 1. String is not Enumerable, so nothing legitimate is
-        # caught.
-        #
-        # Anything whose string form is Ruby's inspection fallback. A value
-        # the model stringified into +#<Enumerator:0x00007f...>+ carries an
-        # object address, which would mint a different IRI on every process.
-        # A non-deterministic identifier is worse than none, so these are
-        # refused rather than slugged.
+        # Neither is evidence that Turkey omitted a cell — they are evidence
+        # that the record is corrupt — so they are never allowed to reach
+        # the name fallback. String is not Enumerable, so nothing legitimate
+        # is caught.
         #
         # @param value [Object, nil] candidate identifier
-        # @return [String, nil] the stripped value, or nil if unusable
-        def identifiable(value)
-          return nil if value.is_a?(Enumerable)
+        # @return [Boolean]
+        def malformed?(value)
+          value.is_a?(Enumerable) || value.to_s.strip.start_with?('#<')
+        end
 
+        # The value's text, if it carries anything an IRI segment can be
+        # built from.
+        #
+        # A value survives IRI sanitization only if it holds at least one
+        # ASCII alphanumeric character, so blank, whitespace-only,
+        # punctuation-only and non-Latin-only values return nil. For a
+        # reference number that means "Turkey left the cell empty", which is
+        # exactly what the 37 unnumbered rows look like.
+        #
+        # @param value [Object, nil] candidate identifier
+        # @return [String, nil] the stripped text, or nil if it carries none
+        def scalar_text(value)
           str = value.to_s.strip
-          return nil if str.start_with?('#<')
-
           str.match?(/[a-zA-Z0-9]/) ? str : nil
         end
       end

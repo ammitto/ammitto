@@ -223,6 +223,14 @@ module Ammitto
         # health gates surface the defective source file, rather than
         # collapsing distinct records into one shared "unknown" IRI.
         #
+        # The id is converted to a string exactly once. Local ids reach
+        # this method straight from parsed YAML, so #to_s may be
+        # heavyweight (an Array id materializes its whole contents) or
+        # non-idempotent; converting twice would double that cost and
+        # let the blank check and the sanitizer disagree about the same
+        # id. The unconverted id is still what MissingLocalIdError
+        # receives, so #preview keeps its exact-class dispatch.
+        #
         # @param local_id [Object] the raw local id
         # @param source [String] source code, for error attribution
         # @param kind [String] IRI kind (entity, entry, announcement, ...)
@@ -230,12 +238,9 @@ module Ammitto
         # @raise [MissingLocalIdError] when the id is nil/empty or
         #   sanitizes to an empty string
         def sanitize_local_id!(local_id, source:, kind:)
+          text = local_id.nil? ? '' : local_id.to_s
           sanitized =
-            if local_id.nil? || local_id.to_s.strip.empty?
-              ''
-            else
-              apply_sanitization_rules(local_id)
-            end
+            text.strip.empty? ? '' : apply_sanitization_rules(text)
           return sanitized unless sanitized.empty?
 
           raise MissingLocalIdError.new(source: source, kind: kind,

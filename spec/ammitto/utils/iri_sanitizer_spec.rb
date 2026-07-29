@@ -101,6 +101,35 @@ RSpec.describe Ammitto::Utils::IriSanitizer do
       )
     end
 
+    it 'converts a local id to a string exactly once' do
+      # #to_s may be heavyweight (an Array id materializes its whole
+      # contents) and reaches this method straight from parsed YAML,
+      # so neither the accepted nor the rejected path may convert twice
+      counter = Class.new do
+        attr_reader :calls
+
+        def initialize(text)
+          @text = text
+          @calls = 0
+        end
+
+        def to_s
+          @calls += 1
+          @text
+        end
+      end
+
+      accepted = counter.new('abc-123')
+      expect(described_class.entity_iri('tr', accepted))
+        .to eq('https://www.ammitto.org/entity/tr/abc-123')
+      expect(accepted.calls).to eq(1)
+
+      rejected = counter.new('!!!')
+      expect { described_class.entity_iri('tr', rejected) }
+        .to raise_error(described_class::MissingLocalIdError)
+      expect(rejected.calls).to eq(1)
+    end
+
     it 'raises for blank entry, announcement, and instrument local ids' do
       expect { described_class.entry_iri('tr', 'list', nil) }
         .to raise_error(described_class::MissingLocalIdError, /entry IRI/)

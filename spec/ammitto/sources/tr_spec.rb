@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'ammitto/sources/tr/sanctions_list'
+require 'ammitto/cli/harmonize_command'
 
 RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
   def build(**attrs)
@@ -83,6 +84,21 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       entity = build(name: %w[TAMAS], reference_number: nil)
 
       expect(entity.local_id).to be_nil
+    end
+
+    # An object the model stringified into Ruby's inspection form carries an
+    # object address, so slugging it would mint a different IRI per process.
+    it 'rejects a value stringified into Ruby inspection form' do
+      entity = build(name: [1].each, reference_number: nil)
+
+      expect(entity.name).to start_with('#<')
+      expect(entity.local_id).to be_nil
+    end
+
+    it 'rejects an inspection form in the reference number slot' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: [1].each)
+
+      expect(entity.local_id).to eq('TAMAS COMPANY')
     end
 
     it 'accepts a numeric reference number cast from the spreadsheet' do
@@ -242,56 +258,67 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
   end
 end
 
-# Exercises the path Cmd::Harmonize#transform_tr actually takes: the
-# per-record YAML the fetcher committed to data-tr, loaded through
-# Tr::Entity.from_yaml and handed to the transformer.
-RSpec.describe 'tr harmonize path from committed YAML' do
-  subject(:transformer) { Ammitto::Sources::Tr::Transformer.new }
+# Drives Cmd::HarmonizeCommand#transform_tr itself, so the assertions cover
+# CLI routing and JSON-LD serialization, not just the transformer. Input is
+# the parsed shape of a record file the fetcher committed to data-tr.
+RSpec.describe Ammitto::Cmd::HarmonizeCommand do
+  subject(:command) { described_class.new({}, [:tr]) }
 
-  def transform_yaml(yaml)
-    transformer.transform(Ammitto::Sources::Tr::Entity.from_yaml(yaml))
+  let(:transformer) { Ammitto::Sources::Tr::Transformer.new }
+
+  def harmonize(record)
+    command.send(:transform_tr, transformer, record)
   end
 
   let(:numbered) do
-    <<~YAML
-      ---
-      name: YUN HO-JIN
-      entity_type: person
-      program: Law No. 7262, Articles 3.A/3.B
-      listed_date: 24.2.2021/ 3578
-      reference_number: '1'
-    YAML
+    { 'name' => 'YUN HO-JIN',
+      'entity_type' => 'person',
+      'program' => 'Law No. 7262, Articles 3.A/3.B',
+      'listed_date' => '24.2.2021/ 3578',
+      'reference_number' => '1' }
   end
 
   let(:unnumbered) do
-    <<~YAML
-      ---
-      name: DAWOOD AGHA-JANI
-      entity_type: person
-      program: Law No. 7262, Articles 3.A/3.B
-      place_of_birth: Ardebil, İran
-    YAML
+    { 'name' => 'DAWOOD AGHA-JANI',
+      'entity_type' => 'person',
+      'program' => 'Law No. 7262, Articles 3.A/3.B',
+      'place_of_birth' => 'Ardebil, İran' }
   end
 
-  it 'keeps the numbered record on its published IRI' do
-    expect(transform_yaml(numbered)[:entity].id)
-      .to eq('https://www.ammitto.org/entity/tr/1')
-  end
+  describe '#transform_tr' do
+    it 'keeps the numbered record on its published IRI' do
+      expect(harmonize(numbered)[:entity]['@id'])
+        .to eq('https://www.ammitto.org/entity/tr/1')
+    end
 
-  it 'gives the unnumbered record its own IRI, not the placeholder' do
-    expect(transform_yaml(unnumbered)[:entity].id)
-      .to eq('https://www.ammitto.org/entity/tr/dawood-agha-jani')
-  end
+    it 'gives the unnumbered record its own IRI, not the placeholder' do
+      expect(harmonize(unnumbered)[:entity]['@id'])
+        .to eq('https://www.ammitto.org/entity/tr/dawood-agha-jani')
+    end
 
-  it 'does not let the unnumbered record collide with a numbered one' do
-    expect(transform_yaml(unnumbered)[:entity].id)
-      .not_to eq(transform_yaml(numbered)[:entity].id)
-  end
+    it 'does not let the unnumbered record collide with a numbered one' do
+      expect(harmonize(unnumbered)[:entity]['@id'])
+        .not_to eq(harmonize(numbered)[:entity]['@id'])
+    end
 
-  it 'still reports that Turkey published no number for it' do
-    reference = transform_yaml(unnumbered)[:entity]
-                .source_references.first
+    it 'points the serialized entry at the same entity' do
+      result = harmonize(unnumbered)
 
-    expect(reference.reference_number).to be_nil
+      expect(result[:entry]['@id']).to end_with('/dawood-agha-jani')
+      expect(result[:entry]['entityId']).to eq(result[:entity]['@id'])
+    end
+
+    it 'emits no reference number for a record Turkey did not number' do
+      reference = harmonize(unnumbered)[:entity]['sourceReferences'].first
+
+      expect(reference['sourceCode']).to eq('tr')
+      expect(reference).not_to have_key('referenceNumber')
+    end
+
+    it 'still emits the reference number Turkey did publish' do
+      reference = harmonize(numbered)[:entity]['sourceReferences'].first
+
+      expect(reference['referenceNumber']).to eq('1')
+    end
   end
 end

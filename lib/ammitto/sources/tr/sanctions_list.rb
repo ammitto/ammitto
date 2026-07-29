@@ -130,11 +130,20 @@ module Ammitto
         # callers stay loud about a genuinely unidentifiable record instead
         # of collapsing several of them onto one placeholder IRI.
         #
-        # Containers are rejected outright. Hand-written YAML can put a list
-        # or a mapping in a scalar slot, and +Array#to_s+ would then sanitize
-        # down to its first element — so +reference_number: [1]+ would
-        # quietly claim the IRI of the record numbered 1. String is not
-        # Enumerable, so this rejects only real containers.
+        # Two shapes are refused before that test:
+        #
+        # Anything still Enumerable by the time it reaches here. The model
+        # layer stringifies most containers on assignment, but a list
+        # survives as a list, and +["1"].to_s+ sanitizes down to +1+ — so
+        # +reference_number: [1]+ would quietly claim the IRI of the record
+        # numbered 1. String is not Enumerable, so nothing legitimate is
+        # caught.
+        #
+        # Anything whose string form is Ruby's inspection fallback. A value
+        # the model stringified into +#<Enumerator:0x00007f...>+ carries an
+        # object address, which would mint a different IRI on every process.
+        # A non-deterministic identifier is worse than none, so these are
+        # refused rather than slugged.
         #
         # @param value [Object, nil] candidate identifier
         # @return [String, nil] the stripped value, or nil if unusable
@@ -142,6 +151,8 @@ module Ammitto
           return nil if value.is_a?(Enumerable)
 
           str = value.to_s.strip
+          return nil if str.start_with?('#<')
+
           str.match?(/[a-zA-Z0-9]/) ? str : nil
         end
       end

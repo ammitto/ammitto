@@ -225,20 +225,23 @@ module Ammitto
         errors = []
         source_graph = []
 
+        # Parsing is inside the per-file rescue: a malformed YAML file is a
+        # per-file defect like any transform failure, so it must land in the
+        # never-exempt error collector. Escaping to the method-level rescue
+        # made it a source-level :error, which --allow-empty then cleared —
+        # one unparseable file silenced the whole source and exited 0.
         yaml_files.each do |file|
           data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
           next unless data
 
-          begin
-            result = transform_data(source, data)
-            added = ingest_results(result, source, source_graph, errors, File.basename(file))
-            entities_count += added
-            entries_count += added
-          rescue StandardError => e
-            error_msg = "#{File.basename(file)}: #{e.message}"
-            puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
-            errors << error_msg
-          end
+          result = transform_data(source, data)
+          added = ingest_results(result, source, source_graph, errors, File.basename(file))
+          entities_count += added
+          entries_count += added
+        rescue StandardError => e
+          error_msg = "#{File.basename(file)}: #{e.message}"
+          puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
+          errors << error_msg
         end
 
         # Per-source aggregate: required by BaseSource downloads and

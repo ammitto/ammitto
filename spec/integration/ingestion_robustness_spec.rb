@@ -378,4 +378,33 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       end
     end
   end
+
+  describe 'unparseable YAML is a per-file error, not a source error' do
+    run_with = lambda do |dir, extra|
+      processed = File.join(dir, 'data-tr', 'processed')
+      FileUtils.mkdir_p(processed)
+      File.write(File.join(processed, 'ok.yaml'),
+                 source_fixtures[:tr].first.to_yaml)
+      File.write(File.join(processed, 'broken.yaml'), "a:\n  - [unterminated\n")
+
+      options = { sources_dir: dir,
+                  output_dir: File.join(dir, 'api', 'v1') }.merge(extra)
+      Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run
+    end
+
+    it 'attributes the parse failure to its file and keeps the good ones' do
+      Dir.mktmpdir do |dir|
+        expect { run_with.call(dir, {}) }
+          .to raise_error(Thor::Error, /broken\.yaml/)
+      end
+    end
+
+    it 'is not cleared by --allow-empty (per-file errors never are)' do
+      Dir.mktmpdir do |dir|
+        expect { run_with.call(dir, allow_empty: 'tr') }
+          .to raise_error(Thor::Error,
+                          /tr: 1 file\(s\) failed to transform/)
+      end
+    end
+  end
 end

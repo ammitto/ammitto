@@ -401,20 +401,22 @@ module Ammitto
         errors = []
         source_graph = []
 
+        # The YAML parse belongs inside the per-file rescue: a file that
+        # exists but will not parse is a per-file data defect (never
+        # exempt), not a source-level error --allow-empty can clear, and
+        # one unparseable file must not discard the other files' entities
         yaml_files.each do |file|
           data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
           next unless data
 
-          begin
-            result = transform_data(source, data)
-            added = ingest_results(result, source, source_graph, errors, File.basename(file))
-            entities_count += added
-            entries_count += added
-          rescue StandardError => e
-            error_msg = "#{File.basename(file)}: #{e.message}"
-            puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
-            errors << error_msg
-          end
+          result = transform_data(source, data)
+          added = ingest_results(result, source, source_graph, errors, File.basename(file))
+          entities_count += added
+          entries_count += added
+        rescue StandardError => e
+          error_msg = "#{File.basename(file)}: #{e.message}"
+          puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
+          errors << error_msg
         end
 
         # Per-source aggregate: required by BaseSource downloads and

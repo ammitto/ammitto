@@ -88,6 +88,44 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
     end
   end
 
+  describe 'unparseable input files (integration)' do
+    before { allow($stdout).to receive(:write) }
+
+    def write_raw(basename, text)
+      dir = File.join(sources_dir, 'data-us', 'processed')
+      FileUtils.mkdir_p(dir)
+      File.write(File.join(dir, basename), text)
+    end
+
+    let(:broken) { "uid: '1\n  bad: [unclosed\n" }
+
+    it 'fails the gate even when the source is --allow-empty' do
+      options[:allow_empty] = 'us'
+      write_us_yaml('good.yaml', healthy_entity('1000', 'DOE'))
+      write_raw('broken.yaml', broken)
+
+      expect { command.run }.to raise_error(
+        Thor::Error, /us: 1 file\(s\) failed to transform/
+      )
+    end
+
+    it 'keeps the other files entities instead of failing the source' do
+      write_us_yaml('good.yaml', healthy_entity('1000', 'DOE'))
+      write_raw('broken.yaml', broken)
+
+      captured = nil
+      allow(command).to receive(:enforce_health_gates)
+        .and_wrap_original do |original, results|
+          captured = results
+          original.call(results)
+        end
+
+      expect { command.run }.to raise_error(Thor::Error)
+      expect(captured.first).to include(status: :success, entities: 1)
+      expect(captured.first[:errors].first).to match(/broken\.yaml/)
+    end
+  end
+
   describe 'summary and gate agreement (integration)' do
     it 'prints the quality failure as failed before raising' do
       write_us_yaml('entity.yaml', { 'uid' => '9999' })
@@ -167,12 +205,14 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
                                           /named-entity ratio/)
     end
 
+    # Both metrics sit exactly on their floors: the floors are inclusive,
+    # so a regression from < to <= in either check fails this example
     it 'passes metrics at the floors' do
       result = {
         code: :us, entities: 2,
         quality: { unique_entities: 1, unique_id_ratio: 0.5,
-                   entity_nodes: 2, named_entities: 2,
-                   named_entity_ratio: 1.0 }
+                   entity_nodes: 10, named_entities: 9,
+                   named_entity_ratio: 0.9 }
       }
 
       expect(command.send(:quality_floor_failures, result)).to be_empty

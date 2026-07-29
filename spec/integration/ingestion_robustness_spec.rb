@@ -205,7 +205,7 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
         .to eq(Date.new(2021, 2, 3))
     end
 
-    it 'falls past a blank un_vessels date key to the serialized one' do
+    it 'ignores a blank un_vessels row alias when canonical is set' do
       data = source_fixtures[:un_vessels].first
                                          .merge('designation_date' => '')
 
@@ -426,6 +426,68 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
           .to raise_error(Thor::Error,
                           /20261101\.yaml: announcement-format YAML detected/)
       end
+    end
+  end
+
+  # The two hand-written from_hash readers assign straight from the
+  # hash, so they carry a check Lutaml performs for every other model.
+  # Without it a container in a scalar slot survives, stringifies, and
+  # sanitizes into an identifier indistinguishable from a real one —
+  # the from_yaml path these readers replaced raised instead.
+  describe 'containers in scalar slots are refused' do
+    it 'does not let a jp list id collide with a scalar id' do
+      # Both flatten to "jp-a-b": accepting the list would file two
+      # distinct designees under one entity IRI
+      scalar = transform(:jp, { 'id' => 'a-b', 'name' => 'X' })
+      expect(scalar[:entity]['@id']).to end_with('/jp/jp-a-b')
+
+      expect { transform(:jp, { 'id' => %w[a b], 'name' => 'X' }) }
+        .to raise_error(ArgumentError, /id must hold a single value/)
+    end
+
+    it 'refuses a jp hash id' do
+      expect { transform(:jp, { 'id' => { 'a' => 1 }, 'name' => 'X' }) }
+        .to raise_error(ArgumentError, /id must hold a single value/)
+    end
+
+    it 'refuses a container in any other jp scalar slot' do
+      expect { transform(:jp, { 'id' => '1', 'name' => %w[a b] }) }
+        .to raise_error(ArgumentError, /name must hold a single value/)
+    end
+
+    it 'refuses a un_vessels list imo_number' do
+      data = source_fixtures[:un_vessels].first
+                                         .merge('imo_number' => %w[a b])
+
+      expect { transform(:un_vessels, data) }
+        .to raise_error(ArgumentError,
+                        /imo_number must hold a single value/)
+    end
+
+    it 'refuses a un_vessels list date without consulting the alias' do
+      data = source_fixtures[:un_vessels].first
+                                         .merge('date_designated' => %w[a b])
+
+      expect { transform(:un_vessels, data) }
+        .to raise_error(ArgumentError,
+                        /date_designated must hold a single value/)
+    end
+
+    # The guard must reject containers only: every scalar YAML scalar
+    # type still has to build a record, or it would reject real data
+    it 'still accepts every scalar id type' do
+      { 'a-b' => 'jp-a-b', 123 => 'jp-123', 1.5 => 'jp-15',
+        true => 'jp-true' }.each do |id, expected|
+        result = transform(:jp, { 'id' => id, 'name' => 'X' })
+        expect(result[:entity]['@id']).to end_with("/jp/#{expected}")
+      end
+    end
+
+    it 'leaves the real collection fields alone' do
+      result = transform(:jp, { 'id' => '1', 'name' => 'X',
+                                'addresses' => %w[Tokyo Osaka] })
+
+      expect(result[:entity]['@id']).to end_with('/jp/jp-1')
     end
   end
 

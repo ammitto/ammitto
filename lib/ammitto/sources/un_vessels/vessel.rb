@@ -2,6 +2,8 @@
 
 require 'lutaml/model'
 
+require_relative '../scalar_field'
+
 module Ammitto
   module Sources
     module UnVessels
@@ -23,6 +25,8 @@ module Ammitto
       # Vessel represents a sanctioned vessel in the UN Designated Vessels List
       #
       class Vessel < Lutaml::Model::Serializable
+        extend ScalarField
+
         attribute :id, :string
         attribute :entity_type, :string
         attribute :names, NameVariant, collection: true
@@ -71,23 +75,27 @@ module Ammitto
         # serialized YAML shape the harmonize path loads (date under
         # 'date_designated', names present) — this method shadows the
         # Lutaml from_hash, so it must not drop the YAML-shape fields.
+        # Every scalar field is read through fetch_scalar: this reader
+        # shadows the Lutaml one, so it owes callers the same refusal of
+        # a container in a single-value slot (see ScalarField).
         # @param data [Hash] row or YAML data
         # @return [Vessel]
+        # @raise [ArgumentError] when a scalar field holds a container
         def self.from_hash(data)
           vessel = new
-          vessel.id = data['id']
-          vessel.entity_type = data['entity_type']
+          vessel.id = fetch_scalar(data, 'id')
+          vessel.entity_type = fetch_scalar(data, 'entity_type')
           vessel.names = Array(data['names']).map do |name|
             name.is_a?(NameVariant) ? name : NameVariant.from(:hash, name)
           end
-          vessel.imo_number = data['imo_number']&.to_s
-          vessel.flag_state = data['flag_state']
+          vessel.imo_number = fetch_scalar(data, 'imo_number')&.to_s
+          vessel.flag_state = fetch_scalar(data, 'flag_state')
           # Assigned raw so the attribute's own Integer cast runs, as it
           # does for every string attribute here. A prior &.to_i
           # defeated that cast: "12,500" tonnage became 12 where
           # from_yaml yields nil, quietly inventing a plausible number.
-          vessel.tonnage = data['tonnage']
-          vessel.build_year = data['build_year']
+          vessel.tonnage = fetch_scalar(data, 'tonnage')
+          vessel.build_year = fetch_scalar(data, 'build_year')
           # The canonical serialized key wins whenever it is PRESENT,
           # even holding a blank — that is what the yaml mapping reads
           # and what #to_hash emits, so a serialized file resolves
@@ -95,12 +103,12 @@ module Ammitto
           # fetch-time row alias, consulted only when the canonical key
           # is absent entirely.
           raw_date = if data.key?('date_designated')
-                       data['date_designated']
+                       fetch_scalar(data, 'date_designated')
                      else
-                       data['designation_date']
+                       fetch_scalar(data, 'designation_date')
                      end
           vessel.designation_date = parse_date(raw_date)
-          vessel.resolution = data['resolution']
+          vessel.resolution = fetch_scalar(data, 'resolution')
           vessel
         end
 

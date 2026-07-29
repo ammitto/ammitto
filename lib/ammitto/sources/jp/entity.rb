@@ -2,12 +2,16 @@
 
 require 'lutaml/model'
 
+require_relative '../scalar_field'
+
 module Ammitto
   module Sources
     module Jp
       # Entity represents a sanctioned entity in the Japan End-User List
       #
       class Entity < Lutaml::Model::Serializable
+        extend ScalarField
+
         attribute :id, :string
         attribute :name, :string
         attribute :name_ja, :string
@@ -16,18 +20,24 @@ module Ammitto
         attribute :source_url, :string
         attribute :remarks, :string
 
-        # Create Entity from row data hash
+        # Create Entity from row data hash.
+        #
+        # Every scalar field is read through fetch_scalar: this reader
+        # shadows the Lutaml one, so it owes callers the same refusal of
+        # a container in a single-value slot (see ScalarField).
         # @param data [Hash] row data
         # @return [Entity]
+        # @raise [ArgumentError] when a scalar field holds a container
         def self.from_hash(data)
           entity = new
-          entity.id = data['id']
-          entity.name = data['name']
-          entity.name_ja = data['name_ja']
-          entity.entity_type = map_entity_type(data['entity_type'])
+          entity.id = fetch_scalar(data, 'id')
+          entity.name = fetch_scalar(data, 'name')
+          entity.name_ja = fetch_scalar(data, 'name_ja')
+          entity.entity_type =
+            map_entity_type(fetch_scalar(data, 'entity_type'))
           entity.addresses = Array(data['addresses'])
-          entity.source_url = data['source_url']
-          entity.remarks = data['remarks']
+          entity.source_url = fetch_scalar(data, 'source_url')
+          entity.remarks = fetch_scalar(data, 'remarks')
           entity
         end
 

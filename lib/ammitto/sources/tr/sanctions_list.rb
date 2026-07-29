@@ -92,9 +92,17 @@ module Ammitto
         # callers stay loud about a genuinely unidentifiable record instead
         # of collapsing several of them onto one placeholder IRI.
         #
+        # Containers are rejected outright. Hand-written YAML can put a list
+        # or a mapping in a scalar slot, and +Array#to_s+ would then sanitize
+        # down to its first element — so +reference_number: [1]+ would
+        # quietly claim the IRI of the record numbered 1. String is not
+        # Enumerable, so this rejects only real containers.
+        #
         # @param value [Object, nil] candidate identifier
         # @return [String, nil] the stripped value, or nil if unusable
         def identifiable(value)
+          return nil if value.is_a?(Enumerable)
+
           str = value.to_s.strip
           str.match?(/[a-zA-Z0-9]/) ? str : nil
         end

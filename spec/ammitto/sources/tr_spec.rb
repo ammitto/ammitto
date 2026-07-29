@@ -63,6 +63,34 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to be_nil
     end
 
+    it 'rejects a list smuggled into the reference number slot' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: [1])
+
+      expect(entity.local_id).to eq('TAMAS COMPANY')
+    end
+
+    # A mapping is stringified by the model layer before #local_id sees it,
+    # so it arrives as an ordinary (odd) String rather than a container.
+    # It cannot be rejected here, but it also cannot sanitize down to a bare
+    # number, so it can never steal a numbered record's IRI.
+    it 'cannot let a mapping in the reference number slot steal an IRI' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: { a: 1 })
+
+      expect(entity.local_id).not_to match(/\A\d+\z/)
+    end
+
+    it 'rejects a list smuggled into the name slot' do
+      entity = build(name: %w[TAMAS], reference_number: nil)
+
+      expect(entity.local_id).to be_nil
+    end
+
+    it 'accepts a numeric reference number cast from the spreadsheet' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: 187)
+
+      expect(entity.local_id).to eq('187')
+    end
+
     it 'does not invent a reference number for records that lack one' do
       entity = build(name: 'TAMAS COMPANY', reference_number: nil)
 
@@ -149,6 +177,18 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       end
 
       expect(built.uniq.size).to eq(1)
+    end
+
+    it 'does not let a list in the reference number slot steal an IRI' do
+      stolen = transformer.transform(
+        source(name: 'TAMAS COMPANY', reference_number: [1])
+      )[:entity].id
+      real = transformer.transform(
+        source(name: 'YUN HO-JIN', reference_number: '1')
+      )[:entity].id
+
+      expect(stolen).not_to eq(real)
+      expect(stolen).to eq('https://www.ammitto.org/entity/tr/tamas-company')
     end
 
     it 'never mixes a name-derived id with a numbered one' do

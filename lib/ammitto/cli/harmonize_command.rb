@@ -334,9 +334,9 @@ module Ammitto
           "#{result.dig(:quality, :entity_nodes)} served entities)"
       end
 
-      # Sources the caller exempts from the source-error, zero-entity, and
-      # missing-aggregate gates (--allow-empty). Per-file transform errors
-      # are never exempt.
+      # Sources the caller exempts from the source-error, zero-entity,
+      # missing-aggregate, and quality-floor gates (--allow-empty).
+      # Per-file transform errors are never exempt.
       # @return [Array<Symbol>] validated source codes
       def allowed_empty_sources
         @allowed_empty_sources ||= begin

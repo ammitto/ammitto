@@ -258,16 +258,15 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
   end
 end
 
-# Drives Cmd::HarmonizeCommand#transform_tr itself, so the assertions cover
-# CLI routing and JSON-LD serialization, not just the transformer. Input is
-# the parsed shape of a record file the fetcher committed to data-tr.
+# Enters at Cmd::HarmonizeCommand#transform_data, so the assertions cover the
+# transformer-registry lookup and the :tr routing branch as well as the
+# transformation and its JSON-LD serialization. Input is the parsed shape of a
+# record file the fetcher committed to data-tr.
 RSpec.describe Ammitto::Cmd::HarmonizeCommand do
   subject(:command) { described_class.new({}, [:tr]) }
 
-  let(:transformer) { Ammitto::Sources::Tr::Transformer.new }
-
   def harmonize(record)
-    command.send(:transform_tr, transformer, record)
+    command.send(:transform_data, :tr, record)
   end
 
   let(:numbered) do
@@ -285,7 +284,7 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       'place_of_birth' => 'Ardebil, İran' }
   end
 
-  describe '#transform_tr' do
+  describe '#transform_data' do
     it 'keeps the numbered record on its published IRI' do
       expect(harmonize(numbered)[:entity]['@id'])
         .to eq('https://www.ammitto.org/entity/tr/1')

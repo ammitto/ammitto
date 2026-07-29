@@ -82,14 +82,23 @@ module Ammitto
           end
           vessel.imo_number = data['imo_number']&.to_s
           vessel.flag_state = data['flag_state']
-          vessel.tonnage = data['tonnage']&.to_i
-          vessel.build_year = data['build_year']&.to_i
-          # Canonical serialized key first: 'date_designated' is what
-          # the yaml mapping reads and what #to_hash emits, so a file
-          # carrying both keys resolves the same way from_yaml resolves
-          # it. 'designation_date' is only the fetch-time row alias.
-          raw_date = [data['date_designated'], data['designation_date']]
-                     .find { |value| value && value.to_s.strip != '' }
+          # Assigned raw so the attribute's own Integer cast runs, as it
+          # does for every string attribute here. A prior &.to_i
+          # defeated that cast: "12,500" tonnage became 12 where
+          # from_yaml yields nil, quietly inventing a plausible number.
+          vessel.tonnage = data['tonnage']
+          vessel.build_year = data['build_year']
+          # The canonical serialized key wins whenever it is PRESENT,
+          # even holding a blank — that is what the yaml mapping reads
+          # and what #to_hash emits, so a serialized file resolves
+          # exactly as from_yaml resolves it. 'designation_date' is the
+          # fetch-time row alias, consulted only when the canonical key
+          # is absent entirely.
+          raw_date = if data.key?('date_designated')
+                       data['date_designated']
+                     else
+                       data['designation_date']
+                     end
           vessel.designation_date = parse_date(raw_date)
           vessel.resolution = data['resolution']
           vessel

@@ -226,6 +226,36 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       expect(result[:entry]['period']['listedDate'])
         .to eq(Date.new(2021, 2, 3))
     end
+
+    it 'keeps a blank canonical un_vessels date blank' do
+      # A present-but-blank canonical key means "no date" — reaching
+      # past it to the row alias would invent a date from_yaml, which
+      # reads only the canonical key, would never produce
+      data = source_fixtures[:un_vessels].first
+                                         .merge('date_designated' => '',
+                                                'designation_date' =>
+                                                 '2024-01-01')
+
+      result = transform(:un_vessels, data)
+      expect(result[:entry]['period']['listedDate']).to be_nil
+    end
+
+    it 'casts un_vessels integers the way the yaml path casts them' do
+      # A bare to_i defeated the attribute's own Integer cast, turning a
+      # grouped "12,500" tonnage into 12 — a plausible-looking number
+      # invented from unparseable text
+      data = source_fixtures[:un_vessels].first
+                                         .merge('tonnage' => '12,500',
+                                                'build_year' => '19x8')
+
+      model = Ammitto::Sources::UnVessels::Vessel.from_hash(data)
+      legacy = Ammitto::Sources::UnVessels::Vessel.from_yaml(data.to_yaml)
+
+      expect(model.tonnage).to be_nil
+      expect(model.build_year).to be_nil
+      expect(model.tonnage).to eq(legacy.tonnage)
+      expect(model.build_year).to eq(legacy.build_year)
+    end
   end
 
   # The from_hash migration claims every converted call site accepts

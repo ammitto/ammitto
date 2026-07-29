@@ -85,31 +85,28 @@ module Ammitto
 
         private
 
-        # The upstream number, but never one that sanitization turns into a
-        # different record's number.
+        # The upstream number, accepted only in the form Turkey publishes.
         #
-        # Sanitization rewrites what it is given — it deletes unrecognized
-        # characters and strips and collapses hyphens — and a rewrite can
-        # land on a bare integer that Turkey already assigned to somebody
-        # else. All of "1.0", "-10", "10-" and "--10--" sanitize to "10",
-        # the IRI of whichever record Turkey numbered 10.
+        # "Sıra No" is an ASCII decimal number — all 239 of the numbers on
+        # the current sheet are — so that is exactly what is trusted here.
+        # Anything else falls through to the name.
         #
-        # So the test is exact rather than a proxy: a reference that
-        # sanitizes to a bare integer is trusted only when it literally is
-        # that integer. Anything else that lands in the numeric namespace
-        # falls through to the name instead of claiming someone's number.
-        # References that sanitize to something non-numeric ("12/A" -> "12a")
-        # keep their own identity, since they cannot collide with a number.
+        # The strictness is not pedantry. Sanitization rewrites what it is
+        # given, deleting unrecognized characters and stripping and
+        # collapsing hyphens, and a rewritten value can land on top of
+        # another record: "1.0", "-10", "10-" and "--10--" all sanitize to
+        # "10", the IRI of whoever Turkey numbered 10, while "12/A" and
+        # "12A" sanitize to the same "12a" as each other. Any looser rule
+        # has to reason about which rewrites are safe; this one does not.
+        #
+        # Falling through is a safe landing rather than a loss: the record
+        # still gets a stable, unique IRI from its name. It simply is not
+        # addressed by a reference number nobody can trust.
         #
         # @return [String, nil]
         def trusted_reference
           str = identifiable(reference_number)
-          return nil if str.nil?
-
-          sanitized = Utils::IriSanitizer.sanitize(str)
-          return nil if sanitized.match?(/\A\d+\z/) && sanitized != str
-
-          str
+          str&.match?(/\A[0-9]+\z/) ? str : nil
         end
 
         # The record name, used when Turkey published no number.

@@ -121,18 +121,15 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       end
     end
 
-    # "12/A" sanitizes to "12a", which is not in Turkey's numeric namespace,
-    # so it keeps its own identity rather than falling back to the name.
-    it 'keeps a non-numeric reference that sanitization rewrites' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '12/A')
+    # Turkey publishes plain ASCII decimal numbers. Anything else is not a
+    # reference we can trust, because sanitization can rewrite two distinct
+    # values onto one segment ("12/A" and "12A" both become "12a").
+    ['12/A', '12A', '12 A', 'ABC', '1 0'].each do |odd|
+      it "falls back to the name for non-decimal reference #{odd.inspect}" do
+        entity = build(name: 'TAMAS COMPANY', reference_number: odd)
 
-      expect(entity.local_id).to eq('12/A')
-    end
-
-    it 'keeps a reference number whose spaces only become hyphens' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '12 A')
-
-      expect(entity.local_id).to eq('12 A')
+        expect(entity.local_id).to eq('TAMAS COMPANY')
+      end
     end
 
     it 'refuses a name that would sanitize to a bare number' do
@@ -339,6 +336,19 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
 
         expect(harmonize(record)[:entity]['@id'])
           .not_to eq(harmonize(numbered)[:entity]['@id'])
+      end
+    end
+
+    # Two references that sanitize onto one segment must not merge two
+    # designees into a single graph node.
+    [%w[12/A 12A], ['1 0', '1-0'], %w[-_10- _10], %w[ABC abc]].each do |a, b|
+      it "keeps #{a.inspect} and #{b.inspect} on separate entities" do
+        first = harmonize('name' => 'ALPHA CO', 'entity_type' => 'organization',
+                          'reference_number' => a)
+        second = harmonize('name' => 'BETA CO', 'entity_type' => 'organization',
+                           'reference_number' => b)
+
+        expect(first[:entity]['@id']).not_to eq(second[:entity]['@id'])
       end
     end
   end

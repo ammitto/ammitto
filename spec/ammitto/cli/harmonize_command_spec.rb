@@ -281,8 +281,11 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
 
         result = command.send(:harmonize_source, :us)
 
+        # A load error is a per-file defect, attributed to its file and
+        # collected in :errors — the gate treats those as never exempt,
+        # where a source-level :error would have been --allow-empty'able
         expect(result[:status]).to eq(:success)
-        expect(result[:errors].first).to match(/broken\.yaml.*directory/i)
+        expect(result[:errors].join).to match(/broken\.yaml.*directory/i)
       end
     end
   end

@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 require 'roo'
+require_relative '../../utils/iri_sanitizer'
 
 module Ammitto
   module Sources
@@ -79,10 +80,47 @@ module Ammitto
         # @return [String, nil] the local id, or nil when the record carries
         #   nothing an IRI segment can be built from
         def local_id
-          identifiable(reference_number) || identifiable(name)
+          trusted_reference || fallback_name
         end
 
         private
+
+        # The upstream number, but only when sanitization will not rewrite
+        # it into a different token.
+        #
+        # Sanitization deletes characters it does not recognize, and a
+        # deletion can merge digits: a spreadsheet cell holding the float
+        # 1.0 stringifies to "1.0" and sanitizes to "10", which is the IRI
+        # of whichever record Turkey numbered 10. So a reference number is
+        # trusted only when it is built entirely from characters the
+        # sanitizer keeps or converts — alphanumerics, hyphen, underscore
+        # and whitespace. All 239 numbers Turkey currently publishes are
+        # plain digits and pass through untouched; anything stranger falls
+        # through to the name rather than quietly claiming someone's number.
+        #
+        # @return [String, nil]
+        def trusted_reference
+          str = identifiable(reference_number)
+          return nil unless str&.match?(/\A[a-zA-Z0-9\-_\s]+\z/)
+
+          str
+        end
+
+        # The record name, used when Turkey published no number.
+        #
+        # Refused when it would sanitize to a bare integer, because bare
+        # integers are Turkey's own numbering namespace. This makes it
+        # structurally impossible for a name-derived id to occupy a slot
+        # Turkey assigned to a different designee.
+        #
+        # @return [String, nil]
+        def fallback_name
+          str = identifiable(name)
+          return nil if str.nil?
+          return nil if Utils::IriSanitizer.sanitize(str).match?(/\A\d+\z/)
+
+          str
+        end
 
         # Whether a value can serve as an IRI segment.
         #

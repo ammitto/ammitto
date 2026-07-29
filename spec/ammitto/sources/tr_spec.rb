@@ -91,6 +91,30 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('187')
     end
 
+    it 'distrusts a reference number sanitization would rewrite' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
+
+      expect(entity.local_id).to eq('TAMAS COMPANY')
+    end
+
+    it 'distrusts a reference number carrying a separator' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: '12/A')
+
+      expect(entity.local_id).to eq('TAMAS COMPANY')
+    end
+
+    it 'keeps a reference number whose spaces only become hyphens' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: '12 A')
+
+      expect(entity.local_id).to eq('12 A')
+    end
+
+    it 'refuses a name that would sanitize to a bare number' do
+      entity = build(name: '187', reference_number: nil)
+
+      expect(entity.local_id).to be_nil
+    end
+
     it 'does not invent a reference number for records that lack one' do
       entity = build(name: 'TAMAS COMPANY', reference_number: nil)
 
@@ -169,14 +193,28 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       expect(ids).to all(satisfy { |id| !id.end_with?('/unknown') })
     end
 
-    it 'gives the same record the same IRI on every run' do
-      built = Array.new(2) do
-        transformer.transform(
-          source(name: 'MESBAH ENERGY COMPANY', reference_number: nil)
-        )[:entity].id
+    # Crosses the serialization boundary the harvest actually crosses:
+    # fetch writes YAML, harmonize reads it back. A surrogate that survives
+    # that round trip unchanged is what "stable across harvests" means.
+    it 'gives the same record the same IRI across a YAML round trip' do
+      original = source(name: 'MESBAH ENERGY COMPANY', reference_number: nil)
+      reloaded = Ammitto::Sources::Tr::Entity.from_yaml(original.to_yaml)
+
+      expect(transformer.transform(reloaded)[:entity].id)
+        .to eq(transformer.transform(original)[:entity].id)
+    end
+
+    it 'derives a stable IRI for every unnumbered name in the real block' do
+      names = ['DAWOOD AGHA-JANI', 'EHSAN MONAJEMİ', 'M. JAVAD KARIMI SABET',
+               'ESFAHAN NUCLEAR FUEL RESEARCH AND PRODUCTION CENTRE ' \
+               '(NFRPC) AND ESFAHAN NUCLEAR TECHNOLOGY CENTRE(ENTC)']
+
+      ids = names.map do |name|
+        transformer.transform(source(name: name, reference_number: nil))[:entity].id
       end
 
-      expect(built.uniq.size).to eq(1)
+      expect(ids.uniq.size).to eq(names.size)
+      expect(ids).to all(satisfy { |id| !id.end_with?('/unknown') })
     end
 
     it 'does not let a list in the reference number slot steal an IRI' do
@@ -204,30 +242,56 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
   end
 end
 
-RSpec.describe Ammitto::Sources::Tr::SanctionsList do
-  describe '.from_xlsx round trip through the transformer' do
-    let(:rows) do
-      [
-        { name: 'YUN HO-JIN', reference_number: '1' },
-        { name: 'DAWOOD AGHA-JANI', reference_number: nil },
-        { name: 'AMIR MOAYYED ALAI', reference_number: nil }
-      ]
-    end
+# Exercises the path Cmd::Harmonize#transform_tr actually takes: the
+# per-record YAML the fetcher committed to data-tr, loaded through
+# Tr::Entity.from_yaml and handed to the transformer.
+RSpec.describe 'tr harmonize path from committed YAML' do
+  subject(:transformer) { Ammitto::Sources::Tr::Transformer.new }
 
-    it 'produces one distinct entity IRI per row' do
-      transformer = Ammitto::Sources::Tr::Transformer.new
+  def transform_yaml(yaml)
+    transformer.transform(Ammitto::Sources::Tr::Entity.from_yaml(yaml))
+  end
 
-      ids = rows.map do |row|
-        entity = Ammitto::Sources::Tr::SanctionedEntity.new(
-          name: row[:name],
-          entity_type: 'person',
-          program: 'Law No. 7262, Articles 3.A/3.B',
-          reference_number: row[:reference_number]
-        )
-        transformer.transform(entity)[:entity].id
-      end
+  let(:numbered) do
+    <<~YAML
+      ---
+      name: YUN HO-JIN
+      entity_type: person
+      program: Law No. 7262, Articles 3.A/3.B
+      listed_date: 24.2.2021/ 3578
+      reference_number: '1'
+    YAML
+  end
 
-      expect(ids.uniq.size).to eq(rows.size)
-    end
+  let(:unnumbered) do
+    <<~YAML
+      ---
+      name: DAWOOD AGHA-JANI
+      entity_type: person
+      program: Law No. 7262, Articles 3.A/3.B
+      place_of_birth: Ardebil, İran
+    YAML
+  end
+
+  it 'keeps the numbered record on its published IRI' do
+    expect(transform_yaml(numbered)[:entity].id)
+      .to eq('https://www.ammitto.org/entity/tr/1')
+  end
+
+  it 'gives the unnumbered record its own IRI, not the placeholder' do
+    expect(transform_yaml(unnumbered)[:entity].id)
+      .to eq('https://www.ammitto.org/entity/tr/dawood-agha-jani')
+  end
+
+  it 'does not let the unnumbered record collide with a numbered one' do
+    expect(transform_yaml(unnumbered)[:entity].id)
+      .not_to eq(transform_yaml(numbered)[:entity].id)
+  end
+
+  it 'still reports that Turkey published no number for it' do
+    reference = transform_yaml(unnumbered)[:entity]
+                .source_references.first
+
+    expect(reference.reference_number).to be_nil
   end
 end

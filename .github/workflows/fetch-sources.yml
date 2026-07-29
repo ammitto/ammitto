@@ -45,6 +45,9 @@ jobs:
             seen=' '
             for code in "${raw[@]}"; do
               [ -n "$code" ] || continue
+              # The CLI downcases codes, so fold here too: otherwise "EU,eu"
+              # survives as two entries that both resolve to :eu and refetch.
+              code=${code,,}
               # Quoted inside the pattern, so a code holding * or ? matches
               # literally instead of globbing away an unrelated entry.
               case "$seen" in *" $code "*) continue ;; esac

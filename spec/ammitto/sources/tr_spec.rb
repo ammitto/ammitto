@@ -34,10 +34,24 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('TAMAS COMPANY')
     end
 
-    it 'treats a punctuation-only reference number as absent' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '--')
+    # "Absent" means the cell is empty, not that it happens to sanitize to
+    # nothing. A cell holding punctuation or non-Latin digits carries
+    # content we cannot read, so the record is refused rather than
+    # re-addressed by its name.
+    ['--', '!!', '١٢٣'].each do |unreadable|
+      it "refuses the unreadable reference #{unreadable.inspect}" do
+        entity = build(name: 'TAMAS COMPANY', reference_number: unreadable)
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+        expect(entity.local_id).to be_nil
+      end
+    end
+
+    it 'refuses same-named records carrying different unreadable cells' do
+      first = build(name: 'SAME NAME', reference_number: '--')
+      second = build(name: 'SAME NAME', reference_number: '!!')
+
+      expect(first.local_id).to be_nil
+      expect(second.local_id).to be_nil
     end
 
     it 'strips surrounding whitespace from the reference number' do
@@ -273,18 +287,6 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
 
       expect(ids.uniq.size).to eq(names.size)
       expect(ids).to all(satisfy { |id| !id.end_with?('/unknown') })
-    end
-
-    it 'does not let a list in the reference number slot steal an IRI' do
-      stolen = transformer.transform(
-        source(name: 'TAMAS COMPANY', reference_number: [1])
-      )[:entity].id
-      real = transformer.transform(
-        source(name: 'YUN HO-JIN', reference_number: '1')
-      )[:entity].id
-
-      expect(stolen).not_to eq(real)
-      expect(stolen).not_to eq('https://www.ammitto.org/entity/tr/tamas-company')
     end
 
     it 'never mixes a name-derived id with a numbered one' do

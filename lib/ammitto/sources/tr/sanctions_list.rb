@@ -86,12 +86,14 @@ module Ammitto
         # untouched, so harmonized output keeps reporting truthfully that
         # Turkey published no number for these designees.
         #
-        # A number that is present but is not one of Turkey's is a third
-        # case, and it deliberately does NOT fall back to the name: two such
-        # records that happened to share a name would silently merge into
-        # one graph node. Refusing them returns nil, which the IRI layer
-        # turns into a loud failure once ingestion stops tolerating a
-        # missing local id.
+        # A cell that holds anything else is a third case, and it
+        # deliberately does NOT fall back to the name: two such records that
+        # happened to share a name would silently merge into one graph node.
+        # "Absent" therefore means literally empty — nil, or blank after
+        # stripping — and nothing more. A cell holding "--" or "١٢٣" is
+        # present and unusable, not absent. Refusing returns nil, which the
+        # IRI layer turns into a loud failure once ingestion stops
+        # tolerating a missing local id.
         #
         # The IRI layer sanitizes whatever this returns, so the raw value is
         # returned here rather than a pre-slugged one.
@@ -101,8 +103,8 @@ module Ammitto
         def local_id
           return nil if malformed?(reference_number)
 
-          reference = scalar_text(reference_number)
-          return fallback_name if reference.nil?
+          reference = reference_number.to_s.strip
+          return fallback_name if reference.empty?
           return reference if reference.match?(DECIMAL_REFERENCE)
 
           nil
@@ -148,14 +150,14 @@ module Ammitto
           value.is_a?(Enumerable) || value.to_s.strip.start_with?('#<')
         end
 
-        # The value's text, if it carries anything an IRI segment can be
-        # built from.
+        # The value's text, if an IRI segment can be built from it.
         #
         # A value survives IRI sanitization only if it holds at least one
         # ASCII alphanumeric character, so blank, whitespace-only,
-        # punctuation-only and non-Latin-only values return nil. For a
-        # reference number that means "Turkey left the cell empty", which is
-        # exactly what the 37 unnumbered rows look like.
+        # punctuation-only and non-Latin-only values return nil. This is a
+        # question about the NAME — whether there is anything to slug — and
+        # not about whether Turkey filled a cell in, which +local_id+
+        # decides by emptiness alone.
         #
         # @param value [Object, nil] candidate identifier
         # @return [String, nil] the stripped text, or nil if it carries none

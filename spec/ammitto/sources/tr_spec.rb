@@ -71,13 +71,13 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
 
     # A mapping is stringified by the model layer before #local_id sees it,
-    # so it arrives as an ordinary (odd) String rather than a container.
-    # It cannot be rejected here, but it also cannot sanitize down to a bare
-    # number, so it can never steal a numbered record's IRI.
-    it 'cannot let a mapping in the reference number slot steal an IRI' do
+    # so it arrives as an ordinary (odd) String. It carries content but is
+    # not one of Turkey's numbers, so the record is refused rather than
+    # quietly re-addressed by its name.
+    it 'refuses a mapping in the reference number slot' do
       entity = build(name: 'TAMAS COMPANY', reference_number: { a: 1 })
 
-      expect(entity.local_id).not_to match(/\A\d+\z/)
+      expect(entity.local_id).to be_nil
     end
 
     it 'rejects a list smuggled into the name slot' do
@@ -107,29 +107,45 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('187')
     end
 
-    it 'distrusts a reference number sanitization would rewrite' do
+    it 'refuses a reference number sanitization would rewrite' do
       entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(entity.local_id).to be_nil
     end
 
     ['-10', '10-', '--10--', ' -10 '].each do |hostile|
-      it "distrusts #{hostile.inspect}, which sanitizes onto record 10" do
+      it "refuses #{hostile.inspect}, which sanitizes onto record 10" do
         entity = build(name: 'TAMAS COMPANY', reference_number: hostile)
 
-        expect(entity.local_id).to eq('TAMAS COMPANY')
+        expect(entity.local_id).to be_nil
       end
     end
 
     # Turkey publishes plain ASCII decimal numbers. Anything else is not a
     # reference we can trust, because sanitization can rewrite two distinct
-    # values onto one segment ("12/A" and "12A" both become "12a").
+    # values onto one segment ("12/A" and "12A" both become "12a"). Such a
+    # record is refused outright rather than re-addressed by its name, so
+    # that two of them sharing a name cannot merge into one node.
     ['12/A', '12A', '12 A', 'ABC', '1 0'].each do |odd|
-      it "falls back to the name for non-decimal reference #{odd.inspect}" do
+      it "refuses non-decimal reference #{odd.inspect}" do
         entity = build(name: 'TAMAS COMPANY', reference_number: odd)
 
-        expect(entity.local_id).to eq('TAMAS COMPANY')
+        expect(entity.local_id).to be_nil
       end
+    end
+
+    it 'refuses same-named records carrying different bad references' do
+      first = build(name: 'SAME NAME', reference_number: '12/A')
+      second = build(name: 'SAME NAME', reference_number: '12A')
+
+      expect(first.local_id).to be_nil
+      expect(second.local_id).to be_nil
+    end
+
+    it 'still falls back to the name when no reference was published' do
+      entity = build(name: 'SAME NAME', reference_number: nil)
+
+      expect(entity.local_id).to eq('SAME NAME')
     end
 
     it 'refuses a name that would sanitize to a bare number' do
@@ -329,7 +345,9 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
 
     # A malformed reference must never sanitize onto a number Turkey already
     # assigned. Asserted through the routing seam, since that is the path a
-    # corrupt committed record would actually travel.
+    # corrupt committed record would actually travel. The refusal itself is
+    # pinned at the model level, because once ingestion stops tolerating a
+    # missing local id these records raise here rather than return.
     ['-1', '1-', '--1--', '1.0'].each do |hostile|
       it "does not let reference #{hostile.inspect} claim record 1's IRI" do
         record = unnumbered.merge('reference_number' => hostile)
@@ -339,17 +357,13 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       end
     end
 
-    # Two references that sanitize onto one segment must not merge two
-    # designees into a single graph node.
-    [%w[12/A 12A], ['1 0', '1-0'], %w[-_10- _10], %w[ABC abc]].each do |a, b|
-      it "keeps #{a.inspect} and #{b.inspect} on separate entities" do
-        first = harmonize('name' => 'ALPHA CO', 'entity_type' => 'organization',
-                          'reference_number' => a)
-        second = harmonize('name' => 'BETA CO', 'entity_type' => 'organization',
-                           'reference_number' => b)
+    it 'routes an unnumbered record to its own name-derived entity' do
+      other = unnumbered.merge('name' => 'AMIR MOAYYED ALAI')
 
-        expect(first[:entity]['@id']).not_to eq(second[:entity]['@id'])
-      end
+      expect(harmonize(other)[:entity]['@id'])
+        .to eq('https://www.ammitto.org/entity/tr/amir-moayyed-alai')
+      expect(harmonize(other)[:entity]['@id'])
+        .not_to eq(harmonize(unnumbered)[:entity]['@id'])
     end
   end
 end

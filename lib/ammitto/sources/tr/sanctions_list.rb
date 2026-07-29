@@ -54,6 +54,18 @@ module Ammitto
           map 'address', to: :address
         end
 
+        # The form Turkey publishes "Sıra No" in — an ASCII decimal number,
+        # which all 239 numbers on the current sheet are.
+        #
+        # Nothing looser is accepted, because sanitization rewrites what it
+        # is given and a rewritten value can land on top of another record:
+        # "1.0", "-10", "10-" and "--10--" all sanitize to "10", the IRI of
+        # whoever Turkey numbered 10, while "12/A" and "12A" sanitize to the
+        # same "12a" as each other. A looser rule would have to reason about
+        # which rewrites happen to be safe.
+        DECIMAL_REFERENCE = /\A[0-9]+\z/
+        private_constant :DECIMAL_REFERENCE
+
         def person?
           entity_type&.downcase == 'individual'
         end
@@ -74,40 +86,27 @@ module Ammitto
         # untouched, so harmonized output keeps reporting truthfully that
         # Turkey published no number for these designees.
         #
+        # A number that is present but is not one of Turkey's is a third
+        # case, and it deliberately does NOT fall back to the name: two such
+        # records that happened to share a name would silently merge into
+        # one graph node. Refusing them returns nil, which the IRI layer
+        # turns into a loud failure once ingestion stops tolerating a
+        # missing local id.
+        #
         # The IRI layer sanitizes whatever this returns, so the raw value is
         # returned here rather than a pre-slugged one.
         #
         # @return [String, nil] the local id, or nil when the record carries
-        #   nothing an IRI segment can be built from
+        #   no identifier that can be trusted
         def local_id
-          trusted_reference || fallback_name
+          reference = identifiable(reference_number)
+          return reference if reference&.match?(DECIMAL_REFERENCE)
+          return nil if reference
+
+          fallback_name
         end
 
         private
-
-        # The upstream number, accepted only in the form Turkey publishes.
-        #
-        # "Sıra No" is an ASCII decimal number — all 239 of the numbers on
-        # the current sheet are — so that is exactly what is trusted here.
-        # Anything else falls through to the name.
-        #
-        # The strictness is not pedantry. Sanitization rewrites what it is
-        # given, deleting unrecognized characters and stripping and
-        # collapsing hyphens, and a rewritten value can land on top of
-        # another record: "1.0", "-10", "10-" and "--10--" all sanitize to
-        # "10", the IRI of whoever Turkey numbered 10, while "12/A" and
-        # "12A" sanitize to the same "12a" as each other. Any looser rule
-        # has to reason about which rewrites are safe; this one does not.
-        #
-        # Falling through is a safe landing rather than a loss: the record
-        # still gets a stable, unique IRI from its name. It simply is not
-        # addressed by a reference number nobody can trust.
-        #
-        # @return [String, nil]
-        def trusted_reference
-          str = identifiable(reference_number)
-          str&.match?(/\A[0-9]+\z/) ? str : nil
-        end
 
         # The record name, used when Turkey published no number.
         #

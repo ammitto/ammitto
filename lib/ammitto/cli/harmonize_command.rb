@@ -171,23 +171,32 @@ module Ammitto
 
         results.each do |r|
           attach_quality_metrics(r, output_dir) if r[:status] == :success
-          r[:gate_failures] = source_gate_failures(r, output_dir)
+          hard = unconditional_gate_failures(r)
+          soft = hard.empty? ? exemptable_gate_failures(r, output_dir) : []
+          exempt = allowed_empty_sources.include?(r[:code])
+
+          r[:gate_failures] = hard + (exempt ? [] : soft)
+          r[:exempted_failures] = exempt ? soft : []
         end
       end
 
-      # Gate failures for one per-source result
+      # Failures no exemption can clear: a file that exists but fails to
+      # parse or transform is a data defect regardless of --allow-empty
+      # @param result [Hash] per-source result
+      # @return [Array<String>] failure messages
+      def unconditional_gate_failures(result)
+        return [] unless result[:errors]&.any?
+
+        ["#{result[:code]}: #{result[:errors].length} file(s) failed to transform " \
+         "(first: #{result[:errors].first})"]
+      end
+
+      # Failures --allow-empty clears for the sources it names
       # @param result [Hash] per-source result
       # @param output_dir [String] output directory
       # @return [Array<String>] failure messages
-      def source_gate_failures(result, output_dir)
+      def exemptable_gate_failures(result, output_dir)
         code = result[:code]
-
-        # Per-file errors are checked first and are never exempt
-        if result[:errors]&.any?
-          return ["#{code}: #{result[:errors].length} file(s) failed to transform " \
-                  "(first: #{result[:errors].first})"]
-        end
-        return [] if allowed_empty_sources.include?(code)
 
         if result[:status] == :error
           ["#{code}: #{result[:error]}"]
@@ -1135,40 +1144,42 @@ module Ammitto
       end
 
       # Print summary of results using the gate classification, so the
-      # summary can never print "succeeded" for a source the health gates
-      # are about to fail (error, per-file failures, or quality floors).
-      # Entity/entry totals come from the exporter's deduplicated stats so
-      # the log agrees with the published stats.json numbers.
+      # counts and the exit code always agree: "failed" counts exactly the
+      # sources that make #enforce_health_gates raise, and a source whose
+      # only failures were cleared by --allow-empty is reported as
+      # exempted rather than as either a success or a failure (printing
+      # "failed" for a source on a run that exits 0 is the same dishonesty
+      # the gates exist to remove). Entity/entry totals come from the
+      # exporter's deduplicated stats so the log agrees with stats.json.
       # @param results [Array<Hash>] harmonize results
       # @return [void]
       def print_summary(results)
         evaluate_gates(results)
-        clean, troubled = results.partition do |r|
-          r[:status] == :success && (r[:gate_failures] || []).empty?
+        failed, rest = results.partition { |r| (r[:gate_failures] || []).any? }
+        exempted, clean = rest.partition do |r|
+          (r[:exempted_failures] || []).any?
         end
 
         puts
-        puts "Harmonize complete: #{clean.length} succeeded, #{troubled.length} failed"
+        puts "Harmonize complete: #{clean.length} succeeded, " \
+             "#{failed.length} failed, #{exempted.length} exempted"
         print_graph_totals
 
-        return if troubled.empty?
-
-        puts 'Failed sources:'
-        troubled.each do |r|
-          failure_lines(r).each { |line| puts "  #{line}" }
-        end
+        print_source_problems('Failed sources:', failed, :gate_failures)
+        print_source_problems('Exempted sources (--allow-empty):', exempted,
+                              :exempted_failures)
       end
 
-      # Failure lines for a troubled per-source result. Gate failures
-      # already carry the source code; an exempted (--allow-empty) errored
-      # source has none, so its error is reported directly.
-      # @param result [Hash] harmonize result
-      # @return [Array<String>]
-      def failure_lines(result)
-        failures = result[:gate_failures] || []
-        return failures if failures.any?
+      # Print one labelled block of per-source problem lines
+      # @param heading [String] block heading
+      # @param results [Array<Hash>] results to report
+      # @param key [Symbol] result key holding the lines
+      # @return [void]
+      def print_source_problems(heading, results, key)
+        return if results.empty?
 
-        ["#{result[:code]}: #{result[:error] || 'failed'}"]
+        puts heading
+        results.each { |r| r[key].each { |line| puts "  #{line}" } }
       end
 
       # Deduplicated entity/entry totals as exported (stats.json numbers)

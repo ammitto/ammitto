@@ -230,6 +230,28 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
         .to_stdout
     end
 
+    # An --allow-empty source must not be printed as "failed" on a run
+    # that exits 0: the counts have to match what the gates will raise on
+    it 'reports an exempted errored source as exempted, not failed' do
+      options[:allow_empty] = 'ch'
+      results = [{ code: :ch, status: :error, error: 'No input directory found' }]
+
+      expect { command.send(:print_summary, results) }
+        .to output(
+          /0 succeeded, 0 failed, 1 exempted.*Exempted sources \(--allow-empty\):\s+ch: No input directory found/m
+        ).to_stdout
+      expect(results.first[:gate_failures]).to be_empty
+    end
+
+    it 'keeps a per-file failure in the failed count even when exempted' do
+      options[:allow_empty] = 'ch'
+      results = [{ code: :ch, status: :success, entities: 3, entries: 3,
+                   errors: ['x.yml: boom'] }]
+
+      expect { command.send(:print_summary, results) }
+        .to output(/0 succeeded, 1 failed, 0 exempted/).to_stdout
+    end
+
     it 'prints deduplicated graph totals from the exporter stats' do
       exporter = instance_double(
         Ammitto::Serialization::JsonLdGraphExporter,

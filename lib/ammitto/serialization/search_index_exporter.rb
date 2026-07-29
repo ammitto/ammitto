@@ -84,8 +84,13 @@ module Ammitto
       # @param entry [Hash] sanction entry data
       # @return [void]
       def add(entity, entry)
-        # Support both '@id' (JSON-LD) and 'id' (model hash) formats
-        entity_id = entity['@id'] || entity['id']
+        # Support both '@id' (JSON-LD) and 'id' (model hash) formats.
+        # The id is the dedup key, so it takes the same String rule as
+        # the row scalars: a blank '@id' is truthy in Ruby, and would
+        # both mask a usable 'id' and collapse every blank-id entity
+        # into one shared row
+        entity_id = string_presence(entity['@id']) ||
+                    string_presence(entity['id'])
         return unless entity_id
 
         regime_code = string_presence(extract_regime_code(entry))
@@ -125,7 +130,7 @@ module Ammitto
           # apply post-merge (#finalize_row), not here, so a later
           # duplicate pair carrying the real value can still fill it
           type: string_presence(entity['entityType'] || entity['entity_type']),
-          names: extract_names(entity),
+          names: string_list(extract_names(entity)),
           primaryName: string_presence(extract_primary_name(entity)),
           country: string_presence(extract_country(entity)),
           regime: regime_code,
@@ -146,6 +151,15 @@ module Ammitto
         return nil unless value.is_a?(String)
 
         Utils::Presence.present?(value) ? value : nil
+      end
+
+      # Names obey the same String rule as the row scalars: the
+      # extractors guard on truthiness, so blanks and wrong-typed source
+      # values (numbers, hashes) would otherwise reach search-index.json
+      # @param values [Array<Object>] candidate names
+      # @return [Array<String>] non-blank String names
+      def string_list(values)
+        Array(values).filter_map { |value| string_presence(value) }
       end
 
       # IMO numbers legitimately arrive numeric in some sources; coerce
@@ -261,14 +275,18 @@ module Ammitto
         # Direct string value
         return authority.downcase if authority.is_a?(String)
 
-        # Check for @id reference
+        # Check for @id reference. Both lookups take the String rule:
+        # the extractor calls #match/#downcase, so a wrong-typed source
+        # value would raise NoMethodError mid-harmonize instead of
+        # dropping out of the row
         if authority.is_a?(Hash)
-          if authority['@id']
+          id = string_presence(authority['@id'])
+          if id
             # Extract from "https://www.ammitto.org/authority/un"
-            match = authority['@id'].match(%r{/authority/([^/]+)$})
+            match = id.match(%r{/authority/([^/]+)$})
             return match[1] if match
           end
-          return authority['countryCode']&.downcase
+          return string_presence(authority['countryCode'])&.downcase
         end
 
         nil
@@ -280,14 +298,16 @@ module Ammitto
       def extract_regime_code(entry)
         return nil unless entry
 
-        # Check for @id reference
+        # Check for @id reference (same String rule as the authority
+        # extractor: #match and #downcase must never see a non-String)
         if entry['regime'].is_a?(Hash)
-          if entry['regime']['@id']
+          id = string_presence(entry['regime']['@id'])
+          if id
             # Extract from "https://www.ammitto.org/regime/dprk"
-            match = entry['regime']['@id'].match(%r{/regime/([^/]+)$})
+            match = id.match(%r{/regime/([^/]+)$})
             return match[1] if match
           end
-          return entry['regime']['code']&.downcase
+          return string_presence(entry['regime']['code'])&.downcase
         end
 
         nil
@@ -299,12 +319,16 @@ module Ammitto
       def extract_list_type(entry)
         return nil unless entry
 
-        # Check for list_type field (normalized structure)
-        return entry['list_type'] if entry['list_type']
-        return entry['listType'] if entry['listType']
+        # Check for list_type field (normalized structure). A blank or
+        # wrong-typed field must not mask the IRI fallback below, which
+        # may still carry the real list identity
+        list_type = string_presence(entry['list_type']) ||
+                    string_presence(entry['listType'])
+        return list_type if list_type
 
-        # Try to extract from entry @id
-        entry_id = entry['@id'] || entry['id']
+        # Try to extract from entry @id (String rule: #match below)
+        entry_id = string_presence(entry['@id']) ||
+                   string_presence(entry['id'])
         return nil unless entry_id
 
         # Pattern: BASE_URI/entry/{source}/{list_type}/{local_id}
@@ -480,26 +504,37 @@ module Ammitto
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'vessel'
 
-        # From identifiers
-        if entity['identifiers'].is_a?(Array)
-          imo = entity['identifiers'].find do |id|
-            id.is_a?(Hash) && (id['type']&.downcase == 'imo' || id['document_type']&.downcase == 'imo')
-          end
-          return imo['value'] if imo && imo['value']
-          return imo['identification'] if imo && imo['identification']
-        end
-
-        # From identifications (snake_case)
-        if entity['identifications'].is_a?(Array)
-          imo = entity['identifications'].find do |id|
-            id.is_a?(Hash) && (id['type']&.downcase == 'imo' || id['document_type']&.downcase == 'imo')
-          end
-          return imo['value'] if imo && imo['value']
-          return imo['identification'] if imo && imo['identification']
+        # From identifiers, then identifications (snake_case)
+        %w[identifiers identifications].each do |key|
+          value = imo_from_identifiers(entity[key])
+          return value if value
         end
 
         # From imo field
         entity['imo'] || entity['imoNumber'] || entity['imo_number']
+      end
+
+      # Find the IMO value in one identifier collection
+      # @param identifiers [Object] candidate identifier collection
+      # @return [Object, nil] raw IMO value (coerced by #scalar_presence)
+      def imo_from_identifiers(identifiers)
+        return nil unless identifiers.is_a?(Array)
+
+        imo = identifiers.find { |id| id.is_a?(Hash) && imo_identifier?(id) }
+        return nil unless imo
+
+        imo['value'] || imo['identification']
+      end
+
+      # Whether an identifier is an IMO number. The type discriminator
+      # takes the String rule: #downcase on a wrong-typed source value
+      # would raise NoMethodError instead of skipping the identifier
+      # @param identifier [Hash] identifier hash
+      # @return [Boolean]
+      def imo_identifier?(identifier)
+        %w[type document_type].any? do |key|
+          string_presence(identifier[key])&.downcase == 'imo'
+        end
       end
 
       # Export search index to file

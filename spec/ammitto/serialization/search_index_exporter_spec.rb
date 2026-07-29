@@ -234,6 +234,50 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.facets[:countries]).to eq('CN' => 1)
     end
 
+    it 'drops blank and wrong-typed names from the row' do
+      noisy = entity.merge(
+        'names' => [{ 'fullName' => 0, 'lastName' => '   ' },
+                    { 'fullName' => 'Real Name' }],
+        'name' => { 'oops' => true },
+        'aliases' => [{ 'name' => 12.5 }, '', 'Real Alias']
+      )
+
+      exporter.add(noisy, entry)
+
+      expect(exporter.entities.first[:names])
+        .to contain_exactly('Real Name', 'Real Alias')
+    end
+
+    it 'keeps wrong-typed names out of the exported index' do
+      exporter.add(entity.merge('names' => [{ 'fullName' => 0 }]), entry)
+      exporter.export(output_dir)
+
+      data = JSON.parse(File.read(File.join(output_dir, 'search-index.json')))
+      expect(data['entities'].first['names']).to eq([])
+    end
+
+    it 'unions only real names across repeated pairs' do
+      exporter.add(entity.merge('names' => [{ 'fullName' => 0 }]), entry)
+      exporter.add(entity, entry)
+
+      expect(exporter.entities.first[:names]).to contain_exactly('Test Corp')
+    end
+
+    it 'falls back to id when @id is blank' do
+      exporter.add(entity.merge('@id' => '', 'id' => 'real-id'), entry)
+
+      expect(exporter.entities.map { |r| r[:id] }).to eq(['real-id'])
+    end
+
+    it 'never collapses distinct blank-id entities into one row' do
+      exporter.add(entity.merge('@id' => ''), entry)
+      exporter.add(entity.merge('@id' => '   '), entry)
+      exporter.add(entity.merge('@id' => 0), entry)
+
+      expect(exporter.entities).to be_empty
+      expect(exporter.facets[:authorities]).to eq({})
+    end
+
     it 'drops wrong-typed scalar values instead of crashing the export' do
       exporter.add(entity.merge('nationalities' => [{ 'countryCode' => 0 }]),
                    entry.merge('status' => {}))
@@ -254,6 +298,49 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
 
       expect(exporter.facets[:regimes]['x'][:name]).to be_nil
       expect { exporter.export(output_dir) }.not_to raise_error
+    end
+
+    # The lookup/discriminator fields reach #match and #downcase, so a
+    # wrong-typed source value raises NoMethodError mid-harmonize rather
+    # than dropping out of the row like the wrong-typed output fields
+    it 'drops wrong-typed authority and regime lookups without crashing' do
+      cases = [
+        [{ 'authority' => { '@id' => 0 } }, :authority],
+        [{ 'authority' => { 'countryCode' => {} } }, :authority],
+        [{ 'regime' => { '@id' => [] } }, :regime],
+        [{ 'regime' => { 'code' => {} } }, :regime],
+        [{ '@id' => 0, 'list_type' => nil }, :listType]
+      ]
+
+      cases.each do |bad_entry, dropped|
+        exporter = described_class.new
+        expect { exporter.add(entity, entry.merge(bad_entry)) }
+          .not_to raise_error
+        expect(exporter.entities.first[dropped]).to be_nil
+      end
+    end
+
+    it 'skips wrong-typed identifier types when reading the IMO' do
+      vessel = {
+        '@id' => 'https://www.ammitto.org/entity/eu_vessels/v1',
+        'entityType' => 'vessel',
+        'identifiers' => [{ 'type' => 0, 'value' => 'X' },
+                          { 'document_type' => 5, 'value' => 'Y' },
+                          { 'type' => 'imo', 'value' => 9_222_222 }]
+      }
+
+      exporter.add(vessel, entry)
+
+      expect(exporter.entities.first[:imo]).to eq('9222222')
+    end
+
+    it 'falls back to the entry IRI when list_type is wrong-typed' do
+      exporter.add(entity, entry.merge(
+                             'list_type' => 0,
+                             '@id' => 'https://www.ammitto.org/entry/cn/anti-sanction-list/1'
+                           ))
+
+      expect(exporter.entities.first[:listType]).to eq('anti-sanction-list')
     end
 
     it 'coerces numeric IMO numbers to strings' do

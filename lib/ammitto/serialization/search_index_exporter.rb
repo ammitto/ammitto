@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'json'
 require 'time'
+require_relative '../utils/presence'
 
 module Ammitto
   module Serialization
@@ -11,6 +12,16 @@ module Ammitto
     # The website currently loads 69MB of JSON-LD data. This exporter creates
     # a lightweight (~5-10MB) search-index.json with only essential fields,
     # allowing full entity data to be loaded on-demand from node files.
+    #
+    # Rows are deduplicated by entity @id: one search row per entity,
+    # however many entity/entry pairs the input carries. Repeated ids
+    # aggregate into the existing row — names are unioned, missing or
+    # blank fields are filled, and present scalar fields keep their
+    # first-seen value. The type/status defaults (person/active) apply
+    # after aggregation, so a later pair carrying the real value can
+    # still fill it. Facets are recomputed from the deduplicated rows,
+    # so facet counts, search rows, and the deduplicated stats.json
+    # numbers agree.
     #
     # @example Using the search index exporter
     #   exporter = SearchIndexExporter.new
@@ -22,12 +33,6 @@ module Ammitto
     #   exporter.export('./api/v1')
     #
     class SearchIndexExporter
-      # @return [Array<Hash>] entities for search index
-      attr_reader :entities
-
-      # @return [Hash] facet counts
-      attr_reader :facets
-
       # Authority names for facet display
       AUTHORITY_NAMES = {
         'un' => 'United Nations',
@@ -57,56 +62,48 @@ module Ammitto
 
       # Initialize the search index exporter
       def initialize
-        @entities = []
-        @facets = {
-          authorities: Hash.new(0),
-          list_types: Hash.new(0),
-          regimes: {},
-          types: Hash.new(0),
-          countries: Hash.new(0),
-          statuses: Hash.new(0)
-        }
+        @rows_by_id = {}
+        @regime_names = {}
       end
 
-      # Add entity to search index
+      # Deduplicated search rows (one per entity @id), with post-merge
+      # defaults applied
+      # @return [Array<Hash>] entities for search index
+      def entities
+        @rows_by_id.values.map { |row| finalize_row(row) }
+      end
+
+      # Facet counts recomputed from the deduplicated rows
+      # @return [Hash] facet counts
+      def facets
+        build_facets
+      end
+
+      # Add entity to search index, aggregating repeated entity ids
       # @param entity [Hash] full entity data
       # @param entry [Hash] sanction entry data
       # @return [void]
       def add(entity, entry)
-        # Support both '@id' (JSON-LD) and 'id' (model hash) formats
-        entity_id = entity['@id'] || entity['id']
+        # Support both '@id' (JSON-LD) and 'id' (model hash) formats.
+        # The id is the dedup key, so it takes the same String rule as
+        # the row scalars: a blank '@id' is truthy in Ruby, and would
+        # both mask a usable 'id' and collapse every blank-id entity
+        # into one shared row
+        entity_id = string_presence(entity['@id']) ||
+                    string_presence(entity['id'])
         return unless entity_id
 
-        # Extract authority code from entry
-        authority_code = extract_authority_code(entry)
-        regime_code = extract_regime_code(entry)
-        list_type = extract_list_type(entry)
+        regime_code = string_presence(extract_regime_code(entry))
+        remember_regime_name(regime_code, entry)
 
-        # Extract names
-        names = extract_names(entity)
-        primary_name = extract_primary_name(entity)
+        search_entity = build_row(entity_id, entity, entry, regime_code)
 
-        # Support both camelCase and snake_case entity type
-        entity_type = entity['entityType'] || entity['entity_type'] || 'person'
-
-        # Create search entity (lightweight)
-        search_entity = {
-          id: entity_id,
-          ref: extract_ref(entity_id),
-          type: entity_type,
-          names: names,
-          primaryName: primary_name,
-          country: extract_country(entity),
-          regime: regime_code,
-          authority: authority_code,
-          listType: list_type,
-          status: entry['status'] || 'active',
-          birthYear: extract_birth_year(entity),
-          imo: extract_imo(entity)
-        }.compact
-
-        @entities << search_entity
-        update_facets(search_entity, regime_code, entry)
+        existing = @rows_by_id[entity_id]
+        if existing
+          merge_row(existing, search_entity)
+        else
+          @rows_by_id[entity_id] = search_entity
+        end
       end
 
       # Export search index and facets to output directory
@@ -118,6 +115,139 @@ module Ammitto
       end
 
       private
+
+      # Build one lightweight search row
+      # @param entity_id [String] entity id
+      # @param entity [Hash] full entity data
+      # @param entry [Hash] sanction entry data
+      # @param regime_code [String, nil] regime code
+      # @return [Hash] search row
+      def build_row(entity_id, entity, entry, regime_code)
+        {
+          id: entity_id,
+          ref: extract_ref(entity_id),
+          # Support both camelCase and snake_case entity type; defaults
+          # apply post-merge (#finalize_row), not here, so a later
+          # duplicate pair carrying the real value can still fill it
+          type: string_presence(entity['entityType'] || entity['entity_type']),
+          names: string_list(extract_names(entity)),
+          primaryName: string_presence(extract_primary_name(entity)),
+          country: string_presence(extract_country(entity)),
+          regime: regime_code,
+          authority: string_presence(extract_authority_code(entry)),
+          listType: string_presence(extract_list_type(entry)),
+          status: string_presence(entry['status']),
+          birthYear: string_presence(extract_birth_year(entity)),
+          imo: scalar_presence(extract_imo(entity))
+        }.compact
+      end
+
+      # Only non-blank Strings become row scalars: blanks must not block
+      # a later real value, and wrong-typed source values (numbers,
+      # hashes) must never reach the facet builders' String calls
+      # @param value [Object] candidate value
+      # @return [String, nil]
+      def string_presence(value)
+        return nil unless value.is_a?(String)
+
+        Utils::Presence.present?(value) ? value : nil
+      end
+
+      # Names obey the same String rule as the row scalars: the
+      # extractors guard on truthiness, so blanks and wrong-typed source
+      # values (numbers, hashes) would otherwise reach search-index.json
+      # @param values [Array<Object>] candidate names
+      # @return [Array<String>] non-blank String names
+      def string_list(values)
+        Array(values).filter_map { |value| string_presence(value) }
+      end
+
+      # IMO numbers legitimately arrive numeric in some sources; coerce
+      # Numerics, otherwise apply the String rule
+      # @param value [Object] candidate value
+      # @return [String, nil]
+      def scalar_presence(value)
+        return value.to_s if value.is_a?(Numeric)
+
+        string_presence(value)
+      end
+
+      # Post-aggregation defaults for the exported row shape
+      # @param row [Hash] stored search row
+      # @return [Hash] finalized copy
+      def finalize_row(row)
+        finalized = row.dup
+        finalized[:type] ||= 'person'
+        finalized[:status] ||= 'active'
+        finalized
+      end
+
+      # Aggregate a repeated entity id into its existing row: union the
+      # names, fill fields the row lacks, keep first-seen values otherwise
+      # @param existing [Hash] stored search row
+      # @param incoming [Hash] newly built row for the same entity id
+      # @return [void]
+      def merge_row(existing, incoming)
+        merged_names = (existing[:names] || []) | (incoming[:names] || [])
+        existing[:names] = merged_names unless merged_names.empty?
+
+        incoming.each do |key, value|
+          existing[key] = value unless existing.key?(key)
+        end
+      end
+
+      # Record a regime display name for facet output (String-typed, so
+      # a wrong-typed source name can never leak into facets)
+      # @param regime_code [String, nil] regime code
+      # @param entry [Hash] entry data
+      # @return [void]
+      def remember_regime_name(regime_code, entry)
+        return unless regime_code
+
+        name = entry['regime']['name'] if entry['regime'].is_a?(Hash)
+        @regime_names[regime_code] ||= string_presence(name)
+      end
+
+      # Recompute facet counts from the deduplicated, finalized rows
+      # @return [Hash] facet counts
+      def build_facets
+        facets = empty_facets
+
+        entities.each do |row|
+          facets[:authorities][row[:authority]] += 1 if row[:authority]
+          facets[:list_types][row[:listType]] += 1 if row[:listType]
+          count_regime_facet(facets, row[:regime])
+          facets[:types][row[:type]] += 1 if row[:type]
+          facets[:countries][row[:country].upcase] += 1 if row[:country]
+          facets[:statuses][row[:status]] += 1 if row[:status]
+        end
+
+        facets
+      end
+
+      # @return [Hash] empty facet structure
+      def empty_facets
+        {
+          authorities: Hash.new(0),
+          list_types: Hash.new(0),
+          regimes: {},
+          types: Hash.new(0),
+          countries: Hash.new(0),
+          statuses: Hash.new(0)
+        }
+      end
+
+      # Count one row's regime into the facets
+      # @param facets [Hash] facet accumulator
+      # @param regime_code [String, nil] regime code
+      # @return [void]
+      def count_regime_facet(facets, regime_code)
+        return unless regime_code
+
+        regime = facets[:regimes][regime_code] ||=
+          { count: 0, name: @regime_names[regime_code] }
+        regime[:count] += 1
+      end
 
       # Extract reference path from entity ID
       # @param entity_id [String] full entity ID or simple ID
@@ -145,14 +275,18 @@ module Ammitto
         # Direct string value
         return authority.downcase if authority.is_a?(String)
 
-        # Check for @id reference
+        # Check for @id reference. Both lookups take the String rule:
+        # the extractor calls #match/#downcase, so a wrong-typed source
+        # value would raise NoMethodError mid-harmonize instead of
+        # dropping out of the row
         if authority.is_a?(Hash)
-          if authority['@id']
+          id = string_presence(authority['@id'])
+          if id
             # Extract from "https://www.ammitto.org/authority/un"
-            match = authority['@id'].match(%r{/authority/([^/]+)$})
+            match = id.match(%r{/authority/([^/]+)$})
             return match[1] if match
           end
-          return authority['countryCode']&.downcase
+          return string_presence(authority['countryCode'])&.downcase
         end
 
         nil
@@ -164,14 +298,16 @@ module Ammitto
       def extract_regime_code(entry)
         return nil unless entry
 
-        # Check for @id reference
+        # Check for @id reference (same String rule as the authority
+        # extractor: #match and #downcase must never see a non-String)
         if entry['regime'].is_a?(Hash)
-          if entry['regime']['@id']
+          id = string_presence(entry['regime']['@id'])
+          if id
             # Extract from "https://www.ammitto.org/regime/dprk"
-            match = entry['regime']['@id'].match(%r{/regime/([^/]+)$})
+            match = id.match(%r{/regime/([^/]+)$})
             return match[1] if match
           end
-          return entry['regime']['code']&.downcase
+          return string_presence(entry['regime']['code'])&.downcase
         end
 
         nil
@@ -183,12 +319,16 @@ module Ammitto
       def extract_list_type(entry)
         return nil unless entry
 
-        # Check for list_type field (normalized structure)
-        return entry['list_type'] if entry['list_type']
-        return entry['listType'] if entry['listType']
+        # Check for list_type field (normalized structure). A blank or
+        # wrong-typed field must not mask the IRI fallback below, which
+        # may still carry the real list identity
+        list_type = string_presence(entry['list_type']) ||
+                    string_presence(entry['listType'])
+        return list_type if list_type
 
-        # Try to extract from entry @id
-        entry_id = entry['@id'] || entry['id']
+        # Try to extract from entry @id (String rule: #match below)
+        entry_id = string_presence(entry['@id']) ||
+                   string_presence(entry['id'])
         return nil unless entry_id
 
         # Pattern: BASE_URI/entry/{source}/{list_type}/{local_id}
@@ -364,83 +504,57 @@ module Ammitto
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'vessel'
 
-        # From identifiers
-        if entity['identifiers'].is_a?(Array)
-          imo = entity['identifiers'].find do |id|
-            id.is_a?(Hash) && (id['type']&.downcase == 'imo' || id['document_type']&.downcase == 'imo')
-          end
-          return imo['value'] if imo && imo['value']
-          return imo['identification'] if imo && imo['identification']
-        end
-
-        # From identifications (snake_case)
-        if entity['identifications'].is_a?(Array)
-          imo = entity['identifications'].find do |id|
-            id.is_a?(Hash) && (id['type']&.downcase == 'imo' || id['document_type']&.downcase == 'imo')
-          end
-          return imo['value'] if imo && imo['value']
-          return imo['identification'] if imo && imo['identification']
+        # From identifiers, then identifications (snake_case)
+        %w[identifiers identifications].each do |key|
+          value = imo_from_identifiers(entity[key])
+          return value if value
         end
 
         # From imo field
         entity['imo'] || entity['imoNumber'] || entity['imo_number']
       end
 
-      # Update facet counts
-      # @param search_entity [Hash] search entity data
-      # @param regime_code [String, nil] regime code
-      # @param entry [Hash] entry data
-      def update_facets(search_entity, regime_code, entry)
-        # Authority
-        @facets[:authorities][search_entity[:authority]] += 1 if search_entity[:authority]
+      # Find the IMO value in one identifier collection
+      # @param identifiers [Object] candidate identifier collection
+      # @return [Object, nil] raw IMO value (coerced by #scalar_presence)
+      def imo_from_identifiers(identifiers)
+        return nil unless identifiers.is_a?(Array)
 
-        # List type
-        @facets[:list_types][search_entity[:listType]] += 1 if search_entity[:listType]
+        imo = identifiers.find { |id| id.is_a?(Hash) && imo_identifier?(id) }
+        return nil unless imo
 
-        # Regime
-        if regime_code
-          @facets[:regimes][regime_code] ||= { count: 0, name: extract_regime_name(entry) }
-          @facets[:regimes][regime_code][:count] += 1
-        end
-
-        # Type
-        @facets[:types][search_entity[:type]] += 1 if search_entity[:type]
-
-        # Country
-        @facets[:countries][search_entity[:country].upcase] += 1 if search_entity[:country]
-
-        # Status
-        return unless search_entity[:status]
-
-        @facets[:statuses][search_entity[:status]] += 1
+        imo['value'] || imo['identification']
       end
 
-      # Extract regime name from entry
-      # @param entry [Hash] entry data
-      # @return [String, nil] regime name
-      def extract_regime_name(entry)
-        return nil unless entry && entry['regime'].is_a?(Hash)
-
-        entry['regime']['name']
+      # Whether an identifier is an IMO number. The type discriminator
+      # takes the String rule: #downcase on a wrong-typed source value
+      # would raise NoMethodError instead of skipping the identifier
+      # @param identifier [Hash] identifier hash
+      # @return [Boolean]
+      def imo_identifier?(identifier)
+        %w[type document_type].any? do |key|
+          string_presence(identifier[key])&.downcase == 'imo'
+        end
       end
 
       # Export search index to file
       # @param output_dir [String] output directory
       def export_search_index(output_dir)
+        rows = entities
         data = {
           metadata: {
             generated: Time.now.utc.iso8601,
-            totalEntities: @entities.length,
-            sources: @facets[:authorities].keys.length
+            totalEntities: rows.length,
+            sources: rows.map { |r| r[:authority] }.compact.uniq.length
           },
-          entities: @entities
+          entities: rows
         }
 
         output_path = File.join(output_dir, 'search-index.json')
         FileUtils.mkdir_p(File.dirname(output_path))
         File.write(output_path, JSON.generate(data))
 
-        puts "Exported search index: #{@entities.length} entities to #{output_path}"
+        puts "Exported search index: #{rows.length} entities to #{output_path}"
       end
 
       # Export facet files
@@ -449,29 +563,21 @@ module Ammitto
         facets_dir = File.join(output_dir, 'facets')
         FileUtils.mkdir_p(facets_dir)
 
-        # Authorities
-        export_authority_facets(facets_dir)
+        counts = build_facets
 
-        # List types
-        export_list_type_facets(facets_dir)
-
-        # Regimes
-        export_regime_facets(facets_dir)
-
-        # Types
-        export_type_facets(facets_dir)
-
-        # Countries
-        export_country_facets(facets_dir)
-
-        # Statuses
-        export_status_facets(facets_dir)
+        export_authority_facets(facets_dir, counts)
+        export_list_type_facets(facets_dir, counts)
+        export_regime_facets(facets_dir, counts)
+        export_type_facets(facets_dir, counts)
+        export_country_facets(facets_dir, counts)
+        export_status_facets(facets_dir, counts)
       end
 
       # Export authority facets
       # @param dir [String] facets directory
-      def export_authority_facets(dir)
-        facets_data = @facets[:authorities].map do |code, count|
+      # @param counts [Hash] facet counts
+      def export_authority_facets(dir, counts)
+        facets_data = counts[:authorities].map do |code, count|
           {
             code: code,
             name: AUTHORITY_NAMES[code] || code.upcase,
@@ -484,8 +590,9 @@ module Ammitto
 
       # Export list type facets
       # @param dir [String] facets directory
-      def export_list_type_facets(dir)
-        facets_data = @facets[:list_types].map do |code, count|
+      # @param counts [Hash] facet counts
+      def export_list_type_facets(dir, counts)
+        facets_data = counts[:list_types].map do |code, count|
           {
             code: code,
             name: format_list_type_name(code),
@@ -509,8 +616,9 @@ module Ammitto
 
       # Export regime facets
       # @param dir [String] facets directory
-      def export_regime_facets(dir)
-        facets_data = @facets[:regimes].map do |code, data|
+      # @param counts [Hash] facet counts
+      def export_regime_facets(dir, counts)
+        facets_data = counts[:regimes].map do |code, data|
           {
             code: code,
             name: data[:name] || code.upcase,
@@ -523,8 +631,9 @@ module Ammitto
 
       # Export type facets
       # @param dir [String] facets directory
-      def export_type_facets(dir)
-        facets_data = @facets[:types].map do |code, count|
+      # @param counts [Hash] facet counts
+      def export_type_facets(dir, counts)
+        facets_data = counts[:types].map do |code, count|
           type_info = ENTITY_TYPES[code] || { name: code.capitalize, icon: 'circle' }
           {
             code: code,
@@ -539,8 +648,9 @@ module Ammitto
 
       # Export country facets
       # @param dir [String] facets directory
-      def export_country_facets(dir)
-        facets_data = @facets[:countries].map do |code, count|
+      # @param counts [Hash] facet counts
+      def export_country_facets(dir, counts)
+        facets_data = counts[:countries].map do |code, count|
           {
             code: code,
             count: count
@@ -552,8 +662,9 @@ module Ammitto
 
       # Export status facets
       # @param dir [String] facets directory
-      def export_status_facets(dir)
-        facets_data = @facets[:statuses].map do |code, count|
+      # @param counts [Hash] facet counts
+      def export_status_facets(dir, counts)
+        facets_data = counts[:statuses].map do |code, count|
           {
             code: code,
             name: code.capitalize,

@@ -281,6 +281,33 @@ RSpec.describe Ammitto::Utils::IriSanitizer do
         end
     end
 
+    it 'bounds the kind the same way as the source' do
+      # Every caller passes a literal kind, but no component of a
+      # diagnostic may outgrow or outlive the error it describes
+      error = described_class::MissingLocalIdError.new(
+        source: 'jp', kind: 'k' * 100_000, value: nil
+      )
+
+      expect(error.message.length).to be < 300
+    end
+
+    it 'still raises MissingLocalIdError when the kind misbehaves' do
+      # A kind whose #to_s raises must not replace the error with an
+      # unrelated exception, and must not reach #to_s at all
+      hostile = Class.new do
+        def to_s
+          raise 'kind #to_s must not escape'
+        end
+      end.new
+
+      error = described_class::MissingLocalIdError.new(
+        source: 'jp', kind: hostile, value: nil
+      )
+
+      expect(error).to be_a(described_class::MissingLocalIdError)
+      expect(error.message.length).to be < 300
+    end
+
     it 'keeps the preview bounded when escapes expand under inspect' do
       # Control characters inspect to 4 chars each ("\x01"); the cap
       # must apply to the inspected form, not just the raw slice

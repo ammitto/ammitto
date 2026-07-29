@@ -90,11 +90,11 @@ module Ammitto
         # @param value [Object] the rejected local id
         # @return [String] the error message
         def self.describe(source, kind, value)
-          "#{safe_label { source_label(source) }}: cannot build " \
-            "#{kind} IRI from blank or unusable local id " \
-            "#{safe_label { preview(value) }} — the source record is " \
-            'missing a usable identifier (refusing to emit an ' \
-            '"unknown" IRI)'
+          "#{safe_label { short_label(source) }}: cannot build " \
+            "#{safe_label { short_label(kind) }} IRI from blank or " \
+            "unusable local id #{safe_label { preview(value) }} — the " \
+            'source record is missing a usable identifier (refusing ' \
+            'to emit an "unknown" IRI)'
         end
 
         # Run a label builder, degrading to a placeholder if the value's
@@ -149,19 +149,22 @@ module Ammitto
           FIXED_SIZE_TYPES.include?(value.class)
         end
 
-        # Bounded source label for the message. Source codes are short
-        # strings or symbols drawn from a fixed list; anything else
-        # reports its class rather than risking an unbounded or
-        # overridable #to_s.
-        # @param source [Object] the source the IRI was requested for
+        # Bounded label for a short message component (the source code
+        # and the IRI kind). Both are short strings or symbols drawn
+        # from fixed lists; anything else reports its class rather than
+        # risking an unbounded or overridable #to_s. Applied to the kind
+        # as well as the source so no component of a diagnostic can
+        # outgrow or outlive the error it describes, even though every
+        # caller passes a literal kind today.
+        # @param value [Object] the component to label
         # @return [String] label, at most ~32 chars
-        def self.source_label(source)
-          label = if source.instance_of?(String)
-                    source
-                  elsif source.instance_of?(Symbol)
-                    source.name
+        def self.short_label(value)
+          label = if value.instance_of?(String)
+                    value
+                  elsif value.instance_of?(Symbol)
+                    value.name
                   else
-                    "#{source.class} instance"
+                    "#{value.class} instance"
                   end
           label.length > 32 ? "#{label[0, 29]}..." : label
         end

@@ -488,6 +488,22 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
                                 'addresses' => %w[Tokyo Osaka] })
 
       expect(result[:entity]['@id']).to end_with('/jp/jp-1')
+      expect(result[:entity]['addresses'].map { |a| a['street'] })
+        .to eq(%w[Tokyo Osaka])
+    end
+
+    # Deliberate, and the one place from_hash is MORE permissive than
+    # the from_yaml path it replaced: a lone scalar address used to
+    # reach Jp::Transformer as a bare String and crash it on #map.
+    # Reading it as a one-element list is the only sensible meaning, it
+    # loses no record and collides with nothing, so harmonize now
+    # accepts the file the old path merely failed on.
+    it 'reads a lone scalar address as a one-element list' do
+      result = transform(:jp, { 'id' => '1', 'name' => 'X',
+                                'addresses' => 'Tokyo' })
+
+      expect(result[:entity]['addresses'].map { |a| a['street'] })
+        .to eq(['Tokyo'])
     end
   end
 

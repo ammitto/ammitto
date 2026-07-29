@@ -113,10 +113,20 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('TAMAS COMPANY')
     end
 
-    it 'distrusts a reference number carrying a separator' do
+    ['-10', '10-', '--10--', ' -10 '].each do |hostile|
+      it "distrusts #{hostile.inspect}, which sanitizes onto record 10" do
+        entity = build(name: 'TAMAS COMPANY', reference_number: hostile)
+
+        expect(entity.local_id).to eq('TAMAS COMPANY')
+      end
+    end
+
+    # "12/A" sanitizes to "12a", which is not in Turkey's numeric namespace,
+    # so it keeps its own identity rather than falling back to the name.
+    it 'keeps a non-numeric reference that sanitization rewrites' do
       entity = build(name: 'TAMAS COMPANY', reference_number: '12/A')
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(entity.local_id).to eq('12/A')
     end
 
     it 'keeps a reference number whose spaces only become hyphens' do
@@ -220,7 +230,7 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
         .to eq(transformer.transform(original)[:entity].id)
     end
 
-    it 'derives a stable IRI for every unnumbered name in the real block' do
+    it 'derives a stable IRI for representative unnumbered names' do
       names = ['DAWOOD AGHA-JANI', 'EHSAN MONAJEMİ', 'M. JAVAD KARIMI SABET',
                'ESFAHAN NUCLEAR FUEL RESEARCH AND PRODUCTION CENTRE ' \
                '(NFRPC) AND ESFAHAN NUCLEAR TECHNOLOGY CENTRE(ENTC)']
@@ -318,6 +328,18 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       reference = harmonize(numbered)[:entity]['sourceReferences'].first
 
       expect(reference['referenceNumber']).to eq('1')
+    end
+
+    # A malformed reference must never sanitize onto a number Turkey already
+    # assigned. Asserted through the routing seam, since that is the path a
+    # corrupt committed record would actually travel.
+    ['-1', '1-', '--1--', '1.0'].each do |hostile|
+      it "does not let reference #{hostile.inspect} claim record 1's IRI" do
+        record = unnumbered.merge('reference_number' => hostile)
+
+        expect(harmonize(record)[:entity]['@id'])
+          .not_to eq(harmonize(numbered)[:entity]['@id'])
+      end
     end
   end
 end

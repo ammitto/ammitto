@@ -85,23 +85,29 @@ module Ammitto
 
         private
 
-        # The upstream number, but only when sanitization will not rewrite
-        # it into a different token.
+        # The upstream number, but never one that sanitization turns into a
+        # different record's number.
         #
-        # Sanitization deletes characters it does not recognize, and a
-        # deletion can merge digits: a spreadsheet cell holding the float
-        # 1.0 stringifies to "1.0" and sanitizes to "10", which is the IRI
-        # of whichever record Turkey numbered 10. So a reference number is
-        # trusted only when it is built entirely from characters the
-        # sanitizer keeps or converts — alphanumerics, hyphen, underscore
-        # and whitespace. All 239 numbers Turkey currently publishes are
-        # plain digits and pass through untouched; anything stranger falls
-        # through to the name rather than quietly claiming someone's number.
+        # Sanitization rewrites what it is given — it deletes unrecognized
+        # characters and strips and collapses hyphens — and a rewrite can
+        # land on a bare integer that Turkey already assigned to somebody
+        # else. All of "1.0", "-10", "10-" and "--10--" sanitize to "10",
+        # the IRI of whichever record Turkey numbered 10.
+        #
+        # So the test is exact rather than a proxy: a reference that
+        # sanitizes to a bare integer is trusted only when it literally is
+        # that integer. Anything else that lands in the numeric namespace
+        # falls through to the name instead of claiming someone's number.
+        # References that sanitize to something non-numeric ("12/A" -> "12a")
+        # keep their own identity, since they cannot collide with a number.
         #
         # @return [String, nil]
         def trusted_reference
           str = identifiable(reference_number)
-          return nil unless str&.match?(/\A[a-zA-Z0-9\-_\s]+\z/)
+          return nil if str.nil?
+
+          sanitized = Utils::IriSanitizer.sanitize(str)
+          return nil if sanitized.match?(/\A\d+\z/) && sanitized != str
 
           str
         end

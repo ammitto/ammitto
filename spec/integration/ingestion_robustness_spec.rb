@@ -215,6 +215,55 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
     end
   end
 
+  # The from_hash migration claims every converted call site accepts
+  # exactly the shape from_yaml accepted. Asserting only that a
+  # harmonized pair carries an @id would still pass if names, dates, or
+  # nested collections were silently dropped — the very failure mode
+  # this PR exists to remove — so compare the built models themselves.
+  #
+  # This differential is deliberately not the whole guarantee. A
+  # key_value mapping governs from_hash AND from_yaml, so losing one
+  # degrades both sides equally and stays invisible here; the two sites
+  # that carry that risk (the uk wrapper mappings and the un_vessels
+  # from_hash override) are pinned by value above, and dropping either
+  # fails those examples.
+  describe 'from_hash/from_yaml model equivalence' do
+    # Capture the model the dispatcher actually built, without
+    # duplicating its source-to-class branching here: stand a recorder
+    # in for the transformer and keep the first argument it is handed.
+    # Throwing unwinds the dispatcher the moment the model exists, so
+    # nothing downstream of the transformer has to be simulated.
+    def captured_model(source, data)
+      recorder = Object.new
+      recorder.define_singleton_method(:respond_to_missing?) do |*|
+        true
+      end
+      recorder.define_singleton_method(:method_missing) do |_name, *args|
+        throw :captured_model, args.first
+      end
+      allow(Ammitto::Transformers::Registry)
+        .to receive(:get).and_return(recorder)
+
+      catch(:captured_model) do
+        command.send(:transform_data, source, data)
+        nil
+      end
+    end
+
+    source_fixtures.each do |source, fixtures|
+      fixtures.each_with_index do |data, index|
+        it "builds #{source} fixture #{index} the same either way" do
+          model = captured_model(source, data)
+          expect(model).not_to be_nil
+
+          # Same class both ways: the only variable is the deserializer
+          legacy = model.class.from_yaml(data.to_yaml)
+          expect(model.to_yaml).to eq(legacy.to_yaml)
+        end
+      end
+    end
+  end
+
   # Au::Transformer#transform_from_hash is a second, independent entry
   # point (external callers reach it directly, not through
   # HarmonizeCommand#transform_au), so its three model constructions

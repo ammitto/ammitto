@@ -1,0 +1,30 @@
+# Link checker configuration for the docs site (.github/workflows/links.yml).
+
+# The workflow caches .lycheecache between runs.
+cache = true
+max_cache_age = "2d"
+
+max_retries = 3
+retry_wait_time = 2
+timeout = 20
+
+# The built site is served from disk during the check.
+exclude_all_private = true
+
+user_agent = "Mozilla/5.0 (compatible; lychee; +https://github.com/ammitto/ammitto)"
+
+exclude = [
+  # Ammitto IRIs identify graph nodes, they are not fetchable pages.
+  "^https?://(www\\.)?ammitto\\.org/(entity|entry|announcement|legal_instrument|list|node|id)/",
+  # API base path: the endpoints under it serve, the bare directory has no
+  # index (GitHub Pages does not generate listings).
+  "^https?://(www\\.)?ammitto\\.org/api/v1/?$",
+  # Sanctions authorities that refuse automated clients.
+  "^https?://(www\\.)?meti\\.go\\.jp",
+  "^https?://(www\\.)?mfa\\.gov\\.tr",
+  "^https?://(www\\.)?dfat\\.gov\\.au",
+  # www./main.un.org refuse automated clients; scsanctions.un.org (the
+  # endpoint the UN extractor fetches) answers and stays checked.
+  "^https?://(www|main)\\.un\\.org",
+  "^https?://(www\\.)?mid\\.ru",
+]

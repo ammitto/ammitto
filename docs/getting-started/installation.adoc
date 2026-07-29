@@ -45,7 +45,7 @@ bundle install
 [source,bash]
 ----
 gem install specific_install
-gem specific_install https://github.com/lutaml/ammitto.git -b main
+gem specific_install https://github.com/ammitto/ammitto.git -b main
 ----
 
 == Verify Installation

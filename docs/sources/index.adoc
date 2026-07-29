@@ -113,7 +113,7 @@ Ammitto aggregates sanctions data from 15 international sources. This section do
 === United Nations (`un`)
 
 *Provider:* UN Security Council Consolidated List
-*URL:* https://www.un.org/securitycouncil/sanctions/consolidated-list
+*URL:* https://scsanctions.un.org/resources/xml/en/consolidated.xml
 *Format:* XML
 
 The UN Security Council maintains sanctions lists for various regimes including:
@@ -161,7 +161,7 @@ ammitto search "Bank" --source eu --type organization
 === United States (`us`)
 
 *Provider:* Office of Foreign Assets Control (OFAC)
-*URL:* https://ofac.treasury.gov/sanctions-lists
+*URL:* https://ofac.treasury.gov/sanctions-list-service
 *Format:* XML
 
 OFAC maintains multiple lists:
@@ -230,7 +230,7 @@ ammitto fetch ca
 === Switzerland (`ch`)
 
 *Provider:* State Secretariat for Economic Affairs (SECO)
-*URL:* https://www.seco.admin.ch/seco/en/home/Aussenwirtschaftspolitik_Warenhandel/Wirtschaftsbeziehungen/exportkontrollen/sanktionen.html
+*URL:* https://www.seco.admin.ch/en/sanctions-en
 *Format:* XML
 
 [source,bash]
@@ -256,7 +256,7 @@ ammitto fetch cn
 === Russia (`ru`)
 
 *Provider:* Ministry of Foreign Affairs (MID)
-*URL:* https://mid.ru/foreign_policy/international_safety/peacemaking/
+*URL:* https://www.mid.ru/ru/foreign_policy/news/
 *Format:* HTML
 
 Russia maintains the "Unfriendly Countries" list and related sanctions.
@@ -308,7 +308,7 @@ ammitto fetch nz
 === World Bank (`wb`)
 
 *Provider:* World Bank Group
-*URL:* https://www.worldbank.org/en/projects-operations/procurement/debarment-faq
+*URL:* https://www.worldbank.org/en/projects-operations/procurement/debarred-firms
 *Format:* XLSX
 
 The World Bank maintains a list of debarred firms and individuals for procurement fraud and corruption.

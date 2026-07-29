@@ -450,27 +450,35 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
         .to raise_error(ArgumentError, /id must hold a single value/)
     end
 
-    it 'refuses a container in any other jp scalar slot' do
-      expect { transform(:jp, { 'id' => '1', 'name' => %w[a b] }) }
-        .to raise_error(ArgumentError, /name must hold a single value/)
+    # Every guarded slot gets its own example, so dropping fetch_scalar
+    # from any single field fails the suite rather than hiding behind a
+    # sibling field's coverage
+    {
+      jp: %w[id name name_ja entity_type source_url remarks],
+      un_vessels: %w[id entity_type imo_number flag_state tonnage
+                     build_year date_designated resolution]
+    }.each do |source, fields|
+      fields.each do |field|
+        it "refuses a container in the #{source} #{field} slot" do
+          data = source_fixtures[source].first.merge(field => %w[a b])
+
+          expect { transform(source, data) }
+            .to raise_error(ArgumentError,
+                            /#{field} must hold a single value/)
+        end
+      end
     end
 
-    it 'refuses a un_vessels list imo_number' do
+    it 'refuses the un_vessels row alias when canonical is absent' do
+      # The alias is only consulted when the canonical key is missing,
+      # so its guard needs the canonical key genuinely absent
       data = source_fixtures[:un_vessels].first
-                                         .merge('imo_number' => %w[a b])
+                                         .except('date_designated')
+                                         .merge('designation_date' => %w[a b])
 
       expect { transform(:un_vessels, data) }
         .to raise_error(ArgumentError,
-                        /imo_number must hold a single value/)
-    end
-
-    it 'refuses a un_vessels list date without consulting the alias' do
-      data = source_fixtures[:un_vessels].first
-                                         .merge('date_designated' => %w[a b])
-
-      expect { transform(:un_vessels, data) }
-        .to raise_error(ArgumentError,
-                        /date_designated must hold a single value/)
+                        /designation_date must hold a single value/)
     end
 
     # The guard must reject containers only: every scalar YAML scalar

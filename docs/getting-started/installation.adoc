@@ -32,7 +32,7 @@ This page describes how to install the Ammitto gem in your Ruby environment.
 .Add to your Gemfile
 [source,ruby]
 ----
-gem 'ammitto', github: 'lutaml/ammitto', branch: 'main'
+gem 'ammitto', github: 'ammitto/ammitto', branch: 'main'
 ----
 
 .Install with Bundler

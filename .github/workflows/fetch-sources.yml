@@ -29,7 +29,8 @@ jobs:
         # Passed through env so the untrusted input never reaches the shell
         # as an expanded expression. CR/LF/tab all count as separators, so a
         # pasted multi-line or CRLF value cannot lose codes or carry a stray
-        # \r into one; empty fields from "eu,,un" are dropped.
+        # \r into one; empty fields from "eu,,un" are dropped and repeats of
+        # one code are collapsed so the list cannot refetch a source.
         env:
           SOURCES: ${{ github.event.inputs.sources }}
         run: |
@@ -41,14 +42,23 @@ jobs:
           else
             IFS=', ' read -r -a raw <<< "$normalized"
             codes=()
+            seen=' '
             for code in "${raw[@]}"; do
-              if [ -n "$code" ]; then codes+=("$code"); fi
+              [ -n "$code" ] || continue
+              # Quoted inside the pattern, so a code holding * or ? matches
+              # literally instead of globbing away an unrelated entry.
+              case "$seen" in *" $code "*) continue ;; esac
+              seen="$seen$code "
+              codes+=("$code")
             done
             if [ ${#codes[@]} -eq 0 ]; then
               echo "::error::sources input held separators but no source codes"
               exit 1
             fi
-            bundle exec ammitto fetch "${codes[@]}" --verbose
+            # Options precede --, so an option-shaped input ("--all",
+            # "--output-dir /tmp") is parsed as a source code and rejected by
+            # the CLI instead of silently widening scope or moving the output.
+            bundle exec ammitto fetch --verbose -- "${codes[@]}"
           fi
 
       - name: Process data

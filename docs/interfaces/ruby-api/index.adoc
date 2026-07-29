@@ -271,7 +271,7 @@ authority = Ammitto::Ontology.authority(:un)
 
 authority.code          # => "UN"
 authority.name          # => "United Nations"
-authority.url           # => "https://scsanctions.un.org/resources/xml/en/consolidated.xml"
+authority.url           # => "https://www.un.org/securitycouncil/sanctions/information"
 
 # List all authorities
 Ammitto::Ontology.authority_codes

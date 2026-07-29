@@ -11,6 +11,8 @@ timeout = 20
 # The built site is served from disk during the check.
 exclude_all_private = true
 
+# Several sanctions authorities reject the default agent but answer this one,
+# so it is what keeps their links checkable rather than excluded.
 user_agent = "Mozilla/5.0 (compatible; lychee; +https://github.com/ammitto/ammitto)"
 
 exclude = [
@@ -19,12 +21,8 @@ exclude = [
   # API base path: the endpoints under it serve, the bare directory has no
   # index (GitHub Pages does not generate listings).
   "^https?://(www\\.)?ammitto\\.org/api/v1/?$",
-  # Sanctions authorities that refuse automated clients.
-  "^https?://(www\\.)?meti\\.go\\.jp",
-  "^https?://(www\\.)?mfa\\.gov\\.tr",
-  "^https?://(www\\.)?dfat\\.gov\\.au",
-  # www./main.un.org refuse automated clients; scsanctions.un.org (the
-  # endpoint the UN extractor fetches) answers and stays checked.
-  "^https?://(www|main)\\.un\\.org",
-  "^https?://(www\\.)?mid\\.ru",
+  # dfat.gov.au terminates the connection before any response, over both
+  # HTTP/2 and HTTP/1.1. The only host that stays unreachable with the agent
+  # above; drop this rule if it starts answering.
+  "^https?://(www\\.)?dfat\\.gov\\.au(?:[/?#]|$)",
 ]

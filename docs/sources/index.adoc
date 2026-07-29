@@ -113,7 +113,7 @@ Ammitto aggregates sanctions data from 15 international sources. This section do
 === United Nations (`un`)
 
 *Provider:* UN Security Council Consolidated List
-*URL:* https://scsanctions.un.org/resources/xml/en/consolidated.xml
+*URL:* https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list
 *Format:* XML
 
 The UN Security Council maintains sanctions lists for various regimes including:
@@ -256,7 +256,7 @@ ammitto fetch cn
 === Russia (`ru`)
 
 *Provider:* Ministry of Foreign Affairs (MID)
-*URL:* https://www.mid.ru/ru/foreign_policy/news/
+*URL:* https://mid.ru
 *Format:* HTML
 
 Russia maintains the "Unfriendly Countries" list and related sanctions.

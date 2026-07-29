@@ -33,7 +33,12 @@ module Ammitto
         attribute :designation_date, :date
         attribute :resolution, :string
 
-        # YAML mapping for actual YAML structure
+        # YAML mapping for actual YAML structure. Deliberately NOT
+        # key_value: the custom self.from_hash below shadows the Lutaml
+        # hash deserializer, so hash parsing never consults these
+        # mappings, and widening them would change the JSON contract
+        # (JSON has no explicit block, so it keeps the attribute-name
+        # key 'designation_date').
         yaml do
           map 'id', to: :id
           map 'entity_type', to: :entity_type
@@ -61,18 +66,27 @@ module Ammitto
           names.reject(&:is_primary).map(&:full_name).compact
         end
 
-        # Create Vessel from row data hash
-        # @param data [Hash] row data
+        # Create Vessel from a data hash. Handles both the fetch-time
+        # row shape (date under 'designation_date', no names) and the
+        # serialized YAML shape the harmonize path loads (date under
+        # 'date_designated', names present) — this method shadows the
+        # Lutaml from_hash, so it must not drop the YAML-shape fields.
+        # @param data [Hash] row or YAML data
         # @return [Vessel]
         def self.from_hash(data)
           vessel = new
           vessel.id = data['id']
           vessel.entity_type = data['entity_type']
+          vessel.names = Array(data['names']).map do |name|
+            name.is_a?(NameVariant) ? name : NameVariant.from(:hash, name)
+          end
           vessel.imo_number = data['imo_number']&.to_s
           vessel.flag_state = data['flag_state']
           vessel.tonnage = data['tonnage']&.to_i
           vessel.build_year = data['build_year']&.to_i
-          vessel.designation_date = parse_date(data['designation_date'])
+          raw_date = [data['designation_date'], data['date_designated']]
+                     .find { |value| value && value.to_s.strip != '' }
+          vessel.designation_date = parse_date(raw_date)
           vessel.resolution = data['resolution']
           vessel
         end

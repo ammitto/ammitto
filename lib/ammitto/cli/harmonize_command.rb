@@ -18,6 +18,17 @@ module Ammitto
     # - Aggregated all.jsonld and all.ttl files
     # - Index files for each node type
     class HarmonizeCommand
+      # Raised when announcement-format YAML (the data-cn schema: one
+      # file per official announcement, several entities inside) reaches
+      # a source path that parses legacy per-entity models. Parsing it
+      # there either crashes (ch) or silently yields one nameless
+      # garbage entity (us), so the shape is rejected loudly instead.
+      class AnnouncementFormatError < StandardError; end
+
+      # Top-level YAML keys that mark the announcement format
+      ANNOUNCEMENT_FORMAT_KEYS = %w[announcement sanction_details
+                                    measure_modifications].freeze
+
       # @return [Hash] command options
       attr_reader :options
 
@@ -597,6 +608,29 @@ module Ammitto
         end
       end
 
+      # Reject announcement-format YAML on a legacy per-entity path.
+      # The error message names the format; the caller's per-file error
+      # collector prefixes the offending filename, and the health gates
+      # turn it into a non-zero exit.
+      # @param source [Symbol] source code
+      # @param data [Hash] source data
+      # @param expected [String] the schema this path parses
+      # @return [void]
+      # @raise [AnnouncementFormatError] on announcement-shaped data
+      def guard_announcement_format!(source, data, expected:)
+        return unless data.is_a?(Hash)
+
+        markers = ANNOUNCEMENT_FORMAT_KEYS & data.keys.map(&:to_s)
+        return if markers.empty?
+
+        raise AnnouncementFormatError,
+              'announcement-format YAML detected (top-level ' \
+              "#{markers.join(', ')}) — the #{source} path parses " \
+              "per-entity #{expected} records, and announcement " \
+              "ingestion is not implemented for #{source}; refusing " \
+              'to harmonize this file'
+      end
+
       # Transform UK data
       # @param transformer [Object] transformer instance
       # @param data [Hash] source data
@@ -604,7 +638,9 @@ module Ammitto
       def transform_uk(transformer, data)
         require_relative '../sources/uk/designation'
 
-        designation = Ammitto::Sources::Uk::Designation.from_yaml(data.to_yaml)
+        guard_announcement_format!(:uk, data, expected: 'Uk::Designation')
+
+        designation = Ammitto::Sources::Uk::Designation.from_hash(data)
         result = transformer.transform(designation)
 
         {
@@ -622,7 +658,7 @@ module Ammitto
 
         # The fetch pipeline saves Eu::SanctionEntity YAML (one per record);
         # parsing with ProcessedEntity collapsed every EU id and dropped names
-        entity = Ammitto::Sources::Eu::SanctionEntity.from_yaml(data.to_yaml)
+        entity = Ammitto::Sources::Eu::SanctionEntity.from_hash(data)
         result = transformer.transform(entity)
 
         {
@@ -649,10 +685,10 @@ module Ammitto
                         data.key?('fourth_name')
 
         if is_individual
-          source = Ammitto::Sources::Un::Individual.from_yaml(data.to_yaml)
+          source = Ammitto::Sources::Un::Individual.from_hash(data)
           result = transformer.transform_individual(source)
         else
-          source = Ammitto::Sources::Un::Entity.from_yaml(data.to_yaml)
+          source = Ammitto::Sources::Un::Entity.from_hash(data)
           result = transformer.transform_entity(source)
         end
 
@@ -669,7 +705,9 @@ module Ammitto
       def transform_us(transformer, data)
         require_relative '../sources/us/sdn_entry'
 
-        sdn_entry = Ammitto::Sources::Us::SdnEntry.from_yaml(data.to_yaml)
+        guard_announcement_format!(:us, data, expected: 'Us::SdnEntry')
+
+        sdn_entry = Ammitto::Sources::Us::SdnEntry.from_hash(data)
         result = transformer.transform(sdn_entry)
 
         {
@@ -685,7 +723,7 @@ module Ammitto
       def transform_wb(transformer, data)
         require_relative '../sources/wb/sanctioned_firm'
 
-        firm = Ammitto::Sources::Wb::SanctionedFirm.from_yaml(data.to_yaml)
+        firm = Ammitto::Sources::Wb::SanctionedFirm.from_hash(data)
         result = transformer.transform(firm)
 
         {
@@ -704,11 +742,11 @@ module Ammitto
         # Detect record type: vessels carry imo_number, individuals carry
         # dates_of_birth; the rest are organizations
         source = if data.key?('imo_number')
-                   Ammitto::Sources::Au::Vessel.from_yaml(data.to_yaml)
+                   Ammitto::Sources::Au::Vessel.from_hash(data)
                  elsif data.key?('dates_of_birth')
-                   Ammitto::Sources::Au::Individual.from_yaml(data.to_yaml)
+                   Ammitto::Sources::Au::Individual.from_hash(data)
                  else
-                   Ammitto::Sources::Au::Organization.from_yaml(data.to_yaml)
+                   Ammitto::Sources::Au::Organization.from_hash(data)
                  end
         result = transformer.transform(source)
 
@@ -727,7 +765,7 @@ module Ammitto
 
         # Use Record class - it handles both individuals and entities
         # The YAML has given_name, not first_name
-        source = Ammitto::Sources::Ca::Record.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::Ca::Record.from_hash(data)
         result = transformer.transform(source)
 
         {
@@ -743,9 +781,11 @@ module Ammitto
       def transform_ch(transformer, data)
         require_relative '../sources/ch/sanctions_list'
 
+        guard_announcement_format!(:ch, data, expected: 'Ch::Identity')
+
         # The fetch pipeline saves bare Identity records
         # (SanctionsList#all_identities), not Target wrappers
-        source = Ammitto::Sources::Ch::Identity.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::Ch::Identity.from_hash(data)
         result = transformer.transform(source)
 
         {
@@ -823,7 +863,7 @@ module Ammitto
       def transform_ru(transformer, data)
         require_relative '../sources/ru/sanctions_list'
 
-        source = Ammitto::Sources::Ru::SanctionedEntity.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::Ru::SanctionedEntity.from_hash(data)
         result = transformer.transform(source)
 
         {
@@ -842,11 +882,11 @@ module Ammitto
         # Determine type
         source = case data['type']
                  when 'Individual'
-                   Ammitto::Sources::Nz::Individual.from_yaml(data.to_yaml)
+                   Ammitto::Sources::Nz::Individual.from_hash(data)
                  when 'Ship'
-                   Ammitto::Sources::Nz::Ship.from_yaml(data.to_yaml)
+                   Ammitto::Sources::Nz::Ship.from_hash(data)
                  else
-                   Ammitto::Sources::Nz::Entity.from_yaml(data.to_yaml)
+                   Ammitto::Sources::Nz::Entity.from_hash(data)
                  end
         result = transformer.transform(source)
 
@@ -863,7 +903,7 @@ module Ammitto
       def transform_tr(transformer, data)
         require_relative '../sources/tr/sanctions_list'
 
-        source = Ammitto::Sources::Tr::Entity.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::Tr::Entity.from_hash(data)
         result = transformer.transform(source)
 
         {
@@ -879,7 +919,7 @@ module Ammitto
       def transform_eu_vessels(transformer, data)
         require_relative '../sources/eu_vessels/vessel'
 
-        source = Ammitto::Sources::EuVessels::Vessel.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::EuVessels::Vessel.from_hash(data)
         result = transformer.transform(source)
 
         {
@@ -895,7 +935,7 @@ module Ammitto
       def transform_jp(transformer, data)
         require_relative '../sources/jp/entity'
 
-        source = Ammitto::Sources::Jp::Entity.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::Jp::Entity.from_hash(data)
         result = transformer.transform(source)
 
         {
@@ -911,7 +951,7 @@ module Ammitto
       def transform_un_vessels(transformer, data)
         require_relative '../sources/un_vessels/vessel'
 
-        source = Ammitto::Sources::UnVessels::Vessel.from_yaml(data.to_yaml)
+        source = Ammitto::Sources::UnVessels::Vessel.from_hash(data)
         result = transformer.transform(source)
 
         {

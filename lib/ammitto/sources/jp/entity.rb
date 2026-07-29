@@ -43,8 +43,15 @@ module Ammitto
           end
         end
 
-        # Get unique identifier
+        # Get unique identifier. Returns nil when the record's id holds
+        # no sanitizable content (nil, empty, whitespace or
+        # punctuation-only): a bare "JP-" prefix — or "JP-!!!" — would
+        # sanitize to the constant "jp" and collapse every such Japanese
+        # entity into entity/jp/jp, so the unusable id must flow through
+        # to the IRI layer's MissingLocalIdError instead.
         def unique_identifier
+          return nil unless id.to_s.match?(/[a-zA-Z0-9_]/)
+
           "JP-#{id}"
         end
 

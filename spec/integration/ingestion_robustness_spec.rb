@@ -240,6 +240,19 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       expect(result[:entry]['period']['listedDate']).to be_nil
     end
 
+    it 'routes a jp "individual" record to a person entity' do
+      # Jp::Entity is the other model carrying a custom from_hash, and
+      # its map_entity_type normalization only reaches harmonize now
+      # that the round-trip is gone. The old from_yaml path handed the
+      # transformer a raw "individual", which fell to the else branch
+      # and filed a natural person as an organization.
+      data = { 'id' => '1', 'name' => 'John Doe',
+               'entity_type' => 'individual', 'addresses' => ['Tokyo'] }
+
+      result = transform(:jp, data)
+      expect(result[:entity]['entityType']).to eq('person')
+    end
+
     it 'casts un_vessels integers the way the yaml path casts them' do
       # A bare to_i defeated the attribute's own Integer cast, turning a
       # grouped "12,500" tonnage into 12 — a plausible-looking number

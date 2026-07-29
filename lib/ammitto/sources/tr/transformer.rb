@@ -7,6 +7,13 @@ module Ammitto
     module Tr
       # Transformer for Turkey Sanctions data
       #
+      # IRIs are minted from SanctionedEntity#local_id rather than from
+      # +reference_number+ directly, because Turkey leaves the "Sıra No"
+      # column blank for part of List D. See that method for the fallback
+      # policy. The SourceReference still carries the raw
+      # +reference_number+, so a record with no upstream number reports
+      # none.
+      #
       class Transformer < Ammitto::Transformers::BaseTransformer
         def initialize
           super(:tr)
@@ -43,7 +50,7 @@ module Ammitto
         # @return [PersonEntity]
         def create_person_entity(source)
           Ammitto::PersonEntity.new.tap do |entity|
-            entity.id = generate_entity_id(source.reference_number)
+            entity.id = generate_entity_id(source.local_id)
             entity.entity_type = 'person'
             entity.names = build_names(source)
             entity.source_references = build_source_references(source)
@@ -55,7 +62,7 @@ module Ammitto
         # @return [OrganizationEntity]
         def create_organization_entity(source)
           Ammitto::OrganizationEntity.new.tap do |entity|
-            entity.id = generate_entity_id(source.reference_number)
+            entity.id = generate_entity_id(source.local_id)
             entity.entity_type = 'organization'
             entity.names = build_names(source)
             entity.source_references = build_source_references(source)
@@ -97,7 +104,7 @@ module Ammitto
         # @return [SanctionEntry]
         def create_entry(source, entity)
           Ammitto::SanctionEntry.new.tap do |entry|
-            entry.id = generate_entry_id(source.reference_number)
+            entry.id = generate_entry_id(source.local_id)
             entry.entity_id = entity.id
             entry.authority = authority
             entry.regime = create_regime(source.program)

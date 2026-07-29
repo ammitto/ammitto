@@ -60,6 +60,44 @@ module Ammitto
         def organization?
           entity_type&.downcase == 'entity'
         end
+
+        # Local identifier this record's IRIs are minted from.
+        #
+        # Turkey numbers List D rows with a "Sıra No" column, which the
+        # parser stores as +reference_number+. The block of Iranian
+        # designees appended to that sheet leaves the column blank, so a
+        # sizeable minority of rows carry no upstream number at all. Those
+        # rows fall back to the entity name — the only stable field they
+        # carry — which is the same surrogate the fetcher already uses to
+        # name their files. +reference_number+ itself is deliberately left
+        # untouched, so harmonized output keeps reporting truthfully that
+        # Turkey published no number for these designees.
+        #
+        # The IRI layer sanitizes whatever this returns, so the raw value is
+        # returned here rather than a pre-slugged one.
+        #
+        # @return [String, nil] the local id, or nil when the record carries
+        #   nothing an IRI segment can be built from
+        def local_id
+          identifiable(reference_number) || identifiable(name)
+        end
+
+        private
+
+        # Whether a value can serve as an IRI segment.
+        #
+        # A value survives IRI sanitization only if it holds at least one
+        # ASCII alphanumeric character. Blank, whitespace-only,
+        # punctuation-only and non-Latin-only values are rejected so that
+        # callers stay loud about a genuinely unidentifiable record instead
+        # of collapsing several of them onto one placeholder IRI.
+        #
+        # @param value [Object, nil] candidate identifier
+        # @return [String, nil] the stripped value, or nil if unusable
+        def identifiable(value)
+          str = value.to_s.strip
+          str.match?(/[a-zA-Z0-9]/) ? str : nil
+        end
       end
 
       # Alias for backward compatibility with harmonize command

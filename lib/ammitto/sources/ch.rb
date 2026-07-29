@@ -38,7 +38,7 @@ module Ammitto
       SOURCE_NAME = 'Switzerland (SECO)'
 
       # Source API endpoint
-      SOURCE_URL = 'https://www.seco.admin.ch/seco/de/home/Aussenwirtschaftspolitik_Wirtschaftliche_Zusammenarbeit/Wirtschaftsbeziehungen/exportkontrollen-und-sanktionen/sanktionsmassnahmen/sanktionsliste.html'
+      SOURCE_URL = 'https://www.seco.admin.ch/en/searching-for-subjects-sanctions'
 
       # Country code (ISO 3166-1 alpha-2)
       COUNTRY_CODE = 'CH'

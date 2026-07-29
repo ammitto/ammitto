@@ -192,7 +192,7 @@ module Ammitto
             id: 'eu',
             name: 'European Union',
             country_code: 'EU',
-            url: 'https://finance.ec.europa.eu/sanctions-dossier_en'
+            url: 'https://finance.ec.europa.eu/eu-and-world/sanctions-restrictive-measures_en'
           ),
           'un' => Sanction::Authority.new(
             id: 'un',
@@ -228,7 +228,7 @@ module Ammitto
             id: 'ch',
             name: 'Switzerland (SECO)',
             country_code: 'CH',
-            url: 'https://www.seco.admin.ch/seco/en/home/Aussenwirtschaft_Wirtschaftliche_Zusammenarbeit/Wirtschaftsbeziehungen/exportkontrollen-und-sanktionen/sanktionen-embargos.html'
+            url: 'https://www.seco.admin.ch/en/searching-for-subjects-sanctions'
           ),
           'cn' => Sanction::Authority.new(
             id: 'cn',

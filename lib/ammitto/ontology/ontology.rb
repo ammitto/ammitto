@@ -68,7 +68,7 @@ module Ammitto
         'eu' => {
           name: 'European Union',
           country_code: 'EU',
-          url: 'https://finance.ec.europa.eu/sanctions-dossier_en'
+          url: 'https://finance.ec.europa.eu/eu-and-world/sanctions-restrictive-measures_en'
         },
         'eu_vessels' => {
           name: 'EU/Denmark DMA',
@@ -118,7 +118,7 @@ module Ammitto
         'wb' => {
           name: 'World Bank',
           country_code: 'WB',
-          url: 'https://www.worldbank.org/en/projects-operations/procurement/debarment-firms'
+          url: 'https://www.worldbank.org/en/projects-operations/procurement/debarred-firms'
         }
       }.freeze
 

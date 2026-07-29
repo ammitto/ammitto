@@ -21,8 +21,8 @@ exclude = [
   # API base path: the endpoints under it serve, the bare directory has no
   # index (GitHub Pages does not generate listings).
   "^https?://(www\\.)?ammitto\\.org/api/v1/?$",
-  # dfat.gov.au terminates the connection before any response, over both
-  # HTTP/2 and HTTP/1.1. The only host that stays unreachable with the agent
-  # above; drop this rule if it starts answering.
-  "^https?://(www\\.)?dfat\\.gov\\.au(?:[/?#]|$)",
+  # The one page that never answers: HTTP/2 aborts with INTERNAL_ERROR and
+  # HTTP/1.1 connects but returns nothing before timing out. Scoped to this
+  # URL so other dfat.gov.au links stay checked; drop it if the page recovers.
+  "^https?://(www\\.)?dfat\\.gov\\.au/international-relations/security/sanctions/?$",
 ]

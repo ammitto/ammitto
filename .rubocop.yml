@@ -91,39 +91,43 @@ RSpec/SpecFilePathFormat:
 RSpec/MultipleExpectations:
   Enabled: false
 
-# Source-model examples build their fixtures inline; that is the point of them.
+# Fires in 41 files across CLI, validation, exporter and integration specs:
+# examples build their fixture tree inline rather than in shared helpers.
 RSpec/ExampleLength:
   Enabled: false
 
-# Established fixture style in the extractor and pipeline specs.
+# The legacy-shim, harmonize-pipeline and public-API specs write their fixture
+# paths to @ivars in a `before` block.
 RSpec/InstanceVariable:
   Enabled: false
 
-# Bare `subject` is the existing convention in the harmonized-model specs.
+# Bare `subject` is the convention in the five harmonized-model specs.
 RSpec/NamedSubject:
   Enabled: false
 
-# Parser specs nest by row shape and by list type; flattening would obscure it.
+# All 15 are the Neo4j round-trip spec, nested by entity type then by method.
 RSpec/NestedGroups:
   Enabled: false
 
-# `match` on IRI and message strings states the intent better than `include`.
+# `match` here carries error-message fragments and a hostname, not patterns
+# that would read better as `include`.
 RSpec/MatchWithSimpleRegex:
   Enabled: false
 
-# Integration and load-order specs describe behaviour, not a single class.
+# Integration, load-order, schema-path, legacy-shim and list-identity specs
+# describe behaviour rather than a single class.
 RSpec/DescribeClass:
   Enabled: false
 
-# Naming the constant is clearer when a spec touches several source namespaces.
+# All 8 are spec/ammitto_spec.rb calling the public API as `Ammitto.…`.
 RSpec/DescribedClass:
   Enabled: false
 
-# `subject` is placed after the `let`s it depends on.
+# In the model specs `subject` is placed after the `let`s it consumes.
 RSpec/LeadingSubject:
   Enabled: false
 
-# One stub per line reads better than a merged `receive_messages`.
+# The China extractor spec keeps its five stubs one per line.
 RSpec/ReceiveMessages:
   Enabled: false
 

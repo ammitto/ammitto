@@ -8,7 +8,7 @@ module Ammitto
     # NzExtractor extracts sanctions data from New Zealand (MFAT)
     #
     # New Zealand maintains Russia sanctions under the Russia Sanctions Act 2022.
-    # Source: https://www.mfat.govt.nz/en/trade-and-country-services/sanctions/
+    # Source: https://www.mfat.govt.nz/en/countries-and-regions/europe/ukraine/russian-invasion-of-ukraine/sanctions/
     #
     # Note: NZ also implements UN sanctions, but those are covered by the UN source.
     #

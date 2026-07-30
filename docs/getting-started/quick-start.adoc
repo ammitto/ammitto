@@ -220,6 +220,6 @@ File.write('results.json', results.to_json)
 
 == Next Steps
 
-* link:configuration/[Configuration] - Configure Ammitto for your needs
-* link:../interfaces/ruby-api/[Ruby API] - Full API documentation
-* link:../interfaces/cli/[CLI Reference] - All CLI commands
+* link:../configuration/[Configuration] - Configure Ammitto for your needs
+* link:../../interfaces/ruby-api/[Ruby API] - Full API documentation
+* link:../../interfaces/cli/[CLI Reference] - All CLI commands

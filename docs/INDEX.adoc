@@ -50,18 +50,18 @@ Ammitto aggregates sanctions data from official government sources worldwide and
 == Getting Started
 
 .Start with the basics
-* link:getting-started/installation/[Installation] - Install the Ammitto gem
-* link:getting-started/quick-start/[Quick Start] - Get up and running quickly
-* link:getting-started/configuration/[Configuration] - Configure Ammitto for your needs
+* link:../getting-started/installation/[Installation] - Install the Ammitto gem
+* link:../getting-started/quick-start/[Quick Start] - Get up and running quickly
+* link:../getting-started/configuration/[Configuration] - Configure Ammitto for your needs
 
 .Use the interfaces
-* link:interfaces/ruby-api/[Ruby API] - Use Ammitto in your Ruby applications
-* link:interfaces/cli/[Command Line] - Use Ammitto from the command line
+* link:../interfaces/ruby-api/[Ruby API] - Use Ammitto in your Ruby applications
+* link:../interfaces/cli/[Command Line] - Use Ammitto from the command line
 
 .Explore the data
-* link:sources/[Data Sources] - Learn about the available sanctions sources
-* link:reference/[API Reference] - Detailed API documentation
-* link:understanding/[Understanding] - Architecture and design decisions
+* link:../sources/[Data Sources] - Learn about the available sanctions sources
+* link:../reference/[API Reference] - Detailed API documentation
+* link:../understanding/[Understanding] - Architecture and design decisions
 
 == Quick Example
 
@@ -166,7 +166,7 @@ Ammitto aggregates data from 15 international sources:
 | `wb`
 |===
 
-See link:sources/[Data Sources] for detailed information about each source.
+See link:../sources/[Data Sources] for detailed information about each source.
 
 == Project Status
 

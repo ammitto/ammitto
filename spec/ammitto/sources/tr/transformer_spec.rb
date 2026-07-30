@@ -108,8 +108,3 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
     end
   end
 end
-
-# Enters at Cmd::HarmonizeCommand#transform_data, so the assertions cover the
-# transformer-registry lookup and the :tr routing branch as well as the
-# transformation and its JSON-LD serialization. Input is the parsed shape of a
-# record file the fetcher committed to data-tr.

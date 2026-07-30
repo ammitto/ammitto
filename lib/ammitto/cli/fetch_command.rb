@@ -181,26 +181,17 @@ module Ammitto
       # @param data [Object] the parsed data
       # @param output_dir [String] output directory
       # @return [Integer] number of files saved
+      # @raise [RuntimeError] when two different records claim one filename
       def save_as_yaml(source, data, output_dir)
-        count = 0
-
         # Get the collection of designations/entities
         items = items_from_data(source, data)
+        written = write_items(source, items, output_dir)
 
-        items.each do |item|
-          # Generate filename from unique ID
-          filename = filename_for_item(source, item)
-          filepath = File.join(output_dir, filename)
-
-          # Write YAML
-          yaml_content = item.to_yaml
-          File.write(filepath, yaml_content)
-          count += 1
-
-          puts "[#{source}] Saved #{count} files..." if options[:verbose] && (count % 100).zero?
-        end
-
-        # Save index file with metadata
+        # Save index file with metadata. count is the number of files on
+        # disk, not the number of items seen: they used to differ silently
+        # whenever two items shared a filename, so the run reported more
+        # records than it had actually written.
+        count = written.size
         index = {
           'source' => source.to_s,
           'count' => count,
@@ -212,6 +203,81 @@ module Ammitto
         puts "[#{source}] Saved #{count} files to #{output_dir}" if options[:verbose]
 
         count
+      end
+
+      # Write each item to its own file, refusing to overwrite one record
+      # with a different one.
+      #
+      # File.write truncates, so two items whose filenames collide used to
+      # leave one record on disk and no trace of the other — the run still
+      # reported success and the missing designee surfaced nowhere. A
+      # repeated filename carrying byte-identical content is a duplicated
+      # upstream row and collapses harmlessly; a repeated filename
+      # carrying different content is data loss and fails the source.
+      #
+      # @param source [Symbol] source code
+      # @param items [Array] items to write
+      # @param output_dir [String] output directory
+      # @return [Hash{String => String}] filename => content written
+      # @raise [RuntimeError] when two different records claim one filename
+      def write_items(source, items, output_dir)
+        written = {}
+        collisions = Hash.new { |hash, key| hash[key] = [] }
+
+        items.each do |item|
+          filename = filename_for_item(source, item)
+          yaml_content = item.to_yaml
+          previous = written[filename]
+
+          if previous.nil?
+            File.write(File.join(output_dir, filename), yaml_content)
+            written[filename] = yaml_content
+            report_progress(source, written.size)
+          elsif previous != yaml_content
+            collisions[filename] << item
+          end
+        end
+
+        raise collision_error(source, collisions) unless collisions.empty?
+
+        written
+      end
+
+      # Report progress every hundredth file actually written
+      # @param source [Symbol] source code
+      # @param count [Integer] files written so far
+      # @return [void]
+      def report_progress(source, count)
+        return unless options[:verbose] && (count % 100).zero?
+
+        puts "[#{source}] Saved #{count} files..."
+      end
+
+      # @param source [Symbol] source code
+      # @param collisions [Hash{String => Array}] filename => lost items
+      # @return [String] message naming every discarded record
+      def collision_error(source, collisions)
+        detail = collisions.map do |filename, items|
+          labels = items.map { |item| describe_item(item) }.join(', ')
+          "#{filename} (also claimed by #{labels})"
+        end.join('; ')
+
+        "#{source}: #{collisions.size} filename collision(s) would " \
+          "discard #{collisions.values.sum(&:size)} record(s): #{detail}"
+      end
+
+      # Best-effort label for a record in an error message
+      # @param item [Object] the item
+      # @return [String]
+      def describe_item(item)
+        %i[name full_name vessel_name english_name].each do |attr|
+          next unless item.respond_to?(attr)
+
+          value = item.public_send(attr).to_s.strip
+          return value.inspect unless value.empty?
+        end
+
+        item.class.name.to_s
       end
 
       # Get items collection from parsed data
@@ -292,7 +358,11 @@ module Ammitto
           ref = item.english_name || item.russian_name || "unknown-#{item.object_id}"
           "ru-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
         when :tr
-          ref = item.reference_number || item.name || "unknown-#{item.object_id}"
+          # local_id, not reference_number: Turkey assigns one "Sıra No"
+          # to two organisations, and local_id is what tells them apart.
+          # Harmonize mints IRIs from the same method, so a record that
+          # gets its own file here also gets its own graph node.
+          ref = item.local_id || item.name || "unknown-#{item.object_id}"
           "tr-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
         when :nz
           ref = item.unique_identifier || item.reference_number || "unknown-#{item.object_id}"

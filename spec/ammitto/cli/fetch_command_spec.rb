@@ -17,4 +17,80 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     expect { described_class.new({}, []) }
       .to raise_error(Thor::Error, /No sources specified/)
   end
+
+  describe 'writing records to disk' do
+    let(:output_dir) { Dir.mktmpdir('ammitto-fetch') }
+
+    after { FileUtils.remove_entry(output_dir) }
+
+    def entity(name:, reference_number:)
+      Ammitto::Sources::Tr::SanctionedEntity.new(
+        name: name, reference_number: reference_number
+      )
+    end
+
+    def save(entities)
+      list = Ammitto::Sources::Tr::SanctionsList.new(entities: entities)
+      described_class.new({}, ['tr'])
+                     .send(:save_as_yaml, :tr, list, output_dir)
+    end
+
+    def records_on_disk
+      Dir.children(output_dir).reject { |f| f == '_index.yaml' }
+    end
+
+    it 'gives every record its own file' do
+      count = save([entity(name: 'A', reference_number: '1'),
+                    entity(name: 'B', reference_number: '2')])
+
+      expect(records_on_disk).to contain_exactly('tr-1.yaml', 'tr-2.yaml')
+      expect(count).to eq(2)
+    end
+
+    it 'fails the source rather than overwriting one record with another' do
+      # File.write truncates, so this used to leave one designee on disk
+      # and no trace of the other behind a successful run.
+      expect do
+        save([entity(name: 'FIRST', reference_number: '5'),
+              entity(name: 'SECOND', reference_number: '5')])
+      end.to raise_error(RuntimeError, /filename collision/)
+    end
+
+    it 'names the discarded record so it can be found' do
+      expect do
+        save([entity(name: 'FIRST', reference_number: '5'),
+              entity(name: 'SECOND', reference_number: '5')])
+      end.to raise_error(RuntimeError, /tr-5\.yaml.*"SECOND"/)
+    end
+
+    it 'collapses a byte-identical repeated row without failing' do
+      # An upstream sheet that lists one row twice loses nothing by
+      # writing it once; only differing content is data loss.
+      count = save([entity(name: 'A', reference_number: '1'),
+                    entity(name: 'A', reference_number: '1')])
+
+      expect(records_on_disk).to contain_exactly('tr-1.yaml')
+      expect(count).to eq(1)
+    end
+
+    it 'reports the number of files written, not the number of rows seen' do
+      save([entity(name: 'A', reference_number: '1'),
+            entity(name: 'A', reference_number: '1')])
+      index = YAML.safe_load_file(File.join(output_dir, '_index.yaml'))
+
+      expect(index['count']).to eq(records_on_disk.size)
+    end
+
+    it 'keeps two designees sharing a reserved reference apart' do
+      dtsrc = 'DEFENSE TECHNOLOGY AND SCIENCE RESEARCH ÇENTER (DTSRC)'
+      dio = 'DEFENCE INDUSTRIES ORGANISATION (DIO)'
+
+      count = save([entity(name: dio, reference_number: '187'),
+                    entity(name: dtsrc, reference_number: '187')])
+
+      expect(count).to eq(2)
+      expect(records_on_disk).to include('tr-187.yaml')
+      expect(records_on_disk.size).to eq(2)
+    end
+  end
 end

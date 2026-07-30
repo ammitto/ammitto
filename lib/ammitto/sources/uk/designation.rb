@@ -20,11 +20,7 @@ module Ammitto
           map_element 'Name', to: :items
         end
 
-        yaml do
-          map 'names', to: :items
-        end
-
-        json do
+        key_value do
           map 'names', to: :items
         end
       end
@@ -38,11 +34,7 @@ module Ammitto
           map_element 'NonLatinName', to: :items
         end
 
-        yaml do
-          map 'names', to: :items
-        end
-
-        json do
+        key_value do
           map 'names', to: :items
         end
       end
@@ -56,11 +48,7 @@ module Ammitto
           map_element 'Address', to: :items
         end
 
-        yaml do
-          map 'addresses', to: :items
-        end
-
-        json do
+        key_value do
           map 'addresses', to: :items
         end
       end
@@ -117,26 +105,13 @@ module Ammitto
           map_element 'IndividualDetails', to: :individual_details
         end
 
-        yaml do
-          map 'last_updated', to: :last_updated
-          map 'date_designated', to: :date_designated
-          map 'unique_id', to: :unique_id
-          map 'ofsi_group_id', to: :ofsi_group_id
-          map 'un_reference_number', to: :un_reference_number
-          map 'names', to: :names_wrapper
-          map 'non_latin_names', to: :non_latin_names_wrapper
-          map 'regime_name', to: :regime_name
-          map 'individual_entity_ship', to: :individual_entity_ship
-          map 'designation_source', to: :designation_source
-          map 'sanctions_imposed', to: :sanctions_imposed
-          map 'sanctions_imposed_indicators', to: :sanctions_imposed_indicators
-          map 'other_information', to: :other_information
-          map 'uk_statement_of_reasons', to: :uk_statement_of_reasons
-          map 'addresses', to: :addresses_wrapper
-          map 'individual_details', to: :individual_details
-        end
-
-        json do
+        # One mapping for every key-value format so from_hash — the
+        # harmonize path since the anchored-YAML round-trip fix —
+        # parses the same keys from_yaml does. This deliberately also
+        # covers the formats that previously fell back to attribute
+        # names (toml, jsonl, yamls): these keys are the canonical
+        # serialized form, and the gem has no consumer of those three.
+        key_value do
           map 'last_updated', to: :last_updated
           map 'date_designated', to: :date_designated
           map 'unique_id', to: :unique_id

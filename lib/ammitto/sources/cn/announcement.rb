@@ -115,19 +115,25 @@ module Ammitto
           type == 'organization'
         end
 
-        # Get list type code
+        # Mapping of sanction_list values to list type codes. The data-cn
+        # YAML stores source-prefixed slugs (e.g. "cn/anti-sanction-list")
+        # while the schema enum documents the Chinese labels; both forms
+        # must resolve to the same code so entries keep their list identity.
+        LIST_TYPE_CODES = {
+          '反制裁清单' => 'anti_sanctions',
+          'anti-sanction-list' => 'anti_sanctions',
+          '不可靠实体清单' => 'unreliable_entity',
+          'unreliable-entity-list' => 'unreliable_entity',
+          '出口管制管控名单' => 'export_control',
+          'import-export-control-list' => 'export_control'
+        }.freeze
+
+        # Get list type code, accepting Chinese labels and data slugs
+        # (with or without the "cn/" prefix)
         # @return [String]
         def list_type_code
-          case sanction_list
-          when '反制裁清单'
-            'anti_sanctions'
-          when '不可靠实体清单'
-            'unreliable_entity'
-          when '出口管制管控名单'
-            'export_control'
-          else
-            'unknown'
-          end
+          key = sanction_list.to_s.strip.delete_prefix('cn/')
+          LIST_TYPE_CODES.fetch(key, 'unknown')
         end
       end
 

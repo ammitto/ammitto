@@ -272,14 +272,20 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
         expect(files).to contain_exactly(entity, junk)
       end
 
-      it 'surfaces the load error for a mixed chosen directory' do
+      # The load error is attributed to the file that caused it rather
+      # than to the whole source, so the readable files still count and
+      # the run fails through the never-exempt per-file gate
+      it 'surfaces the load error against the file for a mixed directory' do
         write_file('data-us', 'processed', 'entity.yaml')
         make_dir('data-us', 'processed', 'broken.yaml')
 
         result = command.send(:harmonize_source, :us)
 
-        expect(result[:status]).to eq(:error)
-        expect(result[:error]).to match(/directory/i)
+        # A load error is a per-file defect, attributed to its file and
+        # collected in :errors — the gate treats those as never exempt,
+        # where a source-level :error would have been --allow-empty'able
+        expect(result[:status]).to eq(:success)
+        expect(result[:errors].join).to match(/broken\.yaml.*directory/i)
       end
     end
   end

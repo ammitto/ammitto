@@ -155,7 +155,8 @@ results.to_json
 == Entity Classes
 
 All entities inherit from `Ammitto::Entity`, which is what `require "ammitto"`
-loads and what an `Ammitto::Search::ResultSet` contains.
+loads. An `Ammitto::Search::ResultSet` holds these entities alongside
+`Ammitto::SanctionEntry` records.
 
 === PersonEntity
 

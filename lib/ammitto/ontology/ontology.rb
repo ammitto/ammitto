@@ -58,7 +58,7 @@ module Ammitto
         'ch' => {
           name: 'Switzerland SECO',
           country_code: 'CH',
-          url: 'https://www.seco.admin.ch/seco/en/home/Aussenwirtschaftspolitik_Wirtschaftliche_Zusammenarbeit/Wirtschaftsbeziehungen/exportkontrollen-und-sanktionen/sanktionen-embargos.html'
+          url: 'https://www.seco.admin.ch/en/searching-for-subjects-sanctions'
         },
         'cn' => {
           name: 'China MOFCOM',

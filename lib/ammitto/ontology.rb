@@ -74,6 +74,8 @@ module Ammitto
       # @param source [Symbol, String] source code (eu, un, us, etc.)
       # @param local_id [String] local entity identifier
       # @return [String]
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       # @example
       #   entity_uri("cn", "mitsubishi-heavy-industries")
@@ -91,6 +93,8 @@ module Ammitto
       # @param list_type [String] list type (e.g., "import-export-control-list")
       # @param local_id [String] local entry identifier
       # @return [String]
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       # @example Same entity, different lists
       #   entry_uri("cn", "import-export-control-list", "mitsubishi-heavy-industries")
@@ -124,6 +128,8 @@ module Ammitto
       # @param source [Symbol, String] source code
       # @param local_id [String] local announcement identifier
       # @return [String]
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       # @example
       #   announcement_uri("cn", "mofcom-2026-11")
@@ -140,6 +146,8 @@ module Ammitto
       # @param source [Symbol, String] source code
       # @param local_id [String] local legal instrument identifier
       # @return [String]
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       # @example
       #   legal_instrument_uri("cn", "export-control-law")

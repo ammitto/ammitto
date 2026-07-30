@@ -63,6 +63,26 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
       end.to raise_error(RuntimeError, /tr-5\.yaml.*"SECOND"/)
     end
 
+    it 'writes nothing at all when a collision is detected' do
+      # A refused harvest must leave the previous corpus untouched rather
+      # than half-replaced, so the collision is resolved before any write.
+      expect do
+        save([entity(name: 'OK', reference_number: '1'),
+              entity(name: 'FIRST', reference_number: '5'),
+              entity(name: 'SECOND', reference_number: '5')])
+      end.to raise_error(RuntimeError)
+
+      expect(Dir.children(output_dir)).to be_empty
+    end
+
+    it 'names every discarded record when three claim one filename' do
+      expect do
+        save([entity(name: 'FIRST', reference_number: '5'),
+              entity(name: 'SECOND', reference_number: '5'),
+              entity(name: 'THIRD', reference_number: '5')])
+      end.to raise_error(RuntimeError, /discard 2 record\(s\).*"SECOND", "THIRD"/)
+    end
+
     it 'collapses a byte-identical repeated row without failing' do
       # An upstream sheet that lists one row twice loses nothing by
       # writing it once; only differing content is data loss.

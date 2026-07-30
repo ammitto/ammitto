@@ -215,32 +215,53 @@ module Ammitto
       # upstream row and collapses harmlessly; a repeated filename
       # carrying different content is data loss and fails the source.
       #
+      # Collisions are resolved before anything is written, so a run that
+      # would have discarded a record leaves the destination untouched
+      # rather than half-replaced. Only filenames claimed more than once
+      # are rendered twice, so the common path costs one pass.
+      #
       # @param source [Symbol] source code
       # @param items [Array] items to write
       # @param output_dir [String] output directory
-      # @return [Hash{String => String}] filename => content written
+      # @return [Hash{String => Array}] filename => claimants
       # @raise [RuntimeError] when two different records claim one filename
       def write_items(source, items, output_dir)
-        written = {}
-        collisions = Hash.new { |hash, key| hash[key] = [] }
-
-        items.each do |item|
-          filename = filename_for_item(source, item)
-          yaml_content = item.to_yaml
-          previous = written[filename]
-
-          if previous.nil?
-            File.write(File.join(output_dir, filename), yaml_content)
-            written[filename] = yaml_content
-            report_progress(source, written.size)
-          elsif previous != yaml_content
-            collisions[filename] << item
-          end
-        end
+        claims = items.group_by { |item| filename_for_item(source, item) }
+        collisions = detect_collisions(claims)
 
         raise collision_error(source, collisions) unless collisions.empty?
 
-        written
+        claims.each_with_index do |(filename, claimants), index|
+          File.write(File.join(output_dir, filename),
+                     claimants.first.to_yaml)
+          report_progress(source, index + 1)
+        end
+
+        claims
+      end
+
+      # Find filenames claimed by records that are not byte-identical.
+      #
+      # A repeated filename carrying identical content is a duplicated
+      # upstream row: writing it once loses nothing. Differing content is
+      # data loss, because File.write truncates.
+      #
+      # @param claims [Hash{String => Array}] filename => claimants
+      # @return [Hash{String => Array}] filename => records that would be
+      #   discarded
+      def detect_collisions(claims)
+        require 'digest'
+
+        claims.each_with_object({}) do |(filename, claimants), found|
+          next if claimants.size == 1
+
+          distinct = claimants.uniq do |item|
+            Digest::SHA256.hexdigest(item.to_yaml)
+          end
+          next if distinct.size == 1
+
+          found[filename] = distinct.drop(1)
+        end
       end
 
       # Report progress every hundredth file actually written
@@ -266,18 +287,31 @@ module Ammitto
           "discard #{collisions.values.sum(&:size)} record(s): #{detail}"
       end
 
-      # Best-effort label for a record in an error message
+      # Best-effort label for a record in an error message.
+      #
+      # A diagnostic must never mask the error it describes, so a record
+      # whose own accessors raise, or whose name is unbounded, degrades to
+      # a shorter label instead of escaping as an unrelated exception.
+      #
       # @param item [Object] the item
       # @return [String]
       def describe_item(item)
         %i[name full_name vessel_name english_name].each do |attr|
-          next unless item.respond_to?(attr)
+          value = begin
+            item.respond_to?(attr) ? item.public_send(attr).to_s.strip : ''
+          rescue StandardError
+            ''
+          end
 
-          value = item.public_send(attr).to_s.strip
+          return "#{value[0, 80].inspect}..." if value.length > 80
           return value.inspect unless value.empty?
         end
 
-        item.class.name.to_s
+        begin
+          item.class.name.to_s
+        rescue StandardError
+          '(unprintable record)'
+        end
       end
 
       # Get items collection from parsed data

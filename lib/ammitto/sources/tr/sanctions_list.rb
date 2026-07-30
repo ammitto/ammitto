@@ -14,8 +14,9 @@ module Ammitto
       # publish a corpus that is quietly wrong: a column silently
       # overwriting another column, two designees silently minting one
       # IRI, or a reserved IRI silently changing which designee it
-      # denotes. A failed harvest leaves the last good corpus in place
-      # and names the offending record; a tolerated one does not.
+      # denotes. Parsing completes before any of it is written, so a
+      # refused harvest names the offending record and leaves the
+      # previous corpus untouched.
       class IntegrityError < StandardError; end
       # Turkey sanctions source models
       #

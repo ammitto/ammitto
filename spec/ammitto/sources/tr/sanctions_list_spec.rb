@@ -196,6 +196,30 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
                         /2 rows share the reserved name/)
     end
 
+    it 'lets a third claimant take its own name-derived id' do
+      third = entity(name: 'THIRD BODY', reference_number: '187')
+      records = [dtsrc, dio, third]
+
+      expect { described_class.verify_reservations!(records) }
+        .not_to raise_error
+      expect { described_class.verify_distinct_local_ids!(records) }
+        .not_to raise_error
+      expect(records.map(&:local_id))
+        .to eq(['187', 'DEFENCE INDUSTRIES ORGANISATION (DIO)', 'THIRD BODY'])
+    end
+
+    it 'refuses two claimants whose names slug to the same id' do
+      # The terminating rule: a name-derived id is not automatically
+      # unique either.
+      records = [dtsrc,
+                 entity(name: 'ACME (X)', reference_number: '187'),
+                 entity(name: 'ACME  X', reference_number: '187')]
+
+      expect { described_class.verify_distinct_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /distinct records mint one identifier/)
+    end
+
     it 'names the published IRI it is protecting' do
       expect { described_class.verify_reservations!([dio]) }
         .to raise_error(Ammitto::Sources::Tr::IntegrityError,

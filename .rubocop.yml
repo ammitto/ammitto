@@ -72,12 +72,14 @@ Lint/ConstantDefinitionInBlock:
   Exclude:
     - 'spec/**/*.rb'
 
-# rubocop-rspec: only the two spec-layout cops below are adopted
-# (RSpec/MultipleDescribes and RSpec/SpecFilePathFormat, both on by default).
-# They enforce the one-describe-per-file, path-mirrors-the-class layout and are
-# fixed in the tree, not deferred to .rubocop_todo.yml. Every other RSpec cop
-# that fires here is switched off explicitly below: the suite has never been
-# written to those styles, and recording a decision beats parking a backlog.
+# rubocop-rspec. Two cops were adopted deliberately —
+# RSpec/MultipleDescribes and RSpec/SpecFilePathFormat — because they enforce
+# the one-describe-per-file, path-mirrors-the-class spec layout; every offence
+# of theirs is fixed in the tree, none deferred to .rubocop_todo.yml.
+# The 15 cops switched off below are the ones that fired against this suite:
+# it has never been written to those styles, and recording a decision beats
+# parking a backlog. The rest of the RSpec department stays on, since the
+# suite already satisfies it and those cops guard the specs written next.
 
 # CLI commands live in lib/ammitto/cli/ but are namespaced Ammitto::Cmd, so
 # specs mirror the directory and the cop is told the alias.
@@ -129,8 +131,8 @@ RSpec/ReceiveMessages:
 RSpec/LeakyLocalVariable:
   Enabled: false
 
-# The registry spec declares a real source class; a stubbed constant would
-# not exercise the class lookup it registers.
+# One spec names a BaseSource subclass inline to register it; the constant
+# outlives its example, and nothing else in the suite reads it.
 RSpec/LeakyConstantDeclaration:
   Enabled: false
 

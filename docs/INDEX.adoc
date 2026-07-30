@@ -61,7 +61,7 @@ Ammitto aggregates sanctions data from official government sources worldwide and
 .Explore the data
 * link:../sources/[Data Sources] - Learn about the available sanctions sources
 * link:../reference/[API Reference] - Detailed API documentation
-* link:../understanding/[Understanding] - Architecture and design decisions
+* link:../ARCHITECTURE/[Architecture] - Design decisions and data flow
 
 == Quick Example
 

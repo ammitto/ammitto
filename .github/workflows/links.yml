@@ -50,6 +50,14 @@ jobs:
           ls -la _site/
         working-directory: docs
 
+      - name: Stage the built site under its baseurl
+        run: |
+          # The site is served at <host>/ammitto, so Jekyll writes absolute
+          # links as /ammitto/... . lychee resolves those against --root-dir,
+          # so hand it a root in which ammitto/ IS the built site.
+          mkdir -p "${{ runner.temp }}/linkroot"
+          ln -sfn "$(pwd)/docs/_site" "${{ runner.temp }}/linkroot/ammitto"
+
       - name: Link Checker
         uses: lycheeverse/lychee-action@v2
         with:
@@ -57,8 +65,8 @@ jobs:
             --verbose
             --no-progress
             --config docs/lychee.toml
-            --root-dir "$(pwd)/docs/_site"
-            --base-url file://${{ github.workspace }}/docs/_site
+            --root-dir "${{ runner.temp }}/linkroot"
+            --base-url file://${{ runner.temp }}/linkroot/ammitto
             'docs/_site/**/*.html'
           fail: true
           output: link-check-results.md

@@ -4,7 +4,7 @@
 # Site settings
 title: Ammitto Documentation
 description: Unified access to global sanctions data from multiple international sources
-url: https://www.lutaml.org
+url: https://ammitto.org
 baseurl: /ammitto
 
 # Repository

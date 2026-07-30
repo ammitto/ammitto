@@ -85,12 +85,12 @@ end
 | `data_repository`
 | String
 | Directory for harmonized JSON-LD data
-| `../../../data`
+| `../../../data` relative to `lib/ammitto`, stored expanded
 
 | `sources_dir`
 | String
 | Parent directory for source data repos
-| `../..`
+| `../../..` relative to `lib/ammitto`, stored expanded
 |===
 
 == Environment Variables

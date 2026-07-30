@@ -81,8 +81,14 @@ Lint/ConstantDefinitionInBlock:
 # parking a backlog. The rest of the RSpec department stays on, since the
 # suite already satisfies it and those cops guard the specs written next.
 
-# CLI commands live in lib/ammitto/cli/ but are namespaced Ammitto::Cmd, so
-# specs mirror the directory and the cop is told the alias.
+# Specs mirror the class name. Where a namespace intentionally and
+# systematically differs from its directory, the cop is told the alias
+# instead of churning the tree: Ammitto::Cmd covers all ten commands in
+# lib/ammitto/cli/, so cli/ is that namespace's settled home.
+# A one-off mismatch is the opposite case and gets no alias — Ammitto::Registry
+# sits in lib/ammitto/sources/ without joining that namespace, so its spec
+# moved to spec/ammitto/registry_spec.rb to match the constant, and the lib
+# file is left for a separate decision (G30).
 RSpec/SpecFilePathFormat:
   CustomTransform:
     Cmd: cli

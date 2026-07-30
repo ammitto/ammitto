@@ -261,11 +261,11 @@ entry = Ammitto::SanctionEntry.new(
 )
 
 # Attributes
-entry.id                  # => Entry URI
-entry.entity_id           # => Entity URI
+entry.id                  # => "entry/un/KPi.066"
+entry.entity_id           # => "entity/un/KPi.066"
 entry.authority           # => Authority object
 entry.regime              # => SanctionRegime object
-entry.status              # => "active", "suspended", "delisted"
+entry.status              # => "active" (see SanctionEntry::STATUSES)
 entry.period.listed_date  # => #<Date: 2016-11-30>
 
 # Status checks
@@ -280,6 +280,7 @@ entry.effect_types      # => ["asset_freeze", "travel_ban"]
 
 `period`, `effects`, and `reasons` are `nil` until set, so guard them
 (`entry.period&.listed_date`) on entries built from partial data.
+`Ammitto::SanctionEntry::STATUSES` lists every accepted status.
 
 === Authority
 
@@ -328,11 +329,13 @@ require 'ammitto/serialization/search_index_exporter'
 
 exporter = Ammitto::Serialization::SearchIndexExporter.new
 
-# Both arguments are hashes (JSON-LD or model hashes), never model objects
+# Both arguments are hashes (JSON-LD or model hashes), never model objects.
+# The authority is read from a bare code, an `@id` IRI, or `countryCode` —
+# any other shape lands in the index without an authority.
 entities = [{ 'id' => 'un/KPi.066', 'entity_type' => 'person',
               'names' => [{ 'full_name' => 'KIM, Jong Un' }] }]
 entries = { 'un/KPi.066' => { 'status' => 'active',
-                              'authority' => { 'id' => 'un' } } }
+                              'authority' => { 'countryCode' => 'UN' } } }
 
 # `add` dereferences the entry, so skip pairs with no entry
 entities.each do |entity|

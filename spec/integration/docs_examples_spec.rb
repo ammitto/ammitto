@@ -64,14 +64,30 @@ RSpec.describe 'documentation examples' do
     found
   end
 
+  files = adoc_files
   references = constant_references
   receivers = receiver_calls
 
-  # Guards the generators themselves: if docs/ moves or the block syntax
-  # changes, the suite must fail loudly rather than silently check nothing.
+  # Guards the generators themselves. Without these, a docs move or a regex
+  # that quietly stops matching would leave the suite green while checking
+  # nothing — the exact failure mode that let the original rot through.
   it 'finds Ruby examples to check' do
+    expect(files).not_to be_empty
     expect(references).not_to be_empty
     expect(receivers).not_to be_empty
+  end
+
+  # Per-file, not just aggregate: losing coverage of ONE file must fail.
+  adoc_files.each do |file|
+    next unless File.read(file).match?(/\bAmmitto::[A-Z]/)
+
+    prefix = "#{relative(file)}:"
+    it "collects the constants mentioned in #{relative(file)}" do
+      found = references.select do |_, locations|
+        locations.any? { |location| location.start_with?(prefix) }
+      end
+      expect(found).not_to be_empty
+    end
   end
 
   references.sort.each do |const, locations|

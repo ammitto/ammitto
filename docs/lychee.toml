@@ -23,6 +23,9 @@ exclude = [
   "^https?://(www\\.)?ammitto\\.org/api/v1/?$",
   # Answer a desktop client with the agent above, but refuse GitHub-hosted
   # runners: both were 200 locally and ERROR from CI on the same commit.
+  # Caveat: the UN source URL in docs/sources/index.adoc is on main.un.org, so
+  # this rule is what keeps it from being checked. Re-verify that one by hand
+  # when the sources page changes; CI cannot catch it going dead.
   "^https?://(www\\.)?meti\\.go\\.jp(?:[/?#]|$)",
   "^https?://main\\.un\\.org(?:[/?#]|$)",
   # The one page that never answers: HTTP/2 aborts with INTERNAL_ERROR and

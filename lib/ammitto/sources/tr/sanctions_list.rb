@@ -18,6 +18,7 @@ module Ammitto
       # refused harvest names the offending record and leaves the
       # previous corpus untouched.
       class IntegrityError < StandardError; end
+
       # Turkey sanctions source models
       #
       # Turkey has 4 sanction lists:

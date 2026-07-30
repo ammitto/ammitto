@@ -90,8 +90,16 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(Ammitto::Utils::IriSanitizer.sanitize(dtsrc.name)).to eq(slug)
     end
 
-    it 'is frozen, so the reservation cannot drift at runtime' do
-      expect(described_class::RESERVED_LOCAL_IDS).to be_frozen
+    it 'cannot drift at runtime, entries included' do
+      # Freezing the table alone would still let `table[ref].replace(...)`
+      # reassign a published IRI to a different designee.
+      table = described_class::RESERVED_LOCAL_IDS
+
+      expect(table).to be_frozen
+      expect(table.keys).to all(be_frozen)
+      expect(table.values).to all(be_frozen)
+      expect { table.fetch('187').replace('other') }
+        .to raise_error(FrozenError)
     end
   end
 end

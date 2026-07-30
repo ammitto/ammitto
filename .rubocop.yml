@@ -115,8 +115,11 @@ RSpec/NamedSubject:
 RSpec/NestedGroups:
   Enabled: false
 
-# `match` here carries error-message fragments and a hostname, not patterns
-# that would read better as `include`.
+# 12 offences in 4 files, each asserting on a substring of a message or URL —
+# 'Schema error', 'Sources directory not found', 'meti.go.jp'. Every one of
+# those files also asserts with a real pattern (`/broken\.yaml.*directory/i`,
+# `/\.xlsx$/`, `/Schema not found: .*jp-legal-instrument\.yml/`), so adopting
+# the cop would split one idiom into two spellings inside the same group.
 RSpec/MatchWithSimpleRegex:
   Enabled: false
 
@@ -147,12 +150,23 @@ RSpec/LeakyLocalVariable:
 RSpec/LeakyConstantDeclaration:
   Enabled: false
 
-# Matcher-style preferences the suite does not follow.
+# One offence each, and each one sits inside a group written the other way.
+# Correcting them in isolation trades a whole-group convention for a
+# single-line one, so they stay off with the reason recorded.
+
+# neo4j_round_trip_spec.rb:118 reads `eq(true)` among a run of `eq('Cyrl')`,
+# `eq('ru')` property assertions.
 RSpec/BeEq:
   Enabled: false
 
+# ammitto_spec.rb:5 pairs `not_to be nil` with the `eq('1.0.0')` on the
+# next line.
 RSpec/BeNil:
   Enabled: false
 
+# The only offence is the third assertion of a trio (ontology
+# temporal_period_spec.rb:29-31); the first two are strict `be(true)` /
+# `be(false)`, which the cop leaves alone because no predicate matcher is
+# equivalent to them.
 RSpec/PredicateMatcher:
   Enabled: false

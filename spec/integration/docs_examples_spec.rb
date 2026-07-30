@@ -10,7 +10,9 @@
 #
 # Deliberately narrow. It does NOT execute the examples, so it cannot catch
 # undefined locals, wrong argument shapes, or false `# =>` values, and it does
-# not follow aliases, safe navigation, chained calls, or setters.
+# not follow aliases, safe navigation, chained calls, or setters. The scan is
+# textual, so a `variable.method` token inside a comment or string counts too —
+# that errs toward checking more than the code runs, never less.
 RSpec.describe 'documentation examples' do
   # Deliberately a method, not a constant: a constant assigned here would leak
   # into Object and could collide with another spec.

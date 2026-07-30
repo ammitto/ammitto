@@ -143,9 +143,9 @@ un_results = results.by_authority(:un)
 # Filter by status
 active = results.by_status(:active)
 
-# Get unique values (strings, not symbols)
-results.entity_types  # => ["person", "organization"]
-results.authorities   # => ["un", "eu", "us"]
+# Get unique values — strings, not symbols; empty when nothing matched
+results.entity_types  # => e.g. ["person", "organization"]
+results.authorities   # => e.g. ["un", "eu", "us"]
 
 # Export
 results.to_json_ld
@@ -155,7 +155,7 @@ results.to_json
 == Entity Classes
 
 All entities inherit from `Ammitto::Entity`, which is what `require "ammitto"`
-loads and what `Ammitto.search` returns.
+loads and what an `Ammitto::Search::ResultSet` contains.
 
 === PersonEntity
 

@@ -88,7 +88,8 @@ repo = Ammitto.data_repository(
 
 # Get statistics (parsed from api/v1/stats.json, so keys are strings)
 stats = repo.stats
-# => { "total_entities" => 28260, "sources" => { "un" => { ... } }, ... }
+# => { "total_entities" => Integer, "total_entries" => Integer,
+#      "sources" => { "un" => { "entities" => Integer, ... } }, ... }
 
 # Query entities
 entities = repo.query(name: "Smith", limit: 10)
@@ -184,7 +185,8 @@ entity = Ammitto::OrganizationEntity.new(
   entity_type: 'organization',
   names: [{ full_name: 'Acme Corp', is_primary: true }],
   country: 'US',
-  registration_number: '12345'
+  registration_number: '12345',
+  legal_form: 'Corporation'
 )
 
 # Attributes
@@ -203,16 +205,20 @@ entity = Ammitto::VesselEntity.new(
   entity_type: 'vessel',
   names: [{ full_name: 'MV Example', is_primary: true }],
   imo_number: '1234567',
-  flag_state: 'LR'
+  flag_state: 'LR',
+  mmsi: '477995000',
+  call_sign: 'VRDX2',
+  vessel_type: 'Cargo',
+  gross_tonnage: 25_000
 )
 
 # Attributes
 entity.imo_number            # => "1234567"
-entity.mmsi                  # => Maritime Mobile Service Identity
-entity.call_sign             # => Radio call sign
+entity.mmsi                  # => "477995000"
+entity.call_sign             # => "VRDX2"
 entity.flag_state            # => "LR"
 entity.vessel_type           # => "Cargo"
-entity.gross_tonnage         # => Integer
+entity.gross_tonnage         # => 25000
 ----
 
 === AircraftEntity
@@ -224,11 +230,14 @@ entity = Ammitto::AircraftEntity.new(
   entity_type: 'aircraft',
   names: [{ full_name: 'RA-12345', is_primary: true }],
   registration_number: 'RA-12345',
-  manufacturer: 'Boeing'
+  manufacturer: 'Boeing',
+  serial_number: '29876',
+  model: '737-800',
+  flag_state: 'RU'
 )
 
 # Attributes
-entity.serial_number         # => Manufacturer serial number
+entity.serial_number         # => "29876"
 entity.registration_number   # => "RA-12345"
 entity.manufacturer          # => "Boeing"
 entity.model                 # => "737-800"
@@ -319,9 +328,17 @@ require 'ammitto/serialization/search_index_exporter'
 
 exporter = Ammitto::Serialization::SearchIndexExporter.new
 
-# Add entity/entry pairs as hashes (JSON-LD or model hashes)
+# Both arguments are hashes (JSON-LD or model hashes), never model objects
+entities = [{ 'id' => 'un/KPi.066', 'entity_type' => 'person',
+              'names' => [{ 'full_name' => 'KIM, Jong Un' }] }]
+entries = { 'un/KPi.066' => { 'status' => 'active',
+                              'authority' => { 'id' => 'un' } } }
+
+# `add` dereferences the entry, so skip pairs with no entry
 entities.each do |entity|
   entry = entries[entity['id']]
+  next unless entry
+
   exporter.add(entity, entry)
 end
 

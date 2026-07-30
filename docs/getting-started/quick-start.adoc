@@ -153,7 +153,10 @@ require 'ammitto/serialization/search_index_exporter'
 
 exporter = Ammitto::Serialization::SearchIndexExporter.new
 
-# Add entity/entry pairs as hashes
+# Both arguments are hashes, never model objects
+entity_hash = { 'id' => 'un/KPi.066', 'entity_type' => 'person',
+                'names' => [{ 'full_name' => 'KIM, Jong Un' }] }
+entry_hash = { 'status' => 'active', 'authority' => { 'id' => 'un' } }
 exporter.add(entity_hash, entry_hash)
 
 # Write search-index.json plus the facet files

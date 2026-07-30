@@ -1,45 +1,90 @@
 # frozen_string_literal: true
 
 # The Ruby examples under docs/ named constants that no longer resolve
-# (Ammitto::QueryBuilder, Ammitto::Errors::*, Ammitto::SearchIndexExporter).
-# Nothing executed them, so the rot was invisible. This pins the cheap half of
-# the problem: every Ammitto constant a doc mentions must actually load.
+# (Ammitto::QueryBuilder, Ammitto::Errors::*, Ammitto::SearchIndexExporter) and
+# methods that live on the parallel ontology layer rather than the class the
+# example named (person?, dissolved?). Nothing executed them, so the rot was
+# invisible. This pins the static half of the problem: every Ammitto constant a
+# doc mentions must load, and every method called on a documented constructor's
+# receiver must exist on that class.
 RSpec.describe 'documentation examples' do
-  docs_dir = File.expand_path('../../docs', __dir__)
+  # Deliberately a method, not a constant: a constant assigned here would leak
+  # into Object and could collide with another spec.
+  def self.docs_dir
+    File.expand_path('../../docs', __dir__)
+  end
+
+  def self.adoc_files
+    Dir.glob("#{docs_dir}/**/*.adoc")
+  end
+
+  def self.relative(file)
+    file.sub("#{File.dirname(docs_dir)}/", '')
+  end
 
   # A constant is fair game only once the docs' own `require` lines have run —
   # SearchIndexExporter is not autoloaded by `require "ammitto"`, and the docs
   # tell the reader to require it explicitly.
   before(:all) do
-    Dir.glob("#{docs_dir}/**/*.adoc").each do |file|
+    self.class.adoc_files.each do |file|
       File.read(file).scan(%r{^\s*require ['"](ammitto/[\w/]+)['"]}) do |(lib)|
         require lib
       end
     end
   end
 
-  def self.constant_references(docs_dir)
+  # Every `Ammitto::Foo` token the docs mention, with where it was found.
+  def self.constant_references
     refs = Hash.new { |hash, key| hash[key] = [] }
-    Dir.glob("#{docs_dir}/**/*.adoc").each do |file|
-      relative = file.sub("#{File.dirname(docs_dir)}/", '')
+    adoc_files.each do |file|
       File.readlines(file).each_with_index do |line, index|
         line.scan(/\bAmmitto(?:::[A-Z]\w*)+/) do |const|
-          refs[const] << "#{relative}:#{index + 1}"
+          refs[const] << "#{relative(file)}:#{index + 1}"
         end
       end
     end
     refs
   end
 
-  references = constant_references(docs_dir)
+  # Ruby blocks that bind a variable to a documented constructor, paired with
+  # every method the block then calls on that variable.
+  def self.receiver_calls
+    found = []
+    adoc_files.each do |file|
+      File.read(file).scan(/\[source,\s*ruby\]\n-{4,}\n(.*?)\n-{4,}/m) do |(code)|
+        next unless code =~ /^\s*(\w+)\s*=\s*(Ammitto(?:::\w+)*)\.new\b/
 
-  it 'references at least one Ammitto constant' do
+        var = Regexp.last_match(1)
+        klass = Regexp.last_match(2)
+        methods = code.scan(/^\s*#{Regexp.escape(var)}\.([a-z_]+[?!]?)/)
+                      .flatten.uniq
+        found << [relative(file), klass, methods] unless methods.empty?
+      end
+    end
+    found
+  end
+
+  references = constant_references
+  receivers = receiver_calls
+
+  # Guards the generators themselves: if docs/ moves or the block syntax
+  # changes, the suite must fail loudly rather than silently check nothing.
+  it 'finds Ruby examples to check' do
     expect(references).not_to be_empty
+    expect(receivers).not_to be_empty
   end
 
   references.sort.each do |const, locations|
     it "resolves #{const} (#{locations.first})" do
       expect { Object.const_get(const) }.not_to raise_error
+    end
+  end
+
+  receivers.each do |file, klass, methods|
+    it "defines #{methods.size} documented method(s) on #{klass} (#{file})" do
+      defined_methods = Object.const_get(klass).instance_methods
+      expect(methods.reject { |m| defined_methods.include?(m.to_sym) })
+        .to be_empty
     end
   end
 end

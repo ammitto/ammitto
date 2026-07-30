@@ -64,7 +64,8 @@ Ammitto.refresh_cache(all: true, force: true)
 
 # Check cache status
 status = Ammitto.cache_status
-# => { un: { status: :fresh, age: 3600 }, ... }
+# => { un: { cached: true, updated_at: "2026-02-26T00:00:00+00:00",
+#            size: 7178346, age_seconds: 443 }, ... }
 ----
 
 === Available Sources
@@ -73,7 +74,8 @@ status = Ammitto.cache_status
 ----
 # List available source codes
 sources = Ammitto.sources
-# => [:un, :eu, :us, :uk, :au, :ca, :ch, :cn, :ru, :tr, :jp, :nz, :wb]
+# => [:au, :ca, :ch, :cn, :eu, :eu_vessels, :jp, :nz, :ru, :tr, :uk, :un,
+#     :un_vessels, :us, :wb]
 ----
 
 === Data Repository
@@ -280,7 +282,9 @@ entry.effect_types      # => ["asset_freeze", "travel_ban"]
 
 `period`, `effects`, and `reasons` are `nil` until set, so guard them
 (`entry.period&.listed_date`) on entries built from partial data.
-`Ammitto::SanctionEntry::STATUSES` lists every accepted status.
+`Ammitto::SanctionEntry::STATUSES` lists the documented status values; the
+model stores whatever string it is given, so it is a vocabulary, not a
+constraint.
 
 === Authority
 

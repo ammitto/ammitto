@@ -6,7 +6,8 @@
 # example named (person?, dissolved?). Nothing executed them, so the rot was
 # invisible. This pins the static half of the problem: every Ammitto constant a
 # doc mentions must load, and every method called on a documented constructor's
-# receiver must exist on that class.
+# receiver must exist on that class. It does NOT execute the examples, so it
+# cannot catch undefined locals, wrong argument shapes, or false `# =>` values.
 RSpec.describe 'documentation examples' do
   # Deliberately a method, not a constant: a constant assigned here would leak
   # into Object and could collide with another spec.
@@ -77,7 +78,9 @@ RSpec.describe 'documentation examples' do
     expect(receivers).not_to be_empty
   end
 
-  # Per-file, not just aggregate: losing coverage of ONE file must fail.
+  # Per-file rather than aggregate, so one file dropping out of the scan is
+  # not masked by the others. It proves the file was scanned and yielded at
+  # least one constant — not that every block in it was parsed.
   adoc_files.each do |file|
     next unless File.read(file).match?(/\bAmmitto::[A-Z]/)
 

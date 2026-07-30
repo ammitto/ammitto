@@ -105,7 +105,8 @@ entities = repo.query(name: "Smith", limit: 10)
 
 === Access Individual Entity
 
-`Repository#get` returns the raw JSON-LD hash, not an entity object.
+`Repository#get` returns the raw JSON-LD hash, not an entity object — or `nil`
+when no entity matches the id.
 
 [source,ruby]
 ----

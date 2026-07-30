@@ -50,9 +50,9 @@ Ammitto aggregates sanctions data from official government sources worldwide and
 == Getting Started
 
 .Start with the basics
-* link:getting-started/installation.adoc[Installation] - Install the Ammitto gem
-* link:getting-started/quick-start.adoc[Quick Start] - Get up and running quickly
-* link:getting-started/configuration.adoc[Configuration] - Configure Ammitto for your needs
+* link:getting-started/installation/[Installation] - Install the Ammitto gem
+* link:getting-started/quick-start/[Quick Start] - Get up and running quickly
+* link:getting-started/configuration/[Configuration] - Configure Ammitto for your needs
 
 .Use the interfaces
 * link:interfaces/ruby-api/[Ruby API] - Use Ammitto in your Ruby applications

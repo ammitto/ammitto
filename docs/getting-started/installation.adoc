@@ -112,5 +112,5 @@ You can customize this location in your configuration.
 
 == Next Steps
 
-* link:quick-start.adoc[Quick Start] - Get up and running quickly
-* link:configuration.adoc[Configuration] - Configure Ammitto for your needs
+* link:quick-start/[Quick Start] - Get up and running quickly
+* link:configuration/[Configuration] - Configure Ammitto for your needs

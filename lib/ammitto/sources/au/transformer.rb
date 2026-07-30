@@ -125,12 +125,12 @@ module Ammitto
           source = if entity_type == 'person' || entity_type == 'Individual' ||
                       data.key?('dates_of_birth') || data.key?('birth_info') ||
                       data.key?('person_details')
-                     Ammitto::Sources::Au::Individual.from_yaml(data.to_yaml)
+                     Ammitto::Sources::Au::Individual.from_hash(data)
                    elsif entity_type == 'vessel' || entity_type == 'Vessel' ||
                          data.key?('vessel_details') || data.key?('imo_number')
-                     Ammitto::Sources::Au::Vessel.from_yaml(data.to_yaml)
+                     Ammitto::Sources::Au::Vessel.from_hash(data)
                    else
-                     Ammitto::Sources::Au::Organization.from_yaml(data.to_yaml)
+                     Ammitto::Sources::Au::Organization.from_hash(data)
                    end
 
           transform(source)

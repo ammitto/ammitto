@@ -153,12 +153,14 @@ module Ammitto
         }
       }.freeze
 
-      # Mapping of source codes to their list types
+      # Mapping of source codes to their list types.
+      # Keys use the gem's underscored source codes
+      # (Config::Defaults::ALL_SOURCES): eu_vessels, un_vessels.
       SOURCE_LIST_TYPES = {
         'cn' => CN,
         'ru' => RU,
         'eu' => EU,
-        'eu-vessels' => EU_VESSELS,
+        'eu_vessels' => EU_VESSELS,
         'uk' => UK,
         'us' => US,
         'au' => AU,
@@ -168,18 +170,20 @@ module Ammitto
         'nz' => NZ,
         'tr' => TR,
         'un' => UN,
-        'un-vessels' => UN_VESSELS,
+        'un_vessels' => UN_VESSELS,
         'wb' => WB
       }.freeze
 
       class << self
-        # Get list types for a source.
+        # Get list types for a source. Hyphenated aliases (legacy
+        # repo-derived codes like "eu-vessels") normalize to the
+        # underscored contract codes.
         #
         # @param source_code [String] Source code (e.g., "cn", "ru")
         # @return [Hash, nil] List types hash or nil if source not found
         #
         def list_types_for(source_code)
-          SOURCE_LIST_TYPES[source_code.to_s.downcase]
+          SOURCE_LIST_TYPES[source_code.to_s.downcase.tr('-', '_')]
         end
 
         # Get information about a specific list type.

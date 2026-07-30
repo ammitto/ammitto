@@ -61,6 +61,8 @@ module Ammitto
       #
       # @param local_id [String] the local entity identifier
       # @return [String] the full entity URI
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       # @example
       #   generate_entity_id("mitsubishi-heavy-industries")
@@ -76,6 +78,8 @@ module Ammitto
       # @param local_id [String] the local entry identifier
       # @param entry_list_type [String, nil] optional list type override
       # @return [String] the full entry URI
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       # @example
       #   generate_entry_id("mitsubishi-heavy-industries")
@@ -100,6 +104,8 @@ module Ammitto
       #
       # @param local_id [String] the local announcement identifier
       # @return [String] the full announcement URI
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       def generate_announcement_id(local_id)
         Utils::IriSanitizer.announcement_iri(source_code.to_s, local_id)
@@ -109,6 +115,8 @@ module Ammitto
       #
       # @param local_id [String] the local legal instrument identifier
       # @return [String] the full legal instrument URI
+      # @raise [Utils::IriSanitizer::MissingLocalIdError] when local_id
+      #   is blank or sanitizes to nothing
       #
       def generate_legal_instrument_id(local_id)
         Utils::IriSanitizer.legal_instrument_iri(source_code.to_s, local_id)

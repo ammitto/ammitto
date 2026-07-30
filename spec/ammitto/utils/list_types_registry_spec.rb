@@ -33,11 +33,41 @@ RSpec.describe Ammitto::Utils::ListTypesRegistry do
     end
   end
 
+  describe '::SOURCE_LIST_TYPES' do
+    it 'keys vessel sources with underscores (the gem source codes)' do
+      expect(described_class::SOURCE_LIST_TYPES)
+        .to include('eu_vessels', 'un_vessels')
+    end
+
+    it 'holds no hyphenated source keys' do
+      expect(described_class::SOURCE_LIST_TYPES.keys.grep(/-/)).to be_empty
+    end
+  end
+
   describe '.list_types_for' do
     it 'returns list types for China' do
       result = described_class.list_types_for('cn')
       expect(result).to be_a(Hash)
       expect(result.keys).to include('anti-sanction-list', 'import-export-control-list', 'unreliable-entity-list')
+    end
+
+    it 'resolves eu_vessels by its underscored source code' do
+      result = described_class.list_types_for('eu_vessels')
+      expect(result).to be_a(Hash)
+      expect(result.keys).to eq(['vessel-sanctions-list'])
+    end
+
+    it 'resolves un_vessels by its underscored source code' do
+      result = described_class.list_types_for(:un_vessels)
+      expect(result).to be_a(Hash)
+      expect(result.keys).to eq(['vessel-sanctions-list'])
+    end
+
+    it 'normalizes legacy hyphenated aliases from repo-derived codes' do
+      expect(described_class.list_types_for('eu-vessels'))
+        .to eq(described_class::EU_VESSELS)
+      expect(described_class.list_types_for('UN-Vessels'))
+        .to eq(described_class::UN_VESSELS)
     end
 
     it 'returns list types for Russia' do
@@ -104,6 +134,16 @@ RSpec.describe Ammitto::Utils::ListTypesRegistry do
     it 'returns first list type for Russia' do
       result = described_class.default_list_type('ru')
       expect(result).to eq('stop-list')
+    end
+
+    it 'returns the vessel list for eu_vessels' do
+      expect(described_class.default_list_type('eu_vessels'))
+        .to eq('vessel-sanctions-list')
+    end
+
+    it 'returns the vessel list for un_vessels' do
+      expect(described_class.default_list_type('un_vessels'))
+        .to eq('vessel-sanctions-list')
     end
 
     it 'returns nil for unknown source' do

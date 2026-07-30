@@ -21,6 +21,10 @@ exclude = [
   # API base path: the endpoints under it serve, the bare directory has no
   # index (GitHub Pages does not generate listings).
   "^https?://(www\\.)?ammitto\\.org/api/v1/?$",
+  # Answer a desktop client with the agent above, but refuse GitHub-hosted
+  # runners: both were 200 locally and ERROR from CI on the same commit.
+  "^https?://(www\\.)?meti\\.go\\.jp(?:[/?#]|$)",
+  "^https?://main\\.un\\.org(?:[/?#]|$)",
   # The one page that never answers: HTTP/2 aborts with INTERNAL_ERROR and
   # HTTP/1.1 connects but returns nothing before timing out. Scoped to this
   # URL so other dfat.gov.au links stay checked; drop it if the page recovers.

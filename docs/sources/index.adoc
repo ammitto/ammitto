@@ -352,4 +352,4 @@ To add a new data source:
 . Create a transformer in `lib/ammitto/transformers/`
 . Register the source in `lib/ammitto/sources/registry.rb`
 
-See link:../understanding/extending.adoc[Extending Ammitto] for details.
+See link:../understanding/extending/[Extending Ammitto] for details.

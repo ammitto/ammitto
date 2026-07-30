@@ -15,7 +15,7 @@ module Ammitto
       #     id: "eu",
       #     name: "European Union",
       #     country_code: "EU",
-      #     url: "https://finance.ec.europa.eu/sanctions-dossier_en"
+      #     url: "https://finance.ec.europa.eu/eu-and-world/sanctions-restrictive-measures_en"
       #   )
       #
       class Authority < Lutaml::Model::Serializable

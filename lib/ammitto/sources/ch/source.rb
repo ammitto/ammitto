@@ -31,7 +31,7 @@ module Ammitto
         # Get the original Switzerland API endpoint
         # @return [String] the SECO sanctions list URL
         def original_api_endpoint
-          'https://www.seco.admin.ch/seco/en/home/Aussenwirtschaft_Warenhandel_aussenwirtschaft_wirtschaft-zusammenarbeit/exportkontrolle-und-sanktionen/sanktionen-embargos.html'
+          'https://www.seco.admin.ch/en/searching-for-subjects-sanctions'
         end
       end
     end

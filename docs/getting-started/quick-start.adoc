@@ -78,7 +78,7 @@ ammitto get un/KPi.066 --format json
 # Fetch from a specific source
 ammitto fetch eu --output-dir ./data
 
-# Fetch from all sources
+# Fetch from all automatable sources (skips manually managed cn)
 ammitto fetch --all
 ----
 
@@ -220,6 +220,6 @@ File.write('results.json', results.to_json)
 
 == Next Steps
 
-* link:configuration.adoc[Configuration] - Configure Ammitto for your needs
-* link:../interfaces/ruby-api/[Ruby API] - Full API documentation
-* link:../interfaces/cli/[CLI Reference] - All CLI commands
+* link:../configuration/[Configuration] - Configure Ammitto for your needs
+* link:../../interfaces/ruby-api/[Ruby API] - Full API documentation
+* link:../../interfaces/cli/[CLI Reference] - All CLI commands

@@ -269,13 +269,13 @@ entry.effect_types      # => ["asset_freeze", "travel_ban"]
 # Get authority by code
 authority = Ammitto::Ontology.authority(:un)
 
-authority.code          # => "UN"
+authority.id            # => "un"
 authority.name          # => "United Nations"
-authority.url           # => "https://www.un.org/..."
+authority.url           # => "https://www.un.org/securitycouncil/sanctions/information"
 
 # List all authorities
-Ammitto::Ontology.authority_codes
-# => [:un, :eu, :us, :uk, :au, :ca, ...]
+Ammitto::Ontology.authorities.keys
+# => ["eu", "un", "us", "uk", "au", "ca", ...]
 ----
 
 == Serialization

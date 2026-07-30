@@ -125,10 +125,12 @@ RSpec/LeadingSubject:
 RSpec/ReceiveMessages:
   Enabled: false
 
-# Test doubles are declared where they are used, inside the example.
+# Frozen fixture hashes and helper lambdas are built once at group scope.
 RSpec/LeakyLocalVariable:
   Enabled: false
 
+# The registry spec declares a real source class; a stubbed constant would
+# not exercise the class lookup it registers.
 RSpec/LeakyConstantDeclaration:
   Enabled: false
 

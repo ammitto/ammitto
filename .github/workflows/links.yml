@@ -6,9 +6,12 @@ on:
       - main
     paths:
       - 'docs/**'
+      # Without this the checker skips the very change that breaks it.
+      - '.github/workflows/links.yml'
   pull_request:
     paths:
       - 'docs/**'
+      - '.github/workflows/links.yml'
   schedule:
     # Run weekly on Sunday at 00:00 UTC
     - cron: '0 0 * * 0'

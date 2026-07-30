@@ -25,7 +25,8 @@ RSpec.describe 'documentation examples' do
 
   # A constant is fair game only once the docs' own `require` lines have run —
   # SearchIndexExporter is not autoloaded by `require "ammitto"`, and the docs
-  # tell the reader to require it explicitly.
+  # tell the reader to require it explicitly. These are pooled across all
+  # pages, so this does not prove any single page requires what it uses.
   before(:all) do
     self.class.adoc_files.each do |file|
       File.read(file).scan(%r{^\s*require ['"](ammitto/[\w/]+)['"]}) do |(lib)|
@@ -47,19 +48,19 @@ RSpec.describe 'documentation examples' do
     refs
   end
 
-  # Ruby blocks that bind a variable to a documented constructor, paired with
-  # every method the block then calls on that variable.
+  # EVERY variable a Ruby block binds to a documented constructor — not just
+  # the first — paired with every method the block then calls on it. Scanning
+  # only the first binding would let a later receiver (`serializer = ...`)
+  # rot unnoticed.
   def self.receiver_calls
     found = []
     adoc_files.each do |file|
       File.read(file).scan(/\[source,\s*ruby\]\n-{4,}\n(.*?)\n-{4,}/m) do |(code)|
-        next unless code =~ /^\s*(\w+)\s*=\s*(Ammitto(?:::\w+)*)\.new\b/
-
-        var = Regexp.last_match(1)
-        klass = Regexp.last_match(2)
-        methods = code.scan(/^\s*#{Regexp.escape(var)}\.([a-z_]+[?!]?)/)
-                      .flatten.uniq
-        found << [relative(file), klass, methods] unless methods.empty?
+        code.scan(/^\s*(\w+)\s*=\s*(Ammitto(?:::\w+)*)\.new\b/) do |var, klass|
+          methods = code.scan(/\b#{Regexp.escape(var)}\.([a-z_]+[?!]?)/)
+                        .flatten.uniq
+          found << [relative(file), klass, methods] unless methods.empty?
+        end
       end
     end
     found

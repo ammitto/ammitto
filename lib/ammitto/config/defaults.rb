@@ -34,6 +34,12 @@ module Ammitto
       # All available sources
       ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru tr nz jp eu_vessels un_vessels].freeze
 
+      # Sources with an automated fetch path. CN is excluded: its YAML is
+      # manually managed in data-cn, so `fetch --all` must not fail on a
+      # source that cannot be fetched automatically (an explicit
+      # `fetch cn` still reports the manual-management error).
+      FETCHABLE_SOURCES = (ALL_SOURCES - %i[cn]).freeze
+
       # Default output format
       DEFAULT_OUTPUT_FORMAT = 'jsonld'
 

@@ -373,6 +373,52 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
     end
   end
 
+  describe 'supplement directory resolution' do
+    it 'resolves cn supplements when cn is requested' do
+      instruments = make_dir('data-cn', 'sources', 'legal-instruments')
+      supporting = make_dir('data-cn', 'sources', 'supporting')
+      cn = described_class.new(options, ['cn'])
+
+      expect(cn.send(:find_instruments_dir)).to eq(instruments)
+      expect(cn.send(:find_supporting_dir)).to eq(supporting)
+    end
+
+    it 'does not leak cn supplements into other sources' do
+      make_dir('data-cn', 'sources', 'legal-instruments')
+      make_dir('data-cn', 'sources', 'supporting')
+
+      expect(command.send(:find_instruments_dir)).to be_nil
+      expect(command.send(:find_supporting_dir)).to be_nil
+    end
+
+    it 'resolves a requested source from its own data repository' do
+      instruments = make_dir('data-us', 'sources', 'legal-instruments')
+      make_dir('data-cn', 'sources', 'legal-instruments')
+
+      expect(command.send(:find_instruments_dir)).to eq(instruments)
+    end
+
+    it 'reaches cn supplements in a multi-source run without us ones' do
+      instruments = make_dir('data-cn', 'sources', 'legal-instruments')
+      multi = described_class.new(options, %w[us cn])
+
+      expect(multi.send(:find_instruments_dir)).to eq(instruments)
+    end
+
+    it 'falls back to siblings of an explicit input_dir' do
+      input_dir = make_dir('repo', 'sources', 'sanction-lists')
+      supporting = make_dir('repo', 'sources', 'supporting')
+      options[:input_dir] = input_dir
+
+      expect(command.send(:find_supporting_dir)).to eq(supporting)
+    end
+
+    it 'returns nil when no supplement directories exist' do
+      expect(command.send(:find_instruments_dir)).to be_nil
+      expect(command.send(:find_supporting_dir)).to be_nil
+    end
+  end
+
   describe '#harmonize_source' do
     it 'feeds deeply nested sanction-list files to transformation' do
       write_file('data-us', 'processed', '_index.yaml')

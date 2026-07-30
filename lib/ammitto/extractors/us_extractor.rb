@@ -7,7 +7,7 @@ module Ammitto
   module Extractors
     # UsExtractor extracts sanctions data from the United States (OFAC)
     #
-    # Source: https://ofac.treasury.gov/sanctions-lists
+    # Source: https://ofac.treasury.gov/sanctions-list-service
     #
     # OFAC provides multiple lists:
     # - SDN (Specially Designated Nationals) - primary sanctions list

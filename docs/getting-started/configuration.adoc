@@ -277,5 +277,5 @@ Ammitto.reset_configuration!
 
 == Next Steps
 
-* link:../interfaces/ruby-api/[Ruby API] - Use the configured Ammitto in your code
-* link:../interfaces/cli/[CLI Reference] - CLI commands with configuration options
+* link:../../interfaces/ruby-api/[Ruby API] - Use the configured Ammitto in your code
+* link:../../interfaces/cli/[CLI Reference] - CLI commands with configuration options

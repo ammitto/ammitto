@@ -352,7 +352,7 @@ This matters for:
 
 == See also
 
-* link:../README.adoc[Gem README] — installation and Ruby API.
-* link:./INDEX.adoc[Docs index] — narrative documentation.
+* https://github.com/ammitto/ammitto/blob/main/README.adoc[Gem README] — installation and Ruby API.
+* link:../INDEX/[Docs index] — narrative documentation.
 * `data/README.adoc` — aggregated dataset layout.
 * `data-{source}/README.adoc` — per-source data format documentation.

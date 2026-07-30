@@ -605,6 +605,27 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
                           /tr-1\.yaml: tr: cannot build entity IRI/)
       end
     end
+
+    # A prefixed reference is present and unreadable, not absent, so it is
+    # refused rather than re-addressed by the name. This fixture carried
+    # "TR-1" until Turkey's real bare-decimal format was pinned, so the
+    # shape the old rule accepted gets its own end-to-end regression, run
+    # under --allow-empty to show no exemption clears a per-file error.
+    it 'fails a tr record whose reference is present but unreadable' do
+      Dir.mktmpdir do |dir|
+        processed = File.join(dir, 'data-tr', 'processed')
+        FileUtils.mkdir_p(processed)
+        File.write(File.join(processed, 'tr-1.yaml'),
+                   source_fixtures[:tr].first
+                     .merge('reference_number' => 'TR-1').to_yaml)
+
+        options = { sources_dir: dir, allow_empty: 'tr',
+                    output_dir: File.join(dir, 'api', 'v1') }
+        expect { Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run }
+          .to raise_error(Thor::Error,
+                          /tr-1\.yaml: tr: cannot build entity IRI/)
+      end
+    end
   end
 
   describe 'unparseable YAML is a per-file error, not a source error' do

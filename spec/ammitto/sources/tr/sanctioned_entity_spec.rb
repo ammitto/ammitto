@@ -158,7 +158,7 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     # values onto one segment ("12/A" and "12A" both become "12a"). Such a
     # record is refused outright rather than re-addressed by its name, so
     # that two of them sharing a name cannot merge into one node.
-    ['12/A', '12A', '12 A', 'ABC', '1 0'].each do |odd|
+    ['12/A', '12A', '12 A', 'ABC', '1 0', 'TR-1'].each do |odd|
       it "refuses non-decimal reference #{odd.inspect}" do
         entity = build(name: 'TAMAS COMPANY', reference_number: odd)
 

@@ -79,6 +79,252 @@ RSpec.describe Ammitto::Utils::IriSanitizer do
     end
   end
 
+  describe 'blank local ids' do
+    it 'raises MissingLocalIdError for a nil entity local id' do
+      expect { described_class.entity_iri('tr', nil) }.to raise_error(
+        described_class::MissingLocalIdError,
+        /tr: cannot build entity IRI from blank or unusable local id nil/
+      )
+    end
+
+    it 'raises for an empty or whitespace-only local id' do
+      expect { described_class.entity_iri('tr', '') }
+        .to raise_error(described_class::MissingLocalIdError)
+      expect { described_class.entity_iri('tr', '   ') }
+        .to raise_error(described_class::MissingLocalIdError)
+    end
+
+    it 'raises for a local id that sanitizes to an empty string' do
+      expect { described_class.entity_iri('us', '!!!') }.to raise_error(
+        described_class::MissingLocalIdError,
+        /us: cannot build entity IRI from blank or unusable local id "!!!"/
+      )
+    end
+
+    it 'converts a local id to a string exactly once' do
+      # #to_s may be heavyweight (an Array id materializes its whole
+      # contents) and reaches this method straight from parsed YAML,
+      # so neither the accepted nor the rejected path may convert twice
+      counter = Class.new do
+        attr_reader :calls
+
+        def initialize(text)
+          @text = text
+          @calls = 0
+        end
+
+        def to_s
+          @calls += 1
+          @text
+        end
+      end
+
+      accepted = counter.new('abc-123')
+      expect(described_class.entity_iri('tr', accepted))
+        .to eq('https://www.ammitto.org/entity/tr/abc-123')
+      expect(accepted.calls).to eq(1)
+
+      rejected = counter.new('!!!')
+      expect { described_class.entity_iri('tr', rejected) }
+        .to raise_error(described_class::MissingLocalIdError)
+      expect(rejected.calls).to eq(1)
+    end
+
+    it 'raises for blank entry, announcement, and instrument local ids' do
+      expect { described_class.entry_iri('tr', 'list', nil) }
+        .to raise_error(described_class::MissingLocalIdError, /entry IRI/)
+      expect { described_class.announcement_iri('cn', nil) }
+        .to raise_error(described_class::MissingLocalIdError,
+                        /announcement IRI/)
+      expect { described_class.legal_instrument_iri('cn', ' ') }
+        .to raise_error(described_class::MissingLocalIdError,
+                        /legal_instrument IRI/)
+    end
+
+    it 'carries source, kind, and value on the error' do
+      expect { described_class.entity_iri('jp', nil) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.source).to eq('jp')
+          expect(error.kind).to eq('entity')
+          expect(error.value).to be_nil
+        end
+    end
+
+    it 'truncates oversized rejected ids in the message' do
+      huge = '!' * 5000 # sanitizes to nothing, preview stays bounded
+
+      expect { described_class.entity_iri('us', huge) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message.length).to be < 300
+          expect(error.value).to eq(huge)
+        end
+    end
+
+    it 'summarizes container ids instead of inspecting every element' do
+      # Inspecting the whole container would build a ~500 KB string
+      # just to report the error
+      bulky = ['!'] * 100_000
+
+      expect { described_class.entity_iri('us', bulky) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message).to include('Array(100000 entries)')
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'never inspects an unknown object type' do
+      # #to_s is legitimately called to sanitize the id; #inspect is
+      # purely diagnostic and could return anything, so it must not run
+      hostile = Class.new do
+        def to_s
+          '!' # sanitizes to nothing, so the id is rejected
+        end
+
+        def inspect
+          raise 'inspect must not be called on an unknown object type'
+        end
+      end.new
+
+      expect { described_class.entity_iri('us', hostile) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message).to include('instance')
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'never calls to_s on an unknown source object' do
+      hostile_source = Class.new do
+        def to_s
+          raise 'to_s must not be called on an unknown source'
+        end
+      end.new
+
+      expect { described_class.entity_iri(hostile_source, nil) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'reports variable-length id types by class, not by value' do
+      # A symbol's representation is unbounded, so it is never rendered
+      huge_symbol = ('!' * 200_000).to_sym
+
+      expect { described_class.entity_iri('us', huge_symbol) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message).to include('Symbol instance')
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'still raises MissingLocalIdError when the id itself misbehaves' do
+      # Singleton overrides can defeat any dispatch rule, so the message
+      # builder degrades rather than letting a foreign exception escape
+      hostile = []
+      def hostile.size
+        raise 'size must not escape'
+      end
+
+      def hostile.to_s
+        '!' # sanitizes to nothing, so the id is rejected
+      end
+
+      expect { described_class.entity_iri('us', hostile) }
+        .to raise_error(described_class::MissingLocalIdError,
+                        /\(unprintable\)/)
+    end
+
+    it 'never calls size on a container subclass' do
+      # An overridden #size must not escape as an arbitrary exception
+      # in place of MissingLocalIdError
+      hostile = Class.new(Array) do
+        def to_s
+          '!' # sanitizes to nothing, so the id is rejected
+        end
+
+        def size
+          raise 'size must not be called on a container subclass'
+        end
+      end.new
+
+      expect { described_class.entity_iri('us', hostile) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'never inspects a subclass that could override inspect' do
+      hostile = Class.new(Numeric) do
+        def to_s
+          '!' # sanitizes to nothing, so the id is rejected
+        end
+
+        def inspect
+          raise 'inspect must not be called on a subclass'
+        end
+      end.new
+
+      expect { described_class.entity_iri('us', hostile) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'still renders fixed-size id types by value' do
+      expect { described_class.entity_iri('us', nil) }
+        .to raise_error(described_class::MissingLocalIdError, /\bnil\b/)
+    end
+
+    it 'bounds an oversized source in the message' do
+      expect { described_class.entity_iri('x' * 100_000, nil) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'bounds the kind the same way as the source' do
+      # Every caller passes a literal kind, but no component of a
+      # diagnostic may outgrow or outlive the error it describes
+      error = described_class::MissingLocalIdError.new(
+        source: 'jp', kind: 'k' * 100_000, value: nil
+      )
+
+      expect(error.message.length).to be < 300
+    end
+
+    it 'still raises MissingLocalIdError when the kind misbehaves' do
+      # A kind whose #to_s raises must not replace the error with an
+      # unrelated exception, and must not reach #to_s at all
+      hostile = Class.new do
+        def to_s
+          raise 'kind #to_s must not escape'
+        end
+      end.new
+
+      error = described_class::MissingLocalIdError.new(
+        source: 'jp', kind: hostile, value: nil
+      )
+
+      expect(error).to be_a(described_class::MissingLocalIdError)
+      expect(error.message.length).to be < 300
+    end
+
+    it 'keeps the preview bounded when escapes expand under inspect' do
+      # Control characters inspect to 4 chars each ("\x01"); the cap
+      # must apply to the inspected form, not just the raw slice
+      noisy = "\x01" * 5000
+
+      expect { described_class.entity_iri('us', noisy) }
+        .to raise_error(described_class::MissingLocalIdError) do |error|
+          expect(error.message.length).to be < 300
+        end
+    end
+
+    it 'still accepts a literal "unknown" id string' do
+      expect(described_class.entity_iri('cn', 'unknown'))
+        .to eq('https://www.ammitto.org/entity/cn/unknown')
+    end
+  end
+
   describe '.entity_iri' do
     it 'generates LIST-AGNOSTIC entity IRI (no list_type)' do
       iri = described_class.entity_iri('cn', 'mitsubishi-heavy-industries')

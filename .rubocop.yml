@@ -71,3 +71,73 @@ Metrics/ModuleLength:
 Lint/ConstantDefinitionInBlock:
   Exclude:
     - 'spec/**/*.rb'
+
+# rubocop-rspec: only the two spec-layout cops below are adopted
+# (RSpec/MultipleDescribes and RSpec/SpecFilePathFormat, both on by default).
+# They enforce the one-describe-per-file, path-mirrors-the-class layout and are
+# fixed in the tree, not deferred to .rubocop_todo.yml. Every other RSpec cop
+# that fires here is switched off explicitly below: the suite has never been
+# written to those styles, and recording a decision beats parking a backlog.
+
+# CLI commands live in lib/ammitto/cli/ but are namespaced Ammitto::Cmd, so
+# specs mirror the directory and the cop is told the alias.
+RSpec/SpecFilePathFormat:
+  CustomTransform:
+    Cmd: cli
+
+# Grouping the assertions that describe one behaviour is deliberate here.
+RSpec/MultipleExpectations:
+  Enabled: false
+
+# Source-model examples build their fixtures inline; that is the point of them.
+RSpec/ExampleLength:
+  Enabled: false
+
+# Established fixture style in the extractor and pipeline specs.
+RSpec/InstanceVariable:
+  Enabled: false
+
+# Bare `subject` is the existing convention in the harmonized-model specs.
+RSpec/NamedSubject:
+  Enabled: false
+
+# Parser specs nest by row shape and by list type; flattening would obscure it.
+RSpec/NestedGroups:
+  Enabled: false
+
+# `match` on IRI and message strings states the intent better than `include`.
+RSpec/MatchWithSimpleRegex:
+  Enabled: false
+
+# Integration and load-order specs describe behaviour, not a single class.
+RSpec/DescribeClass:
+  Enabled: false
+
+# Naming the constant is clearer when a spec touches several source namespaces.
+RSpec/DescribedClass:
+  Enabled: false
+
+# `subject` is placed after the `let`s it depends on.
+RSpec/LeadingSubject:
+  Enabled: false
+
+# One stub per line reads better than a merged `receive_messages`.
+RSpec/ReceiveMessages:
+  Enabled: false
+
+# Test doubles are declared where they are used, inside the example.
+RSpec/LeakyLocalVariable:
+  Enabled: false
+
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+
+# Matcher-style preferences the suite does not follow.
+RSpec/BeEq:
+  Enabled: false
+
+RSpec/BeNil:
+  Enabled: false
+
+RSpec/PredicateMatcher:
+  Enabled: false

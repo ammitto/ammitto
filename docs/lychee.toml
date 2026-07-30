@@ -16,18 +16,20 @@ exclude_all_private = true
 user_agent = "Mozilla/5.0 (compatible; lychee; +https://github.com/ammitto/ammitto)"
 
 exclude = [
-  # Ammitto IRIs identify graph nodes, they are not fetchable pages.
+  # Ammitto IRIs identify graph nodes, they are not fetchable pages. Preventive:
+  # today every IRI sits inside a code block, so none reaches lychee as a link.
   "^https?://(www\\.)?ammitto\\.org/(entity|entry|announcement|legal_instrument|list|node|id)/",
   # API base path: the endpoints under it serve, the bare directory has no
-  # index (GitHub Pages does not generate listings).
+  # index (GitHub Pages does not generate listings). Preventive for the same
+  # reason as above.
   "^https?://(www\\.)?ammitto\\.org/api/v1/?$",
   # Answer a desktop client with the agent above, but refuse GitHub-hosted
   # runners: both were 200 locally and ERROR from CI on the same commit.
-  # Caveat: the UN source URL in docs/sources/index.adoc is on main.un.org, so
-  # this rule is what keeps it from being checked. Re-verify that one by hand
-  # when the sources page changes; CI cannot catch it going dead.
-  "^https?://(www\\.)?meti\\.go\\.jp(?:[/?#]|$)",
-  "^https?://main\\.un\\.org(?:[/?#]|$)",
+  # Scoped to the exact pages so other links on these hosts stay checked.
+  # Caveat: the UN URL below is the one docs/sources/index.adoc documents as
+  # the UN source, so CI cannot catch it going dead. Re-verify it by hand.
+  "^https?://(www\\.)?meti\\.go\\.jp/policy/anpo/index\\.html$",
+  "^https?://main\\.un\\.org/securitycouncil/en/content/un-sc-consolidated-list/?$",
   # The one page that never answers: HTTP/2 aborts with INTERNAL_ERROR and
   # HTTP/1.1 connects but returns nothing before timing out. Scoped to this
   # URL so other dfat.gov.au links stay checked; drop it if the page recovers.

@@ -23,8 +23,8 @@ require 'ammitto'
 
 # Search across all sources
 results = Ammitto.search("Kim Jong")
-results.each do |entry|
-  puts "#{entry.name} - #{entry.source} (#{entry.entity_type})"
+results.each do |entity|
+  puts "#{entity.display_name} (#{entity.entity_type})"
 end
 ----
 
@@ -91,24 +91,29 @@ ammitto fetch --all
 # Access the data repository
 repo = Ammitto.data_repository
 
-# Get statistics
+# Get statistics (parsed JSON, so keys are strings)
 stats = repo.stats
-puts "Total entities: #{stats[:total_entities]}"
+puts "Total entities: #{stats['total_entities']}"
 
-# Query entities
+# Query entities — returns an Array of JSON-LD hashes
 entities = repo.query(name: "Smith", limit: 10)
 ----
 
 === Access Individual Entity
+
+`Repository#get` returns the raw JSON-LD hash, not an entity object.
 
 [source,ruby]
 ----
 # Get entity by ID
 entity = Ammitto.data_repository.get("un/KPi.066")
 
-puts entity.primary_name
-puts entity.entity_type
-puts entity.listed_date
+puts entity['names'].first['full_name']
+puts entity['entity_type']
+
+# Build a model from it when you want the entity API
+model = Ammitto::PersonEntity.new(entity)
+puts model.display_name
 ----
 
 == Working with JSON-LD
@@ -139,16 +144,30 @@ ammitto harmonize --all --combine --output-dir ./api/v1
 
 == Using the Search Index
 
-The lightweight search index (~8MB) enables fast client-side search:
+The lightweight search index (~8MB) enables fast client-side search. The gem
+builds and exports the index; loading and querying it is the client's job.
 
 [source,ruby]
 ----
-# Load the search index
-index = Ammitto::SearchIndexExporter.new
-index.load('./api/v1/search-index.json')
+require 'ammitto/serialization/search_index_exporter'
 
-# Search the index
-results = index.search("Kim")
+exporter = Ammitto::Serialization::SearchIndexExporter.new
+
+# Add entity/entry pairs as hashes
+exporter.add(entity_hash, entry_hash)
+
+# Write search-index.json plus the facet files
+exporter.export('./api/v1')
+----
+
+Read the exported index back with any JSON parser:
+
+[source,ruby]
+----
+index = JSON.parse(File.read('./api/v1/search-index.json'))
+results = index['entities'].select do |e|
+  e['primaryName'].to_s.downcase.include?('kim')
+end
 ----
 
 === Search Index Structure
@@ -189,7 +208,7 @@ def screen_customer(name)
   if results.any?
     puts "Potential matches found:"
     results.each do |r|
-      puts "  - #{r.name} (#{r.source}, #{r.entity_type})"
+      puts "  - #{r.display_name} (#{r.entity_type})"
     end
   else
     puts "No matches found"

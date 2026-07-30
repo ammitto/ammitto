@@ -99,16 +99,14 @@ Ammitto supports four entity types in its ontology.
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology::Entities::PersonEntity.new(...)
+entity = Ammitto::PersonEntity.new(...)
 
-# Type checks
-entity.person?         # => true
-entity.organization?   # => false
-entity.vessel?         # => false
-entity.aircraft?       # => false
+# Type check
+entity.entity_type     # => "person"
 
 # Name access
-entity.primary_name    # => "KIM, Jong Un"
+entity.display_name    # => "KIM, Jong Un"
+entity.primary_name    # => NameVariant object
 entity.all_names       # => ["KIM, Jong Un", "金正恩", ...]
 
 # Birth info
@@ -234,11 +232,11 @@ entity.matches?("jong un")  # => true (case-insensitive)
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology::Entities::OrganizationEntity.new(...)
+entity = Ammitto::OrganizationEntity.new(...)
 
-entity.organization?   # => true
+entity.entity_type     # => "organization"
 entity.dissolved?      # => true/false
-entity.primary_name    # => "Acme Corp"
+entity.display_name    # => "Acme Corp"
 ----
 
 == Vessel Entity
@@ -318,9 +316,9 @@ entity.primary_name    # => "Acme Corp"
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology::Entities::VesselEntity.new(...)
+entity = Ammitto::VesselEntity.new(...)
 
-entity.vessel?         # => true
+entity.entity_type     # => "vessel"
 entity.imo_number      # => "1234567"
 entity.flag_state      # => "LR"
 ----
@@ -394,9 +392,9 @@ entity.flag_state      # => "LR"
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology::Entities::AircraftEntity.new(...)
+entity = Ammitto::AircraftEntity.new(...)
 
-entity.aircraft?       # => true
+entity.entity_type     # => "aircraft"
 entity.registration_number  # => "RA-12345"
 entity.manufacturer    # => "Boeing"
 ----

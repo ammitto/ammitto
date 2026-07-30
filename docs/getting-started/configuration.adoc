@@ -221,16 +221,19 @@ Each data source has its own configuration:
 
 === Fetching Specific Sources
 
+The Ruby API downloads harmonized data through `Ammitto.refresh_cache`. Use the
+`ammitto fetch` CLI command to pull raw data from the official sources.
+
 [source,ruby]
 ----
 # Fetch a single source
-Ammitto.fetch(:eu)
+Ammitto.refresh_cache(sources: [:eu])
 
 # Fetch multiple sources
-Ammitto.fetch(:un, :eu, :us)
+Ammitto.refresh_cache(sources: [:un, :eu, :us])
 
 # Fetch all sources
-Ammitto.fetch(:all)
+Ammitto.refresh_cache(all: true)
 ----
 
 == Cache Management

@@ -1,5 +1,8 @@
 inherit_from: .rubocop_todo.yml
 
+plugins:
+  - rubocop-rspec
+
 # This project follows the Ribose OSS style guide.
 # https://github.com/riboseinc/oss-guides
 # All project-specific additions and overrides should be specified in this file.

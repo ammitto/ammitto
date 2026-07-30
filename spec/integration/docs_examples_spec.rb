@@ -5,9 +5,12 @@
 # methods that live on the parallel ontology layer rather than the class the
 # example named (person?, dissolved?). Nothing executed them, so the rot was
 # invisible. This pins the static half of the problem: every Ammitto constant a
-# doc mentions must load, and every method called on a documented constructor's
-# receiver must exist on that class. It does NOT execute the examples, so it
-# cannot catch undefined locals, wrong argument shapes, or false `# =>` values.
+# doc mentions must load, and every direct `variable.method` call on a variable
+# a block binds with `Ammitto::Klass.new` must exist on that class.
+#
+# Deliberately narrow. It does NOT execute the examples, so it cannot catch
+# undefined locals, wrong argument shapes, or false `# =>` values, and it does
+# not follow aliases, safe navigation, chained calls, or setters.
 RSpec.describe 'documentation examples' do
   # Deliberately a method, not a constant: a constant assigned here would leak
   # into Object and could collide with another spec.
@@ -48,10 +51,10 @@ RSpec.describe 'documentation examples' do
     refs
   end
 
-  # EVERY variable a Ruby block binds to a documented constructor — not just
-  # the first — paired with every method the block then calls on it. Scanning
-  # only the first binding would let a later receiver (`serializer = ...`)
-  # rot unnoticed.
+  # Each variable a Ruby block binds with `Ammitto::Klass.new` — every such
+  # binding, not just the first — paired with the direct `variable.method`
+  # calls the block makes on it. Scanning only the first binding would let a
+  # later receiver (`serializer = ...`) rot unnoticed.
   def self.receiver_calls
     found = []
     adoc_files.each do |file|

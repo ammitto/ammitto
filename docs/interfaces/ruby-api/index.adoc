@@ -25,9 +25,9 @@ require 'ammitto'
 # Get current configuration
 config = Ammitto.configuration
 
-# Configure Ammitto
+# Configure Ammitto ("~" is stored verbatim, so expand it yourself)
 Ammitto.configure do |config|
-  config.cache_dir = "~/.ammitto/cache"
+  config.cache_dir = File.expand_path("~/.ammitto")
   config.verbose = true
 end
 

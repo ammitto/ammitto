@@ -73,7 +73,7 @@ require 'ammitto'
 
 # Configure Ammitto
 Ammitto.configure do |config|
-  config.cache_dir = '~/.ammitto'
+  config.cache_dir = File.expand_path('~/.ammitto')
   config.verbose = true
 end
 

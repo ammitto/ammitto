@@ -17,6 +17,9 @@ Ammitto can be configured globally or per-operation:
 
 [source,ruby]
 ----
+require 'ammitto'
+require 'logger'
+
 Ammitto.configure do |config|
   # API and caching
   config.api_base_url = "https://ammitto.org/api/v1"
@@ -29,7 +32,7 @@ Ammitto.configure do |config|
 
   # Logging
   config.verbose = true
-  config.logger = Rails.logger  # or any Logger instance
+  config.logger = Logger.new($stdout)  # or Rails.logger
 
   # Data directories
   config.data_repository = "../data"
@@ -258,7 +261,7 @@ Ammitto.refresh_cache(sources: [:un], force: true)
 ----
 status = Ammitto.cache_status
 status.each do |source, info|
-  puts "#{source}: #{info[:status]} (#{info[:age]}s old)"
+  puts "#{source}: cached=#{info[:cached]} (#{info[:age_seconds]}s old)"
 end
 ----
 

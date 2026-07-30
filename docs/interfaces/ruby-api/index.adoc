@@ -20,6 +20,8 @@ The `Ammitto` module provides the main entry points:
 
 [source,ruby]
 ----
+require 'ammitto'
+
 # Get current configuration
 config = Ammitto.configuration
 
@@ -80,6 +82,9 @@ sources = Ammitto.sources
 
 === Data Repository
 
+`query` and `get` read `api/v1/all.jsonld` under `local_path` and raise
+`Ammitto::NotFoundError` when it is missing.
+
 [source,ruby]
 ----
 # Access the data repository
@@ -138,9 +143,9 @@ un_results = results.by_authority(:un)
 # Filter by status
 active = results.by_status(:active)
 
-# Get unique values
-results.entity_types  # => [:person, :organization]
-results.authorities   # => [:un, :eu, :us]
+# Get unique values (strings, not symbols)
+results.entity_types  # => ["person", "organization"]
+results.authorities   # => ["un", "eu", "us"]
 
 # Export
 results.to_json_ld

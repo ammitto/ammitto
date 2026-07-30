@@ -86,6 +86,10 @@ ammitto fetch --all
 
 === Load from Data Repository
 
+These calls read a local harmonized data repository. `query` and `get` raise
+`Ammitto::NotFoundError` until `api/v1/all.jsonld` exists — clone `ammitto/data`
+or run `ammitto harmonize --all --combine` first.
+
 [source,ruby]
 ----
 # Access the data repository

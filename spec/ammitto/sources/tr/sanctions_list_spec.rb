@@ -60,10 +60,20 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
       expect(actual).to eq(dated)
     end
 
-    it 'maps every live column to a distinct field' do
+    it 'maps every live column to the field it belongs in' do
+      # Pinning the whole row, not just its uniqueness: distinct but
+      # wrong destinations would corrupt records just as silently.
+      expected = %i[
+        reference_number name former_name organization_name aliases
+        passport_number title address nationality listed_date remarks
+        place_of_birth mother_name father_name date_of_birth organization
+        official_gazette decision_number
+      ]
+
       fields = LIVE_HEADERS.map { |h| described_class.normalize_header(h) }
 
-      expect(fields.tally.select { |_f, n| n > 1 }).to be_empty
+      expect(fields).to eq(expected)
+      expect(fields.uniq.size).to eq(LIVE_HEADERS.size)
     end
 
     it 'is nil-safe' do

@@ -75,6 +75,27 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
       expect(Dir.children(output_dir)).to be_empty
     end
 
+    it 'leaves an existing corpus byte-for-byte intact when it refuses' do
+      # The record the failing run would have rewritten, and the index
+      # describing the last good harvest, must both survive untouched.
+      File.write(File.join(output_dir, 'tr-1.yaml'), "previous harvest\n")
+      File.write(File.join(output_dir, '_index.yaml'), "count: 1\n")
+      before = Dir.children(output_dir).to_h do |name|
+        [name, File.read(File.join(output_dir, name))]
+      end
+
+      expect do
+        save([entity(name: 'REWRITTEN', reference_number: '1'),
+              entity(name: 'FIRST', reference_number: '5'),
+              entity(name: 'SECOND', reference_number: '5')])
+      end.to raise_error(RuntimeError)
+
+      after = Dir.children(output_dir).to_h do |name|
+        [name, File.read(File.join(output_dir, name))]
+      end
+      expect(after).to eq(before)
+    end
+
     it 'names every discarded record when three claim one filename' do
       expect do
         save([entity(name: 'FIRST', reference_number: '5'),

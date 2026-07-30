@@ -87,7 +87,7 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
     ],
     tr: [{
       'name' => 'ACME', 'entity_type' => 'Entity', 'program' => '6415',
-      'listed_date' => '2020-01-01', 'reference_number' => 'TR-1'
+      'listed_date' => '2020-01-01', 'reference_number' => '1'
     }],
     eu_vessels: [{
       'vessel_name' => 'SHIP Z', 'imo_number' => '12345',
@@ -516,13 +516,24 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
   end
 
   describe 'blank local ids raise instead of collapsing to "unknown"' do
-    it 'fails the tr path loudly for a record without reference_number' do
-      data = source_fixtures[:tr].first.merge('reference_number' => nil)
+    # tr is the one source with a documented empty-reference case, so a
+    # blank reference falls back to the name; only an unusable name raises.
+    it 'fails the tr path loudly when reference and name are both unusable' do
+      data = source_fixtures[:tr].first
+                                 .merge('reference_number' => nil, 'name' => '  ')
 
       expect { transform(:tr, data) }.to raise_error(
         Ammitto::Utils::IriSanitizer::MissingLocalIdError,
         /tr: cannot build entity IRI from blank or unusable local id/
       )
+    end
+
+    it 'uses the name when tr publishes no reference' do
+      data = source_fixtures[:tr].first.merge('reference_number' => nil)
+
+      result = transform(:tr, data)
+      pair = result.is_a?(Array) ? result.first : result
+      expect(pair[:entity]['@id']).to match(%r{/entity/tr/acme\z})
     end
 
     it 'fails the jp path loudly for a record without id' do
@@ -553,13 +564,39 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       )
     end
 
-    it 'fails the whole tr slice at the health gate (end to end)' do
+    # Turkey leaves the Sira No cell empty on 37 of its rows. Those records
+    # take a deterministic name-derived id rather than raising, so the slice
+    # completes; a record with neither a usable reference nor a usable name
+    # still raises.
+    it 'gives a tr record with no reference a name-derived id (end to end)' do
       Dir.mktmpdir do |dir|
         processed = File.join(dir, 'data-tr', 'processed')
         FileUtils.mkdir_p(processed)
         File.write(File.join(processed, 'tr-1.yaml'),
                    source_fixtures[:tr].first
                      .merge('reference_number' => nil).to_yaml)
+
+        options = { sources_dir: dir,
+                    output_dir: File.join(dir, 'api', 'v1') }
+        expect { Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run }
+          .not_to raise_error
+
+        graph = JSON.parse(
+          File.read(File.join(dir, 'api', 'v1', 'sources', 'tr.jsonld'))
+        )['@graph']
+        ids = graph.map { |n| n['@id'] }.compact
+        expect(ids).to include(a_string_matching(%r{/entity/tr/acme\z}))
+        expect(ids).not_to include(a_string_matching(%r{/entity/tr/unknown\z}))
+      end
+    end
+
+    it 'still fails a tr record with neither reference nor usable name' do
+      Dir.mktmpdir do |dir|
+        processed = File.join(dir, 'data-tr', 'processed')
+        FileUtils.mkdir_p(processed)
+        File.write(File.join(processed, 'tr-1.yaml'),
+                   source_fixtures[:tr].first
+                     .merge('reference_number' => nil, 'name' => '  ').to_yaml)
 
         options = { sources_dir: dir,
                     output_dir: File.join(dir, 'api', 'v1') }

@@ -447,6 +447,9 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
     let(:output_dir) { Dir.mktmpdir('ammitto_gates_output') }
     let(:options) { { sources_dir: sources_dir, output_dir: output_dir } }
 
+    # Only output_dir needs removing here. The outer `after` also runs for
+    # these examples and its `sources_dir` resolves to the override above,
+    # so the gates sources tree is already cleaned up.
     after do
       FileUtils.rm_rf(output_dir)
     end

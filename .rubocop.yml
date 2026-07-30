@@ -91,13 +91,13 @@ RSpec/SpecFilePathFormat:
 RSpec/MultipleExpectations:
   Enabled: false
 
-# Fires in 41 files across CLI, validation, exporter and integration specs:
-# examples build their fixture tree inline rather than in shared helpers.
+# 191 offences in 41 files spanning every area of the suite, from inline
+# fixture trees to long `include(...)` assertion lists.
 RSpec/ExampleLength:
   Enabled: false
 
-# The legacy-shim, harmonize-pipeline and public-API specs write their fixture
-# paths to @ivars in a `before` block.
+# The legacy-shim, harmonize-pipeline and public-API specs hold their tmpdir
+# paths in @ivars set by an `around` hook.
 RSpec/InstanceVariable:
   Enabled: false
 
@@ -123,7 +123,8 @@ RSpec/DescribeClass:
 RSpec/DescribedClass:
   Enabled: false
 
-# In the model specs `subject` is placed after the `let`s it consumes.
+# In the model and AU transformer specs `subject` is placed after the `let`s
+# it consumes.
 RSpec/LeadingSubject:
   Enabled: false
 

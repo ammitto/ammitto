@@ -85,20 +85,31 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
 
   describe 'RESERVED_LOCAL_IDS' do
     it 'pins the reference to the sanitized name of its published holder' do
-      slug = described_class::RESERVED_LOCAL_IDS.fetch('187')
+      holder = described_class::RESERVED_LOCAL_IDS.fetch('187')
 
-      expect(Ammitto::Utils::IriSanitizer.sanitize(dtsrc.name)).to eq(slug)
+      expect(Ammitto::Utils::IriSanitizer.sanitize(dtsrc.name))
+        .to eq(holder[:slug])
+    end
+
+    it 'also pins the holder name at full fidelity' do
+      # The slug drops the "Ç"; this form is what tells the holder from a
+      # different designee whose name sanitizes onto the same slug.
+      holder = described_class::RESERVED_LOCAL_IDS.fetch('187')
+
+      expect(described_class.strict_name(dtsrc.name)).to eq(holder[:name])
     end
 
     it 'cannot drift at runtime, entries included' do
-      # Freezing the table alone would still let `table[ref].replace(...)`
-      # reassign a published IRI to a different designee.
+      # Freezing the table alone would still let `table[ref][:slug]`
+      # be reassigned, moving a published IRI to a different designee.
       table = described_class::RESERVED_LOCAL_IDS
 
       expect(table).to be_frozen
       expect(table.keys).to all(be_frozen)
       expect(table.values).to all(be_frozen)
-      expect { table.fetch('187').replace('other') }
+      expect { table.fetch('187')[:slug] = 'other' }
+        .to raise_error(FrozenError)
+      expect { table.fetch('187')[:slug].replace('other') }
         .to raise_error(FrozenError)
     end
   end

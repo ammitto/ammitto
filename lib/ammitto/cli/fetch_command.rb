@@ -152,9 +152,16 @@ module Ammitto
                  model_class.from_json(content)
                when :au, :tr, :nz, :eu_vessels
                  # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
-                 result = model_class.from_xlsx(content)
-                 extractor.cleanup if extractor.respond_to?(:cleanup)
-                 result
+                 #
+                 # ensure, not a trailing call: the downloaded workbook is a
+                 # Tempfile, and a parse that refuses the payload (an
+                 # integrity failure, say) must not leave it behind. A
+                 # refused harvest is a normal outcome here, not a crash.
+                 begin
+                   model_class.from_xlsx(content)
+                 ensure
+                   extractor.cleanup if extractor.respond_to?(:cleanup)
+                 end
                when :jp, :un_vessels
                  # JP, UN Vessels are PDF-based - requires manual conversion
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"

@@ -96,8 +96,21 @@ module Ammitto
         # Deliberately narrow: this protects specific pre-existing IRIs.
         # It is not a general identifier-stability system, which would
         # need a durable ledger of every id ever published.
+        # Each entry carries the designee's name twice, because the two
+        # forms answer different questions. +slug+ is what the IRI is
+        # minted from, so it is what decides whether a row may keep the
+        # reference. +name+ is the same name at full fidelity, and exists
+        # only to confirm that the row matching that slug really is the
+        # designee: sanitizing strips every non-ASCII letter and truncates
+        # at 64 characters, so two different organisations whose names
+        # differ only in what it strips share one slug. Without the second
+        # form, such a lookalike would be accepted as the holder and take
+        # a published IRI silently.
         RESERVED_LOCAL_IDS = {
-          '187' => 'defense-technology-and-science-research-enter-dtsrc'
+          '187' => {
+            slug: 'defense-technology-and-science-research-enter-dtsrc',
+            name: 'defense technology and science research çenter (dtsrc)'
+          }.freeze
         }.freeze
 
         def person?
@@ -139,9 +152,23 @@ module Ammitto
           return nil if reference.empty?
 
           holder = RESERVED_LOCAL_IDS[reference]
-          return reference if holder.nil? || sanitized_name == holder
+          return reference if holder.nil? || sanitized_name == holder[:slug]
 
           fallback_name
+        end
+
+        # The name at the fidelity the IRI slug throws away.
+        #
+        # Case and run-of-whitespace differences are absorbed, because
+        # Turkey's cells carry stray spacing that says nothing about which
+        # designee a row is. Everything the slug drops — the non-ASCII
+        # letters, the punctuation, anything past 64 characters — is kept,
+        # because that is the whole reason this form exists.
+        #
+        # @param value [Object] a designee name
+        # @return [String] comparable name
+        def self.strict_name(value)
+          value.to_s.unicode_normalize(:nfkc).gsub(/\s+/, ' ').strip.downcase
         end
 
         private
@@ -292,7 +319,8 @@ module Ammitto
         # @param entities [Array<SanctionedEntity>]
         # @raise [IntegrityError] when the reservation no longer resolves
         def self.verify_reservations!(entities)
-          SanctionedEntity::RESERVED_LOCAL_IDS.each do |reference, slug|
+          SanctionedEntity::RESERVED_LOCAL_IDS.each do |reference, holder|
+            slug = holder[:slug]
             holders = entities.select do |entity|
               Utils::IriSanitizer.sanitize(entity.name.to_s) == slug
             end
@@ -300,12 +328,14 @@ module Ammitto
               entity.reference_number.to_s.strip == reference
             end
 
-            check_reservation!(reference, slug, holders, claimants)
+            check_reservation!(reference, holder, holders, claimants)
           end
         end
 
         # @raise [IntegrityError] unless the reservation resolves cleanly
-        def self.check_reservation!(reference, slug, holders, claimants)
+        def self.check_reservation!(reference, holder, holders, claimants)
+          slug = holder[:slug]
+
           if holders.size > 1
             raise IntegrityError, reservation_error(
               reference, "#{holders.size} rows share the reserved name " \
@@ -322,11 +352,39 @@ module Ammitto
             )
           end
 
+          verify_holder_identity!(reference, holder, holders.first)
+
           return if claimants.any? { |claimant| claimant.equal?(holders.first) }
 
           raise IntegrityError, reservation_error(
             reference, "the reserved name #{slug.inspect} now carries " \
                        "reference #{holders.first.reference_number.inspect}"
+          )
+        end
+
+        # Refuse a row that matches the reserved slug but is not the
+        # designee the slug stands for.
+        #
+        # The slug is lossy: it strips every non-ASCII letter and cuts at
+        # 64 characters, so a different organisation can sanitize onto it.
+        # Selecting the holder by slug is right — that is what the IRI is
+        # minted from — but accepting it on the slug alone would hand a
+        # published IRI to a lookalike without a word. Confirming the
+        # full-fidelity name closes that, and does it the way every other
+        # outcome here does: by stopping and naming what it found.
+        #
+        # @param reference [String] the reserved reference
+        # @param holder [Hash] the reservation's slug and name
+        # @param entity [SanctionedEntity] the row matching the slug
+        # @raise [IntegrityError] when the row is a different designee
+        def self.verify_holder_identity!(reference, holder, entity)
+          actual = SanctionedEntity.strict_name(entity.name)
+          return if actual == holder[:name]
+
+          raise IntegrityError, reservation_error(
+            reference, 'the row matching the reserved name is ' \
+                       "#{actual.inspect}, not #{holder[:name].inspect} " \
+                       '— two different designees share one sanitized name'
           )
         end
 

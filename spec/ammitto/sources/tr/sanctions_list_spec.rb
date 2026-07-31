@@ -233,6 +233,14 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
              reference_number: reference_number)
     end
 
+    # A different designee whose name sanitizes onto the holder's slug.
+    # The sanitizer drops every non-ASCII letter, so swapping the "Ç" for
+    # another one leaves the slug identical while the name is not.
+    def lookalike(reference_number: '187')
+      entity(name: 'DEFENSE TECHNOLOGY AND SCIENCE RESEARCH ŞENTER (DTSRC)',
+             reference_number: reference_number)
+    end
+
     it 'accepts the holder claiming its own reserved reference' do
       expect { described_class.verify_reservations!([dtsrc, dio]) }
         .not_to raise_error
@@ -298,6 +306,24 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
       expect { described_class.verify_reservations!([dio]) }
         .to raise_error(Ammitto::Sources::Tr::IntegrityError,
                         %r{entity/tr/187 is published})
+    end
+
+    it 'refuses a different designee that sanitizes onto the slug' do
+      # Selecting the holder by slug alone would hand entity/tr/187 to
+      # this row without a word, because the "Ş" and the "Ç" both vanish.
+      expect { described_class.verify_reservations!([lookalike]) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /two different designees share one sanitized name/)
+    end
+
+    it 'tolerates the spacing and case Turkey varies freely' do
+      spaced = entity(
+        name: "  defense technology and science research  ÇENTER (dtsrc) \n",
+        reference_number: '187'
+      )
+
+      expect { described_class.verify_reservations!([spaced]) }
+        .not_to raise_error
     end
   end
 end

@@ -80,4 +80,31 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
     expect(transform(source)[:entity].id)
       .to eq('https://www.ammitto.org/entity/tr/42')
   end
+
+  # Persons take a different branch of create_entity, so the organisation
+  # examples above cannot speak for this call site.
+  describe 'persons' do
+    def person(name:, reference_number: '187')
+      Ammitto::Sources::Tr::SanctionedEntity.new(
+        name: name, reference_number: reference_number,
+        entity_type: 'person'
+      )
+    end
+
+    it 'mints a person IRI from local_id, not the raw reference' do
+      # A person cannot hold the organisation's reserved 187, so local_id
+      # falls back to the name — and the IRI has to follow it.
+      source = person(name: 'SOME PERSON')
+
+      expect(transform(source)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/some-person')
+    end
+
+    it 'mints a person IRI from the reference where none is reserved' do
+      source = person(name: 'SOME PERSON', reference_number: '42')
+
+      expect(transform(source)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/42')
+    end
+  end
 end

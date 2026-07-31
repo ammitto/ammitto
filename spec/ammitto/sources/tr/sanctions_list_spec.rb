@@ -129,6 +129,55 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
 
       expect(list.entities.map(&:name)).to eq(['ACME'])
     end
+
+    it 'keeps a verbatim repeated row instead of failing the source' do
+      # The writer collapses two records that claim one filename with
+      # identical content. The gates refuse two records sharing an
+      # identifier, so a duplicated row used to fail the whole harvest
+      # here and never reach the writer that would have accepted it.
+      headers = ['Sıra No', 'Gerçek Kişi Soyadı Ünvanı']
+      rows = [[1, 'ACME'], [1, 'ACME']]
+
+      list = parse(headers, rows)
+
+      expect(list.entities.map(&:name)).to eq(['ACME'])
+    end
+
+    it 'still refuses two rows that share a number but differ' do
+      # Only byte-identical rows collapse. Collapsing must not become a
+      # way for a real collision to pass the gate quietly: two designees
+      # under one unreserved number are still a refused harvest.
+      headers = ['Sıra No', 'Gerçek Kişi Soyadı Ünvanı']
+      rows = [[1, 'ACME'], [1, 'ACME LTD']]
+
+      expect { parse(headers, rows) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /distinct records mint one identifier/)
+    end
+  end
+
+  describe '.collapse_duplicate_rows' do
+    it 'keeps one copy of a row repeated verbatim' do
+      rows = [entity(name: 'A', reference_number: '1'),
+              entity(name: 'A', reference_number: '1')]
+
+      expect(described_class.collapse_duplicate_rows(rows).size).to eq(1)
+    end
+
+    it 'keeps two rows that differ anywhere' do
+      rows = [entity(name: 'A', reference_number: '1'),
+              entity(name: 'B', reference_number: '1')]
+
+      expect(described_class.collapse_duplicate_rows(rows).size).to eq(2)
+    end
+
+    it 'leaves the surviving record untouched' do
+      rows = [entity(name: 'A', reference_number: '1'),
+              entity(name: 'A', reference_number: '1')]
+
+      expect(described_class.collapse_duplicate_rows(rows).first.name)
+        .to eq('A')
+    end
   end
 
   describe '.verify_distinct_local_ids!' do

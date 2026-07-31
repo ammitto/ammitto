@@ -226,9 +226,11 @@ module Ammitto
           sheet = Roo::Excelx.new(xlsx_path).sheet(0)
           headers = header_fields(sheet)
 
-          entities = (2..sheet.last_row).filter_map do |row_num|
-            build_entity(read_row(sheet, row_num, headers))
-          end
+          entities = collapse_duplicate_rows(
+            (2..sheet.last_row).filter_map do |row_num|
+              build_entity(read_row(sheet, row_num, headers))
+            end
+          )
 
           verify_reservations!(entities)
           verify_mintable_local_ids!(entities)
@@ -307,6 +309,29 @@ module Ammitto
             official_gazette: row[:official_gazette],
             decision_number: row[:decision_number]
           )
+        end
+
+        # Collapse a row Turkey published twice, verbatim, into one
+        # record.
+        #
+        # A repeated row carrying identical content is one designee
+        # entered twice, not two designees: keeping one copy loses
+        # nothing. That is already the writer's verdict when two records
+        # claim one filename, and the two layers have to reach it in the
+        # same order. The gates below refuse any two records that share
+        # an identifier, and a verbatim duplicate shares one — so
+        # without this step a duplicated row would fail the whole source
+        # here, and the tolerance the writer documents could never be
+        # reached through a real parse.
+        #
+        # Only byte-identical rows collapse. Two rows differing anywhere
+        # are two records, and the gates below decide them on their
+        # merits.
+        #
+        # @param entities [Array<SanctionedEntity>] one per sheet row
+        # @return [Array<SanctionedEntity>] one per distinct row
+        def self.collapse_duplicate_rows(entities)
+          entities.uniq(&:to_yaml)
         end
 
         # Check every reserved reference still denotes the designee its

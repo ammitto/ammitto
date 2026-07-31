@@ -87,7 +87,7 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
     ],
     tr: [{
       'name' => 'ACME', 'entity_type' => 'Entity', 'program' => '6415',
-      'listed_date' => '2020-01-01', 'reference_number' => '1'
+      'listed_date' => '2020-01-01', 'reference_number' => 'TR-1'
     }],
     eu_vessels: [{
       'vessel_name' => 'SHIP Z', 'imo_number' => '12345',
@@ -606,24 +606,50 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       end
     end
 
-    # A prefixed reference is present and unreadable, not absent, so it is
-    # refused rather than re-addressed by the name. This fixture carried
-    # "TR-1" until Turkey's real bare-decimal format was pinned, so the
-    # shape the old rule accepted gets its own end-to-end regression, run
-    # under --allow-empty to show no exemption clears a per-file error.
+    # A reference that survives sanitization as nothing is present and
+    # unreadable, not absent, so it is refused rather than re-addressed by
+    # the name — two same-named records would otherwise merge. Run under
+    # --allow-empty to show no exemption clears a per-file error.
     it 'fails a tr record whose reference is present but unreadable' do
       Dir.mktmpdir do |dir|
         processed = File.join(dir, 'data-tr', 'processed')
         FileUtils.mkdir_p(processed)
         File.write(File.join(processed, 'tr-1.yaml'),
                    source_fixtures[:tr].first
-                     .merge('reference_number' => 'TR-1').to_yaml)
+                     .merge('reference_number' => '--').to_yaml)
 
         options = { sources_dir: dir, allow_empty: 'tr',
                     output_dir: File.join(dir, 'api', 'v1') }
         expect { Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run }
           .to raise_error(Thor::Error,
                           /tr-1\.yaml: tr: cannot build entity IRI/)
+      end
+    end
+
+    # The regression this branch exists to prevent, end to end. Turkey's
+    # numbers reach the parser as Roo floats, so a workbook re-uploaded
+    # with a decimal display format publishes "1.0" where it published
+    # "1". Under a bare-decimal rule that lost every numbered record on
+    # the sheet; the record must survive instead.
+    it 'harmonizes a tr reference formatted with a decimal place' do
+      Dir.mktmpdir do |dir|
+        processed = File.join(dir, 'data-tr', 'processed')
+        FileUtils.mkdir_p(processed)
+        File.write(File.join(processed, 'tr-1.yaml'),
+                   source_fixtures[:tr].first
+                     .merge('reference_number' => '1.0').to_yaml)
+
+        options = { sources_dir: dir,
+                    output_dir: File.join(dir, 'api', 'v1') }
+        expect { Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run }
+          .not_to raise_error
+
+        graph = JSON.parse(
+          File.read(File.join(dir, 'api', 'v1', 'sources', 'tr.jsonld'))
+        )['@graph']
+        ids = graph.map { |n| n['@id'] }.compact
+        expect(ids).to include(a_string_matching(%r{/entity/tr/10\z}))
+        expect(ids).not_to include(a_string_matching(%r{/entity/tr/unknown\z}))
       end
     end
   end

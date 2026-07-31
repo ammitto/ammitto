@@ -26,6 +26,29 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       expect(result[:entry].id).to end_with('/187')
     end
 
+    # The behaviour this branch changed. A reference Turkey formatted with
+    # a decimal place used to mint nothing and lose the record; it now
+    # mints an IRI like any other reference.
+    it 'mints an IRI from a decimally formatted number' do
+      result = transformer.transform(
+        source(name: 'TAMAS COMPANY', reference_number: 1.0)
+      )
+
+      expect(result[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/10')
+      expect(result[:entity].id).not_to end_with('/unknown')
+    end
+
+    it 'mints an IRI from a reference that is not a bare number' do
+      result = transformer.transform(
+        source(name: 'MESBAH ENERGY COMPANY', reference_number: 'E.47.A.3')
+      )
+
+      expect(result[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/e47a3')
+      expect(result[:entry].id).to end_with('/e47a3')
+    end
+
     it 'mints a name-derived IRI when no reference number was published' do
       result = transformer.transform(
         source(name: 'TAMAS COMPANY', reference_number: nil)
@@ -105,6 +128,31 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       )[:entity].id
 
       expect(numbered).not_to eq(derived)
+    end
+
+    # The third case, and the one PR #28 exists to protect: a record with
+    # no usable identifier at all fails loudly instead of joining every
+    # other such record on one shared ".../unknown" node.
+    it 'raises when neither the reference nor the name can identify it' do
+      expect do
+        transformer.transform(source(name: '  ', reference_number: nil))
+      end.to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError,
+                         /cannot build entity IRI/)
+    end
+
+    it 'raises for a reference that survives sanitization as nothing' do
+      expect do
+        transformer.transform(source(name: 'TAMAS COMPANY',
+                                     reference_number: '--'))
+      end.to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError,
+                         /cannot build entity IRI/)
+    end
+
+    it 'raises rather than re-address an unreadable reference by name' do
+      expect do
+        transformer.transform(source(name: 'TAMAS COMPANY',
+                                     reference_number: '١٢٣'))
+      end.to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError)
     end
   end
 end

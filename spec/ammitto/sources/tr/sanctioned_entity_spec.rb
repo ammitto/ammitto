@@ -35,22 +35,21 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
 
     # "Absent" means the cell is empty, not that it happens to sanitize to
     # nothing. A cell holding punctuation or non-Latin digits carries
-    # content we cannot read, so the record is refused rather than
-    # re-addressed by its name.
+    # content, so it is taken as published; refusing it is the IRI layer's
+    # job, and it does so loudly (see the transformer spec).
     ['--', '!!', '١٢٣'].each do |unreadable|
-      it "refuses the unreadable reference #{unreadable.inspect}" do
+      it "takes the unreadable reference #{unreadable.inspect} as given" do
         entity = build(name: 'TAMAS COMPANY', reference_number: unreadable)
 
-        expect(entity.local_id).to be_nil
+        expect(entity.local_id).to eq(unreadable)
       end
     end
 
-    it 'refuses same-named records carrying different unreadable cells' do
+    it 'never re-addresses a present-but-unreadable cell by the name' do
       first = build(name: 'SAME NAME', reference_number: '--')
       second = build(name: 'SAME NAME', reference_number: '!!')
 
-      expect(first.local_id).to be_nil
-      expect(second.local_id).to be_nil
+      expect([first.local_id, second.local_id]).to eq(['--', '!!'])
     end
 
     it 'strips surrounding whitespace from the reference number' do
@@ -84,13 +83,16 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
 
     # A mapping is stringified by the model layer before #local_id sees it,
-    # so it arrives as an ordinary (odd) String. It carries content but is
-    # not one of Turkey's numbers, so the record is refused rather than
-    # quietly re-addressed by its name.
-    it 'refuses a mapping in the reference number slot' do
+    # so it arrives as an ordinary (odd) String and is indistinguishable
+    # from an odd reference Turkey really published. It is accepted, and
+    # the id it mints is deterministic — which is the property that
+    # matters. A list is a different case: it reaches #local_id still a
+    # list, so it can be told apart, and it is.
+    it 'accepts a mapping the model already flattened to a string' do
       entity = build(name: 'TAMAS COMPANY', reference_number: { a: 1 })
 
-      expect(entity.local_id).to be_nil
+      expect(entity.reference_number).to be_a(String)
+      expect(entity.local_id).to eq(entity.reference_number)
     end
 
     it 'rejects a list smuggled into the name slot' do
@@ -139,39 +141,55 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('187')
     end
 
-    it 'refuses a reference number sanitization would rewrite' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
+    # The motivating case. Turkey's numbers reach the parser through Roo,
+    # which hands back a Float for a numeric cell, so whether a row reads
+    # "1" or "1.0" is decided by the workbook's display format rather than
+    # by its value. A rule that accepted only bare decimals would drop all
+    # 239 numbered records the day Turkey re-uploaded the same numbers
+    # formatted with a decimal place.
+    it 'keeps a decimally formatted number usable' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: 1.0)
 
-      expect(entity.local_id).to be_nil
+      expect(entity.local_id).to eq('1.0')
+      expect(Ammitto::Utils::IriSanitizer.sanitize(entity.local_id))
+        .to eq('10')
     end
 
-    ['-10', '10-', '--10--', ' -10 '].each do |hostile|
-      it "refuses #{hostile.inspect}, which sanitizes onto record 10" do
-        entity = build(name: 'TAMAS COMPANY', reference_number: hostile)
+    ['1.0', '-10', '10-', '--10--'].each do |rewritten|
+      it "accepts #{rewritten.inspect} rather than losing the record" do
+        entity = build(name: 'TAMAS COMPANY', reference_number: rewritten)
 
-        expect(entity.local_id).to be_nil
+        expect(entity.local_id).to eq(rewritten)
       end
     end
 
-    # Turkey publishes plain ASCII decimal numbers. Anything else is not a
-    # reference we can trust, because sanitization can rewrite two distinct
-    # values onto one segment ("12/A" and "12A" both become "12a"). Such a
-    # record is refused outright rather than re-addressed by its name, so
-    # that two of them sharing a name cannot merge into one node.
-    ['12/A', '12A', '12 A', 'ABC', '1 0', 'TR-1'].each do |odd|
-      it "refuses non-decimal reference #{odd.inspect}" do
+    it 'strips a rewritten reference the same way as a plain one' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: ' -10 ')
+
+      expect(entity.local_id).to eq('-10')
+    end
+
+    # No opinion is taken on what a well-formed "Sıra No" looks like. The
+    # 14 unnumbered rows citing an "Eski Referans No" such as "E.47.A.3"
+    # are the shape this most obviously has to leave room for.
+    ['12/A', '12A', '12 A', 'ABC', '1 0', 'TR-1', 'E.47.A.3'].each do |odd|
+      it "accepts the non-decimal reference #{odd.inspect}" do
         entity = build(name: 'TAMAS COMPANY', reference_number: odd)
 
-        expect(entity.local_id).to be_nil
+        expect(entity.local_id).to eq(odd)
       end
     end
 
-    it 'refuses same-named records carrying different bad references' do
+    # Two references sanitizing onto one segment is a real consequence of
+    # accepting every shape, and it is deliberately not decided here: one
+    # record cannot see another, so distinctness is a corpus-level gate.
+    # What this method does guarantee is that neither record is silently
+    # re-addressed by its name, which is what would merge them.
+    it 'accepts two references that sanitize onto one segment' do
       first = build(name: 'SAME NAME', reference_number: '12/A')
       second = build(name: 'SAME NAME', reference_number: '12A')
 
-      expect(first.local_id).to be_nil
-      expect(second.local_id).to be_nil
+      expect([first.local_id, second.local_id]).to eq(['12/A', '12A'])
     end
 
     it 'still falls back to the name when no reference was published' do

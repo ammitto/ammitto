@@ -54,18 +54,6 @@ module Ammitto
           map 'address', to: :address
         end
 
-        # The form Turkey publishes "Sıra No" in — an ASCII decimal number,
-        # which all 239 numbers on the current sheet are.
-        #
-        # Nothing looser is accepted, because sanitization rewrites what it
-        # is given and a rewritten value can land on top of another record:
-        # "1.0", "-10", "10-" and "--10--" all sanitize to "10", the IRI of
-        # whoever Turkey numbered 10, while "12/A" and "12A" sanitize to the
-        # same "12a" as each other. A looser rule would have to reason about
-        # which rewrites happen to be safe.
-        DECIMAL_REFERENCE = /\A[0-9]+\z/
-        private_constant :DECIMAL_REFERENCE
-
         def person?
           entity_type&.downcase == 'individual'
         end
@@ -82,18 +70,30 @@ module Ammitto
         # sizeable minority of rows carry no upstream number at all. Those
         # rows fall back to the entity name — the only stable field they
         # carry — which is the same surrogate the fetcher already uses to
-        # name their files. +reference_number+ itself is deliberately left
-        # untouched, so harmonized output keeps reporting truthfully that
-        # Turkey published no number for these designees.
+        # name their files (see Cmd::FetchCommand#filename_for_item, where
+        # tr has always read +reference_number || name+). Aligning the two
+        # layers is the whole point: tr-abbas-rashidi.yaml has sat beside
+        # tr-99.yaml since the fetcher was written, while the transformer
+        # minted one shared IRI for all 37 of them.
         #
-        # A cell that holds anything else is a third case, and it
-        # deliberately does NOT fall back to the name: two such records that
-        # happened to share a name would silently merge into one graph node.
-        # "Absent" therefore means literally empty — nil, or blank after
-        # stripping — and nothing more. A cell holding "--" or "١٢٣" is
-        # present and unusable, not absent. Refusing returns nil, which the
-        # IRI layer turns into a loud failure once ingestion stops
-        # tolerating a missing local id.
+        # A published reference is taken exactly as published, whatever its
+        # shape. No rule here decides what a well-formed "Sıra No" looks
+        # like, because the shape is not Turkey's to promise. The numbers
+        # arrive through Roo, whose Excelx::Cell::Number#create_numeric
+        # picks Integer or Float from the cell's DISPLAY FORMAT — a format
+        # string containing ".0" yields a Float — so the same 239 numbers
+        # reach this method as "1" or as "1.0" depending on how the
+        # workbook was formatted. A bare-decimal gate turned that cosmetic
+        # difference into the loss of every numbered record on the sheet.
+        #
+        # The name fallback is reserved for a cell Turkey genuinely left
+        # empty — nil, or blank after stripping. It is deliberately NOT a
+        # catch-all for a reference that turns out to be unusable: two such
+        # records that happened to share a name would silently merge into
+        # one graph node. A reference that survives sanitization as nothing
+        # ("--", "١٢٣") therefore mints no id at all, and the IRI layer
+        # raises Utils::IriSanitizer::MissingLocalIdError rather than emit
+        # a shared ".../unknown".
         #
         # The IRI layer sanitizes whatever this returns, so the raw value is
         # returned here rather than a pre-slugged one.
@@ -104,10 +104,9 @@ module Ammitto
           return nil if malformed?(reference_number)
 
           reference = reference_number.to_s.strip
-          return fallback_name if reference.empty?
-          return reference if reference.match?(DECIMAL_REFERENCE)
+          return reference unless reference.empty?
 
-          nil
+          fallback_name
         end
 
         private
@@ -118,6 +117,15 @@ module Ammitto
         # integers are Turkey's own numbering namespace. This makes it
         # structurally impossible for a name-derived id to occupy a slot
         # Turkey assigned to a different designee.
+        #
+        # The guard is tested against the sanitized form, not the raw one,
+        # so it holds however wide that namespace gets: a reference reaching
+        # it as "1.0" or "-10" still slugs to a bare integer, and a name
+        # that slugs to the same integer is still refused. It is
+        # one-directional by design — it keeps names out of the number
+        # space, and says nothing about two references colliding with each
+        # other, which is a corpus-level question no per-record method can
+        # answer.
         #
         # @return [String, nil]
         def fallback_name
@@ -132,17 +140,24 @@ module Ammitto
 
         # Whether a value is structurally corrupt rather than merely odd.
         #
-        # Two shapes qualify. A container that survived assignment as a
-        # container: the model layer stringifies most of them, but a list
-        # stays a list, and +["1"].to_s+ sanitizes down to +1+. And a value
-        # the model stringified into Ruby's inspection fallback,
+        # This is not the format gate +local_id+ refuses to have. Odd
+        # references — "1.0", "12/A", "E.47.A.3" — are accepted; these two
+        # shapes are not references at all, and each breaks something a
+        # reference has to do.
+        #
+        # A container that survived assignment as a container: the model
+        # layer stringifies most of them, but a list stays a list, and
+        # +["1"].to_s+ sanitizes down to +1+, so the record would silently
+        # take whatever IRI Turkey numbered 1. And a value the model
+        # stringified into Ruby's inspection fallback,
         # +#<Enumerator:0x00007f...>+, which carries an object address and
-        # would mint a different IRI on every process.
+        # would therefore mint a different IRI on every process — the one
+        # thing an identifier may never do, and the reason this method
+        # applies to the reference slot and not only the name.
         #
         # Neither is evidence that Turkey omitted a cell — they are evidence
-        # that the record is corrupt — so they are never allowed to reach
-        # the name fallback. String is not Enumerable, so nothing legitimate
-        # is caught.
+        # that the record is corrupt — so neither falls back to the name
+        # either. String is not Enumerable, so nothing legitimate is caught.
         #
         # @param value [Object, nil] candidate identifier
         # @return [Boolean]

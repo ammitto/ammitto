@@ -740,9 +740,13 @@ module Ammitto
                 "#{describe_unmintable(unusable)}"
         end
 
-        # Name the row by what it claimed, not by +local_id+, which is nil
-        # for every record reported here and would name neither the row
-        # nor its claim.
+        # Name the row by what it claimed, not by +local_id+, which never
+        # carries a mintable identifier for a record reported here. It is
+        # nil where the name fallback found nothing to offer, and where a
+        # published reference sanitizes away it is that reference text —
+        # "--", "١٢٣" — which the record does hold, but which sanitization
+        # has just shown mints no IRI. Neither form tells an operator
+        # anything the reference and the name do not tell them better.
         #
         # A numbered row is named by its reference: that is the claim this
         # parse could not honour. An unnumbered row has no reference to

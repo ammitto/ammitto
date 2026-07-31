@@ -476,14 +476,45 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
     end
 
     it 'accepts a record carrying no reference at all' do
-      # Turkey leaves "Sıra No" blank for part of List D. A record that
-      # never claimed an identifier is not the same as one whose claim is
-      # unusable: it takes its name instead, and this gate has no claim
-      # to check.
+      # Turkey leaves "Sıra No" blank for part of List D. Those rows take
+      # their name instead, so they mint an IRI like any other row.
       records = [entity(name: 'A')]
 
       expect { described_class.verify_mintable_local_ids!(records) }
         .not_to raise_error
+    end
+
+    # The unnumbered half of the same failure. A blank reference used to
+    # mean no identity attempt at all, so exempting it here was right;
+    # once it falls back to the name, a row whose name cannot serve as an
+    # id has tried to identify itself and failed — which is exactly what
+    # this gate exists to catch before anything is written.
+    it 'refuses an unnumbered record whose name slugs to a bare number' do
+      records = [entity(name: '42')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /mints no IRI.*no reference.*"42"/m)
+    end
+
+    it 'refuses an unnumbered record whose name carries nothing to slug' do
+      # A name in a script the sanitizer strips entirely mints nothing,
+      # and fetch would file it under a filename of hyphens.
+      records = [entity(name: 'محمد')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /mints no IRI.*no reference/m)
+    end
+
+    it 'names an unnumbered offender as unnumbered, not as reference ""' do
+      records = [entity(name: '42')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError) { |error|
+          expect(error.message).to include('no reference ("42")')
+          expect(error.message).not_to include('reference ""')
+        }
     end
 
     it 'accepts Turkey\'s own numbering' do

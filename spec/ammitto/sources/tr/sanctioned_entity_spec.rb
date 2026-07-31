@@ -169,9 +169,10 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('-10')
     end
 
-    # No opinion is taken on what a well-formed "Sıra No" looks like. The
-    # 14 unnumbered rows citing an "Eski Referans No" such as "E.47.A.3"
-    # are the shape this most obviously has to leave room for.
+    # No opinion is taken on what a well-formed "Sıra No" looks like. 14 of
+    # the 37 unnumbered rows already cite a prior designation in their
+    # remarks prose ("Eski Referans No. E.47.A.3"); reading those out is
+    # deferred, but a bare-decimal rule could never have used one.
     ['12/A', '12A', '12 A', 'ABC', '1 0', 'TR-1', 'E.47.A.3'].each do |odd|
       it "accepts the non-decimal reference #{odd.inspect}" do
         entity = build(name: 'TAMAS COMPANY', reference_number: odd)

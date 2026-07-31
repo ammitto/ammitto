@@ -74,7 +74,9 @@ module Ammitto
         # tr has always read +reference_number || name+). Aligning the two
         # layers is the whole point: tr-abbas-rashidi.yaml has sat beside
         # tr-99.yaml since the fetcher was written, while the transformer
-        # minted one shared IRI for all 37 of them.
+        # had no answer for those rows at all — first collapsing all 37
+        # onto one shared ".../unknown" node, and, since the IRI layer
+        # stopped tolerating a blank local id, failing the whole source.
         #
         # A published reference is taken exactly as published, whatever its
         # shape. No rule here decides what a well-formed "Sıra No" looks

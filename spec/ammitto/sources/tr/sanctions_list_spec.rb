@@ -490,6 +490,9 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
     # id has tried to identify itself and failed — which is exactly what
     # this gate exists to catch before anything is written.
     it 'refuses an unnumbered record whose name slugs to a bare number' do
+      # And this one does not even look wrong on disk: fetch names the
+      # file from the same fallback, so it writes tr-42.yaml — which
+      # reads exactly like the record Turkey numbered 42.
       records = [entity(name: '42')]
 
       expect { described_class.verify_mintable_local_ids!(records) }

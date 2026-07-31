@@ -703,8 +703,12 @@ module Ammitto
         # to mint from. When it comes back with nothing, the IRI layer
         # refuses the record rather than emit a shared ".../unknown", so
         # the record cannot become a node at all. Fetch would still write
-        # it to disk — under a filename of hyphens — and report the source
-        # succeeded, and only harmonize would discover it.
+        # it to disk and report the source succeeded, and only harmonize
+        # would discover it. The filename it lands under is either
+        # obviously degenerate (tr----.yaml, from a reference of
+        # punctuation) or not obviously anything: a row named "42" whose
+        # id this parser refused is still written to tr-42.yaml, which
+        # reads exactly like the record Turkey numbered 42.
         #
         # Caught here instead, where the whole workbook is in hand and
         # nothing has been written yet: the source fails, names the
@@ -737,8 +741,11 @@ module Ammitto
           unusable = entities.reject { |entity| mintable_id(entity.local_id) }
           return if unusable.empty?
 
+          # Not "carries an identifier that mints no IRI": an unnumbered
+          # record whose name cannot serve as an id carries no identifier
+          # at all, and the gate now covers that case too.
           raise IntegrityError,
-                'tr: record carries an identifier that mints no IRI — ' \
+                'tr: record mints no IRI — ' \
                 "#{describe_unmintable(unusable)}"
         end
 

@@ -42,13 +42,16 @@ Ammitto.reset_configuration!
 # Basic search
 results = Ammitto.search("Kim Jong")
 
-# With options
+# With options — sources, limit and offset are the whole set search reads
 results = Ammitto.search("Bank",
   sources: [:un, :eu, :us],
-  entity_type: :organization,
   limit: 50,
   offset: 0
 )
+
+# Entity type is not a search option. Filter the result set instead —
+# note this filters the current page, after limit and offset applied.
+organizations = results.by_entity_type(:organization)
 
 # Iterate results
 results.each do |entity|

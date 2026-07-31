@@ -165,6 +165,17 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect([first.local_id, second.local_id]).to eq(%w[1 10])
     end
 
+    # Exactly the redundant fraction comes off, and nothing else. Reading
+    # the digits as a number would also drop leading zeros and split one
+    # designee across two IRIs on the very difference this erases.
+    it 'removes the fraction without disturbing leading zeros' do
+      spelled = build(name: 'A', reference_number: '01.0').local_id
+      plain = build(name: 'A', reference_number: '01').local_id
+
+      expect(spelled).to eq('01')
+      expect(spelled).to eq(plain)
+    end
+
     it 'leaves reference_number reporting what the record holds' do
       entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
 
@@ -246,6 +257,11 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     it 'reduces a redundantly spelled number to its digits' do
       expect(described_class.whole_decimal_text('1.0')).to eq('1')
       expect(described_class.whole_decimal_text('1.00')).to eq('1')
+    end
+
+    it 'removes the fraction and nothing else' do
+      expect(described_class.whole_decimal_text('01.0')).to eq('01')
+      expect(described_class.whole_decimal_text('-0.0')).to eq('-0')
     end
 
     # Text carries the workbook's own digits rather than a Float's

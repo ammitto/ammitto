@@ -120,11 +120,20 @@ module Ammitto
         # A real fractional part is not matched and gets nil — 1.5 is not
         # the same number as 1 or as 15, so rewriting it would invent data.
         #
+        # The captured digits are returned verbatim rather than passed
+        # through Integer, so exactly the redundant fraction is removed and
+        # nothing else. Reading them as a number would also strip leading
+        # zeros, which would split one designee two ways: "01" would keep
+        # entity/tr/01 while "01.0" moved to entity/tr/1, on a difference
+        # this method exists to erase.
+        #
         # @param value [Object, nil] a record's reference text
         # @return [String, nil] the digits, or nil when the text does not
         #   spell a whole number redundantly
         def self.whole_decimal_text(value)
-          WHOLE_DECIMAL.match(value.to_s.strip)&.then { |m| m[1].to_i.to_s }
+          match = WHOLE_DECIMAL.match(value.to_s.strip)
+
+          match && match[1]
         end
 
         def person?
@@ -357,9 +366,11 @@ module Ammitto
         # canonical spelling here means every consumer of a freshly
         # fetched record — the filename, the harmonized source reference,
         # the IRI — sees one number rather than the display format's
-        # rendering of it. SanctionedEntity.whole_number_text carries the
-        # rule and the reasoning; SanctionedEntity#local_id applies the
-        # same rule to the other road, the record file harmonize re-reads.
+        # rendering of it. SanctionedEntity.exact_integer_text carries this
+        # road's rule and the reasoning behind both;
+        # SanctionedEntity#local_id covers the other road, the record file
+        # harmonize re-reads, where the artefact is text rather than a
+        # Float and the rule differs accordingly.
         #
         # Applied to every column rather than to the reference alone, so a
         # passport, gazette or decision number Turkey reformats the same

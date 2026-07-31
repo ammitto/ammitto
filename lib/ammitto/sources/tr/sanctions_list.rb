@@ -78,10 +78,13 @@ module Ammitto
         # onto one shared ".../unknown" node, and, since the IRI layer
         # stopped tolerating a blank local id, failing the whole source.
         #
-        # A published reference is taken exactly as published, whatever its
-        # shape. No rule here decides what a well-formed "Sıra No" looks
-        # like, because the shape is not Turkey's to promise. The numbers
-        # arrive through Roo, whose Excelx::Cell::Number#create_numeric
+        # A published reference is taken as published, whatever its shape:
+        # stripped of surrounding whitespace, which the sanitizer collapses
+        # away regardless, and otherwise untouched. The two shapes
+        # +malformed?+ names are the only exceptions, and they are not
+        # references. No rule here decides what a well-formed "Sıra No"
+        # looks like, because the shape is not Turkey's to promise. The
+        # numbers arrive through Roo, whose Excelx::Cell::Number#create_numeric
         # picks Integer or Float from the cell's DISPLAY FORMAT — a format
         # string containing ".0" yields a Float — so the same 239 numbers
         # reach this method as "1" or as "1.0" depending on how the
@@ -97,8 +100,8 @@ module Ammitto
         # raises Utils::IriSanitizer::MissingLocalIdError rather than emit
         # a shared ".../unknown".
         #
-        # The IRI layer sanitizes whatever this returns, so the raw value is
-        # returned here rather than a pre-slugged one.
+        # The IRI layer sanitizes whatever this returns, so the value is
+        # returned as text rather than pre-slugged here.
         #
         # @return [String, nil] the local id, or nil when the record carries
         #   no identifier that can be trusted

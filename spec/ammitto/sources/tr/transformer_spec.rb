@@ -39,12 +39,16 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
         .to eq('https://www.ammitto.org/entity/tr/10')
     end
 
-    # The scope boundary, pinned. For a record that HAS a reference,
-    # +local_id+ hands back that reference untouched, so the IRI is
-    # whatever the reference alone has always minted. Every numbered
-    # record therefore keeps the IRI it has today, and no reference shape
-    # is addressed differently than before — the only identities this
-    # change invents are for records that carry no reference at all.
+    # The scope boundary, pinned for representative scalar references.
+    # For a record that HAS one, +local_id+ delegates to it, so the IRI is
+    # whatever that reference alone mints — including when it mints
+    # nothing and the record is refused. The identities this change
+    # invents are for records carrying no reference at all.
+    #
+    # Scalar references only: a container or an inspection-form string is
+    # deliberately refused instead (see +malformed?+), and surrounding
+    # whitespace is stripped, which the sanitizer would have collapsed
+    # anyway.
     ['187', '1.0', 'TR-1', '12/A', '--', '١٢٣'].each do |reference|
       it "addresses #{reference.inspect} exactly as the reference alone does" do
         expected = begin

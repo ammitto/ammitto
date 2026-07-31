@@ -80,6 +80,22 @@ module Ammitto
         # renders it and as such a value is then written to YAML.
         WHOLE_DECIMAL = /\A(-?\d+)\.0+\z/
 
+        # Ruby's own scientific rendering of a Float, which is the other
+        # shape a Float reaches a record file in: Float#to_s switches to
+        # it at 1e15, so 999999999999999.0 was written "999999999999999.0"
+        # while 1000000000000000.0 was written "1.0e+15".
+        #
+        # Deliberately matched to Ruby's exact output — a normalized
+        # mantissa of 1 to 9, a dot, digits, a lowercase e, a SIGNED
+        # exponent — and not to scientific notation in general. This
+        # recognises a rendering an earlier fetch produced. A looser
+        # pattern would also catch an identifier Turkey wrote, rewriting a
+        # published reference of "1E5" into "100000", which is the
+        # invention this layer refuses everywhere else. The leading digit
+        # excludes 0 for the same reason: Ruby normalizes the mantissa and
+        # never emits "0.5e+3", so that spelling is somebody's own text.
+        SCIENTIFIC_FLOAT = /\A-?[1-9]\.\d+e[+-]\d+\z/
+
         # Largest integer a Float still attributes to one workbook value.
         # 2**53 is itself excluded even though it is exactly
         # representable: nothing between it and 2**53 + 2 is, so
@@ -153,9 +169,52 @@ module Ammitto
         # @return [String, nil] the digits, or nil when the text does not
         #   spell a whole number redundantly
         def self.whole_decimal_text(value)
-          match = WHOLE_DECIMAL.match(value.to_s.strip)
+          text = value.to_s.strip
+          match = WHOLE_DECIMAL.match(text)
+          return match[1] if match
 
-          match && match[1]
+          scientific_integer_text(text)
+        end
+
+        # The digits of a whole number an earlier fetch wrote in Ruby's
+        # scientific rendering.
+        #
+        # Float#to_s changes shape at 1e15, so the record road meets the
+        # same artefact in two spellings: "1000.0" below the threshold and
+        # "1.0e+15" above it. Recognising only the first would leave the
+        # two roads disagreeing exactly where MAX_SAFE_INTEGER still says
+        # the value is exact — a re-fetched sheet minting
+        # entity/tr/1000000000000000 while the record file it replaces
+        # minted entity/tr/10e15, which is the split this pair of methods
+        # exists to prevent.
+        #
+        # The expansion is delegated to +exact_integer_text+ rather than
+        # restated, so the sheet's rule and this one cannot drift: the same
+        # method decides exactness and the same MAX_SAFE_INTEGER bound
+        # applies. Past that bound neither road rewrites anything, so they
+        # already agree and this returns nil.
+        #
+        # Which spelling counts is decided by ROUND TRIP, not by the
+        # pattern: the text must be exactly what Ruby would print for the
+        # value it parses to. The pattern is only a cheap pre-filter, and
+        # a pattern is the wrong instrument for this question — it can
+        # describe Ruby's format but never BE it, and every spelling it
+        # admits by mistake is a published reference silently rewritten.
+        # "1.00e+15" and "1.0e+015" both name the same number and both
+        # look like renderings; neither is one, so neither is touched.
+        #
+        # @param text [String] the stripped reference text
+        # @return [String, nil] the digits, or nil when the text is not
+        #   Ruby's own rendering of a provably whole number
+        def self.scientific_integer_text(text)
+          return nil unless SCIENTIFIC_FLOAT.match?(text)
+
+          float = Float(text)
+          return nil unless float.to_s == text
+
+          exact_integer_text(float)
+        rescue ArgumentError
+          nil
         end
 
         # References whose IRI is already published for a named designee.
@@ -247,11 +306,14 @@ module Ammitto
         # bare-decimal gate turned that cosmetic difference into the loss
         # of every numbered record on the sheet.
         #
-        # The reservation is looked up by the CANONICAL reference, not the
-        # raw text, because the reservation protects a published IRI and
-        # the canonical form is what mints it: a workbook reformatted so
-        # 187 arrives as "187.0" must still hand entity/tr/187 to the same
-        # designee.
+        # The reservation is looked up by the SEGMENT the reference mints,
+        # not by its text, because what the reservation protects is an
+        # address and the segment is the address. Text comparison misses
+        # every spelling sanitization erases on the way there: a workbook
+        # reformatted so 187 arrives as "187.0" must still hand
+        # entity/tr/187 to the same designee, and so must a row reading
+        # "-187", "187-" or "18.7", none of which spell 187 but all of
+        # which land on it.
         #
         # The name fallback is reserved for those two cases — a cell
         # Turkey genuinely left empty (nil, or blank after stripping), and
@@ -275,7 +337,7 @@ module Ammitto
           return fallback_name if reference.empty?
 
           id = canonical(reference)
-          holder = RESERVED_LOCAL_IDS[id]
+          holder = RESERVED_LOCAL_IDS[self.class.minted_segment(id)]
           return id if holder.nil? || sanitized_name == holder[:slug]
 
           fallback_name
@@ -320,6 +382,42 @@ module Ammitto
           reference = value.to_s.strip
 
           whole_decimal_text(reference) || reference
+        end
+
+        # The IRI segment a value would actually mint, or nil for none.
+        #
+        # The last transform between an identifier and the graph: the IRI
+        # layer sanitizes whatever it is handed, and THAT is the address a
+        # record ends up at. Anything deciding which record owns which
+        # address has to ask this rather than compare identifier text,
+        # because sanitization is lossy — "-187", "187-" and "18.7" all
+        # arrive at 187 without ever spelling it.
+        #
+        # @param value [Object, nil] an identifier
+        # @return [String, nil] the segment it mints, or nil for none
+        def self.minted_segment(value)
+          return nil if value.nil?
+
+          Utils::IriSanitizer.sanitize_local_id!(value, source: 'tr',
+                                                        kind: 'entity')
+        rescue Utils::IriSanitizer::MissingLocalIdError
+          nil
+        end
+
+        # The segment a row's published reference would mint.
+        #
+        # Both steps, in the order identity applies them: the redundant
+        # spelling is reduced first, then the result is sanitized. This is
+        # the question a reservation asks of a row — "would this reference
+        # land on the address I protect?" — and it is asked of the
+        # reference rather than of +local_id+, because a row the
+        # reservation has already sent to its name no longer mints from
+        # its reference at all.
+        #
+        # @param value [Object, nil] a raw reference
+        # @return [String, nil] the segment it mints, or nil for none
+        def self.reference_segment(value)
+          minted_segment(canonical_reference(value))
         end
 
         private
@@ -607,12 +705,18 @@ module Ammitto
         # identified by name, so the check is independent of row order,
         # and it runs whether or not the reference is duplicated.
         #
-        # A claimant is decided on the CANONICAL reference, which is what
-        # SanctionedEntity#local_id mints from. Comparing the raw text
-        # instead would make this gate and identity disagree: a workbook
-        # spelling the reserved number "187.0" still hands entity/tr/187
-        # to its reserved holder, and a gate reading raw text would see no
-        # claimant there and fail a harvest that is in fact correct.
+        # A claimant is decided on the SEGMENT the row's reference mints,
+        # which is the address SanctionedEntity#local_id would put it at.
+        # Comparing text instead would make this gate and identity
+        # disagree, in both directions. A workbook spelling the reserved
+        # number "187.0" still hands entity/tr/187 to its reserved holder,
+        # and a gate reading raw text would see no claimant there and fail
+        # a harvest that is in fact correct. In the other direction a row
+        # reading "-187" never spells the reserved number, so a
+        # text-reading gate would not count it as a claimant at all — yet
+        # it lands on entity/tr/187 all the same, and with the reserved
+        # holder delisted it would have taken that published address in
+        # silence.
         #
         # @param entities [Array<SanctionedEntity>]
         # @raise [IntegrityError] when the reservation no longer resolves
@@ -623,7 +727,7 @@ module Ammitto
               Utils::IriSanitizer.sanitize(entity.name.to_s) == slug
             end
             claimants = entities.select do |entity|
-              SanctionedEntity.canonical_reference(
+              SanctionedEntity.reference_segment(
                 entity.reference_number
               ) == reference
             end
@@ -822,15 +926,14 @@ module Ammitto
         # This method has no opinion on what a well-formed reference
         # looks like — see SanctionedEntity#local_id.
         #
+        # The name this gate knows it by; SanctionedEntity.minted_segment
+        # is the definition, shared so that the reservation and this gate
+        # cannot end up reading an address two different ways.
+        #
         # @param local_id [Object, nil] the record's local id
         # @return [String, nil] the identifier it mints, or nil for none
         def self.mintable_id(local_id)
-          return nil if local_id.nil?
-
-          Utils::IriSanitizer.sanitize_local_id!(local_id, source: 'tr',
-                                                           kind: 'entity')
-        rescue Utils::IriSanitizer::MissingLocalIdError
-          nil
+          SanctionedEntity.minted_segment(local_id)
         end
 
         # @return [String] human-readable collision report

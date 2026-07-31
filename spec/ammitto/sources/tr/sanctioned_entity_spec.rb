@@ -336,12 +336,47 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
         expect(spelled).to eq(plain)
       end
 
-      # A reservation is about one number, not about every text that looks
-      # like it: 1870 and 18.7 are different references and stay their own.
+      # A reservation is about one ADDRESS, not about every text that looks
+      # like the number: 1870 mints entity/tr/1870, which is nobody's
+      # reserved address, so it stays its own.
       it 'does not spread the reservation to a neighbouring number' do
         expect(dio(reference_number: '1870').local_id).to eq('1870')
-        expect(dio(reference_number: '18.7').local_id).to eq('18.7')
       end
+
+      # The same rule read the other way, and the reason the lookup is on
+      # the minted segment rather than the text. None of these spells 187,
+      # so a reservation comparing text would wave all three through — but
+      # sanitization drops the dot and the edge hyphens, so every one of
+      # them lands on entity/tr/187, the address already published for
+      # DTSRC. A row that is not DTSRC therefore falls back to its name.
+      %w[-187 187- 18.7 1.87].each do |spelling|
+        it "treats #{spelling.inspect} as reaching the reserved address" do
+          expect(described_class.reference_segment(spelling)).to eq('187')
+          expect(dio(reference_number: spelling).local_id)
+            .to eq('DEFENCE INDUSTRIES ORGANISATION (DIO)')
+        end
+
+        it "still lets DTSRC keep #{spelling.inspect}" do
+          expect(dtsrc(reference_number: spelling).local_id).to eq(spelling)
+        end
+      end
+    end
+  end
+
+  describe '.reference_segment' do
+    it 'is the address a published reference lands on' do
+      expect(described_class.reference_segment('187')).to eq('187')
+    end
+
+    # Both steps, in the order identity applies them: the redundant
+    # spelling comes off first, then the sanitizer.
+    it 'reduces the spelling before sanitizing' do
+      expect(described_class.reference_segment('187.0')).to eq('187')
+    end
+
+    it 'is nil for a reference that mints no address at all' do
+      expect(described_class.reference_segment('--')).to be_nil
+      expect(described_class.reference_segment(nil)).to be_nil
     end
   end
 
@@ -375,13 +410,15 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
         .to raise_error(FrozenError)
     end
 
-    it 'is keyed on canonical references, so no entry can be unreachable' do
-      # local_id canonicalizes before it looks up, so a key spelled
-      # "187.0" would never be found and the IRI it protects would move.
+    it 'is keyed on minted segments, so no entry can be unreachable' do
+      # local_id looks the table up by the address a reference lands on,
+      # so a key must BE an address. A key spelled "187.0" or "-187"
+      # names one without being one: it would never be found, and the IRI
+      # it protects would move to whoever arrived there next.
       keys = described_class::RESERVED_LOCAL_IDS.keys
 
       expect(keys).to all(satisfy do |key|
-        described_class.canonical_reference(key) == key
+        described_class.minted_segment(key) == key
       end)
     end
   end
@@ -413,6 +450,68 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
         .each do |text|
           expect(described_class.whole_decimal_text(text)).to be_nil
         end
+    end
+
+    # Float#to_s changes shape at 1e15, so a record file an earlier fetch
+    # wrote carries the same artefact in two spellings. Recognising only
+    # the "1000.0" one would leave the two roads disagreeing exactly where
+    # MAX_SAFE_INTEGER still calls the value exact.
+    it "expands Ruby's scientific rendering of a whole number" do
+      expect(described_class.whole_decimal_text('1.0e+15'))
+        .to eq('1000000000000000')
+      expect(described_class.whole_decimal_text('-1.0e+15'))
+        .to eq('-1000000000000000')
+    end
+
+    it 'stops at the same magnitude the sheet road stops at' do
+      # 2**53 and beyond: neither road rewrites, so both already agree.
+      expect(described_class.whole_decimal_text('9.007199254740992e+15'))
+        .to be_nil
+      expect(described_class.whole_decimal_text('1.0e+20')).to be_nil
+    end
+
+    it 'expands the largest magnitude that is still exact' do
+      expect(described_class.whole_decimal_text('9.007199254740991e+15'))
+        .to eq('9007199254740991')
+    end
+
+    # Only Ruby's own rendering, not scientific notation in general: a
+    # published reference of "1E5" is an identifier Turkey wrote, and
+    # rewriting it to "100000" would invent data.
+    it 'leaves a hand-written exponent alone' do
+      # "0.5e+3" belongs here too: Ruby normalizes the mantissa and never
+      # writes a leading zero, so that spelling is somebody's own text.
+      ['1E5', '1e5', '12.5e3', '1.0E+15', '0.5e+3'].each do |text|
+        expect(described_class.whole_decimal_text(text)).to be_nil
+      end
+    end
+
+    # These name the very number the expansion would produce and still do
+    # not get it, because they are not what Ruby prints. Only an exact
+    # round trip counts; a pattern that merely looks right would rewrite
+    # a reference Turkey published.
+    it "leaves a near-miss of Ruby's own rendering alone" do
+      ['1.00e+15', '1.0e+015', '-0.0e+00'].each do |text|
+        expect(described_class.whole_decimal_text(text)).to be_nil
+      end
+    end
+  end
+
+  # The two roads a reference travels must arrive at one ADDRESS. The
+  # sheet hands identity a Float; a record file hands it that Float's
+  # text. What has to match is where they land, not the text they carry
+  # there — -0.0 reaches the sanitizer as "0" from the sheet and "-0"
+  # from the file, and both mint entity/tr/0, which is the whole claim.
+  describe 'agreement between the sheet road and the record-file road' do
+    [1.0, 999_999_999_999_999.0, 1.0e15, (2.0**53) - 1, 2.0**53, 1.0e20,
+     1.5, -1.0e15, 0.0, -0.0, -1.0].each do |float|
+      it "mints one address for #{float.inspect} however it arrives" do
+        sheet = Ammitto::Sources::Tr::SanctionsList.cell_text(float)
+        record = float.to_s
+
+        expect(described_class.reference_segment(sheet))
+          .to eq(described_class.reference_segment(record))
+      end
     end
   end
 

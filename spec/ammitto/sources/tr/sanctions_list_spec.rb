@@ -614,6 +614,26 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
                         /no row carries the reserved name/)
     end
 
+    # A claimant is whoever LANDS on the reserved address, not whoever
+    # spells the reserved number. None of these spells 187, but the
+    # sanitizer drops the dot and the edge hyphens and puts all of them on
+    # entity/tr/187. Read as text, they would not be claimants at all, and
+    # with the holder delisted the gate would have called the reservation
+    # inert while an unrelated designee took the published address.
+    %w[-187 187- 18.7 1.87].each do |spelling|
+      it "refuses #{spelling.inspect} taking the reserved address alone" do
+        expect { described_class.verify_reservations!([dio(reference_number: spelling)]) }
+          .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                          /no row carries the reserved name/)
+      end
+    end
+
+    it 'still accepts a reference that merely resembles the number' do
+      # 1870 mints entity/tr/1870, which is nobody's reserved address.
+      expect { described_class.verify_reservations!([dio(reference_number: '1870')]) }
+        .not_to raise_error
+    end
+
     it 'refuses a holder that is no longer in the payload but stranded' do
       # The holder was renumbered and nothing claims 187: the published
       # IRI would strand silently.

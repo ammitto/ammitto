@@ -214,14 +214,16 @@ module Ammitto
         # leaves the column empty, so a sizeable minority of rows carry
         # no upstream number at all. Those rows fall back to the entity
         # name — the only stable field they carry — which is the same
-        # surrogate the fetcher already uses to name their files (see
-        # Cmd::FetchCommand#filename_for_item, where tr has always read
-        # +reference_number || name+). Aligning the two layers is the
-        # whole point: tr-abbas-rashidi.yaml has sat beside tr-99.yaml
-        # since the fetcher was written, while the transformer had no
-        # answer for those rows at all — first collapsing all 37 onto one
-        # shared ".../unknown" node, and, since the IRI layer stopped
-        # tolerating a blank local id, failing the whole source.
+        # surrogate the fetcher has always fallen back to when the
+        # reference was absent. Aligning the two layers is the whole
+        # point: tr-abbas-rashidi.yaml has sat beside tr-99.yaml since the
+        # fetcher was written, while the transformer had no answer for
+        # those rows at all — first collapsing all 37 onto one shared
+        # ".../unknown" node, and, since the IRI layer stopped tolerating
+        # a blank local id, failing the whole source. The two layers now
+        # share this method outright: Cmd::FetchCommand#filename_for_item
+        # reads +local_id || name+, so a record that gets its own file
+        # also gets its own graph node.
         #
         # RESERVED NUMBERS. Turkey assigns "Sıra No" 187 to two different
         # organisations, so a number can also identify more than one

@@ -207,6 +207,25 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
       expect { described_class.verify_mintable_local_ids!(records) }
         .not_to raise_error
     end
+
+    it 'refuses a numbered record the reservation left with no id' do
+      # The reservation sends this row to its name, and a bare-integer
+      # name is refused as an id — so a row Turkey did number resolves to
+      # nothing. It used to pass every gate and die at harmonize.
+      records = [entity(name: '42', reference_number: '187')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /mints no IRI.*reference "187".*"42"/m)
+    end
+
+    it 'refuses a numbered record whose name is blank too' do
+      records = [entity(name: '  ', reference_number: '187')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /reference "187"/)
+    end
   end
 
   describe '.mintable_id' do

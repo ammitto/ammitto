@@ -410,6 +410,14 @@ module Ammitto
         # nothing has been written yet: the source fails, names the
         # record, and leaves the previous corpus in place.
         #
+        # Two ways a numbered record ends up with nothing to mint, and
+        # both are caught here: the reference sanitizes away, or a
+        # reservation sends the record to its name and the name cannot
+        # serve as an id either (blank, or a bare integer, which
+        # +fallback_name+ refuses because that is Turkey's own numbering
+        # namespace). The second is this parser's own doing, so leaving
+        # it to be discovered downstream would be the worse failure.
+        #
         # This is not a rule about what a well-formed reference looks
         # like — it defers entirely to what Utils::IriSanitizer already
         # accepts. A record with no reference at all is untouched: it has
@@ -420,8 +428,9 @@ module Ammitto
         # @raise [IntegrityError] when a present reference mints nothing
         def self.verify_mintable_local_ids!(entities)
           unusable = entities.select do |entity|
-            id = entity.local_id
-            !id.nil? && mintable_id(id).nil?
+            next false if entity.reference_number.to_s.strip.empty?
+
+            mintable_id(entity.local_id).nil?
           end
           return if unusable.empty?
 
@@ -430,11 +439,22 @@ module Ammitto
                 "#{describe_unmintable(unusable)}"
         end
 
+        # Whether the published reference is what decides this, rather
+        # than local_id being nil: the two nils mean opposite things. A
+        # record Turkey left unnumbered never claimed an identifier, and
+        # is settled elsewhere. A record Turkey did number, whose
+        # reference resolved to nothing usable — because it sanitizes
+        # away, or because a reservation sent it to a name that cannot
+        # serve as an id — has a claim this parse could not honour, and
+        # nothing downstream will fare better.
+        #
         # @param entities [Array<SanctionedEntity>] offending records
         # @return [String] human-readable report
         def self.describe_unmintable(entities)
           entities.map do |entity|
-            "#{entity.local_id.to_s.inspect} " \
+            # The raw reference, because local_id may be nil here and a
+            # report of nil would name neither the row nor its claim.
+            "reference #{entity.reference_number.to_s.strip.inspect} " \
               "(#{entity.name.to_s.inspect})"
           end.join('; ')
         end

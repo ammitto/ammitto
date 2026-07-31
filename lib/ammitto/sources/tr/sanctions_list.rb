@@ -116,18 +116,18 @@ module Ammitto
         # The record name, used when Turkey published no number.
         #
         # Refused when it would sanitize to a bare integer, because bare
-        # integers are Turkey's own numbering namespace. This makes it
-        # structurally impossible for a name-derived id to occupy a slot
-        # Turkey assigned to a different designee.
+        # integers are where Turkey's own numbering lands. Tested against
+        # the sanitized form, not the raw one, so it holds however that
+        # slug space is reached: a reference arriving as "1.0" or "-10"
+        # also slugs to a bare integer, and a name slugging to the same
+        # integer is still refused.
         #
-        # The guard is tested against the sanitized form, not the raw one,
-        # so it holds however wide that namespace gets: a reference reaching
-        # it as "1.0" or "-10" still slugs to a bare integer, and a name
-        # that slugs to the same integer is still refused. It is
-        # one-directional by design — it keeps names out of the number
-        # space, and says nothing about two references colliding with each
-        # other, which is a corpus-level question no per-record method can
-        # answer.
+        # Claim it exactly: this keeps a name out of the BARE-INTEGER slug
+        # space and nothing more. It does not make a name-derived id unique
+        # in general — two names can slug alike, and a name can slug onto a
+        # non-integer reference — because uniqueness is a corpus-level
+        # question and one record cannot see another. The list layer is
+        # where that belongs.
         #
         # @return [String, nil]
         def fallback_name
@@ -161,20 +161,33 @@ module Ammitto
         # that the record is corrupt — so neither falls back to the name
         # either. String is not Enumerable, so nothing legitimate is caught.
         #
+        # The +#<+ test is a narrow heuristic, not a proof of determinism:
+        # it catches Ruby's default inspection form, which is the shape an
+        # address actually reaches this model in, and misses an address
+        # nested inside some other string. It errs the safe way — a false
+        # positive refuses the record loudly rather than minting a wrong
+        # IRI. Proving a value is a plain scalar belongs at the
+        # deserialization boundary, for every source at once.
+        #
         # @param value [Object, nil] candidate identifier
         # @return [Boolean]
         def malformed?(value)
           value.is_a?(Enumerable) || value.to_s.strip.start_with?('#<')
         end
 
-        # The value's text, if an IRI segment can be built from it.
+        # The value's text, if a name can be slugged from it.
         #
-        # A value survives IRI sanitization only if it holds at least one
-        # ASCII alphanumeric character, so blank, whitespace-only,
-        # punctuation-only and non-Latin-only values return nil. This is a
-        # question about the NAME — whether there is anything to slug — and
-        # not about whether Turkey filled a cell in, which +local_id+
-        # decides by emptiness alone.
+        # Requires one ASCII alphanumeric character, so blank,
+        # whitespace-only, punctuation-only and non-Latin-only names return
+        # nil. Deliberately STRICTER than the IRI layer, which also keeps
+        # underscores and would happily mint entity/tr/_ from a name of
+        # "_": a surrogate carrying no letter or digit identifies nobody,
+        # and this is the layer that invents surrogates. Refusing here
+        # turns it into the same loud failure a blank name gets.
+        #
+        # This is a question about the NAME — whether there is anything to
+        # slug — and not about whether Turkey filled a cell in, which
+        # +local_id+ decides by emptiness alone.
         #
         # @param value [Object, nil] candidate identifier
         # @return [String, nil] the stripped text, or nil if it carries none

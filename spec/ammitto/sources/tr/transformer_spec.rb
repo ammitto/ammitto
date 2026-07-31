@@ -26,9 +26,10 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       expect(result[:entry].id).to end_with('/187')
     end
 
-    # The behaviour this branch changed. A reference Turkey formatted with
-    # a decimal place used to mint nothing and lose the record; it now
-    # mints an IRI like any other reference.
+    # A reference Turkey formatted with a decimal place mints an IRI like
+    # any other reference. Roo returns a Float for a cell whose display
+    # format carries decimals, so this is what a cosmetically reformatted
+    # workbook delivers for every one of the 239 numbered rows.
     it 'mints an IRI from a decimally formatted number' do
       result = transformer.transform(
         source(name: 'TAMAS COMPANY', reference_number: 1.0)
@@ -36,7 +37,31 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
 
       expect(result[:entity].id)
         .to eq('https://www.ammitto.org/entity/tr/10')
-      expect(result[:entity].id).not_to end_with('/unknown')
+    end
+
+    # The scope boundary, pinned. For a record that HAS a reference,
+    # +local_id+ hands back that reference untouched, so the IRI is
+    # whatever the reference alone has always minted. Every numbered
+    # record therefore keeps the IRI it has today, and no reference shape
+    # is addressed differently than before — the only identities this
+    # change invents are for records that carry no reference at all.
+    ['187', '1.0', 'TR-1', '12/A', '--', '١٢٣'].each do |reference|
+      it "addresses #{reference.inspect} exactly as the reference alone does" do
+        expected = begin
+          Ammitto::Utils::IriSanitizer.entity_iri('tr', reference)
+        rescue Ammitto::Utils::IriSanitizer::MissingLocalIdError
+          :raised
+        end
+        actual = begin
+          transformer.transform(
+            source(name: 'TAMAS COMPANY', reference_number: reference)
+          )[:entity].id
+        rescue Ammitto::Utils::IriSanitizer::MissingLocalIdError
+          :raised
+        end
+
+        expect(actual).to eq(expected)
+      end
     end
 
     it 'mints an IRI from a reference that is not a bare number' do

@@ -204,6 +204,7 @@ module Ammitto
           end
 
           verify_reservations!(entities)
+          verify_mintable_local_ids!(entities)
           verify_distinct_local_ids!(entities)
 
           new(entities: entities)
@@ -337,6 +338,49 @@ module Ammitto
             'which record keeps it.'
         end
 
+        # Refuse a record carrying a reference that mints no IRI at all.
+        #
+        # Turkey publishing a reference is a claim that the record has an
+        # identifier. When that reference survives sanitization as
+        # nothing — punctuation alone, say — the claim is false: the IRI
+        # layer refuses it rather than emit a shared ".../unknown", so the
+        # record cannot become a graph node. Fetch would still write it to
+        # disk under a filename of hyphens and report the source
+        # succeeded, and only harmonize would discover it.
+        #
+        # Caught here instead, where the whole workbook is in hand and
+        # nothing has been written yet: the source fails, names the
+        # record, and leaves the previous corpus in place.
+        #
+        # This is not a rule about what a well-formed reference looks
+        # like — it defers entirely to what Utils::IriSanitizer already
+        # accepts. A record with no reference at all is untouched: it has
+        # made no claim to identify itself, and SanctionedEntity#local_id
+        # is where that case is decided.
+        #
+        # @param entities [Array<SanctionedEntity>]
+        # @raise [IntegrityError] when a present reference mints nothing
+        def self.verify_mintable_local_ids!(entities)
+          unusable = entities.select do |entity|
+            id = entity.local_id
+            !id.nil? && mintable_id(id).nil?
+          end
+          return if unusable.empty?
+
+          raise IntegrityError,
+                'tr: record carries an identifier that mints no IRI — ' \
+                "#{describe_unmintable(unusable)}"
+        end
+
+        # @param entities [Array<SanctionedEntity>] offending records
+        # @return [String] human-readable report
+        def self.describe_unmintable(entities)
+          entities.map do |entity|
+            "#{entity.local_id.to_s.inspect} " \
+              "(#{entity.name.to_s.inspect})"
+          end.join('; ')
+        end
+
         # Refuse two records that would mint one IRI.
         #
         # The terminating rule for the name fallback: a name-derived id is
@@ -371,10 +415,12 @@ module Ammitto
         # keeps this gate's verdict and the IRI layer's verdict the same
         # verdict.
         #
-        # An id that mints nothing is the same case as a nil id: there is
-        # no identifier for it to be distinct from, so it leaves the
-        # grouping the way nil does and Utils::IriSanitizer reports it,
-        # per record and by name, when harmonize asks for its IRI.
+        # An id that mints nothing is the same case as a nil id here:
+        # there is no identifier for it to be distinct from, so it leaves
+        # the grouping the way nil does. In a parse it never reaches this
+        # method — verify_mintable_local_ids! has already failed the
+        # source — but this gate is called directly too, and distinctness
+        # is not the place to report an unusable id.
         #
         # This method has no opinion on what a well-formed reference
         # looks like — see SanctionedEntity#local_id.

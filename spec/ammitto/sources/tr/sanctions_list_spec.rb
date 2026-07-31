@@ -179,6 +179,36 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
     end
   end
 
+  describe '.verify_mintable_local_ids!' do
+    it 'refuses a reference that survives sanitization as nothing' do
+      # Fetch would write this as "tr----.yaml" and report success; only
+      # harmonize would find that it mints no IRI.
+      records = [entity(name: 'A', reference_number: '///')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        %r{mints no IRI.*"///".*"A"}m)
+    end
+
+    it 'accepts a record carrying no reference at all' do
+      # Turkey leaves "Sıra No" blank for part of List D. A record that
+      # never claimed an identifier is not the same as one whose claim
+      # is unusable, and that case is settled elsewhere.
+      records = [entity(name: 'A')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .not_to raise_error
+    end
+
+    it 'accepts Turkey\'s own numbering' do
+      records = [entity(name: 'A', reference_number: '187'),
+                 entity(name: 'B', reference_number: '42')]
+
+      expect { described_class.verify_mintable_local_ids!(records) }
+        .not_to raise_error
+    end
+  end
+
   describe '.mintable_id' do
     it 'returns the identifier the IRI layer would mint' do
       expect(described_class.mintable_id('187')).to eq('187')

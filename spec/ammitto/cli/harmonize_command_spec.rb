@@ -741,4 +741,77 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       end
     end
   end
+
+  # Enters at Cmd::HarmonizeCommand#transform_data, so the assertions cover the
+  # transformer-registry lookup and the :tr routing branch as well as the
+  # transformation and its JSON-LD serialization. Input is the parsed shape of a
+  # record file the fetcher committed to data-tr.
+  context 'with a tr record' do
+    subject(:command) { described_class.new({}, [:tr]) }
+
+    def harmonize(record)
+      command.send(:transform_data, :tr, record)
+    end
+
+    let(:numbered) do
+      { 'name' => 'YUN HO-JIN',
+        'entity_type' => 'person',
+        'program' => 'Law No. 7262, Articles 3.A/3.B',
+        'listed_date' => '24.2.2021/ 3578',
+        'reference_number' => '1' }
+    end
+
+    let(:unnumbered) do
+      { 'name' => 'DAWOOD AGHA-JANI',
+        'entity_type' => 'person',
+        'program' => 'Law No. 7262, Articles 3.A/3.B',
+        'place_of_birth' => 'Ardebil, İran' }
+    end
+
+    describe '#transform_data' do
+      it 'keeps the numbered record on its published IRI' do
+        expect(harmonize(numbered)[:entity]['@id'])
+          .to eq('https://www.ammitto.org/entity/tr/1')
+      end
+
+      it 'gives the unnumbered record its own IRI, not the placeholder' do
+        expect(harmonize(unnumbered)[:entity]['@id'])
+          .to eq('https://www.ammitto.org/entity/tr/dawood-agha-jani')
+      end
+
+      it 'does not let the unnumbered record collide with a numbered one' do
+        expect(harmonize(unnumbered)[:entity]['@id'])
+          .not_to eq(harmonize(numbered)[:entity]['@id'])
+      end
+
+      it 'points the serialized entry at the same entity' do
+        result = harmonize(unnumbered)
+
+        expect(result[:entry]['@id']).to end_with('/dawood-agha-jani')
+        expect(result[:entry]['entityId']).to eq(result[:entity]['@id'])
+      end
+
+      it 'emits no reference number for a record Turkey did not number' do
+        reference = harmonize(unnumbered)[:entity]['sourceReferences'].first
+
+        expect(reference['sourceCode']).to eq('tr')
+        expect(reference).not_to have_key('referenceNumber')
+      end
+
+      it 'still emits the reference number Turkey did publish' do
+        reference = harmonize(numbered)[:entity]['sourceReferences'].first
+
+        expect(reference['referenceNumber']).to eq('1')
+      end
+
+      it 'routes an unnumbered record to its own name-derived entity' do
+        other = unnumbered.merge('name' => 'AMIR MOAYYED ALAI')
+
+        expect(harmonize(other)[:entity]['@id'])
+          .to eq('https://www.ammitto.org/entity/tr/amir-moayyed-alai')
+        expect(harmonize(other)[:entity]['@id'])
+          .not_to eq(harmonize(unnumbered)[:entity]['@id'])
+      end
+    end
+  end
 end

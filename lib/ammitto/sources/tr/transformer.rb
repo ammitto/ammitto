@@ -8,15 +8,22 @@ module Ammitto
       # Transformer for Turkey Sanctions data
       #
       # IRIs are minted from SanctionedEntity#local_id rather than from
-      # +reference_number+ directly. Turkey assigns one "Sıra No" to two
-      # different organisations, so the number alone does not identify a
-      # record; +local_id+ is what resolves that. Harmonize reads each
-      # record back from its own YAML file, so this layer has to agree
-      # with the fetcher's filenames — a fetch-only fix keeps the second
-      # designee on disk and still loses it in the graph.
+      # +reference_number+ directly, for two independent reasons. Turkey
+      # leaves the "Sıra No" column blank for part of List D, so a
+      # sizeable minority of rows carry no number to mint from at all;
+      # and Turkey assigns one "Sıra No" to two different organisations,
+      # so the number alone does not identify a record either. +local_id+
+      # is what resolves both — see that method for the fallback and
+      # reservation policies.
+      #
+      # Harmonize reads each record back from its own YAML file, so this
+      # layer has to agree with the fetcher's filenames — a fetch-only
+      # fix keeps the second designee on disk and still loses it in the
+      # graph.
       #
       # The SourceReference still carries the raw +reference_number+, so
-      # both records keep reporting the number Turkey actually published.
+      # every record keeps reporting the number Turkey actually published
+      # — or none, where Turkey published none.
       #
       class Transformer < Ammitto::Transformers::BaseTransformer
         def initialize

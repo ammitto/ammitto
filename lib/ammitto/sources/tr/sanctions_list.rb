@@ -76,6 +76,147 @@ module Ammitto
           map 'decision_number', to: :decision_number
         end
 
+        # A number spelled with a redundant zero fraction, as Roo's Float
+        # renders it and as such a value is then written to YAML.
+        WHOLE_DECIMAL = /\A(-?\d+)\.0+\z/
+
+        # Ruby's own scientific rendering of a Float, which is the other
+        # shape a Float reaches a record file in: Float#to_s switches to
+        # it at 1e15, so 999999999999999.0 was written "999999999999999.0"
+        # while 1000000000000000.0 was written "1.0e+15".
+        #
+        # Deliberately matched to Ruby's exact output — a normalized
+        # mantissa of 1 to 9, a dot, digits, a lowercase e, a SIGNED
+        # exponent — and not to scientific notation in general. This
+        # recognises a rendering an earlier fetch produced. A looser
+        # pattern would also catch an identifier Turkey wrote, rewriting a
+        # published reference of "1E5" into "100000", which is the
+        # invention this layer refuses everywhere else. The leading digit
+        # excludes 0 for the same reason: Ruby normalizes the mantissa and
+        # never emits "0.5e+3", so that spelling is somebody's own text.
+        SCIENTIFIC_FLOAT = /\A-?[1-9]\.\d+e[+-]\d+\z/
+
+        # Largest integer a Float still attributes to one workbook value.
+        # 2**53 is itself excluded even though it is exactly
+        # representable: nothing between it and 2**53 + 2 is, so
+        # 9007199254740993 rounds onto 9007199254740992.0 and the Float
+        # stops saying which integer the cell held. Converting past this
+        # point would assert a precision the value does not carry.
+        MAX_SAFE_INTEGER = (2**53) - 1
+
+        # Why a whole number needs one spelling at all.
+        #
+        # Roo picks Integer or Float for a numeric cell from the cell's
+        # DISPLAY FORMAT rather than from the value
+        # (Excelx::Cell::Number#create_numeric returns a Float whenever the
+        # format string contains ".0"). So Turkey's row 1 arrives as 1 or
+        # as 1.0 purely by how the workbook was formatted — and "1.0"
+        # sanitizes to "10", the IRI of whoever Turkey numbered 10. A
+        # cosmetic reformat would silently renumber every designee on the
+        # sheet, and a sheet carrying both formats would merge two of them.
+        #
+        # Reducing the artefact undoes a rendering; it does not reinterpret
+        # a value, because 1.0 and 1 ARE the same number and Turkey
+        # published one cell, not two.
+        #
+        # A reference reaches identity by TWO roads, and each needs a
+        # different rule, which is why these are two methods rather than
+        # one. At the sheet the artefact is a Float, and only a Float —
+        # a text cell there is workbook text and must survive verbatim.
+        # In a record file the sheet is long gone and the artefact has
+        # become the string "1.0", so that is what has to be recognised.
+
+        # A Float's integer text, when the Float is provably that integer.
+        #
+        # The sheet road. Restricted to Float on purpose: a literal text
+        # cell reading "01.0" or "1.00" is an identifier Turkey wrote, not
+        # a rendering of a number, and rewriting it would corrupt passport,
+        # registration and gazette values that main preserved exactly.
+        #
+        # +finite?+ first, because NaN and Infinity equal no integer and
+        # Float::INFINITY#to_i raises.
+        #
+        # @param value [Object, nil] a raw cell value
+        # @return [String, nil] the integer's digits, or nil when the value
+        #   is not a Float that provably holds one
+        def self.exact_integer_text(value)
+          return nil unless value.is_a?(Float)
+          return nil unless value.finite?
+          return nil unless value.abs <= MAX_SAFE_INTEGER
+          return nil unless value == value.to_i
+
+          value.to_i.to_s
+        end
+
+        # The digits of a number written with a redundant zero fraction.
+        #
+        # The record-file road, for a value an earlier fetch wrote before
+        # the sheet reader canonicalized it. No precision limit applies:
+        # these digits are the workbook's own text, not a Float's
+        # approximation of them.
+        #
+        # A real fractional part is not matched and gets nil — 1.5 is not
+        # the same number as 1 or as 15, so rewriting it would invent data.
+        #
+        # The captured digits are returned verbatim rather than passed
+        # through Integer, so exactly the redundant fraction is removed and
+        # nothing else. Reading them as a number would also strip leading
+        # zeros, which would split one designee two ways: "01" would keep
+        # entity/tr/01 while "01.0" moved to entity/tr/1, on a difference
+        # this method exists to erase.
+        #
+        # @param value [Object, nil] a record's reference text
+        # @return [String, nil] the digits, or nil when the text does not
+        #   spell a whole number redundantly
+        def self.whole_decimal_text(value)
+          text = value.to_s.strip
+          match = WHOLE_DECIMAL.match(text)
+          return match[1] if match
+
+          scientific_integer_text(text)
+        end
+
+        # The digits of a whole number an earlier fetch wrote in Ruby's
+        # scientific rendering.
+        #
+        # Float#to_s changes shape at 1e15, so the record road meets the
+        # same artefact in two spellings: "1000.0" below the threshold and
+        # "1.0e+15" above it. Recognising only the first would leave the
+        # two roads disagreeing exactly where MAX_SAFE_INTEGER still says
+        # the value is exact — a re-fetched sheet minting
+        # entity/tr/1000000000000000 while the record file it replaces
+        # minted entity/tr/10e15, which is the split this pair of methods
+        # exists to prevent.
+        #
+        # The expansion is delegated to +exact_integer_text+ rather than
+        # restated, so the sheet's rule and this one cannot drift: the same
+        # method decides exactness and the same MAX_SAFE_INTEGER bound
+        # applies. Past that bound neither road rewrites anything, so they
+        # already agree and this returns nil.
+        #
+        # Which spelling counts is decided by ROUND TRIP, not by the
+        # pattern: the text must be exactly what Ruby would print for the
+        # value it parses to. The pattern is only a cheap pre-filter, and
+        # a pattern is the wrong instrument for this question — it can
+        # describe Ruby's format but never BE it, and every spelling it
+        # admits by mistake is a published reference silently rewritten.
+        # "1.00e+15" and "1.0e+015" both name the same number and both
+        # look like renderings; neither is one, so neither is touched.
+        #
+        # @param text [String] the stripped reference text
+        # @return [String, nil] the digits, or nil when the text is not
+        #   Ruby's own rendering of a provably whole number
+        def self.scientific_integer_text(text)
+          return nil unless SCIENTIFIC_FLOAT.match?(text)
+
+          float = Float(text)
+          return nil unless float.to_s == text
+
+          exact_integer_text(float)
+        rescue ArgumentError
+          nil
+        end
+
         # References whose IRI is already published for a named designee.
         #
         # Turkey assigns "Sıra No" 187 to two different organisations, so
@@ -124,35 +265,80 @@ module Ammitto
         # Local identifier this record's IRIs and filename are minted
         # from.
         #
-        # Normally Turkey's own "Sıra No", exactly as +reference_number+
-        # carries it. Where that number is reserved for a different
-        # designee (see RESERVED_LOCAL_IDS), the record falls back to its
-        # name instead, so both designees survive as distinct records
-        # rather than the later one overwriting the earlier.
+        # Normally Turkey's own "Sıra No", which the parser stores as
+        # +reference_number+. Two things stop that number from being the
+        # answer on its own, and this method resolves both.
         #
-        # The raw value is returned rather than a pre-slugged one, because
-        # the IRI layer sanitizes whatever it is given.
+        # BLANK CELLS. The block of Iranian designees appended to List D
+        # leaves the column empty, so a sizeable minority of rows carry
+        # no upstream number at all. Those rows fall back to the entity
+        # name — the only stable field they carry — which is the same
+        # surrogate the fetcher has always fallen back to when the
+        # reference was absent. Aligning the two layers is the whole
+        # point: tr-abbas-rashidi.yaml has sat beside tr-99.yaml since the
+        # fetcher was written, while the transformer had no answer for
+        # those rows at all — first collapsing all 37 onto one shared
+        # ".../unknown" node, and, since the IRI layer stopped tolerating
+        # a blank local id, failing the whole source. The two layers now
+        # share this method outright: Cmd::FetchCommand#filename_for_item
+        # reads +local_id || name+, so a record that gets its own file
+        # also gets its own graph node.
         #
-        # Deliberately no opinion on what a well-formed reference looks
-        # like: this method changes identity only where a reservation
-        # applies, and SanctionsList.verify_distinct_local_ids! catches
-        # any reference whose sanitized form lands on another record.
-        # PR #31 (fix/tr-reference-backfill) is where the shape of an
-        # acceptable reference is being decided.
+        # RESERVED NUMBERS. Turkey assigns "Sıra No" 187 to two different
+        # organisations, so a number can also identify more than one
+        # record. Where the number is reserved for a different designee
+        # (see RESERVED_LOCAL_IDS), the record falls back to its name too,
+        # so both designees survive as distinct records rather than the
+        # later one overwriting the earlier.
         #
-        # @return [String, nil] the local id, or nil when Turkey published
-        #   no reference for this record
+        # A published reference is otherwise taken as published, whatever
+        # its shape: stripped of surrounding whitespace, which the
+        # sanitizer collapses away regardless, reduced by +canonical+ to
+        # one spelling of a whole number, and otherwise untouched. The two
+        # shapes +malformed?+ names are the only exceptions, and they are
+        # not references. No rule here decides what a well-formed "Sıra
+        # No" looks like, because the shape is not Turkey's to promise.
+        # The numbers arrive through Roo, whose
+        # Excelx::Cell::Number#create_numeric picks Integer or Float from
+        # the cell's DISPLAY FORMAT — a format string containing ".0"
+        # yields a Float — so the same 239 numbers reach this method as
+        # "1" or as "1.0" depending on how the workbook was formatted. A
+        # bare-decimal gate turned that cosmetic difference into the loss
+        # of every numbered record on the sheet.
+        #
+        # The reservation is looked up by the SEGMENT the reference mints,
+        # not by its text, because what the reservation protects is an
+        # address and the segment is the address. Text comparison misses
+        # every spelling sanitization erases on the way there: a workbook
+        # reformatted so 187 arrives as "187.0" must still hand
+        # entity/tr/187 to the same designee, and so must a row reading
+        # "-187", "187-" or "18.7", none of which spell 187 but all of
+        # which land on it.
+        #
+        # The name fallback is reserved for those two cases — a cell
+        # Turkey genuinely left empty (nil, or blank after stripping), and
+        # a reference reserved for someone else. It is deliberately NOT a
+        # catch-all for a reference that turns out to be unusable: two such
+        # records that happened to share a name would silently merge into
+        # one graph node. A reference that survives sanitization as nothing
+        # ("--", "١٢٣") therefore mints no id at all, and the IRI layer
+        # raises Utils::IriSanitizer::MissingLocalIdError rather than emit
+        # a shared ".../unknown".
+        #
+        # The IRI layer sanitizes whatever this returns, so the value is
+        # returned as text rather than pre-slugged here.
+        #
+        # @return [String, nil] the local id, or nil when the record carries
+        #   no identifier that can be trusted
         def local_id
+          return nil if malformed?(reference_number)
+
           reference = reference_number.to_s.strip
+          return fallback_name if reference.empty?
 
-          # Turkey leaves "Sıra No" blank for part of List D. Those rows
-          # have no local id, which the IRI layer reports as a missing
-          # identifier. PR #31 changes this single line to fall back to
-          # the name; that change composes with the reservation below.
-          return nil if reference.empty?
-
-          holder = RESERVED_LOCAL_IDS[reference]
-          return reference if holder.nil? || sanitized_name == holder[:slug]
+          id = canonical(reference)
+          holder = RESERVED_LOCAL_IDS[self.class.minted_segment(id)]
+          return id if holder.nil? || sanitized_name == holder[:slug]
 
           fallback_name
         end
@@ -171,23 +357,164 @@ module Ammitto
           value.to_s.unicode_normalize(:nfkc).gsub(/\s+/, ' ').strip.downcase
         end
 
+        # The reference as identity should read it.
+        #
+        # Applied here as well as at the sheet because harmonize does not
+        # go through the sheet: it re-reads a record file written by an
+        # earlier fetch, so a file committed before the sheet was
+        # normalized still carries "1.0" and would otherwise mint
+        # entity/tr/10 — reference 10's IRI. Making both roads agree is
+        # what keeps one designee on one node across that changeover.
+        #
+        # +reference_number+ itself is deliberately untouched, so the
+        # harmonized output keeps reporting the text the record actually
+        # holds rather than a value this layer invented.
+        #
+        # Public because the corpus gates have to read a reference the
+        # same way identity does: SanctionsList.verify_reservations!
+        # decides which row claims a reserved number, and a raw-text
+        # comparison there would disagree with +local_id+ the moment a
+        # workbook spells that number "187.0".
+        #
+        # @param value [Object, nil] a reference, raw or stripped
+        # @return [String] the reference, or its canonical whole number
+        def self.canonical_reference(value)
+          reference = value.to_s.strip
+
+          whole_decimal_text(reference) || reference
+        end
+
+        # The IRI segment a value would actually mint, or nil for none.
+        #
+        # The last transform between an identifier and the graph: the IRI
+        # layer sanitizes whatever it is handed, and THAT is the address a
+        # record ends up at. Anything deciding which record owns which
+        # address has to ask this rather than compare identifier text,
+        # because sanitization is lossy — "-187", "187-" and "18.7" all
+        # arrive at 187 without ever spelling it.
+        #
+        # @param value [Object, nil] an identifier
+        # @return [String, nil] the segment it mints, or nil for none
+        def self.minted_segment(value)
+          return nil if value.nil?
+
+          Utils::IriSanitizer.sanitize_local_id!(value, source: 'tr',
+                                                        kind: 'entity')
+        rescue Utils::IriSanitizer::MissingLocalIdError
+          nil
+        end
+
+        # The segment a row's published reference would mint.
+        #
+        # Both steps, in the order identity applies them: the redundant
+        # spelling is reduced first, then the result is sanitized. This is
+        # the question a reservation asks of a row — "would this reference
+        # land on the address I protect?" — and it is asked of the
+        # reference rather than of +local_id+, because a row the
+        # reservation has already sent to its name no longer mints from
+        # its reference at all.
+        #
+        # @param value [Object, nil] a raw reference
+        # @return [String, nil] the segment it mints, or nil for none
+        def self.reference_segment(value)
+          minted_segment(canonical_reference(value))
+        end
+
         private
 
+        # @see .canonical_reference
+        # @param reference [String] the stripped reference text
+        # @return [String] the reference, or its canonical whole number
+        def canonical(reference)
+          self.class.canonical_reference(reference)
+        end
+
         # The record name, used when the record cannot take its own
-        # number.
+        # number — because Turkey published none, or because the number
+        # it published is reserved for a different designee.
         #
         # Refused when it would sanitize to a bare integer, because bare
         # integers are Turkey's own numbering namespace. This makes it
         # structurally impossible for a name-derived id to occupy a slot
-        # Turkey assigned to a different designee.
+        # Turkey assigned to a different designee. Tested against the
+        # sanitized form, not the raw one, so it holds however that slug
+        # space is reached: a reference arriving as "1.0" or "-10" also
+        # slugs to a bare integer, and a name slugging to the same integer
+        # is still refused.
+        #
+        # Claim it exactly: this keeps a name out of the BARE-INTEGER slug
+        # space and nothing more. It does not make a name-derived id unique
+        # in general — two names can slug alike, and a name can slug onto a
+        # non-integer reference — because uniqueness is a corpus-level
+        # question and one record cannot see another. The list layer is
+        # where that belongs, in
+        # SanctionsList.verify_distinct_local_ids!.
         #
         # @return [String, nil]
         def fallback_name
-          str = name.to_s.strip
-          return nil if str.empty?
+          return nil if malformed?(name)
+
+          str = scalar_text(name)
+          return nil if str.nil?
           return nil if sanitized_name.match?(/\A\d+\z/)
 
           str
+        end
+
+        # Whether a value is structurally corrupt rather than merely odd.
+        #
+        # This is not the format gate +local_id+ refuses to have. Odd
+        # references — "1.0", "12/A", "E.47.A.3" — are accepted; these two
+        # shapes are not references at all, and each breaks something a
+        # reference has to do.
+        #
+        # A container that survived assignment as a container: the model
+        # layer stringifies most of them, but a list stays a list, and
+        # +["1"].to_s+ sanitizes down to +1+, so the record would silently
+        # take whatever IRI Turkey numbered 1. And a value the model
+        # stringified into Ruby's inspection fallback,
+        # +#<Enumerator:0x00007f...>+, which carries an object address and
+        # would therefore mint a different IRI on every process — the one
+        # thing an identifier may never do, and the reason this method
+        # applies to the reference slot and not only the name.
+        #
+        # Neither is evidence that Turkey omitted a cell — they are evidence
+        # that the record is corrupt — so neither falls back to the name
+        # either. String is not Enumerable, so nothing legitimate is caught.
+        #
+        # The +#<+ test is a narrow heuristic, not a proof of determinism:
+        # it catches Ruby's default inspection form, which is the shape an
+        # address actually reaches this model in, and misses an address
+        # nested inside some other string. It errs the safe way — a false
+        # positive refuses the record loudly rather than minting a wrong
+        # IRI. Proving a value is a plain scalar belongs at the
+        # deserialization boundary, for every source at once.
+        #
+        # @param value [Object, nil] candidate identifier
+        # @return [Boolean]
+        def malformed?(value)
+          value.is_a?(Enumerable) || value.to_s.strip.start_with?('#<')
+        end
+
+        # The value's text, if a name can be slugged from it.
+        #
+        # Requires one ASCII alphanumeric character, so blank,
+        # whitespace-only, punctuation-only and non-Latin-only names return
+        # nil. Deliberately STRICTER than the IRI layer, which also keeps
+        # underscores and would happily mint entity/tr/_ from a name of
+        # "_": a surrogate carrying no letter or digit identifies nobody,
+        # and this is the layer that invents surrogates. Refusing here
+        # turns it into the same loud failure a blank name gets.
+        #
+        # This is a question about the NAME — whether there is anything to
+        # slug — and not about whether Turkey filled a cell in, which
+        # +local_id+ decides by emptiness alone.
+        #
+        # @param value [Object, nil] candidate identifier
+        # @return [String, nil] the stripped text, or nil if it carries none
+        def scalar_text(value)
+          str = value.to_s.strip
+          str.match?(/[a-zA-Z0-9]/) ? str : nil
         end
 
         # @return [String] the name as the IRI layer would slug it
@@ -279,8 +606,38 @@ module Ammitto
           values = sheet.row(row_num)
 
           headers.each_with_index.to_h do |field, idx|
-            val = values[idx]
-            [field, val.is_a?(Date) ? val.iso8601 : val&.to_s&.strip]
+            [field, cell_text(values[idx])]
+          end
+        end
+
+        # Text of one sheet cell, as the record should carry it.
+        #
+        # The first of the two roads a reference travels: writing the
+        # canonical spelling here means every consumer of a freshly
+        # fetched record — the filename, the harmonized source reference,
+        # the IRI — sees one number rather than the display format's
+        # rendering of it. SanctionedEntity.exact_integer_text carries this
+        # road's rule and the reasoning behind both;
+        # SanctionedEntity#local_id covers the other road, the record file
+        # harmonize re-reads, where the artefact is text rather than a
+        # Float and the rule differs accordingly.
+        #
+        # Applied to every column rather than to the reference alone, so a
+        # passport, gazette or decision number Turkey reformats the same
+        # way is read the same way. Only a Float is touched: a text cell
+        # is workbook text, and rewriting it here would corrupt an
+        # identifier Turkey actually wrote. Anything else — a fractional
+        # Float, a Float too large to be provably exact, a string, a date
+        # — falls through to the text it has always had.
+        #
+        # @param value [Object, nil] the raw cell value
+        # @return [String, nil] the cell's text, or nil for an empty cell
+        def self.cell_text(value)
+          case value
+          when nil then nil
+          when Date then value.iso8601
+          else
+            SanctionedEntity.exact_integer_text(value) || value.to_s.strip
           end
         end
 
@@ -348,6 +705,19 @@ module Ammitto
         # identified by name, so the check is independent of row order,
         # and it runs whether or not the reference is duplicated.
         #
+        # A claimant is decided on the SEGMENT the row's reference mints,
+        # which is the address SanctionedEntity#local_id would put it at.
+        # Comparing text instead would make this gate and identity
+        # disagree, in both directions. A workbook spelling the reserved
+        # number "187.0" still hands entity/tr/187 to its reserved holder,
+        # and a gate reading raw text would see no claimant there and fail
+        # a harvest that is in fact correct. In the other direction a row
+        # reading "-187" never spells the reserved number, so a
+        # text-reading gate would not count it as a claimant at all — yet
+        # it lands on entity/tr/187 all the same, and with the reserved
+        # holder delisted it would have taken that published address in
+        # silence.
+        #
         # @param entities [Array<SanctionedEntity>]
         # @raise [IntegrityError] when the reservation no longer resolves
         def self.verify_reservations!(entities)
@@ -357,7 +727,9 @@ module Ammitto
               Utils::IriSanitizer.sanitize(entity.name.to_s) == slug
             end
             claimants = entities.select do |entity|
-              entity.reference_number.to_s.strip == reference
+              SanctionedEntity.reference_segment(
+                entity.reference_number
+              ) == reference
             end
 
             check_reservation!(reference, holder, holders, claimants)
@@ -428,66 +800,85 @@ module Ammitto
             'which record keeps it.'
         end
 
-        # Refuse a record carrying a reference that mints no IRI at all.
+        # Refuse a record that mints no IRI at all.
         #
-        # Turkey publishing a reference is a claim that the record has an
-        # identifier. When that reference survives sanitization as
-        # nothing — punctuation alone, say — the claim is false: the IRI
-        # layer refuses it rather than emit a shared ".../unknown", so the
-        # record cannot become a graph node. Fetch would still write it to
-        # disk under a filename of hyphens and report the source
-        # succeeded, and only harmonize would discover it.
+        # Every record on this sheet is meant to become a graph node, and
+        # SanctionedEntity#local_id is where each one is given something
+        # to mint from. When it comes back with nothing, the IRI layer
+        # refuses the record rather than emit a shared ".../unknown", so
+        # the record cannot become a node at all. Fetch would still write
+        # it to disk and report the source succeeded, and only harmonize
+        # would discover it. The filename it lands under is either
+        # obviously degenerate (tr----.yaml, from a reference of
+        # punctuation) or not obviously anything: a row named "42" whose
+        # id this parser refused is still written to tr-42.yaml, which
+        # reads exactly like the record Turkey numbered 42.
         #
         # Caught here instead, where the whole workbook is in hand and
         # nothing has been written yet: the source fails, names the
         # record, and leaves the previous corpus in place.
         #
-        # Two ways a numbered record ends up with nothing to mint, and
-        # both are caught here: the reference sanitizes away, or a
-        # reservation sends the record to its name and the name cannot
-        # serve as an id either (blank, or a bare integer, which
-        # +fallback_name+ refuses because that is Turkey's own numbering
-        # namespace). The second is this parser's own doing, so leaving
-        # it to be discovered downstream would be the worse failure.
+        # Three ways a record ends up with nothing to mint, and all three
+        # are caught here: a published reference sanitizes away; a
+        # reservation sends a numbered record to its name and the name
+        # cannot serve as an id either; or Turkey published no reference
+        # and that same name fallback fails. +fallback_name+ refuses a
+        # blank name, a name carrying no ASCII alphanumeric, and a name
+        # that slugs to a bare integer — the last because that is Turkey's
+        # own numbering namespace. All three are this parser's own doing,
+        # so leaving them to be discovered downstream would be the worse
+        # failure.
+        #
+        # The unnumbered case belongs here as much as the numbered one. It
+        # did not while a blank reference meant no identity attempt at
+        # all; it does now that a blank reference falls back to the name,
+        # because a record that tried to identify itself and failed is
+        # exactly what this gate exists to stop reaching disk.
         #
         # This is not a rule about what a well-formed reference looks
         # like — it defers entirely to what Utils::IriSanitizer already
-        # accepts. A record with no reference at all is untouched: it has
-        # made no claim to identify itself, and SanctionedEntity#local_id
-        # is where that case is decided.
+        # accepts.
         #
         # @param entities [Array<SanctionedEntity>]
-        # @raise [IntegrityError] when a present reference mints nothing
+        # @raise [IntegrityError] when a record mints nothing
         def self.verify_mintable_local_ids!(entities)
-          unusable = entities.select do |entity|
-            next false if entity.reference_number.to_s.strip.empty?
-
-            mintable_id(entity.local_id).nil?
-          end
+          unusable = entities.reject { |entity| mintable_id(entity.local_id) }
           return if unusable.empty?
 
+          # Not "carries an identifier that mints no IRI": an unnumbered
+          # record whose name cannot serve as an id carries no identifier
+          # at all, and the gate now covers that case too.
           raise IntegrityError,
-                'tr: record carries an identifier that mints no IRI — ' \
+                'tr: record mints no IRI — ' \
                 "#{describe_unmintable(unusable)}"
         end
 
-        # Whether the published reference is what decides this, rather
-        # than local_id being nil: the two nils mean opposite things. A
-        # record Turkey left unnumbered never claimed an identifier, and
-        # is settled elsewhere. A record Turkey did number, whose
-        # reference resolved to nothing usable — because it sanitizes
-        # away, or because a reservation sent it to a name that cannot
-        # serve as an id — has a claim this parse could not honour, and
-        # nothing downstream will fare better.
+        # Name the row by what it claimed, not by +local_id+, which never
+        # carries a mintable identifier for a record reported here. It is
+        # nil where the name fallback found nothing to offer, and where a
+        # published reference sanitizes away it is that reference text —
+        # "--", "١٢٣" — which the record does hold, but which sanitization
+        # has just shown mints no IRI. Neither form tells an operator
+        # anything the reference and the name do not tell them better.
+        #
+        # A numbered row is named by its reference: that is the claim this
+        # parse could not honour. An unnumbered row has no reference to
+        # quote, so it is named as unnumbered rather than as reference "".
+        # Either way the designee's name follows, because that is what an
+        # operator searches the workbook for.
         #
         # @param entities [Array<SanctionedEntity>] offending records
         # @return [String] human-readable report
         def self.describe_unmintable(entities)
           entities.map do |entity|
-            # The raw reference, because local_id may be nil here and a
-            # report of nil would name neither the row nor its claim.
-            "reference #{entity.reference_number.to_s.strip.inspect} " \
-              "(#{entity.name.to_s.inspect})"
+            reference = entity.reference_number.to_s.strip
+            claim = if reference.empty?
+                      'no reference'
+                    else
+                      "reference #{reference.inspect}"
+                    end
+
+            "#{claim} (#{entity.name.to_s.inspect})"
           end.join('; ')
         end
 
@@ -535,15 +926,14 @@ module Ammitto
         # This method has no opinion on what a well-formed reference
         # looks like — see SanctionedEntity#local_id.
         #
+        # The name this gate knows it by; SanctionedEntity.minted_segment
+        # is the definition, shared so that the reservation and this gate
+        # cannot end up reading an address two different ways.
+        #
         # @param local_id [Object, nil] the record's local id
         # @return [String, nil] the identifier it mints, or nil for none
         def self.mintable_id(local_id)
-          return nil if local_id.nil?
-
-          Utils::IriSanitizer.sanitize_local_id!(local_id, source: 'tr',
-                                                           kind: 'entity')
-        rescue Utils::IriSanitizer::MissingLocalIdError
-          nil
+          SanctionedEntity.minted_segment(local_id)
         end
 
         # @return [String] human-readable collision report

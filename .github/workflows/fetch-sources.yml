@@ -24,9 +24,45 @@ jobs:
         run: bundle install --jobs 4 --retry 3
 
       - name: Fetch latest data
+        # The input is comma-separated and defaults to "all"; the CLI takes
+        # space-separated codes and needs --all for the everything case.
+        # Passed through env so the untrusted input never reaches the shell
+        # as an expanded expression. CR/LF/tab all count as separators, so a
+        # pasted multi-line or CRLF value cannot lose codes or carry a stray
+        # \r into one; empty fields from "eu,,un" are dropped and repeats of
+        # one code are collapsed so the list cannot refetch a source.
+        env:
+          SOURCES: ${{ github.event.inputs.sources }}
         run: |
-          bundle exec ammitto fetch ${{ github.event.inputs.sources != 'all' && github.event.inputs.sources || '' }} --verbose
-        continue-on-error: true
+          normalized=$(printf '%s' "$SOURCES" | tr '\r\n\t' '   ')
+          if [ -z "$(printf '%s' "$normalized" | tr -d '[:space:]')" ] ||
+             [ "$(printf '%s' "$normalized" | tr '[:upper:]' '[:lower:]' \
+                  | tr -d '[:space:]')" = "all" ]; then
+            bundle exec ammitto fetch --all --verbose
+          else
+            IFS=', ' read -r -a raw <<< "$normalized"
+            codes=()
+            seen=' '
+            for code in "${raw[@]}"; do
+              [ -n "$code" ] || continue
+              # The CLI downcases codes, so fold here too: otherwise "EU,eu"
+              # survives as two entries that both resolve to :eu and refetch.
+              code=${code,,}
+              # Quoted inside the pattern, so a code holding * or ? matches
+              # literally instead of globbing away an unrelated entry.
+              case "$seen" in *" $code "*) continue ;; esac
+              seen="$seen$code "
+              codes+=("$code")
+            done
+            if [ ${#codes[@]} -eq 0 ]; then
+              echo "::error::sources input held separators but no source codes"
+              exit 1
+            fi
+            # Options precede --, so an option-shaped input ("--all",
+            # "--output-dir /tmp") is parsed as a source code and rejected by
+            # the CLI instead of silently widening scope or moving the output.
+            bundle exec ammitto fetch --verbose -- "${codes[@]}"
+          fi
 
       - name: Process data
         run: bundle exec ammitto process --verbose

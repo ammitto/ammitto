@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require 'fileutils'
 require_relative '../config/defaults'
 
@@ -12,7 +13,7 @@ module Ammitto
     # @example Fetch UK data as YAML
     #   ammitto fetch uk --format yaml --output-dir ./processed
     #
-    # @example Fetch all sources
+    # @example Fetch all automatable sources (skips manually managed cn)
     #   ammitto fetch --all
     #
     class FetchCommand
@@ -48,7 +49,7 @@ module Ammitto
       # @param sources [Array<String>]
       # @return [Array<Symbol>]
       def normalize_sources(sources)
-        return Config::Defaults::ALL_SOURCES if options[:all]
+        return Config::Defaults::FETCHABLE_SOURCES if options[:all]
 
         if sources.empty?
           raise Thor::Error,
@@ -80,7 +81,7 @@ module Ammitto
         end
       end
 
-      # Fetch all sources
+      # Fetch all requested sources
       # @return [void]
       def fetch_all
         results = @sources.map do |source|
@@ -88,6 +89,7 @@ module Ammitto
         end
 
         print_summary(results)
+        enforce_exit_status(results)
       end
 
       # Fetch a single source
@@ -152,9 +154,7 @@ module Ammitto
                  model_class.from_json(content)
                when :au, :tr, :nz, :eu_vessels
                  # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
-                 result = model_class.from_xlsx(content)
-                 extractor.cleanup if extractor.respond_to?(:cleanup)
-                 result
+                 parse_xlsx(model_class, content, extractor)
                when :jp, :un_vessels
                  # JP, UN Vessels are PDF-based - requires manual conversion
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"
@@ -181,26 +181,23 @@ module Ammitto
       # @param data [Object] the parsed data
       # @param output_dir [String] output directory
       # @return [Integer] number of files saved
+      # @raise [RuntimeError] when two different records claim one filename
       def save_as_yaml(source, data, output_dir)
-        count = 0
-
         # Get the collection of designations/entities
         items = items_from_data(source, data)
+        written = write_items(source, items, output_dir)
 
-        items.each do |item|
-          # Generate filename from unique ID
-          filename = filename_for_item(source, item)
-          filepath = File.join(output_dir, filename)
-
-          # Write YAML
-          yaml_content = item.to_yaml
-          File.write(filepath, yaml_content)
-          count += 1
-
-          puts "[#{source}] Saved #{count} files..." if options[:verbose] && (count % 100).zero?
-        end
-
-        # Save index file with metadata
+        # Save index file with metadata. count is the number of files
+        # this run wrote, not the number of items it saw: they used to
+        # differ silently whenever two items shared a filename, so the run
+        # reported more records than it had actually written.
+        #
+        # Not a count of the directory's contents. Nothing here removes
+        # files from a previous harvest, so a delisted record's file
+        # outlives the run that dropped it — longstanding behaviour of
+        # this command, and a separate question from whether one run
+        # overwrites its own records.
+        count = written.size
         index = {
           'source' => source.to_s,
           'count' => count,
@@ -212,6 +209,161 @@ module Ammitto
         puts "[#{source}] Saved #{count} files to #{output_dir}" if options[:verbose]
 
         count
+      end
+
+      # Parse a workbook and dispose of the temporary file it arrived in.
+      #
+      # The download is a Tempfile, and a parse that refuses the payload
+      # is a normal outcome on these sources, not a crash — so disposal
+      # has to happen whether the parse returned or raised. It used to
+      # happen only on the returning path, which leaked the workbook of
+      # every refused harvest.
+      #
+      # A bare +ensure+ that let a disposal failure escape would fix the
+      # leak and introduce a worse problem: if unlinking fails while an
+      # integrity failure is in flight, Ruby replaces the exception, and
+      # the operator is told about a temp file instead of why the
+      # harvest was refused. So disposal runs unconditionally, and only
+      # speaks when it has nothing to interrupt.
+      #
+      # +ensure+ rather than +rescue StandardError+ because Interrupt is
+      # not a StandardError: cancelling a long parse with Ctrl-C took
+      # the only other exit out of the method and leaked the workbook it
+      # had already downloaded.
+      #
+      # @param model_class [Class] source model to parse with
+      # @param content [String] path to the downloaded workbook
+      # @param extractor [Object] extractor owning the temporary file
+      # @return [Object] the parsed model
+      def parse_xlsx(model_class, content, extractor)
+        model_class.from_xlsx(content)
+      ensure
+        # $! is the exception on its way out, if any. Captured before
+        # disposal so a failure here is measured against the reason the
+        # parse ended, not against itself.
+        interrupted = $ERROR_INFO
+        begin
+          cleanup_extractor(extractor)
+        rescue StandardError => e
+          raise unless interrupted
+
+          warn "[cleanup] #{e.message}"
+        end
+      end
+
+      # @param extractor [Object] extractor owning the temporary file
+      # @return [void]
+      def cleanup_extractor(extractor)
+        extractor.cleanup if extractor.respond_to?(:cleanup)
+      end
+
+      # Write each item to its own file, refusing to overwrite one record
+      # with a different one.
+      #
+      # File.write truncates, so two items whose filenames collide used to
+      # leave one record on disk and no trace of the other — the run still
+      # reported success and the missing designee surfaced nowhere. A
+      # repeated filename carrying byte-identical content is a duplicated
+      # upstream row and collapses harmlessly; a repeated filename
+      # carrying different content is data loss and fails the source.
+      #
+      # Collisions are resolved before anything is written, so a run that
+      # would have discarded a record leaves the destination untouched
+      # rather than half-replaced. Only filenames claimed more than once
+      # are rendered twice, so the common path costs one pass.
+      #
+      # @param source [Symbol] source code
+      # @param items [Array] items to write
+      # @param output_dir [String] output directory
+      # @return [Hash{String => Array}] filename => claimants
+      # @raise [RuntimeError] when two different records claim one filename
+      def write_items(source, items, output_dir)
+        claims = items.group_by { |item| filename_for_item(source, item) }
+        collisions = detect_collisions(claims)
+
+        raise collision_error(source, collisions) unless collisions.empty?
+
+        claims.each_with_index do |(filename, claimants), index|
+          File.write(File.join(output_dir, filename),
+                     claimants.first.to_yaml)
+          report_progress(source, index + 1)
+        end
+
+        claims
+      end
+
+      # Find filenames claimed by records that are not byte-identical.
+      #
+      # A repeated filename carrying identical content is a duplicated
+      # upstream row: writing it once loses nothing. Differing content is
+      # data loss, because File.write truncates.
+      #
+      # @param claims [Hash{String => Array}] filename => claimants
+      # @return [Hash{String => Array}] filename => records that would be
+      #   discarded
+      def detect_collisions(claims)
+        require 'digest'
+
+        claims.each_with_object({}) do |(filename, claimants), found|
+          next if claimants.size == 1
+
+          distinct = claimants.uniq do |item|
+            Digest::SHA256.hexdigest(item.to_yaml)
+          end
+          next if distinct.size == 1
+
+          found[filename] = distinct.drop(1)
+        end
+      end
+
+      # Report progress every hundredth file actually written
+      # @param source [Symbol] source code
+      # @param count [Integer] files written so far
+      # @return [void]
+      def report_progress(source, count)
+        return unless options[:verbose] && (count % 100).zero?
+
+        puts "[#{source}] Saved #{count} files..."
+      end
+
+      # @param source [Symbol] source code
+      # @param collisions [Hash{String => Array}] filename => lost items
+      # @return [String] message naming every discarded record
+      def collision_error(source, collisions)
+        detail = collisions.map do |filename, items|
+          labels = items.map { |item| describe_item(item) }.join(', ')
+          "#{filename} (also claimed by #{labels})"
+        end.join('; ')
+
+        "#{source}: #{collisions.size} filename collision(s) would " \
+          "discard #{collisions.values.sum(&:size)} record(s): #{detail}"
+      end
+
+      # Best-effort label for a record in an error message.
+      #
+      # A diagnostic must never mask the error it describes, so a record
+      # whose own accessors raise, or whose name is unbounded, degrades to
+      # a shorter label instead of escaping as an unrelated exception.
+      #
+      # @param item [Object] the item
+      # @return [String]
+      def describe_item(item)
+        %i[name full_name vessel_name english_name].each do |attr|
+          value = begin
+            item.respond_to?(attr) ? item.public_send(attr).to_s.strip : ''
+          rescue StandardError
+            ''
+          end
+
+          return "#{value[0, 80].inspect}..." if value.length > 80
+          return value.inspect unless value.empty?
+        end
+
+        begin
+          item.class.name.to_s
+        rescue StandardError
+          '(unprintable record)'
+        end
       end
 
       # Get items collection from parsed data
@@ -292,7 +444,11 @@ module Ammitto
           ref = item.english_name || item.russian_name || "unknown-#{item.object_id}"
           "ru-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
         when :tr
-          ref = item.reference_number || item.name || "unknown-#{item.object_id}"
+          # local_id, not reference_number: Turkey assigns one "Sıra No"
+          # to two organisations, and local_id is what tells them apart.
+          # Harmonize mints IRIs from the same method, so a record that
+          # gets its own file here also gets its own graph node.
+          ref = item.local_id || item.name || "unknown-#{item.object_id}"
           "tr-#{ref.to_s.downcase.gsub(/[^a-z0-9]/, '-')}.yaml"
         when :nz
           ref = item.unique_identifier || item.reference_number || "unknown-#{item.object_id}"
@@ -406,6 +562,20 @@ module Ammitto
         results.select { |r| r[:status] == :error }.each do |r|
           puts "  #{r[:code]}: #{r[:error]}"
         end
+      end
+
+      # A run with any failed source must exit nonzero: otherwise cron/CI
+      # logs the per-source error and still concludes success, so a dead
+      # source keeps its published data silently stale behind green runs.
+      # @param results [Array<Hash>] fetch results
+      # @return [void]
+      # @raise [Thor::Error] when any requested source failed
+      def enforce_exit_status(results)
+        failed = results.select { |r| r[:status] == :error }
+        return if failed.empty?
+
+        raise Thor::Error,
+              "Fetch failed for: #{failed.map { |r| r[:code] }.join(', ')}"
       end
     end
   end

@@ -706,46 +706,45 @@ module Ammitto
       # Find legal instruments directory
       # @return [String, nil] path to instruments directory
       def find_instruments_dir
-        # Check sources_dir first
-        sources_dir = options[:sources_dir]
-        if sources_dir
-          # Check for data-cn format: sources/legal-instruments/
-          instruments_path = File.join(sources_dir, 'data-cn', 'sources', 'legal-instruments')
-          return instruments_path if Dir.exist?(instruments_path)
-        end
-
-        # Check based on input_dir (sibling directory to legal-instruments)
-        input_dir = options[:input_dir]
-        if input_dir
-          # input_dir might be .../sources/sanction-lists
-          # so legal-instruments would be at .../sources/legal-instruments
-          parent_dir = File.dirname(input_dir)
-          instruments_path = File.join(parent_dir, 'legal-instruments')
-          return instruments_path if Dir.exist?(instruments_path)
-        end
-
-        nil
+        find_supplement_dir('legal-instruments')
       end
 
       # Find supporting data directory (document types, organizations)
       # @return [String, nil] path to supporting directory
       def find_supporting_dir
-        # Check sources_dir first
+        find_supplement_dir('supporting')
+      end
+
+      # Resolve a supplement subtree (legal-instruments/, supporting/) for
+      # the requested sources. Supplements live inside a source's own data
+      # repository (currently only data-cn ships them), so they are looked
+      # up per requested source — a run that does not include a source must
+      # not inject that source's supplement nodes into its output tree.
+      # Known limitation: first match wins in requested-source order, because
+      # the exporter accepts a single directory per supplement kind; if a
+      # second repository ever ships supplements, the exporter API must grow
+      # union loading.
+      # @param subdir [String] supplement directory name
+      # @return [String, nil] path to the supplement directory
+      def find_supplement_dir(subdir)
         sources_dir = options[:sources_dir]
         if sources_dir
-          # Check for data-cn format: sources/supporting/
-          supporting_path = File.join(sources_dir, 'data-cn', 'sources', 'supporting')
-          return supporting_path if Dir.exist?(supporting_path)
+          @sources.each do |source|
+            repo = Config::Defaults::DATA_REPO_TO_SOURCE.key(source)
+            next unless repo
+
+            path = File.join(sources_dir, repo, 'sources', subdir)
+            return path if Dir.exist?(path)
+          end
         end
 
-        # Check based on input_dir (sibling directory to supporting)
+        # input_dir is already scoped to the repository the caller pointed
+        # at; its supplements are sibling directories
+        # (.../sources/sanction-lists -> .../sources/<subdir>)
         input_dir = options[:input_dir]
         if input_dir
-          # input_dir might be .../sources/sanction-lists
-          # so supporting would be at .../sources/supporting
-          parent_dir = File.dirname(input_dir)
-          supporting_path = File.join(parent_dir, 'supporting')
-          return supporting_path if Dir.exist?(supporting_path)
+          path = File.join(File.dirname(input_dir), subdir)
+          return path if Dir.exist?(path)
         end
 
         nil

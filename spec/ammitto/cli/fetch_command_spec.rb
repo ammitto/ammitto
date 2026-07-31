@@ -237,5 +237,24 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
 
       expect { parse }.to raise_error(IOError, 'busy')
     end
+
+    it 'disposes of it when the operator cancels the parse' do
+      # Interrupt is not a StandardError, so Ctrl-C during a long parse
+      # took an exit that ran no cleanup and leaked the workbook.
+      allow(model_class).to receive(:from_xlsx).and_raise(Interrupt)
+      allow(extractor).to receive(:cleanup)
+
+      expect { parse }.to raise_error(Interrupt)
+      expect(extractor).to have_received(:cleanup)
+    end
+
+    it 'keeps the cancellation visible when disposal also fails' do
+      allow(model_class).to receive(:from_xlsx).and_raise(Interrupt)
+      allow(extractor).to receive(:cleanup).and_raise(IOError, 'busy')
+
+      expect do
+        expect { parse }.to raise_error(Interrupt)
+      end.to output(/\[cleanup\] busy/).to_stderr
+    end
   end
 end

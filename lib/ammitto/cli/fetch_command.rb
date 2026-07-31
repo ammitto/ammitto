@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require 'fileutils'
 require_relative '../config/defaults'
 
@@ -218,28 +219,36 @@ module Ammitto
       # happen only on the returning path, which leaked the workbook of
       # every refused harvest.
       #
-      # A plain +ensure+ would fix the leak and introduce a worse
-      # problem: if unlinking fails while an integrity failure is in
-      # flight, Ruby replaces the exception, and the operator is told
-      # about a temp file instead of why the harvest was refused. So the
-      # disposal only speaks when it has nothing to interrupt.
+      # A bare +ensure+ that let a disposal failure escape would fix the
+      # leak and introduce a worse problem: if unlinking fails while an
+      # integrity failure is in flight, Ruby replaces the exception, and
+      # the operator is told about a temp file instead of why the
+      # harvest was refused. So disposal runs unconditionally, and only
+      # speaks when it has nothing to interrupt.
+      #
+      # +ensure+ rather than +rescue StandardError+ because Interrupt is
+      # not a StandardError: cancelling a long parse with Ctrl-C took
+      # the only other exit out of the method and leaked the workbook it
+      # had already downloaded.
       #
       # @param model_class [Class] source model to parse with
       # @param content [String] path to the downloaded workbook
       # @param extractor [Object] extractor owning the temporary file
       # @return [Object] the parsed model
       def parse_xlsx(model_class, content, extractor)
-        parsed = model_class.from_xlsx(content)
-      rescue StandardError
+        model_class.from_xlsx(content)
+      ensure
+        # $! is the exception on its way out, if any. Captured before
+        # disposal so a failure here is measured against the reason the
+        # parse ended, not against itself.
+        interrupted = $ERROR_INFO
         begin
           cleanup_extractor(extractor)
         rescue StandardError => e
+          raise unless interrupted
+
           warn "[cleanup] #{e.message}"
         end
-        raise
-      else
-        cleanup_extractor(extractor)
-        parsed
       end
 
       # @param extractor [Object] extractor owning the temporary file

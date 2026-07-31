@@ -32,11 +32,9 @@ RSpec.describe 'documentation examples' do
   # SearchIndexExporter is not autoloaded by `require "ammitto"`, and the docs
   # tell the reader to require it explicitly. These are pooled across all
   # pages, so this does not prove any single page requires what it uses.
-  before(:all) do
-    self.class.adoc_files.each do |file|
-      File.read(file).scan(%r{^\s*require ['"](ammitto/[\w/]+)['"]}) do |(lib)|
-        require lib
-      end
+  adoc_files.each do |file|
+    File.read(file).scan(%r{^\s*require ['"](ammitto/[\w/]+)['"]}) do |(lib)|
+      require lib
     end
   end
 

@@ -1,36 +1,67 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-require 'ammitto/sources/tr/sanctions_list'
+require 'ammitto'
+require 'ammitto/sources/tr'
 
 RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
+  def entity(name:, reference_number: nil)
+    described_class.new(name: name, reference_number: reference_number)
+  end
+
   def build(**attrs)
     described_class.new(name: 'TAMAS COMPANY', **attrs)
   end
 
-  describe '#local_id' do
-    it 'prefers the upstream reference number' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '187')
+  # The designee entity/tr/187 is already published for.
+  def dtsrc(reference_number: '187')
+    entity(name: 'DEFENSE TECHNOLOGY AND SCIENCE RESEARCH ÇENTER (DTSRC)',
+           reference_number: reference_number)
+  end
 
-      expect(entity.local_id).to eq('187')
+  # The designee Turkey gives the same number to, published nowhere.
+  def dio(reference_number: '187')
+    entity(name: 'DEFENCE INDUSTRIES ORGANISATION (DIO)',
+           reference_number: reference_number)
+  end
+
+  describe '#local_id' do
+    it 'is the reference Turkey published' do
+      expect(entity(name: 'ACME', reference_number: '42').local_id)
+        .to eq('42')
+    end
+
+    it 'ignores surrounding whitespace in the reference' do
+      expect(entity(name: 'ACME', reference_number: ' 42 ').local_id)
+        .to eq('42')
+    end
+
+    it 'passes a non-decimal reference through untouched' do
+      expect(entity(name: 'ACME', reference_number: 'TR-1').local_id)
+        .to eq('TR-1')
+    end
+
+    it 'prefers the upstream reference number' do
+      record = build(name: 'TAMAS COMPANY', reference_number: '42')
+
+      expect(record.local_id).to eq('42')
     end
 
     it 'falls back to the name when Turkey published no reference number' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: nil)
+      record = build(name: 'TAMAS COMPANY', reference_number: nil)
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(record.local_id).to eq('TAMAS COMPANY')
     end
 
     it 'treats an empty reference number as absent' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '')
+      record = build(name: 'TAMAS COMPANY', reference_number: '')
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(record.local_id).to eq('TAMAS COMPANY')
     end
 
     it 'treats a whitespace-only reference number as absent' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: "  \t ")
+      record = build(name: 'TAMAS COMPANY', reference_number: "  \t ")
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(record.local_id).to eq('TAMAS COMPANY')
     end
 
     # "Absent" means the cell is empty, not that it happens to sanitize to
@@ -39,9 +70,9 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     # job, and it does so loudly (see the transformer spec).
     ['--', '!!', '١٢٣'].each do |unreadable|
       it "takes the unreadable reference #{unreadable.inspect} as given" do
-        entity = build(name: 'TAMAS COMPANY', reference_number: unreadable)
+        record = build(name: 'TAMAS COMPANY', reference_number: unreadable)
 
-        expect(entity.local_id).to eq(unreadable)
+        expect(record.local_id).to eq(unreadable)
       end
     end
 
@@ -53,33 +84,33 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
 
     it 'strips surrounding whitespace from the reference number' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: ' 187 ')
+      record = build(name: 'TAMAS COMPANY', reference_number: ' 42 ')
 
-      expect(entity.local_id).to eq('187')
+      expect(record.local_id).to eq('42')
     end
 
     it 'strips surrounding whitespace from the fallback name' do
-      entity = build(name: '  TAMAS COMPANY  ', reference_number: nil)
+      record = build(name: '  TAMAS COMPANY  ', reference_number: nil)
 
-      expect(entity.local_id).to eq('TAMAS COMPANY')
+      expect(record.local_id).to eq('TAMAS COMPANY')
     end
 
     it 'returns nil when neither field can produce an IRI segment' do
-      entity = build(name: nil, reference_number: nil)
+      record = build(name: nil, reference_number: nil)
 
-      expect(entity.local_id).to be_nil
+      expect(record.local_id).to be_nil
     end
 
     it 'returns nil when the name would sanitize away entirely' do
-      entity = build(name: 'محمد', reference_number: nil)
+      record = build(name: 'محمد', reference_number: nil)
 
-      expect(entity.local_id).to be_nil
+      expect(record.local_id).to be_nil
     end
 
     it 'refuses a list smuggled into the reference number slot' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: [1])
+      record = build(name: 'TAMAS COMPANY', reference_number: [1])
 
-      expect(entity.local_id).to be_nil
+      expect(record.local_id).to be_nil
     end
 
     # A mapping is stringified by the model layer before #local_id sees it,
@@ -89,31 +120,31 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     # matters. A list is a different case: it reaches #local_id still a
     # list, so it can be told apart, and it is.
     it 'accepts a mapping the model already flattened to a string' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: { a: 1 })
+      record = build(name: 'TAMAS COMPANY', reference_number: { a: 1 })
 
-      expect(entity.reference_number).to be_a(String)
-      expect(entity.local_id).to eq(entity.reference_number)
+      expect(record.reference_number).to be_a(String)
+      expect(record.local_id).to eq(record.reference_number)
     end
 
     it 'rejects a list smuggled into the name slot' do
-      entity = build(name: %w[TAMAS], reference_number: nil)
+      record = build(name: %w[TAMAS], reference_number: nil)
 
-      expect(entity.local_id).to be_nil
+      expect(record.local_id).to be_nil
     end
 
     # An object the model stringified into Ruby's inspection form carries an
     # object address, so slugging it would mint a different IRI per process.
     it 'rejects a value stringified into Ruby inspection form' do
-      entity = build(name: [1].each, reference_number: nil)
+      record = build(name: [1].each, reference_number: nil)
 
-      expect(entity.name).to start_with('#<')
-      expect(entity.local_id).to be_nil
+      expect(record.name).to start_with('#<')
+      expect(record.local_id).to be_nil
     end
 
     it 'refuses an inspection form in the reference number slot' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: [1].each)
+      record = build(name: 'TAMAS COMPANY', reference_number: [1].each)
 
-      expect(entity.local_id).to be_nil
+      expect(record.local_id).to be_nil
     end
 
     # A corrupt reference is evidence the record is broken, not evidence
@@ -136,9 +167,9 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
 
     it 'accepts a numeric reference number cast from the spreadsheet' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: 187)
+      record = build(name: 'TAMAS COMPANY', reference_number: 42)
 
-      expect(entity.local_id).to eq('187')
+      expect(record.local_id).to eq('42')
     end
 
     # The second road a reference travels. Harmonize re-reads a record
@@ -146,9 +177,9 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     # "1.0" would mint entity/tr/10 — reference 10's IRI — unless this
     # method reduces the two spellings to one the way the sheet does.
     it 'reads a redundantly spelled whole number as that number' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
+      record = build(name: 'TAMAS COMPANY', reference_number: '1.0')
 
-      expect(entity.local_id).to eq('1')
+      expect(record.local_id).to eq('1')
     end
 
     it 'reads either spelling of a number identically' do
@@ -177,32 +208,32 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
 
     it 'leaves reference_number reporting what the record holds' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
+      record = build(name: 'TAMAS COMPANY', reference_number: '1.0')
 
-      expect(entity.reference_number).to eq('1.0')
-      expect(entity.local_id).to eq('1')
+      expect(record.reference_number).to eq('1.0')
+      expect(record.local_id).to eq('1')
     end
 
     # A fractional value is a different number, not a spelling of a whole
     # one, so it passes through untouched.
     it 'leaves a genuinely fractional reference alone' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: '1.5')
+      record = build(name: 'TAMAS COMPANY', reference_number: '1.5')
 
-      expect(entity.local_id).to eq('1.5')
+      expect(record.local_id).to eq('1.5')
     end
 
     ['-10', '10-', '--10--'].each do |rewritten|
       it "accepts #{rewritten.inspect} rather than losing the record" do
-        entity = build(name: 'TAMAS COMPANY', reference_number: rewritten)
+        record = build(name: 'TAMAS COMPANY', reference_number: rewritten)
 
-        expect(entity.local_id).to eq(rewritten)
+        expect(record.local_id).to eq(rewritten)
       end
     end
 
     it 'strips a rewritten reference the same way as a plain one' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: ' -10 ')
+      record = build(name: 'TAMAS COMPANY', reference_number: ' -10 ')
 
-      expect(entity.local_id).to eq('-10')
+      expect(record.local_id).to eq('-10')
     end
 
     # No opinion is taken on what a well-formed "Sıra No" looks like. 14 of
@@ -211,9 +242,9 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     # deferred, but a bare-decimal rule could never have used one.
     ['12/A', '12A', '12 A', 'ABC', '1 0', 'TR-1', 'E.47.A.3'].each do |odd|
       it "accepts the non-decimal reference #{odd.inspect}" do
-        entity = build(name: 'TAMAS COMPANY', reference_number: odd)
+        record = build(name: 'TAMAS COMPANY', reference_number: odd)
 
-        expect(entity.local_id).to eq(odd)
+        expect(record.local_id).to eq(odd)
       end
     end
 
@@ -230,22 +261,128 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
 
     it 'still falls back to the name when no reference was published' do
-      entity = build(name: 'SAME NAME', reference_number: nil)
+      record = build(name: 'SAME NAME', reference_number: nil)
 
-      expect(entity.local_id).to eq('SAME NAME')
+      expect(record.local_id).to eq('SAME NAME')
     end
 
     it 'refuses a name that would sanitize to a bare number' do
-      entity = build(name: '187', reference_number: nil)
+      record = build(name: '187', reference_number: nil)
 
-      expect(entity.local_id).to be_nil
+      expect(record.local_id).to be_nil
     end
 
     it 'does not invent a reference number for records that lack one' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: nil)
+      record = build(name: 'TAMAS COMPANY', reference_number: nil)
 
-      expect(entity.local_id).not_to be_nil
-      expect(entity.reference_number).to be_nil
+      expect(record.local_id).not_to be_nil
+      expect(record.reference_number).to be_nil
+    end
+
+    context 'when the reference is reserved for a published designee' do
+      it 'keeps the number for the designee the IRI already denotes' do
+        expect(dtsrc.local_id).to eq('187')
+      end
+
+      it 'gives the other claimant a name-derived id instead' do
+        expect(dio.local_id).to eq('DEFENCE INDUSTRIES ORGANISATION (DIO)')
+      end
+
+      it 'resolves the same way whichever row is inspected first' do
+        forwards = [dtsrc, dio].map(&:local_id)
+        backwards = [dio, dtsrc].map(&:local_id).reverse
+
+        expect(forwards).to eq(backwards)
+        expect(forwards).to eq(['187',
+                                'DEFENCE INDUSTRIES ORGANISATION (DIO)'])
+      end
+
+      it 'reserves the number even when nothing else claims it' do
+        # A tie-break that only fired on a duplicate would let the other
+        # designee inherit a published IRI the moment the holder was
+        # renumbered away.
+        expect(dio.local_id).not_to eq('187')
+      end
+
+      it 'leaves the holder alone under any other reference' do
+        expect(dtsrc(reference_number: '900').local_id).to eq('900')
+      end
+
+      it 'refuses a name that would land in Turkey\'s own numbering' do
+        # Otherwise a designee named "42" would take entity/tr/42 from
+        # whoever Turkey numbered 42.
+        expect(entity(name: '42', reference_number: '187').local_id).to be_nil
+      end
+
+      it 'is nil when the claimant carries no name to fall back to' do
+        expect(entity(name: '  ', reference_number: '187').local_id).to be_nil
+      end
+
+      # Where the two fixes meet. The reservation is keyed on the
+      # identifier the record would MINT, so a workbook — or a record file
+      # an earlier fetch wrote — that spells 187 as "187.0" still hands
+      # entity/tr/187 to the same designee.
+      it 'reads a redundantly spelled reserved number as reserved' do
+        expect(dtsrc(reference_number: '187.0').local_id).to eq('187')
+        expect(dio(reference_number: '187.0').local_id)
+          .to eq('DEFENCE INDUSTRIES ORGANISATION (DIO)')
+      end
+
+      it 'resolves either spelling of the reserved number identically' do
+        spelled = [dtsrc(reference_number: '187.0'),
+                   dio(reference_number: '187.0')].map(&:local_id)
+        plain = [dtsrc, dio].map(&:local_id)
+
+        expect(spelled).to eq(plain)
+      end
+
+      # A reservation is about one number, not about every text that looks
+      # like it: 1870 and 18.7 are different references and stay their own.
+      it 'does not spread the reservation to a neighbouring number' do
+        expect(dio(reference_number: '1870').local_id).to eq('1870')
+        expect(dio(reference_number: '18.7').local_id).to eq('18.7')
+      end
+    end
+  end
+
+  describe 'RESERVED_LOCAL_IDS' do
+    it 'pins the reference to the sanitized name of its published holder' do
+      holder = described_class::RESERVED_LOCAL_IDS.fetch('187')
+
+      expect(Ammitto::Utils::IriSanitizer.sanitize(dtsrc.name))
+        .to eq(holder[:slug])
+    end
+
+    it 'also pins the holder name at full fidelity' do
+      # The slug drops the "Ç"; this form is what tells the holder from a
+      # different designee whose name sanitizes onto the same slug.
+      holder = described_class::RESERVED_LOCAL_IDS.fetch('187')
+
+      expect(described_class.strict_name(dtsrc.name)).to eq(holder[:name])
+    end
+
+    it 'cannot drift at runtime, entries included' do
+      # Freezing the table alone would still let `table[ref][:slug]`
+      # be reassigned, moving a published IRI to a different designee.
+      table = described_class::RESERVED_LOCAL_IDS
+
+      expect(table).to be_frozen
+      expect(table.keys).to all(be_frozen)
+      expect(table.values).to all(be_frozen)
+      expect { table.fetch('187')[:slug] = 'other' }
+        .to raise_error(FrozenError)
+      expect { table.fetch('187')[:slug].replace('other') }
+        .to raise_error(FrozenError)
+    end
+
+    it 'is keyed on canonical references, so no entry can be unreachable' do
+      # local_id canonicalizes before it looks up, so a key spelled
+      # "187.0" would never be found and the IRI it protects would move.
+      keys = described_class::RESERVED_LOCAL_IDS.keys
+
+      expect(keys).to all(satisfy do |key|
+        described_class.canonical_reference(key) == key
+      end)
     end
   end
 
@@ -276,6 +413,28 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
         .each do |text|
           expect(described_class.whole_decimal_text(text)).to be_nil
         end
+    end
+  end
+
+  # What identity reads a reference as. The corpus gates in SanctionsList
+  # read it through this method too, so a gate and the IRI layer can never
+  # disagree about which record claims a number.
+  describe '.canonical_reference' do
+    it 'reduces a redundantly spelled number to its digits' do
+      expect(described_class.canonical_reference('187.0')).to eq('187')
+    end
+
+    it 'strips surrounding whitespace' do
+      expect(described_class.canonical_reference(' 187 ')).to eq('187')
+    end
+
+    it 'leaves a reference that spells no whole number alone' do
+      expect(described_class.canonical_reference('E.47.A.3')).to eq('E.47.A.3')
+      expect(described_class.canonical_reference('1.5')).to eq('1.5')
+    end
+
+    it 'reads an absent reference as the empty string' do
+      expect(described_class.canonical_reference(nil)).to eq('')
     end
   end
 

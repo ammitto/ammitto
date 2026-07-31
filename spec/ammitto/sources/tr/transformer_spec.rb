@@ -1,10 +1,37 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-require 'ammitto/sources/tr/sanctions_list'
+require 'ammitto'
+require 'ammitto/sources/tr'
 
+# The fetch fix alone would keep both designees on disk and still lose one
+# in the graph: harmonize reads each YAML file back and mints its IRIs
+# here. These examples pin the graph half of that seam — that the
+# transformer identifies a record by the same local_id the fetcher named
+# its file after, so a record with its own file also gets its own node.
+#
+# Two defects meet in this class, and both are pinned below. Turkey gives
+# one "Sıra No" to two organisations, so a number does not identify a
+# record; and Turkey leaves the column blank on 37 rows, so a number is
+# not always there to identify one with.
 RSpec.describe Ammitto::Sources::Tr::Transformer do
   subject(:transformer) { described_class.new }
+
+  # Turkey's two organisations on "Sıra No" 187. The first is the one
+  # already published as entity/tr/187.
+  def dtsrc
+    entity(name: 'DEFENSE TECHNOLOGY AND SCIENCE RESEARCH ÇENTER (DTSRC)')
+  end
+
+  def dio
+    entity(name: 'DEFENCE INDUSTRIES ORGANISATION (DIO)')
+  end
+
+  def entity(name:, reference_number: '187')
+    Ammitto::Sources::Tr::SanctionedEntity.new(
+      name: name, reference_number: reference_number,
+      entity_type: 'entity'
+    )
+  end
 
   def source(**attrs)
     Ammitto::Sources::Tr::SanctionedEntity.new(
@@ -14,16 +41,120 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
     )
   end
 
+  def transform(record)
+    described_class.new.transform(record)
+  end
+
+  describe 'two organisations sharing one reference' do
+    it 'gives each its own entity IRI' do
+      ids = [dtsrc, dio].map { |src| transform(src)[:entity].id }
+
+      expect(ids.uniq.size).to eq(2)
+    end
+
+    it 'gives each its own entry IRI' do
+      ids = [dtsrc, dio].map { |src| transform(src)[:entry].id }
+
+      expect(ids.uniq.size).to eq(2)
+    end
+
+    it 'leaves entity/tr/187 on the designee already published there' do
+      expect(transform(dtsrc)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/187')
+    end
+
+    it 'does not let the other designee take that IRI' do
+      expect(transform(dio)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/' \
+               'defence-industries-organisation-dio')
+    end
+
+    it 'points each entry at its own entity' do
+      [dtsrc, dio].each do |record|
+        result = transform(record)
+
+        expect(result[:entry].entity_id).to eq(result[:entity].id)
+      end
+    end
+
+    # The two fixes composed. A record file an earlier fetch wrote, before
+    # the sheet reader canonicalized anything, still spells the reserved
+    # number "187.0" — and the reservation has to recognise it, or
+    # entity/tr/187 goes to whichever designee happens to carry the
+    # decimal spelling.
+    it 'resolves the reservation through a redundantly spelled number' do
+      holder = entity(
+        name: 'DEFENSE TECHNOLOGY AND SCIENCE RESEARCH ÇENTER (DTSRC)',
+        reference_number: '187.0'
+      )
+      other = entity(name: 'DEFENCE INDUSTRIES ORGANISATION (DIO)',
+                     reference_number: '187.0')
+
+      expect(transform(holder)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/187')
+      expect(transform(other)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/' \
+               'defence-industries-organisation-dio')
+    end
+  end
+
+  describe 'provenance' do
+    it 'keeps the number Turkey published on both records' do
+      references = [dtsrc, dio].map do |record|
+        transform(record)[:entity].source_references
+                                  .map(&:reference_number)
+      end
+
+      expect(references).to all(include('187'))
+    end
+  end
+
+  it 'mints an IRI from the reference where none is reserved' do
+    record = entity(name: 'SOME ORGANISATION', reference_number: '42')
+
+    expect(transform(record)[:entity].id)
+      .to eq('https://www.ammitto.org/entity/tr/42')
+  end
+
+  # Persons take a different branch of create_entity, so the organisation
+  # examples above cannot speak for this call site.
+  describe 'persons' do
+    def person(name:, reference_number: '187')
+      Ammitto::Sources::Tr::SanctionedEntity.new(
+        name: name, reference_number: reference_number,
+        entity_type: 'person'
+      )
+    end
+
+    it 'mints a person IRI from local_id, not the raw reference' do
+      # A person cannot hold the organisation's reserved 187, so local_id
+      # falls back to the name — and the IRI has to follow it.
+      record = person(name: 'SOME PERSON')
+
+      expect(transform(record)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/some-person')
+    end
+
+    it 'mints a person IRI from the reference where none is reserved' do
+      record = person(name: 'SOME PERSON', reference_number: '42')
+
+      expect(transform(record)[:entity].id)
+        .to eq('https://www.ammitto.org/entity/tr/42')
+    end
+  end
+
   describe '#transform' do
     it 'mints numbered IRIs from the upstream reference number' do
+      # An ordinary, unreserved number. 187 is Turkey's one collision and
+      # takes the reservation branch instead — see the group above.
       result = transformer.transform(
         source(name: 'DEFENCE INDUSTRIES ORGANISATION (DIO)',
-               reference_number: '187')
+               reference_number: '42')
       )
 
       expect(result[:entity].id)
-        .to eq('https://www.ammitto.org/entity/tr/187')
-      expect(result[:entry].id).to end_with('/187')
+        .to eq('https://www.ammitto.org/entity/tr/42')
+      expect(result[:entry].id).to end_with('/42')
     end
 
     # A workbook Turkey reformats with decimals must keep every designee
@@ -46,12 +177,14 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
     # nothing and the record is refused. The identities this change
     # invents are for records carrying no reference at all.
     #
-    # Scalar references only, and not a redundantly spelled whole number:
-    # a container or an inspection-form string is deliberately refused
-    # instead (see +malformed?+), "1.0" is deliberately reduced to "1"
-    # (the example above), and surrounding whitespace is stripped, which
-    # the sanitizer would have collapsed anyway.
-    ['187', 'TR-1', '12/A', '--', '١٢٣'].each do |reference|
+    # Scalar references only, unreserved, and not a redundantly spelled
+    # whole number: a container or an inspection-form string is
+    # deliberately refused instead (see +malformed?+), a reserved number
+    # is deliberately re-addressed by name (the group above), "1.0" is
+    # deliberately reduced to "1" (the example above), and surrounding
+    # whitespace is stripped, which the sanitizer would have collapsed
+    # anyway.
+    ['42', 'TR-1', '12/A', '--', '١٢٣'].each do |reference|
       it "addresses #{reference.inspect} exactly as the reference alone does" do
         expected = begin
           Ammitto::Utils::IriSanitizer.entity_iri('tr', reference)
@@ -152,7 +285,7 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
 
     it 'never mixes a name-derived id with a numbered one' do
       numbered = transformer.transform(
-        source(name: 'TAMAS COMPANY', reference_number: '187')
+        source(name: 'TAMAS COMPANY', reference_number: '42')
       )[:entity].id
       derived = transformer.transform(
         source(name: 'TAMAS COMPANY', reference_number: nil)

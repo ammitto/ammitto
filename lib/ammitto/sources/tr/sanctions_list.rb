@@ -324,12 +324,19 @@ module Ammitto
         # here, and the tolerance the writer documents could never be
         # reached through a real parse.
         #
-        # Only byte-identical rows collapse. Two rows differing anywhere
-        # are two records, and the gates below decide them on their
-        # merits.
+        # Identity is the record as it would be published: two rows
+        # collapse when they serialize to the same YAML. That is the
+        # writer's test too, which is what keeps the two layers from
+        # disagreeing. It does mean a field left nil in one row and
+        # empty in the other counts as one row — both publish the same
+        # bytes, so collapsing them costs the corpus nothing.
+        #
+        # Two rows differing in any published value are two records, and
+        # the gates below decide them on their merits.
         #
         # @param entities [Array<SanctionedEntity>] one per sheet row
-        # @return [Array<SanctionedEntity>] one per distinct row
+        # @return [Array<SanctionedEntity>] one per distinct published
+        #   record, in sheet order, keeping the first of each
         def self.collapse_duplicate_rows(entities)
           entities.uniq(&:to_yaml)
         end

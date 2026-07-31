@@ -144,9 +144,10 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
     end
 
     it 'still refuses two rows that share a number but differ' do
-      # Only byte-identical rows collapse. Collapsing must not become a
-      # way for a real collision to pass the gate quietly: two designees
-      # under one unreserved number are still a refused harvest.
+      # Only rows that publish the same record collapse. Collapsing must
+      # not become a way for a real collision to pass the gate quietly:
+      # two designees under one unreserved number are still a refused
+      # harvest.
       headers = ['Sıra No', 'Gerçek Kişi Soyadı Ünvanı']
       rows = [[1, 'ACME'], [1, 'ACME LTD']]
 
@@ -164,11 +165,26 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
       expect(described_class.collapse_duplicate_rows(rows).size).to eq(1)
     end
 
-    it 'keeps two rows that differ anywhere' do
+    it 'keeps two rows that differ in a published value' do
       rows = [entity(name: 'A', reference_number: '1'),
               entity(name: 'B', reference_number: '1')]
 
       expect(described_class.collapse_duplicate_rows(rows).size).to eq(2)
+    end
+
+    it 'treats a nil field and an empty one as the same row' do
+      # Identity is the published record, and neither of these publishes
+      # the field at all — so collapsing them costs the corpus nothing.
+      rows = [
+        Ammitto::Sources::Tr::SanctionedEntity.new(
+          name: 'A', reference_number: '1', remarks: nil
+        ),
+        Ammitto::Sources::Tr::SanctionedEntity.new(
+          name: 'A', reference_number: '1', remarks: ''
+        )
+      ]
+
+      expect(described_class.collapse_duplicate_rows(rows).size).to eq(1)
     end
 
     it 'leaves the surviving record untouched' do

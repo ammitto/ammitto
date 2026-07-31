@@ -237,4 +237,46 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.reference_number).to be_nil
     end
   end
+
+  # The rule #local_id applies on the record-file road. The sheet road
+  # uses .exact_integer_text instead, which SanctionsList.cell_text
+  # exercises, because there the artefact is a Float and a text cell must
+  # survive verbatim.
+  describe '.whole_decimal_text' do
+    it 'reduces a redundantly spelled number to its digits' do
+      expect(described_class.whole_decimal_text('1.0')).to eq('1')
+      expect(described_class.whole_decimal_text('1.00')).to eq('1')
+    end
+
+    # Text carries the workbook's own digits rather than a Float's
+    # approximation of them, so no precision limit applies here.
+    it 'keeps every digit of a long number' do
+      expect(described_class.whole_decimal_text('9007199254740993.0'))
+        .to eq('9007199254740993')
+    end
+
+    it 'leaves text that does not spell a whole number alone' do
+      ['1.5', 'E.47.A.3', '12/A', '1.0e3', '1.', '+1.0', '١٢٣.0']
+        .each do |text|
+          expect(described_class.whole_decimal_text(text)).to be_nil
+        end
+    end
+  end
+
+  describe '.exact_integer_text' do
+    it 'reduces a Float that provably holds one integer' do
+      expect(described_class.exact_integer_text(1.0)).to eq('1')
+    end
+
+    it 'refuses anything that is not a Float' do
+      expect(described_class.exact_integer_text('1.0')).to be_nil
+      expect(described_class.exact_integer_text(1)).to be_nil
+    end
+
+    it 'refuses a Float that names no single integer' do
+      [1.5, 2.0**53, 1.0e20, Float::INFINITY, Float::NAN].each do |value|
+        expect(described_class.exact_integer_text(value)).to be_nil
+      end
+    end
+  end
 end

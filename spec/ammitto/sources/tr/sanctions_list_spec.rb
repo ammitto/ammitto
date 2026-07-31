@@ -131,36 +131,34 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
     end
 
     # Past 2**53 consecutive integers share one Float, so a whole-looking
-    # value is no longer evidence of the integer the workbook held.
-    # Rewriting it would assert a precision this parser does not have —
+    # value stops being evidence of the integer the workbook held.
+    # Rewriting it would assert a precision the value does not carry —
     # and the reader runs on every column, including long passport and
     # registration numbers.
     it 'refuses to invent digits for a Float beyond exact integer range' do
       expect(described_class.cell_text(1.0e20)).to eq('1.0e+20')
     end
 
-    it 'still normalizes a Float at the exact integer limit' do
-      expect(described_class.cell_text(2.0**53)).to eq('9007199254740992')
+    # 2**53 is exactly representable, but so is nothing between it and
+    # 2**53 + 2: a cell holding 9007199254740993 rounds onto this same
+    # Float, so the Float no longer says which integer was written.
+    it 'refuses the first magnitude that stops naming one integer' do
+      expect(described_class.cell_text(2.0**53)).to eq('9.007199254740992e+15')
     end
 
-    # The other road: a record file re-read at harmonize carries the
-    # number as text, whose digits are the workbook's own rather than a
-    # Float's approximation, so no precision limit applies to it.
-    it 'canonicalizes a redundantly spelled number given as text' do
-      expect(described_class.cell_text('1.0')).to eq('1')
-      expect(described_class.cell_text('1.00')).to eq('1')
+    it 'still normalizes the largest Float that names one integer' do
+      expect(described_class.cell_text((2.0**53) - 1))
+        .to eq('9007199254740991')
     end
 
-    it 'canonicalizes a long number given as text without losing digits' do
-      expect(Ammitto::Sources::Tr::SanctionedEntity
-               .whole_number_text('9007199254740993.0'))
-        .to eq('9007199254740993')
-    end
-
-    it 'leaves text that is not a whole number alone' do
-      ['1.5', 'E.47.A.3', '12/A', '1.0e3', '1.'].each do |text|
-        expect(described_class.cell_text(text)).to eq(text)
-      end
+    # Only a Float is a rendering. A text cell is an identifier Turkey
+    # wrote, so the sheet reader must hand it back verbatim — leading
+    # zeros and all — the way main always did.
+    it 'leaves a literal text cell exactly as the workbook wrote it' do
+      ['1.0', '1.00', '01.0', '1.5', 'E.47.A.3', '12/A', '1.0e3', '1.']
+        .each do |text|
+          expect(described_class.cell_text(text)).to eq(text)
+        end
     end
   end
 end

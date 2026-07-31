@@ -58,15 +58,15 @@ module Ammitto
         # renders it and as such a value is then written to YAML.
         WHOLE_DECIMAL = /\A(-?\d+)\.0+\z/
 
-        # Largest magnitude a Float represents exactly as an integer. Past
-        # it consecutive integers share one Float — 9007199254740993.0 IS
-        # 9007199254740992.0 — so a whole-looking value is no longer
-        # evidence of the integer the workbook held, and converting it
-        # would assert a precision this parser does not have.
-        EXACT_INTEGER_LIMIT = 2**53
+        # Largest integer a Float still attributes to one workbook value.
+        # 2**53 is itself excluded even though it is exactly
+        # representable: nothing between it and 2**53 + 2 is, so
+        # 9007199254740993 rounds onto 9007199254740992.0 and the Float
+        # stops saying which integer the cell held. Converting past this
+        # point would assert a precision the value does not carry.
+        MAX_SAFE_INTEGER = (2**53) - 1
 
-        # One canonical spelling for a value that writes a whole number two
-        # ways.
+        # Why a whole number needs one spelling at all.
         #
         # Roo picks Integer or Float for a numeric cell from the cell's
         # DISPLAY FORMAT rather than from the value
@@ -77,46 +77,54 @@ module Ammitto
         # cosmetic reformat would silently renumber every designee on the
         # sheet, and a sheet carrying both formats would merge two of them.
         #
-        # Reducing the two spellings to one undoes a formatting artefact.
-        # It does not reinterpret a value: 1.0 and 1 ARE the same number,
-        # and Turkey published one cell, not two.
+        # Reducing the artefact undoes a rendering; it does not reinterpret
+        # a value, because 1.0 and 1 ARE the same number and Turkey
+        # published one cell, not two.
         #
-        # Both spellings are handled here because a reference reaches
-        # identity by two roads — the sheet at fetch, and the record file
-        # at harmonize — and a rule that guarded only one of them would
-        # leave the other minting the wrong IRI. The String form needs no
-        # precision limit: its digits are the workbook's own, not a Float's
-        # approximation of them.
-        #
-        # A value with a real fractional part is NOT canonical here and
-        # gets nil: 1.5 is not the same number as 1 or as 15, so rewriting
-        # it would invent data. Such a value keeps whatever the sanitizer
-        # does with it, which is what every punctuated identifier in the
-        # graph already gets.
-        #
-        # @param value [Object, nil] a raw cell value or a record's text
-        # @return [String, nil] the canonical digits, or nil when the value
-        #   does not spell a whole number redundantly
-        def self.whole_number_text(value)
-          case value
-          when Float then exact_integer_text(value)
-          when String then WHOLE_DECIMAL.match(value.strip)&.then { |m| m[1].to_i.to_s }
-          end
-        end
+        # A reference reaches identity by TWO roads, and each needs a
+        # different rule, which is why these are two methods rather than
+        # one. At the sheet the artefact is a Float, and only a Float —
+        # a text cell there is workbook text and must survive verbatim.
+        # In a record file the sheet is long gone and the artefact has
+        # become the string "1.0", so that is what has to be recognised.
 
         # A Float's integer text, when the Float is provably that integer.
+        #
+        # The sheet road. Restricted to Float on purpose: a literal text
+        # cell reading "01.0" or "1.00" is an identifier Turkey wrote, not
+        # a rendering of a number, and rewriting it would corrupt passport,
+        # registration and gazette values that main preserved exactly.
         #
         # +finite?+ first, because NaN and Infinity equal no integer and
         # Float::INFINITY#to_i raises.
         #
-        # @param value [Float]
-        # @return [String, nil]
+        # @param value [Object, nil] a raw cell value
+        # @return [String, nil] the integer's digits, or nil when the value
+        #   is not a Float that provably holds one
         def self.exact_integer_text(value)
+          return nil unless value.is_a?(Float)
           return nil unless value.finite?
-          return nil unless value.abs <= EXACT_INTEGER_LIMIT
+          return nil unless value.abs <= MAX_SAFE_INTEGER
           return nil unless value == value.to_i
 
           value.to_i.to_s
+        end
+
+        # The digits of a number written with a redundant zero fraction.
+        #
+        # The record-file road, for a value an earlier fetch wrote before
+        # the sheet reader canonicalized it. No precision limit applies:
+        # these digits are the workbook's own text, not a Float's
+        # approximation of them.
+        #
+        # A real fractional part is not matched and gets nil — 1.5 is not
+        # the same number as 1 or as 15, so rewriting it would invent data.
+        #
+        # @param value [Object, nil] a record's reference text
+        # @return [String, nil] the digits, or nil when the text does not
+        #   spell a whole number redundantly
+        def self.whole_decimal_text(value)
+          WHOLE_DECIMAL.match(value.to_s.strip)&.then { |m| m[1].to_i.to_s }
         end
 
         def person?
@@ -197,7 +205,7 @@ module Ammitto
         # @param reference [String] the stripped reference text
         # @return [String] the reference, or its canonical whole number
         def canonical(reference)
-          self.class.whole_number_text(reference) || reference
+          self.class.whole_decimal_text(reference) || reference
         end
 
         # The record name, used when Turkey published no number.
@@ -353,12 +361,13 @@ module Ammitto
         # rule and the reasoning; SanctionedEntity#local_id applies the
         # same rule to the other road, the record file harmonize re-reads.
         #
-        # Applied to every cell rather than to the reference alone, so a
+        # Applied to every column rather than to the reference alone, so a
         # passport, gazette or decision number Turkey reformats the same
-        # way is read the same way. A value that is not a redundantly
-        # spelled whole number — including a genuinely fractional one, and
-        # any Float too large to be provably exact — falls through
-        # unchanged to the text it has always had.
+        # way is read the same way. Only a Float is touched: a text cell
+        # is workbook text, and rewriting it here would corrupt an
+        # identifier Turkey actually wrote. Anything else — a fractional
+        # Float, a Float too large to be provably exact, a string, a date
+        # — falls through to the text it has always had.
         #
         # @param value [Object, nil] the raw cell value
         # @return [String, nil] the cell's text, or nil for an empty cell
@@ -367,7 +376,7 @@ module Ammitto
           when nil then nil
           when Date then value.iso8601
           else
-            SanctionedEntity.whole_number_text(value) || value.to_s.strip
+            SanctionedEntity.exact_integer_text(value) || value.to_s.strip
           end
         end
 

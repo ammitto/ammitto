@@ -40,8 +40,10 @@ results = Ammitto.search("Putin", sources: [:un, :eu])
 
 [source,ruby]
 ----
-# Search only for organizations
-results = Ammitto.search("Bank", entity_type: :organization)
+# Entity type is not a search option — search reads only sources, limit
+# and offset. Filter the result set it returns.
+results = Ammitto.search("Bank")
+organizations = results.by_entity_type(:organization)
 ----
 
 == CLI Quick Start

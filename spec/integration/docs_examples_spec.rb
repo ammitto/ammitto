@@ -71,9 +71,50 @@ RSpec.describe 'documentation examples' do
     found
   end
 
+  # Every keyword the docs hand to `Ammitto.search`, with where it appears.
+  #
+  # A wrong option here does not raise: QueryBuilder takes an options hash
+  # and reads the keys it knows, so an unknown one is accepted and dropped.
+  # The example still runs, and the page still claims it filtered
+  # something. Two pages documented `entity_type:` that way for as long as
+  # nothing executed them, and executing them would not have caught it
+  # either — only comparing the keyword against the reader does.
+  def self.search_option_references
+    refs = Hash.new { |hash, key| hash[key] = [] }
+    adoc_files.each do |file|
+      File.read(file).scan(/\bAmmitto\.search\((.*?)\)/m) do |(args)|
+        args.scan(/(\w+):/) { |(key)| refs[key] << relative(file) }
+      end
+    end
+    refs
+  end
+
+  # The option keys QueryBuilder actually reads, taken from its source
+  # rather than restated here, so this cannot drift out of date without
+  # the class itself changing.
+  def self.search_options_read
+    source = File.read(
+      File.expand_path('../../lib/ammitto/search/query_builder.rb', __dir__)
+    )
+    source.scan(/options\[:(\w+)\]/).flatten.uniq
+  end
+
   files = adoc_files
   references = constant_references
   receivers = receiver_calls
+  search_options = search_option_references
+  honoured = search_options_read
+
+  it 'reads the option keys QueryBuilder honours' do
+    expect(honoured).to include('sources', 'limit', 'offset')
+  end
+
+  search_options.sort.each do |option, locations|
+    it "passes #{option}: to Ammitto.search, which reads it " \
+       "(#{locations.uniq.join(', ')})" do
+      expect(honoured).to include(option)
+    end
+  end
 
   # Guards the generators themselves. Without these, a docs move or a regex
   # that quietly stops matching would leave the suite green while checking

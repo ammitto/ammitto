@@ -141,18 +141,19 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('187')
     end
 
-    # The motivating case. Turkey's numbers reach the parser through Roo,
-    # which hands back a Float for a numeric cell, so whether a row reads
-    # "1" or "1.0" is decided by the workbook's display format rather than
-    # by its value. A rule that accepted only bare decimals would drop all
-    # 239 numbered records the day Turkey re-uploaded the same numbers
-    # formatted with a decimal place.
-    it 'keeps a decimally formatted number usable' do
-      entity = build(name: 'TAMAS COMPANY', reference_number: 1.0)
+    # A decimal-looking reference is usable rather than refused, which is
+    # what a bare-decimal rule got wrong: it would have dropped all 239
+    # numbered records the day Turkey reformatted the column.
+    #
+    # Whether such a value should ever REACH this method is a separate
+    # question, and the answer is no — SanctionsList.cell_text undoes
+    # Roo's display-format artefact at the sheet, so a workbook formatted
+    # "1.0" arrives here as "1". This method is deliberately not where
+    # that is decided; it takes what it is given.
+    it 'keeps a decimal-looking reference usable' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
 
       expect(entity.local_id).to eq('1.0')
-      expect(Ammitto::Utils::IriSanitizer.sanitize(entity.local_id))
-        .to eq('10')
     end
 
     ['1.0', '-10', '10-', '--10--'].each do |rewritten|

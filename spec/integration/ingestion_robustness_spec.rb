@@ -626,11 +626,12 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       end
     end
 
-    # The regression this branch exists to prevent, end to end. Turkey's
-    # numbers reach the parser as Roo floats, so a workbook re-uploaded
-    # with a decimal display format publishes "1.0" where it published
-    # "1". Under a bare-decimal rule that lost every numbered record on
-    # the sheet; the record must survive instead.
+    # A decimal-looking reference that reaches harmonize anyway — from a
+    # record file written before SanctionsList.cell_text normalized the
+    # sheet — still harmonizes rather than being lost. It addresses the
+    # record by what the file says, which is the only thing this layer
+    # knows; keeping the two formats on one IRI is the parser's job, and
+    # the parse-layer spec is where that is pinned.
     it 'harmonizes a tr reference formatted with a decimal place' do
       Dir.mktmpdir do |dir|
         processed = File.join(dir, 'data-tr', 'processed')

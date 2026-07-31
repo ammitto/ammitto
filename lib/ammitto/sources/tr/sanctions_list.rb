@@ -228,8 +228,7 @@ module Ammitto
 
             row = {}
             headers.each_with_index do |header, idx|
-              val = values[idx]
-              row[header] = val.is_a?(Date) ? val.iso8601 : val&.to_s&.strip
+              row[header] = cell_text(values[idx])
             end
 
             # Determine name - could be in 'name' (individual) or 'organization_name' column
@@ -258,6 +257,60 @@ module Ammitto
           end
 
           list
+        end
+
+        # Text of one sheet cell, as the record should carry it.
+        #
+        # Roo decides Integer or Float from the cell's DISPLAY FORMAT
+        # rather than from the value: Excelx::Cell::Number#create_numeric
+        # returns a Float whenever the format string contains ".0". So the
+        # same "Sıra No" arrives here as 1 or as 1.0 purely by how the
+        # workbook was formatted — and +1.0.to_s+ is "1.0", which
+        # Utils::IriSanitizer slugs to "10", the IRI of whoever Turkey
+        # numbered 10. Left alone, a cosmetic reformat would silently
+        # renumber every designee on the sheet, and a sheet carrying both
+        # formats would merge two of them onto one node.
+        #
+        # A Float holding a whole number is therefore written back as that
+        # integer. This undoes a formatting artefact; it does not
+        # reinterpret a value, because 1.0 and 1 ARE the same number and
+        # Turkey published one cell, not two.
+        #
+        # A Float with a real fractional part is left exactly as it is:
+        # 1.5 is not the same number as 1 or as 15, so rewriting it would
+        # invent data. Nothing here decides what a well-formed reference
+        # looks like — SanctionedEntity#local_id accepts whatever shape
+        # arrives — so such a value keeps the sanitizer's own
+        # dot-stripping, which is shared by every source and every
+        # punctuated identifier in the graph.
+        #
+        # Applied to every cell rather than to the reference alone, so a
+        # passport or decision number reformatted the same way is read the
+        # same way.
+        #
+        # @param value [Object, nil] the raw cell value
+        # @return [String, nil] the cell's text, or nil for an empty cell
+        def self.cell_text(value)
+          case value
+          when nil then nil
+          when Date then value.iso8601
+          when Float then float_text(value)
+          else value.to_s.strip
+          end
+        end
+
+        # A Float's text, with a whole-number display artefact undone.
+        #
+        # Guarded on +finite?+ so NaN and Infinity fall through to their
+        # ordinary string form: neither equals its own #to_i, and
+        # Float::INFINITY.to_i raises.
+        #
+        # @param value [Float] the raw cell value
+        # @return [String] the cell's text
+        def self.float_text(value)
+          return value.to_s.strip unless value.finite? && value == value.to_i
+
+          value.to_i.to_s
         end
 
         # Detect entity type from row data

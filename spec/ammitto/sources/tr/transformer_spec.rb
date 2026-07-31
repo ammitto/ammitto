@@ -26,17 +26,18 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       expect(result[:entry].id).to end_with('/187')
     end
 
-    # A reference Turkey formatted with a decimal place mints an IRI like
-    # any other reference. Roo returns a Float for a cell whose display
-    # format carries decimals, so this is what a cosmetically reformatted
-    # workbook delivers for every one of the 239 numbered rows.
-    it 'mints an IRI from a decimally formatted number' do
-      result = transformer.transform(
-        source(name: 'TAMAS COMPANY', reference_number: 1.0)
-      )
+    # A workbook Turkey reformats with decimals must keep every designee
+    # on the number Turkey published. SanctionsList.cell_text is what
+    # guarantees that, by undoing Roo's display-format artefact before the
+    # value ever reaches a record; the parse-layer spec drives the sheet
+    # itself. This pins the consequence the graph sees.
+    it 'keeps a reformatted workbook on its published numbers' do
+      minted = Ammitto::Sources::Tr::SanctionsList
+               .cell_text(1.0)
+               .then { |reference| source(name: 'A', reference_number: reference) }
+               .then { |record| transformer.transform(record)[:entity].id }
 
-      expect(result[:entity].id)
-        .to eq('https://www.ammitto.org/entity/tr/10')
+      expect(minted).to eq('https://www.ammitto.org/entity/tr/1')
     end
 
     # The scope boundary, pinned for representative scalar references.

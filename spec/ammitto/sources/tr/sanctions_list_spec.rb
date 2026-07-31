@@ -156,6 +156,40 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
       expect { described_class.verify_distinct_local_ids!(records) }
         .not_to raise_error
     end
+
+    it 'does not file an unmintable id under the "unknown" fallback' do
+      # Utils::IriSanitizer.sanitize answers "unknown" for a reference
+      # that slugs to nothing, so grouping on it used to report a
+      # collision between a record that mints entity/tr/unknown and one
+      # that mints no IRI at all. Only the former owns that id.
+      records = [entity(name: 'A', reference_number: '///'),
+                 entity(name: 'B', reference_number: 'unknown')]
+
+      expect { described_class.verify_distinct_local_ids!(records) }
+        .not_to raise_error
+    end
+
+    it 'still refuses two records that both mint "unknown"' do
+      records = [entity(name: 'A', reference_number: 'unknown'),
+                 entity(name: 'B', reference_number: 'UNKNOWN')]
+
+      expect { described_class.verify_distinct_local_ids!(records) }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError,
+                        /distinct records mint one identifier/)
+    end
+  end
+
+  describe '.mintable_id' do
+    it 'returns the identifier the IRI layer would mint' do
+      expect(described_class.mintable_id('187')).to eq('187')
+    end
+
+    it 'returns nil for an id that mints no IRI, as for a nil id' do
+      # The IRI layer raises for these rather than emitting a shared
+      # ".../unknown"; the gate treats them as having no id to collide.
+      expect(described_class.mintable_id('///')).to be_nil
+      expect(described_class.mintable_id(nil)).to be_nil
+    end
   end
 
   describe '.verify_reservations!' do

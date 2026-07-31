@@ -348,10 +348,7 @@ module Ammitto
         # @param entities [Array<SanctionedEntity>]
         # @raise [IntegrityError] when two records share a sanitized id
         def self.verify_distinct_local_ids!(entities)
-          by_id = entities.group_by do |entity|
-            id = entity.local_id
-            id.nil? ? nil : Utils::IriSanitizer.sanitize(id)
-          end
+          by_id = entities.group_by { |entity| mintable_id(entity.local_id) }
           by_id.delete(nil)
           collisions = by_id.select { |_id, rows| rows.size > 1 }
           return if collisions.empty?
@@ -359,6 +356,38 @@ module Ammitto
           raise IntegrityError,
                 'tr: distinct records mint one identifier — ' \
                 "#{describe_collisions(collisions)}"
+        end
+
+        # The identifier this record would actually mint, or nil when it
+        # would mint none.
+        #
+        # Deliberately the IRI layer's own strict sanitizer rather than
+        # Utils::IriSanitizer.sanitize. The lenient one answers "unknown"
+        # for an id that sanitizes to nothing, which files a record under
+        # a key it can never own — and collides it with a record whose id
+        # really does slug to "unknown", reporting a shared identifier
+        # between one record that mints that IRI and one that mints no
+        # IRI at all. Grouping on what the IRI layer will really produce
+        # keeps this gate's verdict and the IRI layer's verdict the same
+        # verdict.
+        #
+        # An id that mints nothing is the same case as a nil id: there is
+        # no identifier for it to be distinct from, so it leaves the
+        # grouping the way nil does and Utils::IriSanitizer reports it,
+        # per record and by name, when harmonize asks for its IRI.
+        #
+        # This method has no opinion on what a well-formed reference
+        # looks like — see SanctionedEntity#local_id.
+        #
+        # @param local_id [Object, nil] the record's local id
+        # @return [String, nil] the identifier it mints, or nil for none
+        def self.mintable_id(local_id)
+          return nil if local_id.nil?
+
+          Utils::IriSanitizer.sanitize_local_id!(local_id, source: 'tr',
+                                                           kind: 'entity')
+        rescue Utils::IriSanitizer::MissingLocalIdError
+          nil
         end
 
         # @return [String] human-readable collision report

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'tmpdir'
+require 'fileutils'
 require 'ammitto'
 require 'ammitto/cli'
 require 'ammitto/cli/fetch_command'

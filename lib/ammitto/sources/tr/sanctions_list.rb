@@ -54,6 +54,71 @@ module Ammitto
           map 'address', to: :address
         end
 
+        # A number spelled with a redundant zero fraction, as Roo's Float
+        # renders it and as such a value is then written to YAML.
+        WHOLE_DECIMAL = /\A(-?\d+)\.0+\z/
+
+        # Largest magnitude a Float represents exactly as an integer. Past
+        # it consecutive integers share one Float — 9007199254740993.0 IS
+        # 9007199254740992.0 — so a whole-looking value is no longer
+        # evidence of the integer the workbook held, and converting it
+        # would assert a precision this parser does not have.
+        EXACT_INTEGER_LIMIT = 2**53
+
+        # One canonical spelling for a value that writes a whole number two
+        # ways.
+        #
+        # Roo picks Integer or Float for a numeric cell from the cell's
+        # DISPLAY FORMAT rather than from the value
+        # (Excelx::Cell::Number#create_numeric returns a Float whenever the
+        # format string contains ".0"). So Turkey's row 1 arrives as 1 or
+        # as 1.0 purely by how the workbook was formatted — and "1.0"
+        # sanitizes to "10", the IRI of whoever Turkey numbered 10. A
+        # cosmetic reformat would silently renumber every designee on the
+        # sheet, and a sheet carrying both formats would merge two of them.
+        #
+        # Reducing the two spellings to one undoes a formatting artefact.
+        # It does not reinterpret a value: 1.0 and 1 ARE the same number,
+        # and Turkey published one cell, not two.
+        #
+        # Both spellings are handled here because a reference reaches
+        # identity by two roads — the sheet at fetch, and the record file
+        # at harmonize — and a rule that guarded only one of them would
+        # leave the other minting the wrong IRI. The String form needs no
+        # precision limit: its digits are the workbook's own, not a Float's
+        # approximation of them.
+        #
+        # A value with a real fractional part is NOT canonical here and
+        # gets nil: 1.5 is not the same number as 1 or as 15, so rewriting
+        # it would invent data. Such a value keeps whatever the sanitizer
+        # does with it, which is what every punctuated identifier in the
+        # graph already gets.
+        #
+        # @param value [Object, nil] a raw cell value or a record's text
+        # @return [String, nil] the canonical digits, or nil when the value
+        #   does not spell a whole number redundantly
+        def self.whole_number_text(value)
+          case value
+          when Float then exact_integer_text(value)
+          when String then WHOLE_DECIMAL.match(value.strip)&.then { |m| m[1].to_i.to_s }
+          end
+        end
+
+        # A Float's integer text, when the Float is provably that integer.
+        #
+        # +finite?+ first, because NaN and Infinity equal no integer and
+        # Float::INFINITY#to_i raises.
+        #
+        # @param value [Float]
+        # @return [String, nil]
+        def self.exact_integer_text(value)
+          return nil unless value.finite?
+          return nil unless value.abs <= EXACT_INTEGER_LIMIT
+          return nil unless value == value.to_i
+
+          value.to_i.to_s
+        end
+
         def person?
           entity_type&.downcase == 'individual'
         end
@@ -109,12 +174,31 @@ module Ammitto
           return nil if malformed?(reference_number)
 
           reference = reference_number.to_s.strip
-          return reference unless reference.empty?
+          return canonical(reference) unless reference.empty?
 
           fallback_name
         end
 
         private
+
+        # The reference as identity should read it.
+        #
+        # Applied here as well as at the sheet because harmonize does not
+        # go through the sheet: it re-reads a record file written by an
+        # earlier fetch, so a file committed before the sheet was
+        # normalized still carries "1.0" and would otherwise mint
+        # entity/tr/10 — reference 10's IRI. Making both roads agree is
+        # what keeps one designee on one node across that changeover.
+        #
+        # +reference_number+ itself is deliberately untouched, so the
+        # harmonized output keeps reporting the text the record actually
+        # holds rather than a value this layer invented.
+        #
+        # @param reference [String] the stripped reference text
+        # @return [String] the reference, or its canonical whole number
+        def canonical(reference)
+          self.class.whole_number_text(reference) || reference
+        end
 
         # The record name, used when Turkey published no number.
         #
@@ -261,32 +345,20 @@ module Ammitto
 
         # Text of one sheet cell, as the record should carry it.
         #
-        # Roo decides Integer or Float from the cell's DISPLAY FORMAT
-        # rather than from the value: Excelx::Cell::Number#create_numeric
-        # returns a Float whenever the format string contains ".0". So the
-        # same "Sıra No" arrives here as 1 or as 1.0 purely by how the
-        # workbook was formatted — and +1.0.to_s+ is "1.0", which
-        # Utils::IriSanitizer slugs to "10", the IRI of whoever Turkey
-        # numbered 10. Left alone, a cosmetic reformat would silently
-        # renumber every designee on the sheet, and a sheet carrying both
-        # formats would merge two of them onto one node.
-        #
-        # A Float holding a whole number is therefore written back as that
-        # integer. This undoes a formatting artefact; it does not
-        # reinterpret a value, because 1.0 and 1 ARE the same number and
-        # Turkey published one cell, not two.
-        #
-        # A Float with a real fractional part is left exactly as it is:
-        # 1.5 is not the same number as 1 or as 15, so rewriting it would
-        # invent data. Nothing here decides what a well-formed reference
-        # looks like — SanctionedEntity#local_id accepts whatever shape
-        # arrives — so such a value keeps the sanitizer's own
-        # dot-stripping, which is shared by every source and every
-        # punctuated identifier in the graph.
+        # The first of the two roads a reference travels: writing the
+        # canonical spelling here means every consumer of a freshly
+        # fetched record — the filename, the harmonized source reference,
+        # the IRI — sees one number rather than the display format's
+        # rendering of it. SanctionedEntity.whole_number_text carries the
+        # rule and the reasoning; SanctionedEntity#local_id applies the
+        # same rule to the other road, the record file harmonize re-reads.
         #
         # Applied to every cell rather than to the reference alone, so a
-        # passport or decision number reformatted the same way is read the
-        # same way.
+        # passport, gazette or decision number Turkey reformats the same
+        # way is read the same way. A value that is not a redundantly
+        # spelled whole number — including a genuinely fractional one, and
+        # any Float too large to be provably exact — falls through
+        # unchanged to the text it has always had.
         #
         # @param value [Object, nil] the raw cell value
         # @return [String, nil] the cell's text, or nil for an empty cell
@@ -294,23 +366,9 @@ module Ammitto
           case value
           when nil then nil
           when Date then value.iso8601
-          when Float then float_text(value)
-          else value.to_s.strip
+          else
+            SanctionedEntity.whole_number_text(value) || value.to_s.strip
           end
-        end
-
-        # A Float's text, with a whole-number display artefact undone.
-        #
-        # Guarded on +finite?+ so NaN and Infinity fall through to their
-        # ordinary string form: neither equals its own #to_i, and
-        # Float::INFINITY.to_i raises.
-        #
-        # @param value [Float] the raw cell value
-        # @return [String] the cell's text
-        def self.float_text(value)
-          return value.to_s.strip unless value.finite? && value == value.to_i
-
-          value.to_i.to_s
         end
 
         # Detect entity type from row data

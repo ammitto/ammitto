@@ -626,32 +626,46 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
       end
     end
 
-    # A decimal-looking reference that reaches harmonize anyway — from a
-    # record file written before SanctionsList.cell_text normalized the
-    # sheet — still harmonizes rather than being lost. It addresses the
-    # record by what the file says, which is the only thing this layer
-    # knows; keeping the two formats on one IRI is the parser's job, and
-    # the parse-layer spec is where that is pinned.
-    it 'harmonizes a tr reference formatted with a decimal place' do
+    # Harmonize re-reads record files, never the workbook, so it is a road
+    # to identity that SanctionsList's cell reader does not stand on. A
+    # file an earlier fetch wrote as "1.0" must therefore land on the
+    # number Turkey published — entity/tr/1 — and NOT on entity/tr/10,
+    # which belongs to whoever Turkey numbered 10.
+    harmonize_tr_reference = lambda do |reference|
       Dir.mktmpdir do |dir|
         processed = File.join(dir, 'data-tr', 'processed')
         FileUtils.mkdir_p(processed)
         File.write(File.join(processed, 'tr-1.yaml'),
                    source_fixtures[:tr].first
-                     .merge('reference_number' => '1.0').to_yaml)
+                     .merge('reference_number' => reference).to_yaml)
 
         options = { sources_dir: dir,
                     output_dir: File.join(dir, 'api', 'v1') }
-        expect { Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run }
-          .not_to raise_error
+        Ammitto::Cmd::HarmonizeCommand.new(options, ['tr']).run
 
         graph = JSON.parse(
           File.read(File.join(dir, 'api', 'v1', 'sources', 'tr.jsonld'))
         )['@graph']
-        ids = graph.map { |n| n['@id'] }.compact
-        expect(ids).to include(a_string_matching(%r{/entity/tr/10\z}))
-        expect(ids).not_to include(a_string_matching(%r{/entity/tr/unknown\z}))
+        graph.map { |n| n['@id'] }.compact
       end
+    end
+
+    it 'harmonizes a legacy decimal-spelled reference onto its number' do
+      ids = harmonize_tr_reference.call('1.0')
+
+      expect(ids).to include(a_string_matching(%r{/entity/tr/1\z}))
+      expect(ids).not_to include(a_string_matching(%r{/entity/tr/10\z}))
+      expect(ids).not_to include(a_string_matching(%r{/entity/tr/unknown\z}))
+    end
+
+    it 'harmonizes either spelling onto the same graph node' do
+      expect(harmonize_tr_reference.call('1.0'))
+        .to eq(harmonize_tr_reference.call('1'))
+    end
+
+    it 'keeps a legacy decimal reference off another record number' do
+      expect(harmonize_tr_reference.call('1.0'))
+        .not_to eq(harmonize_tr_reference.call('10'))
     end
   end
 

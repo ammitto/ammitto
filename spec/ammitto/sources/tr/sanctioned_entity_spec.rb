@@ -141,22 +141,46 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       expect(entity.local_id).to eq('187')
     end
 
-    # A decimal-looking reference is usable rather than refused, which is
-    # what a bare-decimal rule got wrong: it would have dropped all 239
-    # numbered records the day Turkey reformatted the column.
-    #
-    # Whether such a value should ever REACH this method is a separate
-    # question, and the answer is no — SanctionsList.cell_text undoes
-    # Roo's display-format artefact at the sheet, so a workbook formatted
-    # "1.0" arrives here as "1". This method is deliberately not where
-    # that is decided; it takes what it is given.
-    it 'keeps a decimal-looking reference usable' do
+    # The second road a reference travels. Harmonize re-reads a record
+    # file rather than the sheet, so a file an earlier fetch wrote as
+    # "1.0" would mint entity/tr/10 — reference 10's IRI — unless this
+    # method reduces the two spellings to one the way the sheet does.
+    it 'reads a redundantly spelled whole number as that number' do
       entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
 
-      expect(entity.local_id).to eq('1.0')
+      expect(entity.local_id).to eq('1')
     end
 
-    ['1.0', '-10', '10-', '--10--'].each do |rewritten|
+    it 'reads either spelling of a number identically' do
+      spelled = build(name: 'A', reference_number: '1.0').local_id
+      plain = build(name: 'A', reference_number: '1').local_id
+
+      expect(spelled).to eq(plain)
+    end
+
+    it 'keeps a redundantly spelled number off another record number' do
+      first = build(name: 'FIRST', reference_number: '1.0')
+      second = build(name: 'SECOND', reference_number: '10')
+
+      expect([first.local_id, second.local_id]).to eq(%w[1 10])
+    end
+
+    it 'leaves reference_number reporting what the record holds' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: '1.0')
+
+      expect(entity.reference_number).to eq('1.0')
+      expect(entity.local_id).to eq('1')
+    end
+
+    # A fractional value is a different number, not a spelling of a whole
+    # one, so it passes through untouched.
+    it 'leaves a genuinely fractional reference alone' do
+      entity = build(name: 'TAMAS COMPANY', reference_number: '1.5')
+
+      expect(entity.local_id).to eq('1.5')
+    end
+
+    ['-10', '10-', '--10--'].each do |rewritten|
       it "accepts #{rewritten.inspect} rather than losing the record" do
         entity = build(name: 'TAMAS COMPANY', reference_number: rewritten)
 

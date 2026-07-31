@@ -129,5 +129,38 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
       expect(described_class.cell_text(Float::INFINITY)).to eq('Infinity')
       expect(described_class.cell_text(Float::NAN)).to eq('NaN')
     end
+
+    # Past 2**53 consecutive integers share one Float, so a whole-looking
+    # value is no longer evidence of the integer the workbook held.
+    # Rewriting it would assert a precision this parser does not have —
+    # and the reader runs on every column, including long passport and
+    # registration numbers.
+    it 'refuses to invent digits for a Float beyond exact integer range' do
+      expect(described_class.cell_text(1.0e20)).to eq('1.0e+20')
+    end
+
+    it 'still normalizes a Float at the exact integer limit' do
+      expect(described_class.cell_text(2.0**53)).to eq('9007199254740992')
+    end
+
+    # The other road: a record file re-read at harmonize carries the
+    # number as text, whose digits are the workbook's own rather than a
+    # Float's approximation, so no precision limit applies to it.
+    it 'canonicalizes a redundantly spelled number given as text' do
+      expect(described_class.cell_text('1.0')).to eq('1')
+      expect(described_class.cell_text('1.00')).to eq('1')
+    end
+
+    it 'canonicalizes a long number given as text without losing digits' do
+      expect(Ammitto::Sources::Tr::SanctionedEntity
+               .whole_number_text('9007199254740993.0'))
+        .to eq('9007199254740993')
+    end
+
+    it 'leaves text that is not a whole number alone' do
+      ['1.5', 'E.47.A.3', '12/A', '1.0e3', '1.'].each do |text|
+        expect(described_class.cell_text(text)).to eq(text)
+      end
+    end
   end
 end

@@ -46,11 +46,12 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
     # nothing and the record is refused. The identities this change
     # invents are for records carrying no reference at all.
     #
-    # Scalar references only: a container or an inspection-form string is
-    # deliberately refused instead (see +malformed?+), and surrounding
-    # whitespace is stripped, which the sanitizer would have collapsed
-    # anyway.
-    ['187', '1.0', 'TR-1', '12/A', '--', '١٢٣'].each do |reference|
+    # Scalar references only, and not a redundantly spelled whole number:
+    # a container or an inspection-form string is deliberately refused
+    # instead (see +malformed?+), "1.0" is deliberately reduced to "1"
+    # (the example above), and surrounding whitespace is stripped, which
+    # the sanitizer would have collapsed anyway.
+    ['187', 'TR-1', '12/A', '--', '١٢٣'].each do |reference|
       it "addresses #{reference.inspect} exactly as the reference alone does" do
         expected = begin
           Ammitto::Utils::IriSanitizer.entity_iri('tr', reference)

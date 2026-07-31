@@ -12,7 +12,7 @@ module Ammitto
     # @example Fetch UK data as YAML
     #   ammitto fetch uk --format yaml --output-dir ./processed
     #
-    # @example Fetch all sources
+    # @example Fetch all automatable sources (skips manually managed cn)
     #   ammitto fetch --all
     #
     class FetchCommand
@@ -48,7 +48,7 @@ module Ammitto
       # @param sources [Array<String>]
       # @return [Array<Symbol>]
       def normalize_sources(sources)
-        return Config::Defaults::ALL_SOURCES if options[:all]
+        return Config::Defaults::FETCHABLE_SOURCES if options[:all]
 
         if sources.empty?
           raise Thor::Error,
@@ -80,7 +80,7 @@ module Ammitto
         end
       end
 
-      # Fetch all sources
+      # Fetch all requested sources
       # @return [void]
       def fetch_all
         results = @sources.map do |source|
@@ -88,6 +88,7 @@ module Ammitto
         end
 
         print_summary(results)
+        enforce_exit_status(results)
       end
 
       # Fetch a single source
@@ -552,6 +553,20 @@ module Ammitto
         results.select { |r| r[:status] == :error }.each do |r|
           puts "  #{r[:code]}: #{r[:error]}"
         end
+      end
+
+      # A run with any failed source must exit nonzero: otherwise cron/CI
+      # logs the per-source error and still concludes success, so a dead
+      # source keeps its published data silently stale behind green runs.
+      # @param results [Array<Hash>] fetch results
+      # @return [void]
+      # @raise [Thor::Error] when any requested source failed
+      def enforce_exit_status(results)
+        failed = results.select { |r| r[:status] == :error }
+        return if failed.empty?
+
+        raise Thor::Error,
+              "Fetch failed for: #{failed.map { |r| r[:code] }.join(', ')}"
       end
     end
   end

@@ -8,6 +8,7 @@ gemspec
 gem 'rake'
 gem 'rspec', '~> 3.0'
 gem 'rubocop'
+gem 'rubocop-rspec'
 gem 'vcr'
 gem 'webmock'
 

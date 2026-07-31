@@ -102,7 +102,7 @@ ammitto fetch eu
 # Fetch multiple sources
 ammitto fetch eu un us
 
-# Fetch all sources
+# Fetch all automatable sources (skips manually managed cn)
 ammitto fetch --all
 
 # Dry run (show what would be fetched)
@@ -124,7 +124,7 @@ ammitto fetch eu --format yaml
 | Show what would be done without making changes
 
 | `--all`
-| Fetch all available sources
+| Fetch all automatable sources (skips manually managed cn)
 
 | `--format FORMAT`
 | Output format: yaml (default), jsonld

@@ -4,11 +4,11 @@
 # Site settings
 title: Ammitto Documentation
 description: Unified access to global sanctions data from multiple international sources
-url: https://www.lutaml.org
+url: https://ammitto.org
 baseurl: /ammitto
 
 # Repository
-repository: lutaml/ammitto
+repository: ammitto/ammitto
 
 # Theme
 theme: just-the-docs
@@ -52,9 +52,9 @@ nav_fold: true
 # External links
 aux_links:
   "Source":
-    - "https://github.com/lutaml/ammitto"
+    - "https://github.com/ammitto/ammitto"
   "Report Issues":
-    - "https://github.com/lutaml/ammitto/issues"
+    - "https://github.com/ammitto/ammitto/issues"
   "RubyGem":
     - "https://rubygems.org/gems/ammitto"
 
@@ -68,7 +68,7 @@ back_to_top_text: "Back to top"
 heading_anchors: true
 
 # Footer
-footer_content: 'Copyright &copy; 2025 Ribose. Distributed under the <a href="https://github.com/lutaml/ammitto/blob/main/LICENSE.txt">MIT License</a>.'
+footer_content: 'Copyright &copy; 2025 Ribose. Distributed under the <a href="https://github.com/ammitto/ammitto/blob/main/LICENSE.txt">MIT License</a>.'
 
 # Footer last edit timestamp
 last_edit_timestamp: true

@@ -1,5 +1,8 @@
 inherit_from: .rubocop_todo.yml
 
+plugins:
+  - rubocop-rspec
+
 # This project follows the Ribose OSS style guide.
 # https://github.com/riboseinc/oss-guides
 # All project-specific additions and overrides should be specified in this file.
@@ -68,3 +71,102 @@ Metrics/ModuleLength:
 Lint/ConstantDefinitionInBlock:
   Exclude:
     - 'spec/**/*.rb'
+
+# rubocop-rspec. Two cops were adopted deliberately —
+# RSpec/MultipleDescribes and RSpec/SpecFilePathFormat — because they enforce
+# the one-describe-per-file, path-mirrors-the-class spec layout; every offence
+# of theirs is fixed in the tree, none deferred to .rubocop_todo.yml.
+# The 15 cops switched off below are the ones that fired against this suite:
+# it has never been written to those styles, and recording a decision beats
+# parking a backlog. The rest of the RSpec department stays on, since the
+# suite already satisfies it and those cops guard the specs written next.
+
+# Specs mirror the class name. Where a namespace intentionally and
+# systematically differs from its directory, the cop is told the alias
+# instead of churning the tree: Ammitto::Cmd covers all ten commands in
+# lib/ammitto/cli/, so cli/ is that namespace's settled home.
+# A one-off mismatch is the opposite case and gets no alias — Ammitto::Registry
+# sits in lib/ammitto/sources/ without joining that namespace, so its spec
+# moved to spec/ammitto/registry_spec.rb to match the constant, and the lib
+# file is left for a separate decision (G30).
+RSpec/SpecFilePathFormat:
+  CustomTransform:
+    Cmd: cli
+
+# Grouping the assertions that describe one behaviour is deliberate here.
+RSpec/MultipleExpectations:
+  Enabled: false
+
+# 194 offences in 43 files spanning every area of the suite, from inline
+# fixture trees to long `include(...)` assertion lists.
+RSpec/ExampleLength:
+  Enabled: false
+
+# The legacy-shim, harmonize-pipeline and public-API specs hold their tmpdir
+# paths in @ivars set by an `around` hook.
+RSpec/InstanceVariable:
+  Enabled: false
+
+# Bare `subject` is the convention in the five harmonized-model specs.
+RSpec/NamedSubject:
+  Enabled: false
+
+# All 15 are the Neo4j round-trip spec, nested by entity type then by method.
+RSpec/NestedGroups:
+  Enabled: false
+
+# 12 offences in 4 files, each asserting on a substring of a message or URL —
+# 'Schema error', 'Sources directory not found', 'meti.go.jp'. Every one of
+# those files also asserts with a real pattern (`/broken\.yaml.*directory/i`,
+# `/\.xlsx$/`, `/Schema not found: .*jp-legal-instrument\.yml/`), so adopting
+# the cop would split one idiom into two spellings inside the same group.
+RSpec/MatchWithSimpleRegex:
+  Enabled: false
+
+# Integration, load-order, schema-path, legacy-shim, list-identity and
+# gemspec specs describe behaviour rather than a single class.
+RSpec/DescribeClass:
+  Enabled: false
+
+# All 8 are spec/ammitto_spec.rb calling the public API as `Ammitto.…`.
+RSpec/DescribedClass:
+  Enabled: false
+
+# In the model and AU transformer specs `subject` is placed after the `let`s
+# it consumes.
+RSpec/LeadingSubject:
+  Enabled: false
+
+# The China extractor spec keeps its five stubs one per line.
+RSpec/ReceiveMessages:
+  Enabled: false
+
+# Frozen fixture hashes and helper lambdas are built once at group scope.
+RSpec/LeakyLocalVariable:
+  Enabled: false
+
+# One spec names a BaseSource subclass inline to register it; the constant
+# outlives its example, and nothing else in the suite reads it.
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+
+# One offence each, and each one sits inside a group written the other way.
+# Correcting them in isolation trades a whole-group convention for a
+# single-line one, so they stay off with the reason recorded.
+
+# neo4j_round_trip_spec.rb:118 reads `eq(true)` among a run of `eq('Cyrl')`,
+# `eq('ru')` property assertions.
+RSpec/BeEq:
+  Enabled: false
+
+# ammitto_spec.rb:5 pairs `not_to be nil` with the `eq('1.0.0')` on the
+# next line.
+RSpec/BeNil:
+  Enabled: false
+
+# The only offence is the third assertion of a trio (ontology
+# temporal_period_spec.rb:29-31); the first two are strict `be(true)` /
+# `be(false)`, which the cop leaves alone because no predicate matcher is
+# equivalent to them.
+RSpec/PredicateMatcher:
+  Enabled: false

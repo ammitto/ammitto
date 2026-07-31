@@ -106,18 +106,26 @@ module Ammitto
 
       # Name script/character set types (ISO 15924)
       # @return [Array<Symbol>]
+      # Latn: Latin, Cyrl: Cyrillic, Arab: Arabic, Hani: Han,
+      # Hebr: Hebrew, Beng: Bengali, Deva: Devanagari, Grek: Greek,
+      # Jpan: Japanese (Han + Kana), Kana: Katakana, Hang: Hangul,
+      # Kore: Korean (Hangul + Han), Thai: Thai. Comments must stay
+      # outside the %i[] literal: Ruby would keep each comment word as
+      # an enum member.
       NAME_SCRIPTS = %i[
-        Latn # Latin
-        Cyrl # Cyrillic
-        Arab # Arabic
-        Hani # Han (Chinese/Japanese/Korean)
-        Hebr # Hebrew
-        Beng # Bengali
-        Deva # Devanagari
-        Greek # Greek
-        Kana # Japanese Kana
-        Hang # Korean Hangul
-        Thai # Thai
+        Latn
+        Cyrl
+        Arab
+        Hani
+        Hebr
+        Beng
+        Deva
+        Grek
+        Jpan
+        Kana
+        Hang
+        Kore
+        Thai
         other
       ].freeze
 
@@ -235,7 +243,7 @@ module Ammitto
         return :Hani if text.match?(/\p{Han}/)
         return :Deva if text.match?(/\p{Devanagari}/)
         return :Beng if text.match?(/\p{Bengali}/)
-        return :Greek if text.match?(/\p{Greek}/)
+        return :Grek if text.match?(/\p{Greek}/)
         return :Kana if text.match?(/\p{Hiragana}|\p{Katakana}/)
         return :Hang if text.match?(/\p{Hangul}/)
         return :Thai if text.match?(/\p{Thai}/)

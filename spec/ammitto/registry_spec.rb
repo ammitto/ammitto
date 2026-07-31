@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# The source registry is namespaced `Ammitto::Registry`, not
+# `Ammitto::Sources::Registry`, even though it lives in
+# lib/ammitto/sources/registry.rb. The spec path follows the constant.
 RSpec.describe Ammitto::Registry do
   describe '.register' do
     it 'registers a source' do

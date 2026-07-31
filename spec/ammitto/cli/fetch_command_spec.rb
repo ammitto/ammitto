@@ -5,6 +5,9 @@ require 'fileutils'
 require 'ammitto'
 require 'ammitto/cli'
 require 'ammitto/cli/fetch_command'
+# Extractors are loaded lazily by the fetch command, not by `ammitto`;
+# the disposal examples below verify a double against the real class.
+require 'ammitto/extractors/tr_extractor'
 
 RSpec.describe Ammitto::Cmd::FetchCommand do
   it 'reports CN as manually managed instead of a silent extractor success' do
@@ -134,6 +137,56 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
       expect(count).to eq(2)
       expect(records_on_disk).to include('tr-187.yaml')
       expect(records_on_disk.size).to eq(2)
+    end
+  end
+
+  describe 'disposing of the downloaded workbook' do
+    let(:extractor) { instance_double(Ammitto::Extractors::TrExtractor) }
+    let(:model_class) { class_double(Ammitto::Sources::Tr::SanctionsList) }
+
+    def parse
+      described_class.new({}, ['tr'])
+                     .send(:parse_xlsx, model_class, 'book.xlsx', extractor)
+    end
+
+    it 'disposes of it after a parse that succeeds' do
+      allow(model_class).to receive(:from_xlsx).and_return(:parsed)
+      allow(extractor).to receive(:cleanup)
+
+      expect(parse).to eq(:parsed)
+      expect(extractor).to have_received(:cleanup)
+    end
+
+    it 'disposes of it after a parse that refuses the payload' do
+      # A refused harvest used to keep its workbook: cleanup ran only on
+      # the returning path.
+      allow(model_class).to receive(:from_xlsx)
+        .and_raise(Ammitto::Sources::Tr::IntegrityError, 'refused')
+      allow(extractor).to receive(:cleanup)
+
+      expect { parse }
+        .to raise_error(Ammitto::Sources::Tr::IntegrityError, 'refused')
+      expect(extractor).to have_received(:cleanup)
+    end
+
+    it 'keeps the refusal visible when disposal also fails' do
+      # The operator needs to know why the harvest was refused, not that
+      # a temp file resisted deletion.
+      allow(model_class).to receive(:from_xlsx)
+        .and_raise(Ammitto::Sources::Tr::IntegrityError, 'refused')
+      allow(extractor).to receive(:cleanup).and_raise(IOError, 'busy')
+
+      expect do
+        expect { parse }
+          .to raise_error(Ammitto::Sources::Tr::IntegrityError, 'refused')
+      end.to output(/\[cleanup\] busy/).to_stderr
+    end
+
+    it 'reports a disposal failure when there is no refusal to hide' do
+      allow(model_class).to receive(:from_xlsx).and_return(:parsed)
+      allow(extractor).to receive(:cleanup).and_raise(IOError, 'busy')
+
+      expect { parse }.to raise_error(IOError, 'busy')
     end
   end
 end

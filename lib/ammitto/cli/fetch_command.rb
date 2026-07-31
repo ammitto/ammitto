@@ -152,16 +152,7 @@ module Ammitto
                  model_class.from_json(content)
                when :au, :tr, :nz, :eu_vessels
                  # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
-                 #
-                 # ensure, not a trailing call: the downloaded workbook is a
-                 # Tempfile, and a parse that refuses the payload (an
-                 # integrity failure, say) must not leave it behind. A
-                 # refused harvest is a normal outcome here, not a crash.
-                 begin
-                   model_class.from_xlsx(content)
-                 ensure
-                   extractor.cleanup if extractor.respond_to?(:cleanup)
-                 end
+                 parse_xlsx(model_class, content, extractor)
                when :jp, :un_vessels
                  # JP, UN Vessels are PDF-based - requires manual conversion
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"
@@ -216,6 +207,44 @@ module Ammitto
         puts "[#{source}] Saved #{count} files to #{output_dir}" if options[:verbose]
 
         count
+      end
+
+      # Parse a workbook and dispose of the temporary file it arrived in.
+      #
+      # The download is a Tempfile, and a parse that refuses the payload
+      # is a normal outcome on these sources, not a crash — so disposal
+      # has to happen whether the parse returned or raised. It used to
+      # happen only on the returning path, which leaked the workbook of
+      # every refused harvest.
+      #
+      # A plain +ensure+ would fix the leak and introduce a worse
+      # problem: if unlinking fails while an integrity failure is in
+      # flight, Ruby replaces the exception, and the operator is told
+      # about a temp file instead of why the harvest was refused. So the
+      # disposal only speaks when it has nothing to interrupt.
+      #
+      # @param model_class [Class] source model to parse with
+      # @param content [String] path to the downloaded workbook
+      # @param extractor [Object] extractor owning the temporary file
+      # @return [Object] the parsed model
+      def parse_xlsx(model_class, content, extractor)
+        parsed = model_class.from_xlsx(content)
+      rescue StandardError
+        begin
+          cleanup_extractor(extractor)
+        rescue StandardError => e
+          warn "[cleanup] #{e.message}"
+        end
+        raise
+      else
+        cleanup_extractor(extractor)
+        parsed
+      end
+
+      # @param extractor [Object] extractor owning the temporary file
+      # @return [void]
+      def cleanup_extractor(extractor)
+        extractor.cleanup if extractor.respond_to?(:cleanup)
       end
 
       # Write each item to its own file, refusing to overwrite one record

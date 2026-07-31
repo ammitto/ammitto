@@ -187,10 +187,16 @@ module Ammitto
         items = items_from_data(source, data)
         written = write_items(source, items, output_dir)
 
-        # Save index file with metadata. count is the number of files on
-        # disk, not the number of items seen: they used to differ silently
-        # whenever two items shared a filename, so the run reported more
-        # records than it had actually written.
+        # Save index file with metadata. count is the number of files
+        # this run wrote, not the number of items it saw: they used to
+        # differ silently whenever two items shared a filename, so the run
+        # reported more records than it had actually written.
+        #
+        # Not a count of the directory's contents. Nothing here removes
+        # files from a previous harvest, so a delisted record's file
+        # outlives the run that dropped it — longstanding behaviour of
+        # this command, and a separate question from whether one run
+        # overwrites its own records.
         count = written.size
         index = {
           'source' => source.to_s,

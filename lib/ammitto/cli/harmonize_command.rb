@@ -118,6 +118,9 @@ module Ammitto
         )
         @search_indexer = Serialization::SearchIndexExporter.new
         @ontology_exporter = Serialization::OntologyExporter.new
+        # Per run, not per source: one entity IRI never spans sources, but a
+        # reused command instance must not inherit an earlier run's links
+        @entry_ids_by_entity = nil
 
         results = @sources.map do |source|
           harmonize_source(source)
@@ -473,6 +476,7 @@ module Ammitto
             next
           end
 
+          link_sanction_entry(r[:entity], r[:entry])
           @exporter.add_node(entity: r[:entity], entry: r[:entry], source: source)
           @search_indexer.add(r[:entity], r[:entry])
 
@@ -482,6 +486,44 @@ module Ammitto
         end
 
         added
+      end
+
+      # Entity IRI => every entry IRI ingested for it in this run
+      # @return [Hash{String => Array<String>}]
+      def entry_ids_by_entity
+        @entry_ids_by_entity ||= Hash.new { |h, k| h[k] = [] }
+      end
+
+      # Write the entity->entry edge onto the entity hash before it reaches
+      # either aggregate path.
+      #
+      # Ten of fifteen sources populate Entity#sanction_entry_ids in their
+      # transformer, so the serializer emits hasSanctionEntry for those; the
+      # rest only set the inverse entry.entity_id, and the edge is derived
+      # here so every source carries it. The derivation must happen before
+      # #add_node and before the per-source graph push, because those two
+      # paths diverge in the same breath — a fix inside the graph exporter
+      # would reach node/entity/** but never sources/*.jsonld.
+      #
+      # It accumulates rather than assigns: one entity legitimately carries
+      # several entries, and both aggregate paths dedupe by @id with
+      # last-wins semantics, so writing only the current pair's IRI would
+      # leave the surviving entity hash holding just the last entry.
+      # @param entity [Hash] serialized entity node
+      # @param entry [Hash] serialized entry node
+      # @return [void]
+      def link_sanction_entry(entity, entry)
+        entity_iri = entity['@id']
+        entry_iri = entry['@id']
+        return unless entity_iri.is_a?(String) && entry_iri.is_a?(String)
+
+        seen = entry_ids_by_entity[entity_iri]
+        Array(entity['hasSanctionEntry']).each do |iri|
+          seen << iri if iri.is_a?(String) && !iri.strip.empty?
+        end
+        seen << entry_iri
+        seen.uniq!
+        entity['hasSanctionEntry'] = seen.dup
       end
 
       # Find input directory and its loadable YAML files for source

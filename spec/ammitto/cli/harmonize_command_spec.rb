@@ -437,4 +437,60 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       expect(seen).to eq([:us])
     end
   end
+
+  describe '#link_sanction_entry' do
+    let(:entity_iri) { 'https://www.ammitto.org/entity/nz/nz-1' }
+
+    def entry_node(local_id)
+      { '@id' => "https://www.ammitto.org/entry/nz/list/#{local_id}", 'entityId' => entity_iri }
+    end
+
+    def link(entity, entry)
+      command.send(:link_sanction_entry, entity, entry)
+      entity
+    end
+
+    it 'derives the edge for a source whose transformer never populates it' do
+      entity = link({ '@id' => entity_iri }, entry_node('a'))
+
+      expect(entity['hasSanctionEntry']).to eq(['https://www.ammitto.org/entry/nz/list/a'])
+    end
+
+    it 'unions every entry seen for one entity across separate pairs' do
+      link({ '@id' => entity_iri }, entry_node('a'))
+      surviving = link({ '@id' => entity_iri }, entry_node('b'))
+
+      expect(surviving['hasSanctionEntry']).to eq(
+        ['https://www.ammitto.org/entry/nz/list/a', 'https://www.ammitto.org/entry/nz/list/b']
+      )
+    end
+
+    it 'keeps IRIs the serializer already emitted from the model' do
+      existing = 'https://www.ammitto.org/entry/nz/list/from-model'
+      entity = link({ '@id' => entity_iri, 'hasSanctionEntry' => [existing] }, entry_node('a'))
+
+      expect(entity['hasSanctionEntry'])
+        .to eq([existing, 'https://www.ammitto.org/entry/nz/list/a'])
+    end
+
+    it 'does not repeat an entry already linked from the model' do
+      existing = 'https://www.ammitto.org/entry/nz/list/a'
+      entity = link({ '@id' => entity_iri, 'hasSanctionEntry' => [existing] }, entry_node('a'))
+
+      expect(entity['hasSanctionEntry']).to eq([existing])
+    end
+
+    it 'keeps each entity hash independent of later mutations' do
+      first = link({ '@id' => entity_iri }, entry_node('a'))
+      link({ '@id' => entity_iri }, entry_node('b'))
+
+      expect(first['hasSanctionEntry']).to eq(['https://www.ammitto.org/entry/nz/list/a'])
+    end
+
+    it 'leaves the entity untouched when either half carries no IRI' do
+      entity = link({ '@id' => entity_iri }, { 'entityId' => entity_iri })
+
+      expect(entity).not_to have_key('hasSanctionEntry')
+    end
+  end
 end

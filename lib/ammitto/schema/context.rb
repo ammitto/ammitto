@@ -220,6 +220,7 @@ module Ammitto
               'value' => { '@id' => 'value' },
               'lang' => { '@id' => 'lang' },
               'script' => { '@id' => 'script' },
+              'region' => { '@id' => 'region' },
               'isPrimary' => { '@id' => 'isPrimary', '@type' => 'xsd:boolean' },
               'isTransliteration' => { '@id' => 'isTransliteration', '@type' => 'xsd:boolean' },
               'transliterationSystem' => { '@id' => 'transliterationSystem' },

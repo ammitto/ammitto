@@ -250,7 +250,13 @@ https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries
 Code:
 [source,ruby]
 ----
+require 'ammitto'
+
+entry_iri = 'https://www.ammitto.org/entry/cn/' \
+            'import-export-control-list/mitsubishi-heavy-industries'
+
 entity_iri = Ammitto::Utils::IriSanitizer.entity_iri_from_entry(entry_iri)
+# => "https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries"
 ----
 
 === Find All Entries for an Entity

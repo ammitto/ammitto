@@ -20,12 +20,14 @@ The `Ammitto` module provides the main entry points:
 
 [source,ruby]
 ----
+require 'ammitto'
+
 # Get current configuration
 config = Ammitto.configuration
 
-# Configure Ammitto
+# Configure Ammitto ("~" is stored verbatim, so expand it yourself)
 Ammitto.configure do |config|
-  config.cache_dir = "~/.ammitto/cache"
+  config.cache_dir = File.expand_path("~/.ammitto")
   config.verbose = true
 end
 
@@ -40,17 +42,20 @@ Ammitto.reset_configuration!
 # Basic search
 results = Ammitto.search("Kim Jong")
 
-# With options
+# With options — sources, limit and offset are the whole set search reads
 results = Ammitto.search("Bank",
   sources: [:un, :eu, :us],
-  entity_type: :organization,
   limit: 50,
   offset: 0
 )
 
+# Entity type is not a search option. Filter the result set instead —
+# note this filters the current page, after limit and offset applied.
+organizations = results.by_entity_type(:organization)
+
 # Iterate results
-results.each do |entry|
-  puts "#{entry.name} (#{entry.source})"
+results.each do |entity|
+  puts "#{entity.display_name} (#{entity.entity_type})"
 end
 ----
 
@@ -64,7 +69,8 @@ Ammitto.refresh_cache(all: true, force: true)
 
 # Check cache status
 status = Ammitto.cache_status
-# => { un: { status: :fresh, age: 3600 }, ... }
+# => { un: { cached: true, updated_at: "2026-02-26T00:00:00+00:00",
+#            size: 7178346, age_seconds: 443 }, ... }
 ----
 
 === Available Sources
@@ -73,10 +79,14 @@ status = Ammitto.cache_status
 ----
 # List available source codes
 sources = Ammitto.sources
-# => [:un, :eu, :us, :uk, :au, :ca, :ch, :cn, :ru, :tr, :jp, :nz, :wb]
+# => [:au, :ca, :ch, :cn, :eu, :eu_vessels, :jp, :nz, :ru, :tr, :uk, :un,
+#     :un_vessels, :us, :wb]
 ----
 
 === Data Repository
+
+`query` and `get` read `api/v1/all.jsonld` under `local_path` and raise
+`Ammitto::NotFoundError` when it is missing.
 
 [source,ruby]
 ----
@@ -86,9 +96,10 @@ repo = Ammitto.data_repository(
   verbose: true
 )
 
-# Get statistics
+# Get statistics (parsed from api/v1/stats.json, so keys are strings)
 stats = repo.stats
-# => { total_entities: 55908, sources: 15, ... }
+# => { "total_entities" => Integer, "total_entries" => Integer,
+#      "sources" => { "un" => { "entities" => Integer, ... } }, ... }
 
 # Query entities
 entities = repo.query(name: "Smith", limit: 10)
@@ -102,7 +113,7 @@ Build complex search queries:
 
 [source,ruby]
 ----
-builder = Ammitto::QueryBuilder.new("test",
+builder = Ammitto::Search::QueryBuilder.new("test",
   sources: [:un, :eu],
   limit: 100,
   offset: 0
@@ -135,9 +146,9 @@ un_results = results.by_authority(:un)
 # Filter by status
 active = results.by_status(:active)
 
-# Get unique values
-results.entity_types  # => [:person, :organization]
-results.authorities   # => [:un, :eu, :us]
+# Get unique values — strings, not symbols; empty when nothing matched
+results.entity_types  # => e.g. ["person", "organization"]
+results.authorities   # => e.g. ["un", "eu", "us"]
 
 # Export
 results.to_json_ld
@@ -146,42 +157,48 @@ results.to_json
 
 == Entity Classes
 
-All entities inherit from `Ammitto::Ontology::Entities::Entity`.
+All entities inherit from `Ammitto::Entity`, which is what `require "ammitto"`
+loads. An `Ammitto::Search::ResultSet` can also hold `Ammitto::SanctionEntry`
+records; `entity_types` and `by_entity_type` assume entity-only results and
+raise on a mixed set.
 
 === PersonEntity
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology.create_entity(:person,
+entity = Ammitto::PersonEntity.new(
   id: 'un/KPi.066',
+  entity_type: 'person',
   names: [{ full_name: 'KIM, Jong Un', is_primary: true }],
   birth_info: [{ year: 1984, country: 'KP' }],
   nationalities: ['KP']
 )
 
 # Attributes
-entity.id              # => "https://www.ammitto.org/entity/un/KPi.066"
+entity.id              # => "un/KPi.066"
 entity.entity_type     # => "person"
-entity.primary_name    # => "KIM, Jong Un"
-entity.birth_date      # => Date object or nil
+entity.display_name    # => "KIM, Jong Un"
+entity.primary_name    # => NameVariant object
+entity.all_names       # => ["KIM, Jong Un"]
+entity.birth_date      # => nil (this birth_info carries a year, not a date)
 entity.birth_country   # => "KP"
 entity.deceased?       # => false
 
 # Methods
 entity.matches?("jong un")  # => true
-entity.person?              # => true
-entity.organization?        # => false
 ----
 
 === OrganizationEntity
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology.create_entity(:organization,
+entity = Ammitto::OrganizationEntity.new(
   id: 'eu/EU.001',
+  entity_type: 'organization',
   names: [{ full_name: 'Acme Corp', is_primary: true }],
   country: 'US',
-  registration_number: '12345'
+  registration_number: '12345',
+  legal_form: 'Corporation'
 )
 
 # Attributes
@@ -195,35 +212,44 @@ entity.dissolved?            # => false
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology.create_entity(:vessel,
-  id: 'un-vessels/IMO123456',
+entity = Ammitto::VesselEntity.new(
+  id: 'un-vessels/IMO1234567',
+  entity_type: 'vessel',
   names: [{ full_name: 'MV Example', is_primary: true }],
   imo_number: '1234567',
-  flag_state: 'LR'
+  flag_state: 'LR',
+  mmsi: '477995000',
+  call_sign: 'VRDX2',
+  vessel_type: 'Cargo',
+  gross_tonnage: 25_000
 )
 
 # Attributes
 entity.imo_number            # => "1234567"
-entity.mmsi                  # => Maritime Mobile Service Identity
-entity.call_sign             # => Radio call sign
+entity.mmsi                  # => "477995000"
+entity.call_sign             # => "VRDX2"
 entity.flag_state            # => "LR"
 entity.vessel_type           # => "Cargo"
-entity.gross_tonnage         # => Integer
+entity.gross_tonnage         # => 25000
 ----
 
 === AircraftEntity
 
 [source,ruby]
 ----
-entity = Ammitto::Ontology.create_entity(:aircraft,
+entity = Ammitto::AircraftEntity.new(
   id: 'un-aircraft/RA12345',
+  entity_type: 'aircraft',
   names: [{ full_name: 'RA-12345', is_primary: true }],
   registration_number: 'RA-12345',
-  manufacturer: 'Boeing'
+  manufacturer: 'Boeing',
+  serial_number: '29876',
+  model: '737-800',
+  flag_state: 'RU'
 )
 
 # Attributes
-entity.serial_number         # => Manufacturer serial number
+entity.serial_number         # => "29876"
 entity.registration_number   # => "RA-12345"
 entity.manufacturer          # => "Boeing"
 entity.model                 # => "737-800"
@@ -239,18 +265,20 @@ entity.flag_state            # => "RU"
 entry = Ammitto::SanctionEntry.new(
   id: 'entry/un/KPi.066',
   entity_id: 'entity/un/KPi.066',
-  authority: { country_code: 'UN' },
+  authority: { id: 'un', name: 'United Nations', country_code: 'UN' },
   regime: { code: 'dprk', name: 'DPRK' },
+  period: { listed_date: '2016-11-30' },
+  effects: [{ effect_type: 'asset_freeze' }, { effect_type: 'travel_ban' }],
   status: 'active'
 )
 
 # Attributes
-entry.id                # => Entry URI
-entry.entity_id         # => Entity URI
-entry.authority         # => Authority object
-entry.regime            # => SanctionRegime object
-entry.status            # => "active", "suspended", "delisted"
-entry.listed_date       # => Date
+entry.id                  # => "entry/un/KPi.066"
+entry.entity_id           # => "entity/un/KPi.066"
+entry.authority           # => Authority object
+entry.regime              # => SanctionRegime object
+entry.status              # => "active" (see SanctionEntry::STATUSES)
+entry.period.listed_date  # => Date object for 2016-11-30
 
 # Status checks
 entry.active?           # => true
@@ -258,9 +286,15 @@ entry.suspended?        # => false
 entry.terminated?       # => false
 
 # Methods
-entry.authority_code    # => "UN"
+entry.authority_code    # => "un"
 entry.effect_types      # => ["asset_freeze", "travel_ban"]
 ----
+
+`period`, `effects`, and `reasons` are `nil` until set, so guard them
+(`entry.period&.listed_date`) on entries built from partial data.
+`Ammitto::SanctionEntry::STATUSES` lists the documented status values; the
+model stores whatever string it is given, so it is a vocabulary, not a
+constraint.
 
 === Authority
 
@@ -301,13 +335,27 @@ doc = serializer.serialize_document(
 
 === Search Index Export
 
+`require "ammitto"` does not autoload this exporter; require it explicitly.
+
 [source,ruby]
 ----
+require 'ammitto/serialization/search_index_exporter'
+
 exporter = Ammitto::Serialization::SearchIndexExporter.new
 
-# Add entities
+# Both arguments are hashes (JSON-LD or model hashes), never model objects.
+# The authority is read from a bare code, an `@id` IRI, or `countryCode` —
+# any other shape lands in the index without an authority.
+entities = [{ 'id' => 'un/KPi.066', 'entity_type' => 'person',
+              'names' => [{ 'full_name' => 'KIM, Jong Un' }] }]
+entries = { 'un/KPi.066' => { 'status' => 'active',
+                              'authority' => { 'countryCode' => 'UN' } } }
+
+# `add` dereferences the entry, so skip pairs with no entry
 entities.each do |entity|
-  entry = entries[entity.id]
+  entry = entries[entity['id']]
+  next unless entry
+
   exporter.add(entity, entry)
 end
 
@@ -318,6 +366,9 @@ exporter.export('./api/v1')
 #   ./api/v1/facets/authorities.json
 #   ./api/v1/facets/types.json
 #   ./api/v1/facets/countries.json
+#   ./api/v1/facets/list_types.json
+#   ./api/v1/facets/regimes.json
+#   ./api/v1/facets/statuses.json
 ----
 
 == Error Handling
@@ -326,11 +377,11 @@ exporter.export('./api/v1')
 ----
 begin
   results = Ammitto.search("test")
-rescue Ammitto::Errors::SourceNotFoundError => e
+rescue Ammitto::SourceNotFoundError => e
   puts "Source not found: #{e.message}"
-rescue Ammitto::Errors::NetworkError => e
+rescue Ammitto::NetworkError => e
   puts "Network error: #{e.message}"
-rescue Ammitto::Errors::ParseError => e
+rescue Ammitto::ParseError => e
   puts "Parse error: #{e.message}"
 end
 ----

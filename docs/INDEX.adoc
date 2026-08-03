@@ -73,19 +73,23 @@ require 'ammitto'
 
 # Configure Ammitto
 Ammitto.configure do |config|
-  config.cache_dir = '~/.ammitto'
+  config.cache_dir = File.expand_path('~/.ammitto')
   config.verbose = true
 end
 
 # Search for entities
 results = Ammitto.search("Kim Jong", sources: [:un, :eu], limit: 10)
 results.each do |entity|
-  puts "#{entity.primary_name} (#{entity.entity_type})"
+  puts "#{entity.display_name} (#{entity.entity_type})"
 end
 
-# Get a specific entity
-entity = Ammitto::Ontology.create_entity(:person, id: 'un/KPi.066')
-puts entity.primary_name
+# Build a specific entity
+entity = Ammitto::PersonEntity.new(
+  id: 'un/KPi.066',
+  entity_type: 'person',
+  names: [{ full_name: 'KIM, Jong Un', is_primary: true }]
+)
+puts entity.display_name
 ----
 
 === Command Line

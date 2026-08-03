@@ -23,8 +23,8 @@ require 'ammitto'
 
 # Search across all sources
 results = Ammitto.search("Kim Jong")
-results.each do |entry|
-  puts "#{entry.name} - #{entry.source} (#{entry.entity_type})"
+results.each do |entity|
+  puts "#{entity.display_name} (#{entity.entity_type})"
 end
 ----
 
@@ -40,8 +40,10 @@ results = Ammitto.search("Putin", sources: [:un, :eu])
 
 [source,ruby]
 ----
-# Search only for organizations
-results = Ammitto.search("Bank", entity_type: :organization)
+# Entity type is not a search option — search reads only sources, limit
+# and offset. Filter the result set it returns.
+results = Ammitto.search("Bank")
+organizations = results.by_entity_type(:organization)
 ----
 
 == CLI Quick Start
@@ -86,40 +88,59 @@ ammitto fetch --all
 
 === Load from Data Repository
 
+These calls read a local harmonized data repository. `query` and `get` raise
+`Ammitto::NotFoundError` until `api/v1/all.jsonld` exists — clone `ammitto/data`
+or run `ammitto harmonize --all --combine` first.
+
 [source,ruby]
 ----
 # Access the data repository
 repo = Ammitto.data_repository
 
-# Get statistics
+# Get statistics (parsed JSON, so keys are strings)
 stats = repo.stats
-puts "Total entities: #{stats[:total_entities]}"
+puts "Total entities: #{stats['total_entities']}"
 
-# Query entities
+# Query entities — returns an Array of JSON-LD hashes
 entities = repo.query(name: "Smith", limit: 10)
 ----
 
 === Access Individual Entity
+
+`Repository#get` returns the raw JSON-LD hash, not an entity object — or `nil`
+when no entity matches the id.
 
 [source,ruby]
 ----
 # Get entity by ID
 entity = Ammitto.data_repository.get("un/KPi.066")
 
-puts entity.primary_name
-puts entity.entity_type
-puts entity.listed_date
+puts entity['names'].first['full_name']
+puts entity['entity_type']
+
+# Build a model from it when you want the entity API
+model = Ammitto::PersonEntity.new(entity)
+puts model.display_name
 ----
 
 == Working with JSON-LD
 
 === Export to JSON-LD
 
+The serializer takes an entity model, not a repository hash — pass the `model`
+built above, not the raw `entity`.
+
 [source,ruby]
 ----
 # Serialize an entity
+model = Ammitto::PersonEntity.new(
+  id: 'un/KPi.066',
+  entity_type: 'person',
+  names: [{ full_name: 'KIM, Jong Un', is_primary: true }]
+)
+
 serializer = Ammitto::Serialization::JsonLdSerializer.new
-jsonld = serializer.serialize_entity(entity)
+jsonld = serializer.serialize_entity(model)
 puts jsonld.to_json
 ----
 
@@ -139,16 +160,35 @@ ammitto harmonize --all --combine --output-dir ./api/v1
 
 == Using the Search Index
 
-The lightweight search index (~8MB) enables fast client-side search:
+The lightweight search index (~8MB) enables fast client-side search. The gem
+builds and exports the index; loading and querying it is the client's job.
 
 [source,ruby]
 ----
-# Load the search index
-index = Ammitto::SearchIndexExporter.new
-index.load('./api/v1/search-index.json')
+require 'ammitto/serialization/search_index_exporter'
 
-# Search the index
-results = index.search("Kim")
+exporter = Ammitto::Serialization::SearchIndexExporter.new
+
+# Both arguments are hashes, never model objects. The authority is read from
+# a bare code, an `@id` IRI, or `countryCode`.
+entity_hash = { 'id' => 'un/KPi.066', 'entity_type' => 'person',
+                'names' => [{ 'full_name' => 'KIM, Jong Un' }] }
+entry_hash = { 'status' => 'active',
+               'authority' => { 'countryCode' => 'UN' } }
+exporter.add(entity_hash, entry_hash)
+
+# Write search-index.json plus the facet files
+exporter.export('./api/v1')
+----
+
+Read the exported index back with any JSON parser:
+
+[source,ruby]
+----
+index = JSON.parse(File.read('./api/v1/search-index.json'))
+results = index['entities'].select do |e|
+  e['primaryName'].to_s.downcase.include?('kim')
+end
 ----
 
 === Search Index Structure
@@ -189,7 +229,7 @@ def screen_customer(name)
   if results.any?
     puts "Potential matches found:"
     results.each do |r|
-      puts "  - #{r.name} (#{r.source}, #{r.entity_type})"
+      puts "  - #{r.display_name} (#{r.entity_type})"
     end
   else
     puts "No matches found"

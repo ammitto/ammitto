@@ -17,10 +17,14 @@ Ammitto can be configured globally or per-operation:
 
 [source,ruby]
 ----
+require 'ammitto'
+require 'logger'
+
 Ammitto.configure do |config|
-  # API and caching
+  # API and caching. cache_dir is stored verbatim, so expand "~" yourself;
+  # the sources live in "#{cache_dir}/cache/sources".
   config.api_base_url = "https://ammitto.org/api/v1"
-  config.cache_dir = "~/.ammitto/cache"
+  config.cache_dir = File.expand_path("~/.ammitto")
   config.cache_ttl = 3600  # 1 hour
 
   # Timeouts
@@ -29,7 +33,7 @@ Ammitto.configure do |config|
 
   # Logging
   config.verbose = true
-  config.logger = Rails.logger  # or any Logger instance
+  config.logger = Logger.new($stdout)  # or Rails.logger
 
   # Data directories
   config.data_repository = "../data"
@@ -50,8 +54,8 @@ end
 
 | `cache_dir`
 | String
-| Directory for caching downloaded data
-| `~/.ammitto/cache`
+| Cache root; sources are written to `<cache_dir>/cache/sources`
+| `~/.ammitto` (expanded)
 
 | `cache_ttl`
 | Integer
@@ -81,12 +85,12 @@ end
 | `data_repository`
 | String
 | Directory for harmonized JSON-LD data
-| `../../../data`
+| `../../../data` relative to `lib/ammitto`, stored expanded
 
 | `sources_dir`
 | String
 | Parent directory for source data repos
-| `../..`
+| `../../..` relative to `lib/ammitto`, stored expanded
 |===
 
 == Environment Variables
@@ -221,16 +225,19 @@ Each data source has its own configuration:
 
 === Fetching Specific Sources
 
+The Ruby API downloads harmonized data through `Ammitto.refresh_cache`. Use the
+`ammitto fetch` CLI command to pull raw data from the official sources.
+
 [source,ruby]
 ----
 # Fetch a single source
-Ammitto.fetch(:eu)
+Ammitto.refresh_cache(sources: [:eu])
 
 # Fetch multiple sources
-Ammitto.fetch(:un, :eu, :us)
+Ammitto.refresh_cache(sources: [:un, :eu, :us])
 
 # Fetch all sources
-Ammitto.fetch(:all)
+Ammitto.refresh_cache(all: true)
 ----
 
 == Cache Management
@@ -255,7 +262,7 @@ Ammitto.refresh_cache(sources: [:un], force: true)
 ----
 status = Ammitto.cache_status
 status.each do |source, info|
-  puts "#{source}: #{info[:status]} (#{info[:age]}s old)"
+  puts "#{source}: cached=#{info[:cached]} (#{info[:age_seconds]}s old)"
 end
 ----
 

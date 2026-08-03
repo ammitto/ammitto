@@ -99,23 +99,31 @@ Ammitto supports four entity types in its ontology.
 
 [source,ruby]
 ----
-entity = Ammitto::PersonEntity.new(...)
+require 'ammitto'
 
-# Type check
+entity = Ammitto::PersonEntity.new(
+  id: 'un/KPi.066',
+  names: [{ full_name: 'KIM, Jong Un', is_primary: true },
+          { full_name: '金正恩', language: 'ko' }],
+  birth_info: [{ date: '1984-01-08', country: 'KP' }],
+  nationalities: ['KP']
+)
+
+# Type check — defaulted, so the constructor above never passes it
 entity.entity_type     # => "person"
 
 # Name access
 entity.display_name    # => "KIM, Jong Un"
-entity.primary_name    # => NameVariant object
-entity.all_names       # => ["KIM, Jong Un", "金正恩", ...]
+entity.primary_name    # => Ammitto::NameVariant
+entity.all_names       # => ["KIM, Jong Un", "金正恩"]
 
 # Birth info
-entity.birth_date      # => Date object or nil
+entity.birth_date      # => #<Date: 1984-01-08>
 entity.birth_country   # => "KP"
-entity.primary_birth_info  # => BirthInfo object
+entity.primary_birth_info  # => Ammitto::BirthInfo
 
-# Status
-entity.deceased?       # => true/false
+# Status — false because no death_date was given
+entity.deceased?       # => false
 
 # Search
 entity.matches?("jong un")  # => true (case-insensitive)
@@ -232,10 +240,15 @@ entity.matches?("jong un")  # => true (case-insensitive)
 
 [source,ruby]
 ----
-entity = Ammitto::OrganizationEntity.new(...)
+entity = Ammitto::OrganizationEntity.new(
+  id: 'eu/EU.001',
+  names: [{ full_name: 'Acme Corp', is_primary: true }],
+  country: 'US',
+  registration_number: '12345'
+)
 
 entity.entity_type     # => "organization"
-entity.dissolved?      # => true/false
+entity.dissolved?      # => false (true once dissolution_date is set)
 entity.display_name    # => "Acme Corp"
 ----
 
@@ -316,7 +329,12 @@ entity.display_name    # => "Acme Corp"
 
 [source,ruby]
 ----
-entity = Ammitto::VesselEntity.new(...)
+entity = Ammitto::VesselEntity.new(
+  id: 'un-vessels/IMO1234567',
+  names: [{ full_name: 'MV Example', is_primary: true }],
+  imo_number: '1234567',
+  flag_state: 'LR'
+)
 
 entity.entity_type     # => "vessel"
 entity.imo_number      # => "1234567"
@@ -392,7 +410,12 @@ entity.flag_state      # => "LR"
 
 [source,ruby]
 ----
-entity = Ammitto::AircraftEntity.new(...)
+entity = Ammitto::AircraftEntity.new(
+  id: 'un-aircraft/RA12345',
+  names: [{ full_name: 'RA-12345', is_primary: true }],
+  registration_number: 'RA-12345',
+  manufacturer: 'Boeing'
+)
 
 entity.entity_type     # => "aircraft"
 entity.registration_number  # => "RA-12345"

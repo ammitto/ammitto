@@ -114,13 +114,13 @@ entity.entity_type     # => "person"
 
 # Name access
 entity.display_name    # => "KIM, Jong Un"
-entity.primary_name    # => Ammitto::NameVariant
+entity.primary_name    # => an Ammitto::NameVariant
 entity.all_names       # => ["KIM, Jong Un", "金正恩"]
 
 # Birth info
-entity.birth_date      # => #<Date: 1984-01-08>
+entity.birth_date      # => Date object for 1984-01-08
 entity.birth_country   # => "KP"
-entity.primary_birth_info  # => Ammitto::BirthInfo
+entity.primary_birth_info  # => an Ammitto::BirthInfo
 
 # Status — false because no death_date was given
 entity.deceased?       # => false

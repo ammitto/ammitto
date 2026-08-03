@@ -180,7 +180,7 @@ entity.entity_type     # => "person"
 entity.display_name    # => "KIM, Jong Un"
 entity.primary_name    # => NameVariant object
 entity.all_names       # => ["KIM, Jong Un"]
-entity.birth_date      # => Date object or nil
+entity.birth_date      # => nil (this birth_info carries a year, not a date)
 entity.birth_country   # => "KP"
 entity.deceased?       # => false
 
@@ -213,7 +213,7 @@ entity.dissolved?            # => false
 [source,ruby]
 ----
 entity = Ammitto::VesselEntity.new(
-  id: 'un-vessels/IMO123456',
+  id: 'un-vessels/IMO1234567',
   entity_type: 'vessel',
   names: [{ full_name: 'MV Example', is_primary: true }],
   imo_number: '1234567',
@@ -278,7 +278,7 @@ entry.entity_id           # => "entity/un/KPi.066"
 entry.authority           # => Authority object
 entry.regime              # => SanctionRegime object
 entry.status              # => "active" (see SanctionEntry::STATUSES)
-entry.period.listed_date  # => #<Date: 2016-11-30>
+entry.period.listed_date  # => Date object for 2016-11-30
 
 # Status checks
 entry.active?           # => true

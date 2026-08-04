@@ -404,19 +404,29 @@ module Ammitto
         authority = entry['authority']
         return unless authority
 
-        # Get authority code
-        code = authority['countryCode'] || authority['id'] || source_code
+        # An authority is identified by its id. BaseTransformer builds
+        # every authority as Authority.find(source_code) and
+        # Schema::Validator checks authority['id'] against
+        # Authority::REGISTRY, so the id is the vocabulary this exporter
+        # has to key on. countryCode is a coarser attribute distinct
+        # authorities share -- eu and eu_vessels both declare EU -- so
+        # preferring it merged them into one node whose name was decided
+        # by ingestion order, and for uk it minted authority/gb, an IRI
+        # that same validator rejects
+        code = authority['id'] || authority['countryCode'] || source_code
         return unless code
 
         auth_id = "#{BASE_URI}/authority/#{code.to_s.downcase}"
 
-        # Store full authority if not already present
+        # Store full authority if not already present. The country code is
+        # the authority's own declared value: it is no longer derivable
+        # from the node key now that the key is the source-grained id
         @authorities[code.to_s.downcase] ||= {
           '@context' => @context_url,
           '@id' => auth_id,
           '@type' => 'Authority',
           'name' => authority['name'],
-          'countryCode' => code.to_s.upcase,
+          'countryCode' => (authority['countryCode'] || code).to_s.upcase,
           'url' => authority['url']
         }.compact
 

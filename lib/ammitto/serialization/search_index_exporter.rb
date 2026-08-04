@@ -275,7 +275,7 @@ module Ammitto
         # Direct string value
         return authority.downcase if authority.is_a?(String)
 
-        # Check for @id reference. Both lookups take the String rule:
+        # Check for @id reference. All three lookups take the String rule:
         # the extractor calls #match/#downcase, so a wrong-typed source
         # value would raise NoMethodError mid-harmonize instead of
         # dropping out of the row
@@ -286,6 +286,16 @@ module Ammitto
             match = id.match(%r{/authority/([^/]+)$})
             return match[1] if match
           end
+
+          # JsonLdSerializer emits 'id', never '@id'. Under harmonize the
+          # graph exporter rewrites that hash into the '@id' reference
+          # above first, but this exporter is documented for standalone
+          # use too, and there the authority's own id is the answer.
+          # countryCode is the last resort because distinct authorities
+          # share a country
+          own_id = string_presence(authority['id'])
+          return own_id.downcase if own_id
+
           return string_presence(authority['countryCode'])&.downcase
         end
 

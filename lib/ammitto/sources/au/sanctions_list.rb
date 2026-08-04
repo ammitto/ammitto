@@ -199,7 +199,10 @@ module Ammitto
         attribute :month, :integer
         attribute :day, :integer
         attribute :circa, :boolean       # Approximate date
-        attribute :precision, :string    # 'full', 'month', 'year', 'circa'
+        # 'full', 'month', 'year', 'circa', or 'unknown' when the cell held
+        # no resolvable date at all. Nothing in the gem branches on this
+        # value; it is descriptive metadata carried alongside raw_value.
+        attribute :precision, :string
 
         def self.parse(date_str)
           return nil if date_str.nil? || date_str.empty?
@@ -253,6 +256,17 @@ module Ammitto
         # Reduce a parse that never resolved its month to the precision it
         # actually reached, so no record asserts a month or day the source did
         # not state.
+        #
+        # Month and day are cleared, and precision becomes:
+        #   'circa'   — left as-is, the circa marker already says the date is
+        #               approximate and outranks the missing month
+        #   'year'    — a year resolved, so the record still carries one
+        #   'unknown' — nothing resolved at all, e.g. the cell "5/06/1978,  "
+        #               whose second comma-separated element is a lone space
+        #
+        # 'unknown' is a state callers did not previously see. It is emitted
+        # into the serialized YAML.
+        #
         # @param flexible [FlexibleDate] the parse being finalised
         # @return [void]
         def self.demote_unresolved_month(flexible)

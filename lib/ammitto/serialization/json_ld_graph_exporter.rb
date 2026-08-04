@@ -412,8 +412,12 @@ module Ammitto
         # authorities share -- eu and eu_vessels both declare EU -- so
         # preferring it merged them into one node whose name was decided
         # by ingestion order, and for uk it minted authority/gb, an IRI
-        # that same validator rejects
-        code = authority['id'] || authority['countryCode'] || source_code
+        # that same validator rejects. source_code precedes countryCode in
+        # the fallback for the same reason: an authority hash reaching here
+        # without an id still belongs to the source that ingested it, so
+        # falling back to countryCode would mint authority/gb again for a
+        # UK entry whose id was lost upstream
+        code = authority['id'] || source_code || authority['countryCode']
         return unless code
 
         auth_id = "#{BASE_URI}/authority/#{code.to_s.downcase}"

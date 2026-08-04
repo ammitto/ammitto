@@ -116,4 +116,30 @@ RSpec.describe 'Authority identity through the harmonize pipeline' do
     expect(File.exist?(File.join(dir, 'uk.jsonld'))).to be true
     expect(File.exist?(File.join(dir, 'gb.jsonld'))).to be false
   end
+
+  # An authority hash can reach the exporter without an id -- a cached
+  # payload, or a transformer that assembled the hash by hand. It still
+  # belongs to the source that ingested it, so the fallback has to be
+  # source_code; falling back to countryCode would remint authority/gb
+  it 'falls back to the ingesting source when the authority carries no id' do
+    entity = {
+      '@id' => 'https://www.ammitto.org/entity/uk/t1',
+      'entityType' => 'person',
+      'names' => [{ 'fullName' => 'Subject uk', 'isPrimary' => true }]
+    }
+    entry = {
+      '@id' => 'https://www.ammitto.org/entry/uk/t1',
+      'authority' => {
+        'countryCode' => 'GB',
+        'name' => 'United Kingdom (OFSI)'
+      }
+    }
+
+    graph.add_node(entity: entity, entry: entry, source: 'uk')
+    graph.export
+
+    dir = File.join(output_dir, 'node', 'authority')
+    expect(File.exist?(File.join(dir, 'uk.jsonld'))).to be true
+    expect(File.exist?(File.join(dir, 'gb.jsonld'))).to be false
+  end
 end

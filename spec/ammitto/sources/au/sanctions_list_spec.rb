@@ -15,6 +15,29 @@ RSpec.describe Ammitto::Sources::Au::SanctionsList do
     CSV
   end
 
+  # DFAT separates citizenships with a semicolon and leaves commas inside
+  # country names. "Congo, Democratic Republic of the;Rwanda" is both at once:
+  # splitting on the comma invented two countries that do not exist and lost
+  # Rwanda entirely. Measured on the live workbook, 389 of 6304 non-empty
+  # cells carry a semicolon and 79 carry a comma.
+  describe 'citizenship separator' do
+    let(:multi_citizenship_csv) do
+      header, individual = sample_csv.lines.first(2)
+      fields = individual.chomp.split(',', -1)
+      # Citizenship is the eighth column; quote it so the comma inside the
+      # country name survives CSV parsing the way DFAT's export does.
+      fields[7] = '"Congo, Democratic Republic of the;Rwanda"'
+      "#{header}#{fields.join(',')}\n"
+    end
+
+    it 'splits on the semicolon and keeps a comma inside a country name' do
+      list = described_class.from_csv(multi_citizenship_csv)
+
+      expect(list.individuals.first.citizenships)
+        .to eq(['Congo, Democratic Republic of the', 'Rwanda'])
+    end
+  end
+
   describe '.from_csv' do
     subject(:list) { described_class.from_csv(sample_csv) }
 

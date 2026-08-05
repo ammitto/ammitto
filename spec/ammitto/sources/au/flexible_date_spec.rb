@@ -41,6 +41,30 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
     it 'returns nil for nil' do
       expect(described_class.parse(nil)).to be_nil
     end
+
+    # DFAT publishes ranges in this shape. The day group used to match the
+    # "59" inside 1959, and parse_month returned 0 for "and", so the record
+    # asserted day 59 of month 0 at full precision.
+    it 'does not read a day out of the middle of a year' do
+      date = described_class.parse('Approximately: Between 1959 and 1965')
+
+      expect(date.day).to be_nil
+      expect(date.month).to be_nil
+      expect(date.precision).to eq('year')
+    end
+
+    it 'drops a month that did not resolve rather than storing zero' do
+      date = described_class.parse('Approximately 1958')
+
+      expect(date.month).to be_nil
+      expect(date.year).to eq(1958)
+      expect(date.precision).to eq('year')
+    end
+
+    it 'reports full precision only when the month actually resolved' do
+      expect(described_class.parse('5 May 1957').precision).to eq('full')
+      expect(described_class.parse('5 Foo 1957').precision).to eq('year')
+    end
   end
 
   describe '#to_date' do

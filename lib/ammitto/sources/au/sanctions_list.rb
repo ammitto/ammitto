@@ -199,7 +199,10 @@ module Ammitto
         attribute :month, :integer
         attribute :day, :integer
         attribute :circa, :boolean       # Approximate date
-        attribute :precision, :string    # 'full', 'month', 'year', 'circa'
+        # 'full', 'month', 'year', 'circa', or 'unknown' when the cell held
+        # no resolvable date at all. Nothing in the gem branches on this
+        # value; it is descriptive metadata carried alongside raw_value.
+        attribute :precision, :string
 
         def self.parse(date_str)
           return nil if date_str.nil? || date_str.empty?
@@ -217,12 +220,16 @@ module Ammitto
             cleaned = cleaned.sub(/^circa\s*|^c\.\s*|^c\s*/, '')
           end
 
-          # Try full date: "5 May 1957" or "May 5, 1957"
-          if (match = cleaned.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/))
+          # Try full date: "5 May 1957" or "May 5, 1957".
+          #
+          # The day group is guarded with (?<!\d) so it cannot match inside a
+          # four-digit year. Without it, "Approximately: Between 1959 and 1965"
+          # matched "59 and 1965" and yielded day 59 of month 0.
+          if (match = cleaned.match(/(?<!\d)(\d{1,2})\s+(\w+)\s+(\d{4})/))
             flexible.day = match[1].to_i
             flexible.month = parse_month(match[2])
             flexible.year = match[3].to_i
-          elsif (match = cleaned.match(/(\w+)\s+(\d{1,2}),?\s+(\d{4})/))
+          elsif (match = cleaned.match(/(\w+)\s+(?<!\d)(\d{1,2}),?\s+(\d{4})/))
             flexible.month = parse_month(match[1])
             flexible.day = match[2].to_i
             flexible.year = match[3].to_i
@@ -238,7 +245,38 @@ module Ammitto
             flexible.precision = 'year' unless flexible.circa
           end
 
+          # parse_month yields 0 for a word that is not a month, and every
+          # branch above stored that unchecked. A record then asserted month 0
+          # at full precision -- a claim the source never made.
+          demote_unresolved_month(flexible)
+
           flexible
+        end
+
+        # Reduce a parse that never resolved its month to the precision it
+        # actually reached, so no record asserts a month or day the source did
+        # not state.
+        #
+        # Month and day are cleared, and precision becomes:
+        #   'circa'   — left as-is, the circa marker already says the date is
+        #               approximate and outranks the missing month
+        #   'year'    — a year resolved, so the record still carries one
+        #   'unknown' — nothing resolved at all, e.g. the cell "5/06/1978,  "
+        #               whose second comma-separated element is a lone space
+        #
+        # 'unknown' is a state callers did not previously see. It is emitted
+        # into the serialized YAML.
+        #
+        # @param flexible [FlexibleDate] the parse being finalised
+        # @return [void]
+        def self.demote_unresolved_month(flexible)
+          return unless flexible.month.nil? || flexible.month.to_i.zero?
+
+          flexible.month = nil
+          flexible.day = nil
+          return if flexible.circa
+
+          flexible.precision = flexible.year ? 'year' : 'unknown'
         end
 
         def self.parse_month(month_str)
@@ -522,11 +560,15 @@ module Ammitto
             end
           end
 
-          # Parse citizenships (comma-separated)
+          # Parse citizenships. DFAT separates them with a semicolon, not a
+          # comma: of 6304 non-empty cells, 389 carry ';' and 79 carry ','
+          # inside a single country name. "Congo, Democratic Republic of
+          # the;Rwanda" is both at once, so splitting on ',' tore one country
+          # into two that do not exist
           cit_str = row['Citizenship']
           return unless cit_str && !cit_str.empty?
 
-          cit_str.split(',').map(&:strip).reject(&:empty?).each do |cit|
+          cit_str.split(';').map(&:strip).reject(&:empty?).each do |cit|
             citizenships << cit unless citizenships.include?(cit)
           end
         end

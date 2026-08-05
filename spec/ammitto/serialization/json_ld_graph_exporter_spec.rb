@@ -53,6 +53,92 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       expect(entry['authority']).to eq({ '@id' => 'https://www.ammitto.org/authority/un' })
     end
 
+    # An authority's identity is its id. Authority::REGISTRY is keyed by
+    # source code and Schema::Validator checks authority['id'] against it,
+    # so keying the node on the coarser countryCode both merged distinct
+    # authorities and minted IRIs that validator rejects ('gb' is not a
+    # registry key; 'uk' is).
+    it 'keys the authority node on its id rather than its country code' do
+      entity = { '@id' => 'https://www.ammitto.org/entity/uk/test1' }
+      entry = {
+        '@id' => 'https://www.ammitto.org/entry/uk/test1',
+        'authority' => {
+          'id' => 'uk',
+          'name' => 'United Kingdom (OFSI)',
+          'countryCode' => 'GB'
+        }
+      }
+
+      exporter.add_node(entity: entity, entry: entry, source: :uk)
+
+      expect(exporter.authorities).to have_key('uk')
+      expect(exporter.authorities).not_to have_key('gb')
+      expect(entry['authority'])
+        .to eq({ '@id' => 'https://www.ammitto.org/authority/uk' })
+    end
+
+    it 'keeps the declared country code on the id-keyed authority node' do
+      entity = { '@id' => 'https://www.ammitto.org/entity/uk/test1' }
+      entry = {
+        '@id' => 'https://www.ammitto.org/entry/uk/test1',
+        'authority' => {
+          'id' => 'uk',
+          'name' => 'United Kingdom (OFSI)',
+          'countryCode' => 'GB'
+        }
+      }
+
+      exporter.add_node(entity: entity, entry: entry, source: :uk)
+
+      expect(exporter.authorities['uk']['countryCode']).to eq('GB')
+    end
+
+    # eu and eu_vessels are separate registry entries that both declare
+    # countryCode EU. Keyed by country they collapsed into one node whose
+    # name was decided by ingestion order.
+    it 'keeps authorities sharing a country code distinct' do
+      exporter.add_node(
+        entity: { '@id' => 'https://www.ammitto.org/entity/eu/test1' },
+        entry: {
+          '@id' => 'https://www.ammitto.org/entry/eu/test1',
+          'authority' => {
+            'id' => 'eu', 'name' => 'European Union', 'countryCode' => 'EU'
+          }
+        },
+        source: :eu
+      )
+      exporter.add_node(
+        entity: { '@id' => 'https://www.ammitto.org/entity/eu_vessels/test1' },
+        entry: {
+          '@id' => 'https://www.ammitto.org/entry/eu_vessels/test1',
+          'authority' => {
+            'id' => 'eu_vessels',
+            'name' => 'EU Designated Vessels (via Denmark DMA)',
+            'countryCode' => 'EU'
+          }
+        },
+        source: :eu_vessels
+      )
+
+      expect(exporter.authorities.keys).to contain_exactly('eu', 'eu_vessels')
+      expect(exporter.authorities['eu']['name']).to eq('European Union')
+      expect(exporter.authorities['eu_vessels']['name'])
+        .to eq('EU Designated Vessels (via Denmark DMA)')
+    end
+
+    it 'still falls back to the country code when there is no id' do
+      entity = { '@id' => 'https://www.ammitto.org/entity/un/test1' }
+      entry = {
+        '@id' => 'https://www.ammitto.org/entry/un/test1',
+        'authority' => { 'name' => 'United Nations', 'countryCode' => 'UN' }
+      }
+
+      exporter.add_node(entity: entity, entry: entry, source: :un)
+
+      expect(exporter.authorities).to have_key('un')
+      expect(exporter.authorities['un']['countryCode']).to eq('UN')
+    end
+
     it 'extracts and deduplicates regimes' do
       entity = { '@id' => 'https://www.ammitto.org/entity/un/test1', '@type' => 'PersonEntity' }
       entry = {

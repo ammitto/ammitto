@@ -43,6 +43,34 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:status]).to eq('active')
     end
 
+    # JsonLdSerializer#serialize_authority emits 'id', never '@id'. Under
+    # harmonize the graph exporter rewrites that hash into an '@id'
+    # reference before the indexer sees it, but this exporter is also
+    # documented for standalone use, and there the row must carry the
+    # authority's own id, not the country it happens to sit in.
+    it 'reads the authority id from an unrewritten authority hash' do
+      entity = {
+        '@id' => 'https://www.ammitto.org/entity/eu_vessels/9999999',
+        'entityType' => 'vessel',
+        'names' => [{ 'fullName' => 'Test Vessel', 'isPrimary' => true }]
+      }
+
+      entry = {
+        '@id' => 'https://www.ammitto.org/entry/eu_vessels/9999999',
+        'authority' => {
+          '@type' => 'Authority',
+          'id' => 'eu_vessels',
+          'name' => 'EU Designated Vessels (via Denmark DMA)',
+          'countryCode' => 'EU'
+        },
+        'status' => 'active'
+      }
+
+      exporter.add(entity, entry)
+
+      expect(exporter.entities.first[:authority]).to eq('eu_vessels')
+    end
+
     it 'extracts multiple names' do
       entity = {
         '@id' => 'https://www.ammitto.org/entity/un/test',

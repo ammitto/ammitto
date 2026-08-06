@@ -970,7 +970,8 @@ module Ammitto
       def transform_ch(transformer, data)
         require_relative '../sources/ch/sanctions_list'
 
-        guard_announcement_format!(:ch, data, expected: 'Ch::Identity')
+        guard_announcement_format!(:ch, data,
+                                   expected: 'Ch::Identity or Ch::Target')
 
         # SanctionsList#all_identities returns `targets`, so `fetch ch`
         # writes Target-shaped YAML (ssid, sanctions_set_id and an

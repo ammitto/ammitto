@@ -15,6 +15,12 @@ module Ammitto
     class ResultSet
       extend Forwardable
 
+      # Wire terms whose model attribute is not their snake_case spelling
+      WIRE_KEY_ALIASES = {
+        'hasSanctionEntry' => :sanction_entry_ids,
+        'sanctionEntries' => :sanction_entry_ids
+      }.freeze
+
       # @return [Array<SanctionEntry>] the results
       attr_reader :entries
 
@@ -179,12 +185,33 @@ module Ammitto
       # @param hash [Hash]
       # @return [Hash<Symbol, Object>]
       def normalize_model_hash(hash)
-        hash.each_with_object({}) do |(k, v), out|
+        # Several wire terms map onto one attribute (sanction_entry_ids /
+        # sanctionEntries / hasSanctionEntry), so a node carrying more than
+        # one must resolve by declared precedence rather than by whichever
+        # the hash happened to list last. Ranks that matter are distinct, and
+        # the source index breaks ties so equal-rank keys keep their order
+        # (Enumerable#sort_by is not documented as stable).
+        hash.each_with_index
+            .sort_by { |(k, _), index| [wire_key_rank(k), index] }
+            .each_with_object({}) do |((k, v), _index), out|
           key = normalize_model_key(k)
           next if key.nil?
 
           out[key] = normalize_model_value(key, v)
         end
+      end
+
+      # Lowest rank is applied first and therefore loses to anything later:
+      # legacy snake_case < the deprecated sanctionEntries alias < the
+      # producer's own camelCase and JSON-LD keywords.
+      # @param key [String, Symbol]
+      # @return [Integer]
+      def wire_key_rank(key)
+        str = key.to_s
+        return 1 if str == 'sanctionEntries'
+        return 2 if str.start_with?('@') || WIRE_KEY_ALIASES.key?(str) || str.match?(/[a-z][A-Z]/)
+
+        0
       end
 
       # @param key [String, Symbol]
@@ -194,7 +221,8 @@ module Ammitto
         return :id if ['@id', 'id'].include?(str)
         return nil if ['@type', '@context'].include?(str)
 
-        str.gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase.to_sym
+        WIRE_KEY_ALIASES[str] ||
+          str.gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase.to_sym
       end
 
       # @param key [Symbol] normalized key
@@ -204,6 +232,14 @@ module Ammitto
         # Provenance payloads are opaque — never rewrite their keys
         return value if key == :source_specific_fields
 
+        # hasSanctionEntry is @id-typed, so a value may arrive as an IRI
+        # string, a set of them, or { '@id' => IRI } node references. Not
+        # Kernel#Array: that turns a lone Hash into its key/value pairs.
+        if key == :sanction_entry_ids
+          items = value.is_a?(Array) ? value : [value]
+          return items.filter_map { |item| entry_iri(item) }.uniq
+        end
+
         case value
         when Hash
           normalize_model_hash(value)
@@ -212,6 +248,23 @@ module Ammitto
         else
           value
         end
+      end
+
+      # @param item [String, Hash, Object] an @id-typed value
+      # @return [String, nil] the IRI, or nil when the item carries none
+      def entry_iri(item)
+        # ResultSet also accepts plain Ruby hashes, which may be symbol-keyed
+        # rather than parsed from JSON. Take the first candidate that is a
+        # usable string, so a blank or wrong-typed '@id' cannot mask a
+        # perfectly good 'id'.
+        candidates = item.is_a?(Hash) ? item.values_at('@id', :@id, 'id', :id) : [item]
+
+        candidates.filter_map do |value|
+          next unless value.is_a?(String)
+
+          stripped = value.strip
+          stripped.empty? ? nil : stripped
+        end.first
       end
     end
   end

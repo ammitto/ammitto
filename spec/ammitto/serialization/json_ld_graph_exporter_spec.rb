@@ -346,4 +346,90 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       expect(active_data['entries']).to be_an(Array)
     end
   end
+
+  describe '#extract_instruments' do
+    let(:instrument_iri) { 'https://www.ammitto.org/legal_instrument/cn/afsl' }
+    let(:citation) do
+      {
+        'legalInstrumentId' => instrument_iri,
+        'articles' => ['Article 4'],
+        'citationType' => 'legal_basis'
+      }
+    end
+
+    def rewrite(entry)
+      exporter.send(:extract_instruments, entry, 'cn')
+      entry
+    end
+
+    it 'rewrites citations under the camelCase term the context declares' do
+      entry = rewrite({ 'legalCitations' => [citation] })
+
+      expect(entry['legalCitations']).to eq(
+        [{
+          '@type' => 'LegalCitation',
+          'legalInstrumentId' => 'https://www.ammitto.org/legal-instrument/cn/afsl',
+          'articles' => ['Article 4'],
+          'citationType' => 'legal_basis'
+        }]
+      )
+    end
+
+    it 'leaves no snake_case citation key behind' do
+      entry = rewrite({ 'legalCitations' => [citation] })
+
+      expect(entry).not_to have_key('legal_citations')
+    end
+
+    it 'still accepts snake_case input from an older cache' do
+      entry = rewrite(
+        { 'legal_citations' => [{ 'legal_instrument_id' => instrument_iri, 'citation_type' => 'reference' }] }
+      )
+
+      expect(entry['legalCitations'].first).to include('citationType' => 'reference')
+      expect(entry).not_to have_key('legal_citations')
+    end
+
+    it 'registers the cited instrument as a node of its own' do
+      rewrite({ 'legalCitations' => [citation] })
+
+      expect(exporter.send(:instance_variable_get, :@instruments).keys)
+        .to include('https://www.ammitto.org/legal-instrument/cn/afsl')
+    end
+
+    it 'carries through every citation field the serializer emitted' do
+      entry = rewrite(
+        { 'legalCitations' => [citation.merge(
+          '@id' => 'https://www.ammitto.org/citation/cn/1',
+          '@type' => 'LegalCitation',
+          'sections' => ['Section 2'],
+          'paragraphs' => ['Paragraph 1'],
+          'context' => 'Primary authority',
+          'quotedText' => [{ 'value' => 'quoted', 'lang' => 'en' }]
+        )] }
+      )
+
+      expect(entry['legalCitations'].first).to include(
+        '@id' => 'https://www.ammitto.org/citation/cn/1',
+        'sections' => ['Section 2'],
+        'paragraphs' => ['Paragraph 1'],
+        'context' => 'Primary authority',
+        'quotedText' => [{ 'value' => 'quoted', 'lang' => 'en' }]
+      )
+    end
+
+    it 'prefers the canonical spelling when a citation carries both' do
+      %i[legacy_first canonical_first].each do |order|
+        pair = { 'citation_type' => 'legacy', 'citationType' => 'canonical' }
+        entry = rewrite(
+          { 'legalCitations' => [
+            { 'legalInstrumentId' => instrument_iri }
+              .merge(order == :legacy_first ? pair : pair.to_a.reverse.to_h)
+          ] }
+        )
+
+        expect(entry['legalCitations'].first['citationType']).to eq('canonical')
+      end
+    end
+  end
 end

@@ -27,6 +27,7 @@ module Ammitto
           'names' => serialize_names(entity.names),
           'sourceReferences' => serialize_source_references(entity.source_references),
           'linkedEntities' => serialize_linked_entities(entity.linked_entities),
+          'hasSanctionEntry' => serialize_entry_ids(entity.sanction_entry_ids),
           'sameAs' => entity.same_as,
           'remarks' => entity.remarks
         }.compact.merge(serialize_entity_specific(entity))
@@ -52,6 +53,8 @@ module Ammitto
           'statusHistory' => serialize_status_history(entry.status_history),
           'referenceNumber' => entry.reference_number,
           'remarks' => entry.remarks,
+          'groupId' => entry.group_id,
+          'legalCitations' => serialize_legal_citations(entry.legal_citations),
           'announcement' => serialize_announcement(entry.announcement),
           'rawSourceData' => serialize_raw_source_data(entry.raw_source_data)
         }.compact
@@ -74,19 +77,21 @@ module Ammitto
         entities.each do |entity|
           entity_hash = serialize_entity(entity)
 
-          # Link entity to all of its SanctionEntries
-          if entry_map.key?(entity.id)
-            serialized = entry_map[entity.id].map { |entry| serialize_entry(entry) }
-            entity_hash['hasSanctionEntry'] = serialized.length == 1 ? serialized.first : serialized
-          end
+          # Link entity to all of its SanctionEntries. The context declares
+          # hasSanctionEntry as {'@type' => '@id', '@container' => '@set'},
+          # so the value is always a set of entry IRIs — never an embedded
+          # entry object and never a bare single value.
+          linked = entry_map[entity.id].filter_map(&:id) if entry_map.key?(entity.id)
+          merged = serialize_entry_ids((entity_hash['hasSanctionEntry'] || []) + (linked || []))
+          entity_hash['hasSanctionEntry'] = merged if merged
 
           graph << entity_hash
         end
 
-        # Add orphan entries (entries without matching entities)
-        entries.each do |entry|
-          graph << serialize_entry(entry) unless entities.any? { |e| e.id == entry.entity_id }
-        end
+        # Every entry is a first-class node in the graph: entity nodes now
+        # reference entries by IRI, so an embedded copy would leave the
+        # referenced node undefined for anything but the orphan case.
+        entries.each { |entry| graph << serialize_entry(entry) }
 
         {
           '@context' => Schema::Context.context_url,
@@ -322,6 +327,76 @@ module Ammitto
           'category' => list_type.category,
           'description' => list_type.description
         }.compact
+      end
+
+      # Entry IRIs an entity is linked to. Emitted under hasSanctionEntry,
+      # which the context declares as {'@type' => '@id'}, so plain IRI
+      # strings expand to node references — the same shape entityId
+      # already uses for the inverse edge.
+      # @param ids [Array<String>, nil] entry IRIs
+      # @return [Array<String>, nil] deduplicated IRIs, or nil when empty
+      def serialize_entry_ids(ids)
+        return nil unless ids.is_a?(Array)
+
+        cleaned = ids.filter_map do |id|
+          next unless id.is_a?(String)
+
+          stripped = id.strip
+          stripped.empty? ? nil : stripped
+        end.uniq
+        cleaned.empty? ? nil : cleaned
+      end
+
+      # Legal citations on an entry. Term names follow the context's
+      # LegalCitation block (legalInstrumentId/articles/sections/
+      # paragraphs/citationType/context).
+      # @param citations [Array, nil] LegalCitation models
+      # @return [Array<Hash>, nil] citation nodes, or nil when none carry data
+      def serialize_legal_citations(citations)
+        return nil unless citations.is_a?(Array)
+
+        nodes = citations.filter_map do |citation|
+          node = {
+            '@id' => citation.id,
+            '@type' => 'LegalCitation',
+            'legalInstrumentId' => citation.legal_instrument_id,
+            'articles' => presence(citation.articles),
+            'sections' => presence(citation.sections),
+            'paragraphs' => presence(citation.paragraphs),
+            'citationType' => citation.citation_type,
+            'context' => citation.context,
+            'quotedText' => presence(serialize_localized_strings(citation.quoted_text))
+          }.compact
+          node.keys == ['@type'] ? nil : node
+        end
+
+        nodes.empty? ? nil : nodes
+      end
+
+      # @param strings [Array, nil] LocalizedString models
+      # @return [Array<Hash>, nil]
+      def serialize_localized_strings(strings)
+        return nil unless strings.is_a?(Array)
+
+        strings.map do |string|
+          {
+            '@type' => 'LocalizedString',
+            'value' => string.value,
+            # 'lang', not 'language' — the context declares lang (schema/context.rb)
+            'lang' => string.language,
+            'script' => string.script,
+            'region' => string.region,
+            'isPrimary' => string.is_primary,
+            'isTransliteration' => string.is_transliteration,
+            'transliterationSystem' => string.transliteration_system
+          }.compact
+        end
+      end
+
+      # @param value [Array, nil] collection attribute
+      # @return [Array, nil] the collection, or nil when empty
+      def presence(value)
+        value.nil? || value.empty? ? nil : value
       end
 
       def serialize_legal_bases(bases)

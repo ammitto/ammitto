@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe Ammitto do
+  # Shape, not value. release.yml dispatches next_version through
+  # metanorma/ci's rubygems-release workflow, which rewrites version.rb as
+  # part of the release commit -- so asserting a literal here would fail the
+  # suite on every release the workflow performs.
   it 'has a version number' do
     expect(Ammitto::VERSION).not_to be nil
-    expect(Ammitto::VERSION).to eq('1.0.0')
+    expect(Ammitto::VERSION).to match(/\A\d+\.\d+\.\d+/)
   end
 
   describe '.configure' do

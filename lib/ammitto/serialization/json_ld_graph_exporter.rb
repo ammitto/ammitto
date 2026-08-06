@@ -42,6 +42,13 @@ module Ammitto
       # Hex digest chars appended when clamping an oversized slug
       CLAMP_DIGEST_CHARS = 12
 
+      # snake_case citation keys accepted from data repos and older caches
+      CITATION_KEY_ALIASES = {
+        'legal_instrument_id' => 'legalInstrumentId',
+        'citation_type' => 'citationType',
+        'quoted_text' => 'quotedText'
+      }.freeze
+
       # @return [String] output directory
       attr_reader :output_dir
 
@@ -507,11 +514,14 @@ module Ammitto
           end
         end
 
-        # Process legal_citations format (has 'legal_instrument_id' field)
-        # Note: Field names may be snake_case in the exported JSON
+        # Process the legalCitations format (has a 'legalInstrumentId' field).
+        # snake_case input is still accepted because data repos and older
+        # caches carry it, but the rewrite always emits the camelCase names
+        # the context declares (schema/context.rb: legalCitations,
+        # legalInstrumentId, citationType).
         citations = entry['legalCitations'] || entry['legal_citations']
         if citations&.any?
-          entry['legal_citations'] = citations.map do |citation|
+          entry['legalCitations'] = citations.map do |citation|
             next citation unless citation.is_a?(Hash)
 
             # Handle both camelCase and snake_case field names
@@ -566,19 +576,39 @@ module Ammitto
               node
             end
 
-            # Return citation with instrument_id pointing to the canonical instrument ID
-            # This allows the Vue component to find the instrument via legal_instrument_id
-            {
-              'legal_instrument_id' => instrument_id,
-              'articles' => citation['articles'],
-              'citation_type' => citation['citationType'] || citation['citation_type']
-            }.compact
+            # Point the citation at the canonical instrument node so a
+            # consumer can resolve it from node/legal-instrument/**. Every
+            # other field the serializer emitted (sections, paragraphs,
+            # context, quotedText, @id) is carried through unchanged —
+            # rebuilding from a fixed key list silently dropped them.
+            canonicalize_citation(citation, instrument_id)
           end
-          # Remove the old camelCase key if it existed
-          entry.delete('legalCitations')
+          # Drop any snake_case input key so one entry never carries both
+          entry.delete('legal_citations')
         end
 
         @stats[:total_instruments] = @instruments.length
+      end
+
+      # Rewrite one citation onto the canonical instrument IRI, preserving
+      # every other field it carries. snake_case input keys are folded into
+      # the camelCase terms the context declares so one citation never
+      # carries both spellings.
+      # @param citation [Hash] citation as serialized or read from a cache
+      # @param instrument_id [String] canonical legal-instrument IRI
+      # @return [Hash] the canonicalized citation
+      def canonicalize_citation(citation, instrument_id)
+        # Legacy spellings first, canonical second, so a citation carrying
+        # both 'citationType' and 'citation_type' resolves to the canonical
+        # value rather than whichever the hash happened to list last
+        legacy, canonical = citation.partition { |key, _| CITATION_KEY_ALIASES.key?(key) }
+        node = (legacy + canonical).each_with_object({}) do |(key, value), out|
+          out[CITATION_KEY_ALIASES.fetch(key, key)] = value
+        end
+
+        node['@type'] ||= 'LegalCitation'
+        node['legalInstrumentId'] = instrument_id
+        node
       end
 
       # Normalize an identifier for use in URIs

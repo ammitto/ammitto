@@ -80,7 +80,7 @@ ammitto get un/KPi.066 --format json
 # Fetch from a specific source
 ammitto fetch eu --output-dir ./data
 
-# Fetch from all automatable sources (skips manually managed cn)
+# Fetch from all automatable sources (skips manually managed cn and jp)
 ammitto fetch --all
 ----
 

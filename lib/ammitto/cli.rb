@@ -133,7 +133,8 @@ module Ammitto
       Download raw sanction data from specified sources and save as YAML.
 
       Pass source codes to fetch specific sources, or use --all to fetch
-      every automatable source (cn is skipped: it is manually managed).
+      every automatable source (cn and jp are skipped: they are
+      manually managed).
 
       Examples:
         ammitto fetch uk --format yaml          # Fetch UK data as YAML

@@ -35,7 +35,16 @@ module Ammitto
 
       # Fetch raw data from Russia sources
       # Uses web scraping to fetch HTML announcements
+      #
+      # Scrape failures and zero-entity yields raise instead of being
+      # reported as success: the scraper collects errors into an array the
+      # pipeline never read, and the stop-list is never legitimately
+      # empty, so a blocked or restructured site used to produce a green
+      # run with zero entities. BaseExtractor#run turns the raise into
+      # status :error, which fails the fetch CLI's exit status.
+      #
       # @return [Hash] { announcements: [...], entities: [...], errors: [...] }
+      # @raise [RuntimeError] when the scrape errored or yielded nothing
       def fetch
         puts "[#{code}] Fetching Russia sanctions data via web scraping..." if verbose?
 
@@ -47,6 +56,17 @@ module Ammitto
         )
 
         @fetched_data = scraper.fetch_all
+
+        errors = @fetched_data[:errors] || []
+        unless errors.empty?
+          details = errors.map { |e| "#{e[:source]}: #{e[:error]}" }
+          raise "ru scrape failed: #{details.join('; ')}"
+        end
+
+        if (@fetched_data[:entities] || []).empty?
+          raise 'ru scrape yielded zero entities: the site is blocked or ' \
+                'its structure changed; refusing to report success'
+        end
 
         puts "[#{code}] Fetched #{@fetched_data[:entities].length} entities" if verbose?
 

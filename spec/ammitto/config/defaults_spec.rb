@@ -32,6 +32,17 @@ RSpec.describe Ammitto::Config::Defaults do
     end
   end
 
+  describe '::FETCHABLE_SOURCES' do
+    it 'excludes the manually managed sources cn and ru' do
+      # cn: announcement-based reference docs, manual by policy.
+      # ru: mid.ru is behind an F5/TSPD JavaScript anti-bot challenge,
+      # so the Mechanize scraper structurally cannot fetch it.
+      expect(described_class::FETCHABLE_SOURCES).not_to include(:cn, :ru)
+      expect(described_class::FETCHABLE_SOURCES)
+        .to match_array(described_class::ALL_SOURCES - %i[cn ru])
+    end
+  end
+
   describe '::detect_data_repositories' do
     let(:temp_dir) { Dir.mktmpdir('ammitto_config_test') }
 

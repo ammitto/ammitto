@@ -49,16 +49,31 @@ module Ammitto
             announcement = fetch_and_parse_announcement(link_info[:url])
             announcements << announcement if announcement
           rescue StandardError => e
-            puts "[MidPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
+            # Per-announcement failures tolerate a partially broken site,
+            # but must always be visible, not only under --verbose.
+            warn "[MidPage] Error parsing #{link_info[:url]}: #{e.message}"
           end
 
           announcements
         end
 
         # Fetch and parse all announcements
+        #
+        # A failed fetch raises instead of degrading to an empty array:
+        # BasePage#fetch swallows network errors into a nil page, and an
+        # empty return here is indistinguishable from "the site listed no
+        # announcements", so the pipeline used to report success on a
+        # dead or blocked site.
+        #
         # @return [Array<Hash>]
+        # @raise [RuntimeError] when the index page could not be fetched
         def fetch_all_announcements
           fetch
+          unless @page
+            raise "MidPage: failed to fetch #{url} " \
+                  '(network error or non-success response)'
+          end
+
           parse
         end
 

@@ -17,6 +17,11 @@ module Ammitto
         attribute :country, :string
         attribute :last_name, :string
         attribute :given_name, :string
+        # <EntityOrShip> carries the only name an organization or vessel
+        # record has: 2175 of the 5684 records in sema-lmes.xml have no
+        # LastName and no GivenName, so leaving this element unmapped
+        # publishes them as nameless entity nodes.
+        attribute :entity_or_ship, :string
         attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :date_of_birth_or_ship_build_date, :string
         attribute :schedule, :string
@@ -28,6 +33,7 @@ module Ammitto
           map_element 'Country', to: :country
           map_element 'LastName', to: :last_name
           map_element 'GivenName', to: :given_name
+          map_element 'EntityOrShip', to: :entity_or_ship
           map_element 'DateOfBirthOrShipBuildDate', to: :date_of_birth_or_ship_build_date
           map_element 'Schedule', to: :schedule
           map_element 'Item', to: :item
@@ -39,6 +45,7 @@ module Ammitto
           map 'country', to: :country
           map 'last_name', to: :last_name
           map 'given_name', to: :given_name
+          map 'entity_or_ship', to: :entity_or_ship
           map 'entity_type', to: :entity_type
           map 'date_of_birth_or_ship_build_date', to: :date_of_birth_or_ship_build_date
           map 'schedule', to: :schedule
@@ -46,10 +53,14 @@ module Ammitto
           map 'date_of_listing', to: :date_of_listing
         end
 
-        # Get full name
+        # Get full name. Person records carry GivenName/LastName;
+        # organization and ship records carry EntityOrShip instead.
         # @return [String]
         def full_name
-          [given_name, last_name].compact.join(' ')
+          person = [given_name, last_name].compact.join(' ')
+          return person unless person.strip.empty?
+
+          entity_or_ship.to_s
         end
 
         # Check if this is an individual (has personal name)

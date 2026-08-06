@@ -7,9 +7,10 @@ module Ammitto
   module Extractors
     # UnVesselsExtractor extracts UN Security Council designated vessels
     #
-    # Source: https://main.un.org/securitycouncil/sanctions/1718
+    # Source: https://main.un.org/securitycouncil/en/sanctions/1718
     # PDF: https://main.un.org/securitycouncil/sites/default/files/1718_designated_vessels_list_final.pdf
-    # Format: PDF (requires manual conversion to structured data)
+    # Format: PDF (the committee's only machine-retrievable publication of
+    # this list; the materials page links the same file)
     #
     # These vessels are designated under UN Security Council Resolution 1718 (DPRK sanctions)
     # and subsequent resolutions.
@@ -19,8 +20,16 @@ module Ammitto
     class UnVesselsExtractor < BaseExtractor
       attr_accessor :verbose
 
+      # main.un.org rejects requests whose User-Agent does not look like
+      # a real browser — 403 even for a bare "Mozilla/5.0" — so the
+      # download announces the same full browser string the
+      # BaseExtractor download helpers send.
+      USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' \
+                   'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+                   'Chrome/120.0.0.0 Safari/537.36'
+
       # 1718 Committee page
-      INDEX_URL = 'https://main.un.org/securitycouncil/sanctions/1718'
+      INDEX_URL = 'https://main.un.org/securitycouncil/en/sanctions/1718'
 
       # Direct PDF URL
       PDF_URL = 'https://main.un.org/securitycouncil/sites/default/files/1718_designated_vessels_list_final.pdf'
@@ -40,20 +49,30 @@ module Ammitto
         PDF_URL
       end
 
-      # Fetch raw data
-      # Note: PDF requires manual conversion to structured data
-      # @return [Hash] metadata about the source
+      # Fetch raw data (PDF format)
+      # @return [String] path to downloaded PDF temp file
       def fetch
-        puts "[#{code}] Note: UN Designated Vessels List is PDF-based" if verbose
-        puts "[#{code}] Source: #{INDEX_URL}" if verbose
+        require 'open-uri'
+        require 'tempfile'
 
-        {
-          source: code,
-          format: 'pdf',
-          index_url: INDEX_URL,
-          pdf_url: PDF_URL,
-          requires_manual_conversion: true
-        }
+        puts "[#{code}] Downloading PDF from: #{api_endpoint}" if verbose
+
+        @temp_file = Tempfile.new(['un_vessels', '.pdf'])
+        @temp_file.binmode
+        URI.open(api_endpoint,
+                 'User-Agent' => USER_AGENT,
+                 'Accept' => 'application/pdf, */*') do |remote_file|
+          @temp_file.write(remote_file.read)
+        end
+        @temp_file.close
+
+        @temp_file.path
+      end
+
+      # Clean up temp file after processing
+      def cleanup
+        @temp_file&.unlink
+        @temp_file = nil
       end
 
       # Extract entities from data
@@ -62,8 +81,9 @@ module Ammitto
       def extract_entities(data)
         return [] unless data
 
-        # PDF data requires manual conversion
-        # This returns empty until manual conversion is implemented
+        # The YAML pipeline parses the PDF via
+        # Sources::UnVessels::SanctionsList.from_pdf; this legacy path
+        # stays empty.
         []
       end
 
@@ -73,7 +93,6 @@ module Ammitto
       def extract_entries(data)
         return [] unless data
 
-        # PDF data requires manual conversion
         []
       end
     end

@@ -214,7 +214,7 @@ Naming/VariableNumber:
   Exclude:
     - 'lib/ammitto/sources/nz/individual.rb'
 
-# Offense count: 13
+# Offense count: 14
 Security/Open:
   Exclude:
     - 'lib/ammitto/extractors/au_extractor.rb'
@@ -224,6 +224,7 @@ Security/Open:
     - 'lib/ammitto/extractors/eu_vessels_extractor.rb'
     - 'lib/ammitto/extractors/nz_extractor.rb'
     - 'lib/ammitto/extractors/tr_extractor.rb'
+    - 'lib/ammitto/extractors/un_vessels_extractor.rb'
     - 'lib/ammitto/extractors/us_extractor.rb'
     - 'lib/ammitto/extractors/wb_extractor.rb'
 

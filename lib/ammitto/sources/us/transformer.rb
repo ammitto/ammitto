@@ -260,8 +260,13 @@ module Ammitto
           dobs.each_with_index do |dob, idx|
             pob = pobs[idx]
 
+            # OFAC DOBs mix complete dates ("03 Oct 1988") with partial
+            # ones ("1988", "Oct 1988", "circa 1960"): only a complete
+            # date becomes BirthInfo#date, a stated year always survives
+            # in BirthInfo#year
             birth_infos << create_birth_info(
-              date: parse_date(dob.date_of_birth),
+              date: dob.date_of_birth,
+              circa: circa_string?(dob.date_of_birth),
               city: pob&.place_of_birth
             )
           end

@@ -247,14 +247,30 @@ module Ammitto
 
           dates.map.with_index do |dob, idx|
             pob = places[idx] || places.first
-            # dob is a FlexibleDate object, use to_date method
-            date = dob.respond_to?(:to_date) ? dob.to_date : parse_date(dob)
-            create_birth_info(
-              date: date,
-              city: pob&.city,
-              country: pob&.country
-            )
+            if dob.respond_to?(:to_date)
+              # A FlexibleDate keeps its stated precision: the date is
+              # used only when day, month and year all resolved; a bare
+              # year rides in BirthInfo#year instead of vanishing
+              create_birth_info(
+                date: complete_date_of(dob),
+                circa: dob.circa || false,
+                year: dob.year,
+                city: pob&.city,
+                country: pob&.country
+              )
+            else
+              create_birth_info(date: dob, city: pob&.city, country: pob&.country)
+            end
           end
+        end
+
+        # @param dob [Ammitto::Sources::Au::FlexibleDate]
+        # @return [Date, nil] the date only when the source stated all of
+        #   day, month and year
+        def complete_date_of(dob)
+          return nil unless dob.day && dob.month && dob.year
+
+          dob.to_date
         end
 
         def transform_regime(committees)

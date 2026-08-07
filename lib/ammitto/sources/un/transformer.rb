@@ -285,10 +285,12 @@ module Ammitto
           pob = individual.place_of_birth
 
           if dob
-            date = parse_un_date(dob)
+            # A year-only record keeps its year — it is not padded into
+            # an invented January 1 date
             birth_infos << create_birth_info(
-              date: date,
+              date: dob.date,
               circa: dob.type_of_date&.include?('APPROXIMATELY'),
+              year: dob.year,
               city: pob&.city,
               region: pob&.state_province,
               country: pob&.country
@@ -343,23 +345,6 @@ module Ammitto
             create_effect(effect_type: 'asset_freeze', scope: 'full'),
             create_effect(effect_type: 'travel_ban', scope: 'full')
           ]
-        end
-
-        # Parse UN date format
-        # @param dob [Ammitto::Sources::Un::IndividualDateOfBirth]
-        # @return [Date, nil]
-        def parse_un_date(dob)
-          return nil unless dob
-
-          if dob.date && !dob.date.empty?
-            parse_date(dob.date)
-          elsif dob.year
-            begin
-              Date.new(dob.year, 1, 1)
-            rescue Date::Error
-              nil
-            end
-          end
         end
 
         # Extract title from designations

@@ -78,6 +78,53 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
         effect_types = result[:entry].effects.map(&:effect_type)
         expect(effect_types).to contain_exactly('asset_freeze', 'travel_ban')
       end
+
+      it 'carries the complete birth date with its year' do
+        birth = result[:entity].birth_info.first
+        expect(birth.date).to eq(Date.new(1957, 5, 5))
+        expect(birth.year).to eq(1957)
+      end
+    end
+
+    # The birth-precision invariant: a source-provided year is
+    # BirthInfo#year; BirthInfo#date is set only when the source states a
+    # complete day-month-year.
+    context 'when transforming partial birth dates' do
+      def birth_infos_for(*raw_dates)
+        individual = Ammitto::Sources::Au::Individual.new(
+          reference: '9001',
+          dates_of_birth: raw_dates.map do |raw|
+            Ammitto::Sources::Au::FlexibleDate.parse(raw)
+          end,
+          places_of_birth: []
+        )
+        transformer.send(:transform_birth_info, individual)
+      end
+
+      it 'keeps a year-only date as year, without a date' do
+        birth = birth_infos_for('1957').first
+        expect(birth.year).to eq(1957)
+        expect(birth.date).to be_nil
+      end
+
+      it 'keeps a month-year date as year, without inventing a day' do
+        birth = birth_infos_for('May 1957').first
+        expect(birth.year).to eq(1957)
+        expect(birth.date).to be_nil
+      end
+
+      it 'keeps a circa year as a circa-flagged year, without a date' do
+        birth = birth_infos_for('circa 1957').first
+        expect(birth.year).to eq(1957)
+        expect(birth.date).to be_nil
+        expect(birth.circa).to be true
+      end
+
+      it 'resolves a fully stated date to a date plus year' do
+        birth = birth_infos_for('5 May 1957').first
+        expect(birth.date).to eq(Date.new(1957, 5, 5))
+        expect(birth.year).to eq(1957)
+      end
     end
 
     context 'when transforming a vessel' do

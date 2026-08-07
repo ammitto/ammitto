@@ -189,11 +189,12 @@ module Ammitto
           return [] if birthdates.nil?
 
           birthdates.map do |bd|
-            date = parse_eu_date(bd.birthdate) || parse_year(bd.year)
-
+            # A year without a full birthdate stays a year — it is not
+            # padded into an invented January 1 date
             create_birth_info(
-              date: date,
+              date: bd.birthdate,
               circa: bd.circa,
+              year: bd.year,
               city: [bd.city, bd.place].compact.first,
               region: bd.region,
               country: bd.country_description,
@@ -253,29 +254,6 @@ module Ammitto
           [
             create_effect(effect_type: 'asset_freeze', scope: 'full')
           ]
-        end
-
-        # Parse EU date format (YYYY-MM-DD)
-        # @param date_str [String, nil]
-        # @return [Date, nil]
-        def parse_eu_date(date_str)
-          return nil if date_str.nil? || date_str.empty?
-
-          parse_date(date_str)
-        end
-
-        # Parse year-only value
-        # @param year [Integer, String, nil]
-        # @return [Date, nil]
-        def parse_year(year)
-          return nil if year.nil?
-
-          year_int = year.is_a?(Integer) ? year : year.to_i
-          return nil if year_int.zero?
-
-          Date.new(year_int, 1, 1)
-        rescue Date::Error
-          nil
         end
 
         # Normalize identification type code

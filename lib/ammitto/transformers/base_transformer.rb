@@ -206,17 +206,22 @@ module Ammitto
         )
       end
 
-      # Create a BirthInfo from birth data
+      # Create a BirthInfo from birth data.
+      #
+      # Invariant: BirthInfo#date is set only when the source states a
+      # complete day-month-year; a bare or partial year rides in
+      # BirthInfo#year and is never padded into an invented date.
       # @param date [String, Date, nil] birth date
       # @param circa [Boolean] whether the date is approximate
       # @param city [String, nil] birth city
       # @param region [String, nil] birth region/state
       # @param country [String, nil] birth country
       # @param country_iso_code [String, nil] ISO country code
+      # @param year [Integer, String, nil] source-stated birth year
       # @return [BirthInfo] the birth info
       def create_birth_info(date: nil, circa: false, city: nil, region: nil, country: nil,
                             country_iso_code: nil, year: nil)
-        parsed_date = date.is_a?(Date) ? date : parse_date(date)
+        parsed_date = parse_complete_date(date)
 
         Ammitto::BirthInfo.new(
           date: parsed_date,
@@ -225,8 +230,61 @@ module Ammitto
           region: region,
           country: country,
           country_iso_code: country_iso_code,
-          year: year || parsed_date&.year
+          year: normalize_year(year) || parsed_date&.year || extract_birth_year(date)
         )
+      end
+
+      # Parse a value into a Date only when it states day, month and year.
+      # Partial expressions ("1975", "Oct 1988", "00/00/1963") yield nil
+      # instead of a date padded with invented components. Date instances
+      # pass through: the caller already resolved them.
+      # @param value [Date, String, nil]
+      # @return [Date, nil]
+      def parse_complete_date(value)
+        return value if value.is_a?(Date)
+
+        str = value.to_s.strip
+        return nil if str.empty?
+
+        parts = Date._parse(str)
+        return nil unless parts[:year] && parts[:mon] && parts[:mday]
+
+        Date.new(parts[:year], parts[:mon], parts[:mday])
+      rescue Date::Error
+        nil
+      end
+
+      # Year stated by a partial date string ("1975", "circa 1975",
+      # "Oct 1988", "00/00/1963"). A range such as "1962 to 1964" names
+      # no single year and yields nil — range handling is a separate,
+      # dedicated concern.
+      # @param value [Object] candidate date string
+      # @return [Integer, nil]
+      def extract_birth_year(value)
+        return nil unless value.is_a?(String)
+
+        str = value.strip.sub(/\A(?:circa|approximately|c\.?)\s*/i, '')
+        return str.to_i if /\A\d{4}\z/.match?(str)
+
+        year = Date._parse(str)[:year]
+        year&.positive? ? year : nil
+      end
+
+      # Whether a source date string marks itself approximate
+      # ("circa 1960", "c. 1955", "approximately 1965")
+      # @param value [Object] candidate date string
+      # @return [Boolean]
+      def circa_string?(value)
+        value.is_a?(String) &&
+          value.strip.match?(/\A(?:circa|approximately|c\.)\s/i)
+      end
+
+      # Coerce a source-stated year to a positive Integer
+      # @param value [Integer, String, nil]
+      # @return [Integer, nil]
+      def normalize_year(value)
+        year = value.is_a?(Integer) ? value : value.to_s[/\A\d{4}\z/]&.to_i
+        year&.positive? ? year : nil
       end
 
       # Create a SanctionRegime

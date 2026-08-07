@@ -70,8 +70,10 @@ module Ammitto
             id: generate_entity_id(create_reference(source_entity)),
             entity_type: 'person',
             names: transform_names(source_entity),
+            # A year-only DOB string keeps its year; only a complete
+            # day-month-year becomes BirthInfo#date
             birth_info: [create_birth_info(
-              date: parse_date(source_entity.date_of_birth),
+              date: source_entity.date_of_birth,
               country: source_entity.nationality
             )].compact,
             nationalities: [source_entity.nationality].compact,

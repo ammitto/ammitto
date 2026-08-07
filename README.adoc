@@ -337,7 +337,7 @@ ammitto fetch uk --format yaml --output-dir ./processed --verbose
 # Fetch multiple sources
 ammitto fetch uk eu un --format yaml --output-dir ./processed
 
-# Fetch all automatable sources (skips cn, which is manually managed)
+# Fetch all automatable sources (skips cn and jp, which are manually managed)
 ammitto fetch --all --format yaml --output-dir ./processed
 
 # Dry run (show what would be fetched)

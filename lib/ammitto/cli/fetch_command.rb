@@ -13,10 +13,29 @@ module Ammitto
     # @example Fetch UK data as YAML
     #   ammitto fetch uk --format yaml --output-dir ./processed
     #
-    # @example Fetch all automatable sources (skips manually managed cn)
+    # @example Fetch all automatable sources (skips manually managed cn, jp)
     #   ammitto fetch --all
     #
     class FetchCommand
+      # Sources whose YAML is manually curated in their data-* repository,
+      # keyed to the error an explicit fetch reports. Reporting this beats
+      # a fetch path that succeeds without writing anything.
+      #
+      # cn: announcement-based reference docs, hand-managed in data-cn.
+      # jp: announcement YAML under data-jp/sources/sanction-lists, curated
+      #     with data-jp's own scripts from METI/MOF publications (the METI
+      #     End User List URL is revision-stamped and discovered from a
+      #     Japanese index page). The gem's from_pdf was a placeholder that
+      #     saved zero files, and harmonize prefers processed/ over the
+      #     curated announcements, so partial automated output would shadow
+      #     the curated data.
+      MANUALLY_MANAGED = {
+        cn: 'CN data is manually managed in data-cn; automated fetch ' \
+            'is not supported',
+        jp: 'JP data is manually managed in data-jp; automated fetch ' \
+            'is not supported'
+      }.freeze
+
       # @return [Hash] command options
       attr_reader :options
 
@@ -98,10 +117,8 @@ module Ammitto
       def fetch_source(source)
         puts "[#{source}] Fetching..." if options[:verbose]
 
-        # CN has no automated fetch: its YAML is manually managed in data-cn
-        # (announcement-based reference docs). Reporting this explicitly beats
-        # the extractor path returning success without writing anything.
-        return error_result(source, 'CN data is manually managed in data-cn; automated fetch is not supported') if source == :cn
+        manual_reason = MANUALLY_MANAGED[source]
+        return error_result(source, manual_reason) if manual_reason
 
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class
@@ -155,8 +172,9 @@ module Ammitto
                when :au, :tr, :nz, :eu_vessels
                  # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
                  parse_xlsx(model_class, content, extractor)
-               when :jp, :un_vessels
-                 # JP, UN Vessels are PDF-based - requires manual conversion
+               when :un_vessels
+                 # UN Vessels is PDF-based - requires manual conversion
+                 # (jp never reaches here: it is manually managed)
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"
                  puts "[#{source}] Data requires manual conversion from PDF"
                  model_class.from_pdf(content)

@@ -18,17 +18,26 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     expect(result[:error]).to match(/manually managed in data-cn/)
   end
 
+  it 'reports JP as manually managed instead of a zero-file success' do
+    cmd = described_class.new({}, ['jp'])
+    result = cmd.send(:fetch_source, :jp)
+
+    expect(result[:status]).to eq(:error)
+    expect(result[:error]).to match(/manually managed in data-jp/)
+  end
+
   it 'requires sources or --all' do
     expect { described_class.new({}, []) }
       .to raise_error(Thor::Error, /No sources specified/)
   end
 
-  it 'excludes cn from --all so full runs can succeed' do
+  it 'excludes cn and jp from --all so full runs can succeed' do
     cmd = described_class.new({ all: true }, [])
 
     expect(cmd.sources).not_to include(:cn)
+    expect(cmd.sources).not_to include(:jp)
     expect(cmd.sources)
-      .to match_array(Ammitto::Config::Defaults::ALL_SOURCES - %i[cn])
+      .to match_array(Ammitto::Config::Defaults::ALL_SOURCES - %i[cn jp])
   end
 
   describe 'exit honesty' do
@@ -37,6 +46,14 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
 
       expect { cmd.run }
         .to raise_error(Thor::Error, /Fetch failed for: cn/)
+        .and output(/0 succeeded, 1 failed/).to_stdout
+    end
+
+    it 'fails an explicit jp fetch loudly' do
+      cmd = described_class.new({}, ['jp'])
+
+      expect { cmd.run }
+        .to raise_error(Thor::Error, /Fetch failed for: jp/)
         .and output(/0 succeeded, 1 failed/).to_stdout
     end
 

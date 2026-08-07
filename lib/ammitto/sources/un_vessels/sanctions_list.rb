@@ -13,6 +13,14 @@ module Ammitto
       # out of it.
       #
       class SanctionsList < Lutaml::Model::Serializable
+        # Raised when the extracted PDF text fails the structural
+        # checks in from_text. The committee reformats this PDF rather
+        # than versioning it, and VESSEL_ROW is anchored to the current
+        # layout — a layout change makes the regexp go quiet rather
+        # than wrong, so it must fail the harvest loudly instead of
+        # yielding a green empty list.
+        class IntegrityError < StandardError; end
+
         attribute :vessels, Vessel, collection: true
         attribute :fetched_at, :string
         attribute :source, :string
@@ -60,14 +68,62 @@ module Ammitto
         # Create SanctionsList from the PDF's extracted text
         # @param text [String] page text of the published PDF
         # @return [SanctionsList]
+        # @raise [IntegrityError] when the parsed set fails a
+        #   structural invariant (see the verify_* methods)
         def self.from_text(text)
+          vessels = text.each_line.filter_map do |line|
+            vessel_from_line(line)
+          end
+
+          verify_rows_present!(vessels)
+          verify_distinct_ids!(vessels)
+          verify_imo_presence!(vessels)
+
           new.tap do |list|
             list.source = 'un_vessels'
             list.fetched_at = Time.now.utc.iso8601
-            list.vessels = text.each_line.filter_map do |line|
-              vessel_from_line(line)
-            end
+            list.vessels = vessels
           end
+        end
+
+        # A zero-row parse is a layout change, never an empty list —
+        # the DPRK vessel designations have never been vacated.
+        # @param vessels [Array<Vessel>]
+        # @raise [IntegrityError] when no line matched VESSEL_ROW
+        def self.verify_rows_present!(vessels)
+          return unless vessels.empty?
+
+          raise IntegrityError,
+                'un_vessels: no vessel row matched the extracted PDF ' \
+                'text — the document layout has changed'
+        end
+
+        # Two rows landing on one id means rows collapsed onto one
+        # record: the later file overwrites the earlier one at save
+        # time, silently dropping a designated vessel.
+        # @param vessels [Array<Vessel>]
+        # @raise [IntegrityError] when two rows share an id
+        def self.verify_distinct_ids!(vessels)
+          duplicates = vessels.map(&:id).tally.select { |_, n| n > 1 }
+          return if duplicates.empty?
+
+          raise IntegrityError,
+                'un_vessels: rows collapse onto one id — ' \
+                "#{duplicates.keys.join(', ')}"
+        end
+
+        # A set with no numeric IMO at all cannot be the vessels
+        # table: every published revision has carried exactly one
+        # IMO-less vessel, so an all-nil set means the IMO column
+        # stopped parsing.
+        # @param vessels [Array<Vessel>]
+        # @raise [IntegrityError] when no row carries an IMO number
+        def self.verify_imo_presence!(vessels)
+          return if vessels.any?(&:imo_number)
+
+          raise IntegrityError,
+                'un_vessels: no parsed row carries an IMO number — ' \
+                'the IMO column no longer parses'
         end
 
         # Parse one text line into a Vessel, or nil for a non-row line

@@ -65,6 +65,44 @@ RSpec.describe Ammitto::Sources::UnVessels::SanctionsList do
     end
   end
 
+  describe 'structural integrity of the parsed set' do
+    # The committee reformats this PDF rather than versioning it, and
+    # VESSEL_ROW is anchored to the current layout. A layout change
+    # makes the regexp go quiet rather than wrong — so a zero-row
+    # parse must fail the harvest, never yield a green empty list.
+    it 'refuses text in which no vessel row matches' do
+      narrative = <<~TEXT
+        #                    Vessel Name                    IMO number
+             Other        DPRK tanker M/V AN SAN 1 was
+      TEXT
+
+      expect { described_class.from_text(narrative) }
+        .to raise_error(described_class::IntegrityError,
+                        /no vessel row matched/)
+    end
+
+    it 'refuses rows that collapse onto one id' do
+      duplicated = <<~TEXT
+        1: AN SAN 1                                    7303803         30-Mar-18     na
+        1: AN SAN 2                                    7303803         30-Mar-18     na
+      TEXT
+
+      expect { described_class.from_text(duplicated) }
+        .to raise_error(described_class::IntegrityError,
+                        /collapse onto one id.*7303803/)
+    end
+
+    it 'refuses a set in which no row carries an IMO number' do
+      imo_less = <<~TEXT
+        1: MIN NING DE YOU 078                          Does not exist 30-Mar-18    na
+      TEXT
+
+      expect { described_class.from_text(imo_less) }
+        .to raise_error(described_class::IntegrityError,
+                        /no parsed row carries an IMO number/)
+    end
+  end
+
   describe '.from_pdf' do
     it 'parses the text PDF::Reader extracts from the document' do
       page = instance_double(PDF::Reader::Page, text: excerpt)

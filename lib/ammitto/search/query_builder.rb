@@ -51,7 +51,18 @@ module Ammitto
           source = Registry.instance(code)
           next unless source
 
-          data = source.load_data
+          # The registry knows every source the gem has ever shipped;
+          # the published API only carries the currently built ones.
+          # A source whose download fails must not take the whole
+          # search down with it, or the default all-sources call
+          # raises before reading a single published row.
+          begin
+            data = source.load_data
+          rescue NetworkError => e
+            Logger.warn("Search skipping #{code}: #{e.message}")
+            next
+          end
+
           matches = source.search(term, data)
           results.concat(matches)
         end

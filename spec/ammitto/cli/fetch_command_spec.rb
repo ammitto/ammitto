@@ -18,17 +18,32 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     expect(result[:error]).to match(/manually managed in data-cn/)
   end
 
+  it 'reports RU as blocked by the anti-bot wall instead of a silent zero-entity scrape' do
+    # mid.ru serves a JavaScript anti-bot challenge to non-browser
+    # clients; the scraper structurally yields zero entities, which used
+    # to count as success. The command must refuse before scraping.
+    Dir.mktmpdir('ammitto-fetch-ru') do |dir|
+      cmd = described_class.new({ output_dir: dir }, ['ru'])
+      result = cmd.send(:fetch_source, :ru)
+
+      expect(result[:status]).to eq(:error)
+      expect(result[:error]).to match(/blocked.*anti-bot challenge/)
+      expect(Dir.children(dir)).to be_empty
+    end
+  end
+
   it 'requires sources or --all' do
     expect { described_class.new({}, []) }
       .to raise_error(Thor::Error, /No sources specified/)
   end
 
-  it 'excludes cn from --all so full runs can succeed' do
+  it 'excludes cn and ru from --all so full runs can succeed' do
     cmd = described_class.new({ all: true }, [])
 
     expect(cmd.sources).not_to include(:cn)
+    expect(cmd.sources).not_to include(:ru)
     expect(cmd.sources)
-      .to match_array(Ammitto::Config::Defaults::ALL_SOURCES - %i[cn])
+      .to match_array(Ammitto::Config::Defaults::ALL_SOURCES - %i[cn ru])
   end
 
   describe 'exit honesty' do

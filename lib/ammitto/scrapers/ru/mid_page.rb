@@ -24,10 +24,15 @@ module Ammitto
         # List type identifier
         LIST_TYPE = 'stop_list'
 
+        # @return [Array<Hash>] detail-page failures collected by the
+        #   last #parse, as { url:, error: } hashes
+        attr_reader :detail_errors
+
         # Initialize with options
         # @param options [Hash] scraper options
         def initialize(options = {})
           super
+          @detail_errors = []
         end
 
         # The URL to scrape
@@ -37,8 +42,16 @@ module Ammitto
         end
 
         # Parse the MID page
+        #
+        # Per-announcement failures keep the scrape going, but are
+        # recorded in #detail_errors instead of only warned: one
+        # successful detail page alongside failures used to report
+        # success with partial data. RuSanctionsScraper propagates
+        # these into its errors so the extractor errors out.
+        #
         # @return [Array<Hash>] array of announcement data
         def parse
+          @detail_errors = []
           return [] unless @page
 
           # Find and parse announcement links
@@ -50,15 +63,31 @@ module Ammitto
             announcements << announcement if announcement
           rescue StandardError => e
             puts "[MidPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
+            @detail_errors << { url: link_info[:url], error: e.message }
           end
 
           announcements
         end
 
         # Fetch and parse all announcements
+        #
+        # A failed fetch raises instead of degrading to an empty array:
+        # BasePage#fetch swallows network errors into a nil return, and
+        # an empty return here is indistinguishable from "the site
+        # listed no announcements", so the pipeline used to report
+        # success on a dead or blocked site. The check keys on the
+        # fetch return value, not @page: fetch does not clear @page on
+        # failure, so a page left by an earlier successful fetch must
+        # not mask a failed refetch with stale content.
+        #
         # @return [Array<Hash>]
+        # @raise [RuntimeError] when the index page could not be fetched
         def fetch_all_announcements
-          fetch
+          unless fetch
+            raise "MidPage: failed to fetch #{url} " \
+                  '(network error or non-success response)'
+          end
+
           parse
         end
 
@@ -151,18 +180,17 @@ module Ammitto
         end
 
         # Fetch and parse an individual announcement
+        #
+        # Fetch errors propagate to #parse, which records them in
+        # #detail_errors instead of silently dropping the announcement.
+        #
         # @param url [String]
         # @return [Hash, nil]
+        # @raise [StandardError] when the detail page could not be fetched
         def fetch_and_parse_announcement(url)
           puts "[MidPage] Fetching announcement: #{url}" if verbose?
 
-          begin
-            detail_page = @agent.get(url)
-          rescue StandardError => e
-            puts "[MidPage] Error fetching #{url}: #{e.message}" if verbose?
-            return nil
-          end
-
+          detail_page = @agent.get(url)
           parse_announcement_detail(detail_page, url)
         end
 

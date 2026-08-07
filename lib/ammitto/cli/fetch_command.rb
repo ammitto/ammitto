@@ -103,6 +103,19 @@ module Ammitto
         # the extractor path returning success without writing anything.
         return error_result(source, 'CN data is manually managed in data-cn; automated fetch is not supported') if source == :cn
 
+        # RU has no automated fetch either: mid.ru answers every request with
+        # an F5/TSPD JavaScript anti-bot challenge shell (HTTP 200, zero
+        # content links), so the Mechanize scraper structurally cannot see
+        # the announcements. Refusing here beats a scrape that "succeeds"
+        # with zero entities. Verified against the live site on 2026-08-06.
+        if source == :ru
+          return error_result(source,
+                              'RU fetching is blocked: mid.ru serves a JavaScript ' \
+                              'anti-bot challenge the scraper cannot pass, so automated ' \
+                              'fetch does not work; refusing rather than reporting an ' \
+                              'empty scrape as success')
+        end
+
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class
 

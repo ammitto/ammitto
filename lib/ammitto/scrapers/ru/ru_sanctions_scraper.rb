@@ -49,6 +49,11 @@ module Ammitto
         end
 
         # Fetch only MID data
+        #
+        # Detail-page failures collected by MidPage#detail_errors are
+        # propagated into the returned errors so partial data is never
+        # reported as success (RuExtractor raises on non-empty errors).
+        #
         # @return [Hash]
         def fetch_mid_data
           puts '[RuSanctionsScraper] Fetching MID data...' if verbose?
@@ -68,6 +73,13 @@ module Ammitto
               (announcement[:entities] || []).each do |entity_data|
                 entities << build_entity(entity_data, announcement)
               end
+            end
+
+            scraper.detail_errors.each do |detail_error|
+              errors << {
+                source: 'mid',
+                error: "#{detail_error[:url]}: #{detail_error[:error]}"
+              }
             end
           rescue StandardError => e
             errors << { source: 'mid', error: e.message }

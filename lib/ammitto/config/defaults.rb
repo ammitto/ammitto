@@ -34,11 +34,14 @@ module Ammitto
       # All available sources
       ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru tr nz jp eu_vessels un_vessels].freeze
 
-      # Sources with an automated fetch path. CN is excluded: its YAML is
-      # manually managed in data-cn, so `fetch --all` must not fail on a
-      # source that cannot be fetched automatically (an explicit
-      # `fetch cn` still reports the manual-management error).
-      FETCHABLE_SOURCES = (ALL_SOURCES - %i[cn]).freeze
+      # Sources with an automated fetch path. CN and RU are excluded:
+      # their YAML is manually managed (data-cn, data-ru), so `fetch
+      # --all` must not fail on a source that cannot be fetched
+      # automatically (an explicit `fetch cn` / `fetch ru` still reports
+      # the manual-management error). RU cannot be scraped: mid.ru
+      # serves an F5/TSPD JavaScript anti-bot challenge to non-browser
+      # clients, so Mechanize never sees the announcement links.
+      FETCHABLE_SOURCES = (ALL_SOURCES - %i[cn ru]).freeze
 
       # Default output format
       DEFAULT_OUTPUT_FORMAT = 'jsonld'

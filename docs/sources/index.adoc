@@ -259,11 +259,16 @@ announcement-based reference documents; there is no automated fetch.
 
 Russia maintains the "Unfriendly Countries" list and related sanctions.
 
-[source,bash]
-----
-# Fetch Russia data
-ammitto fetch ru
-----
+Automated fetching is currently blocked. mid.ru answers every request --
+the announcement index and the article pages alike -- with a JavaScript
+anti-bot challenge that the HTML scraper cannot execute (verified
+2026-08-06). `ammitto fetch ru` reports the wall and exits nonzero rather
+than saving an empty result, and `ammitto fetch --all` skips RU, so a
+blocked scrape can never be mistaken for an empty sanctions list.
+
+Until a working fetch path exists, the committed corpus in the `data-ru`
+repository is the data of record; harmonization reads it directly and does
+not depend on the fetch.
 
 === Turkey (`tr`)
 

@@ -36,13 +36,69 @@ RSpec.describe Ammitto::Scrapers::Ru::MidPage do
       )
       allow(agent).to receive(:get)
         .with(described_class::NEWS_URL).and_return(index_page)
-      # The detail-page fetch failing is tolerated per announcement; only
-      # the index-page fetch contract is under test here.
+      # A failed detail page no longer raises, but it is recorded in
+      # #detail_errors instead of being silently omitted.
       allow(agent).to receive(:get)
         .with('https://www.mid.ru/ru/foreign_policy/news/1234/')
         .and_raise(SocketError, 'detail unreachable')
 
-      expect(page.fetch_all_announcements).to eq([])
+      announcements = nil
+      expect { announcements = page.fetch_all_announcements }
+        .to output(/detail unreachable/).to_stderr
+
+      expect(announcements).to eq([])
+      expect(page.detail_errors.length).to eq(1)
+    end
+
+    it 'collects failed detail pages so one success is not full success' do
+      # One successful detail page next to a failing one used to return
+      # only the successful announcement with no trace of the failure,
+      # so the extractor reported success with partial data.
+      index_html = <<~HTML
+        <html><body>
+          <a href="/ru/foreign_policy/news/1/">
+            Заявление МИД России о санкциях против граждан США
+          </a>
+          <a href="/ru/foreign_policy/news/2/">
+            Заявление МИД России о санкциях против политиков
+          </a>
+        </body></html>
+      HTML
+      detail_html = <<~HTML
+        <html><body><article>
+          <h1>Заявление МИД России</h1>
+          1. Иванов Иван Иванович (Ivanov Ivan) – директор института.
+        </article></body></html>
+      HTML
+      index_page = Mechanize::Page.new(
+        URI('https://www.mid.ru/ru/foreign_policy/news/'),
+        nil, index_html, 200, Mechanize.new
+      )
+      detail_page = Mechanize::Page.new(
+        URI('https://www.mid.ru/ru/foreign_policy/news/1/'),
+        nil, detail_html, 200, Mechanize.new
+      )
+      allow(agent).to receive(:get)
+        .with(described_class::NEWS_URL).and_return(index_page)
+      allow(agent).to receive(:get)
+        .with('https://www.mid.ru/ru/foreign_policy/news/1/')
+        .and_return(detail_page)
+      allow(agent).to receive(:get)
+        .with('https://www.mid.ru/ru/foreign_policy/news/2/')
+        .and_raise(SocketError, 'boom')
+
+      announcements = nil
+      expect { announcements = page.fetch_all_announcements }
+        .to output(%r{Error parsing .*news/2}).to_stderr
+
+      expect(announcements.length).to eq(1)
+      expect(announcements.first[:source_url])
+        .to eq('https://www.mid.ru/ru/foreign_policy/news/1/')
+      expect(announcements.first[:entities].length).to eq(1)
+      expect(page.detail_errors).to eq(
+        [{ url: 'https://www.mid.ru/ru/foreign_policy/news/2/',
+           error: 'boom' }]
+      )
     end
   end
 end

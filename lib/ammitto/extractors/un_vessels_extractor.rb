@@ -34,6 +34,17 @@ module Ammitto
       # Direct PDF URL
       PDF_URL = 'https://main.un.org/securitycouncil/sites/default/files/1718_designated_vessels_list_final.pdf'
 
+      # The PDF currently serves without a redirect, so a short chain
+      # covers a relocated file while a longer one means the endpoint
+      # changed and needs a human look.
+      MAX_REDIRECTS = 3
+
+      # Seconds to wait for the connection to open
+      OPEN_TIMEOUT = 30
+
+      # Seconds to wait for the PDF body to arrive
+      READ_TIMEOUT = 120
+
       # @return [Symbol] the source code
       def code
         :un_vessels
@@ -55,7 +66,6 @@ module Ammitto
       # strand the file until process exit.
       # @return [String] path to downloaded PDF temp file
       def fetch
-        require 'open-uri'
         require 'tempfile'
 
         puts "[#{code}] Downloading PDF from: #{api_endpoint}" if verbose
@@ -63,11 +73,7 @@ module Ammitto
         @temp_file = Tempfile.new(['un_vessels', '.pdf'])
         begin
           @temp_file.binmode
-          URI.open(api_endpoint,
-                   'User-Agent' => USER_AGENT,
-                   'Accept' => 'application/pdf, */*') do |remote_file|
-            @temp_file.write(remote_file.read)
-          end
+          @temp_file.write(download(api_endpoint))
           @temp_file.close
         rescue StandardError
           cleanup
@@ -112,6 +118,61 @@ module Ammitto
         return [] unless data
 
         []
+      end
+
+      private
+
+      # Downloads +url+ with Net::HTTP instead of open-uri (RuboCop
+      # Security/Open). Net::HTTP does not follow redirects on its
+      # own, so this loop re-issues the request at each Location, up
+      # to MAX_REDIRECTS hops. A non-2xx terminal response raises
+      # OpenURI::HTTPError — the class the open-uri download raised —
+      # so fetch's temp-file disposal path and its callers see an
+      # unchanged failure mode.
+      #
+      # @param url [String] the URL to download
+      # @return [String] the response body
+      def download(url)
+        require 'net/http'
+        require 'open-uri' # OpenURI::HTTPError only; no URI.open here
+
+        uri = URI.parse(url)
+        MAX_REDIRECTS.times do
+          response = request(uri)
+          return response.body if response.is_a?(Net::HTTPSuccess)
+
+          unless response.is_a?(Net::HTTPRedirection)
+            raise OpenURI::HTTPError.new(
+              "#{response.code} #{response.message}", nil
+            )
+          end
+
+          uri = URI.join(uri.to_s, response['Location'])
+        end
+
+        raise "[#{code}] more than #{MAX_REDIRECTS} redirects for #{url}"
+      end
+
+      # One GET, redirects not followed — the download loop owns that.
+      #
+      # @param uri [URI::HTTP] the URI to request
+      # @return [Net::HTTPResponse]
+      def request(uri)
+        Net::HTTP.start(
+          uri.host, uri.port,
+          use_ssl: uri.scheme == 'https',
+          open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT
+        ) do |http|
+          http.request(Net::HTTP::Get.new(uri, request_headers))
+        end
+      end
+
+      # @return [Hash] headers for the PDF request
+      def request_headers
+        {
+          'User-Agent' => USER_AGENT,
+          'Accept' => 'application/pdf, */*'
+        }
       end
     end
   end

@@ -33,7 +33,13 @@ module Ammitto
       # Sanctioned entity from Turkey List D
       class SanctionedEntity < Lutaml::Model::Serializable
         attribute :name, :string
-        attribute :entity_type, :string # Individual, Entity
+        # "person" or "organization" — the words this gem's own parser
+        # writes. The comment here used to name a different pair,
+        # "Individual, Entity", which nothing has ever produced; the
+        # predicates below were written against that comment rather than
+        # against .detect_entity_type, and so answered false for every
+        # record ever parsed.
+        attribute :entity_type, :string
         attribute :program, :string
         attribute :remarks, :string
         attribute :listed_date, :string
@@ -254,12 +260,37 @@ module Ammitto
           }.freeze
         }.freeze
 
+        # Whether Turkey listed this record as a natural person.
+        #
+        # The word compared is the one the record actually carries.
+        # .detect_entity_type classifies every row of the workbook as
+        # "person" or "organization", fetch saves that word verbatim, and
+        # harmonize reads it back — so those two are the whole vocabulary
+        # a record can arrive with. Comparing against "individual"
+        # instead made this false for every record, and #organization?
+        # false with it, leaving no value of entity_type for which either
+        # predicate answered true.
+        #
+        # @return [Boolean]
         def person?
-          entity_type&.downcase == 'individual'
+          entity_type.to_s.downcase == 'person'
         end
 
+        # Whether this record is anything other than a natural person.
+        #
+        # The complement rather than an equality test, so that it agrees
+        # with Transformer#map_entity_type for every value rather than
+        # only for the two the parser writes. That method sends "person"
+        # down the person branch and everything else — a blank
+        # entity_type, the "entity" spelling, a word from some future
+        # column — down the organization branch, and builds an
+        # OrganizationEntity accordingly. An `== "organization"` test
+        # would answer false about records the gem does harmonize as
+        # organizations, which is the same defect in a quieter form.
+        #
+        # @return [Boolean]
         def organization?
-          entity_type&.downcase == 'entity'
+          !person?
         end
 
         # Local identifier this record's IRIs and filename are minted

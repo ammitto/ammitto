@@ -553,4 +553,101 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
       end
     end
   end
+
+  # What the predicates answer, and about which records.
+  #
+  # They were written against a vocabulary nothing produces — "individual"
+  # and "entity" — while .detect_entity_type has written "person" and
+  # "organization" since the file was added. Both therefore answered false
+  # for every record Turkey has ever published, so a caller asking whether
+  # a designee was a person and a caller asking whether it was an
+  # organization both heard no about the same record.
+  #
+  # Every expectation below is stated against the word the parser itself
+  # produces rather than against a word chosen here, because that word is
+  # what a record actually carries: fetch saves it and harmonize reads it
+  # back unchanged.
+  describe 'entity type predicates' do
+    # One row of each shape .detect_entity_type distinguishes.
+    def self.rows
+      { 'an organization name cell' => { organization_name: 'ACME LTD' },
+        'a person name cell' => { name: 'JOHN DOE' },
+        'a birth date and no name' => { date_of_birth: '1970-01-01' },
+        'no usable indicator at all' => {} }
+    end
+
+    def classify(row)
+      Ammitto::Sources::Tr::SanctionsList.detect_entity_type(row)
+    end
+
+    def parsed(row)
+      described_class.new(name: 'ACME LTD', entity_type: classify(row))
+    end
+
+    rows.each do |shape, row|
+      it "reads a record parsed from #{shape} as the parser classified it" do
+        # The whole predicate pair, compared against the parser's own
+        # word. A tally ("exactly one of the two is true") would pass on
+        # a pair that answered confidently about the wrong record.
+        record = parsed(row)
+        word = classify(row)
+
+        expect({ person: record.person?, organization: record.organization? })
+          .to eq(person: word == 'person', organization: word == 'organization')
+      end
+    end
+
+    it 'leaves no parsed record that both predicates deny' do
+      answered = self.class.rows.values.map do |row|
+        record = parsed(row)
+        [record.person?, record.organization?]
+      end
+
+      expect(answered).to all(include(true))
+    end
+
+    it 'reads the two words the parser can write' do
+      person = described_class.new(name: 'JOHN DOE', entity_type: 'person')
+      organization = described_class.new(name: 'ACME LTD',
+                                         entity_type: 'organization')
+
+      expect([person.person?, person.organization?]).to eq([true, false])
+      expect([organization.person?, organization.organization?])
+        .to eq([false, true])
+    end
+
+    it 'ignores the case a record file happens to carry' do
+      record = described_class.new(name: 'JOHN DOE', entity_type: 'Person')
+
+      expect(record.person?).to be true
+    end
+  end
+
+  # The consequence a caller sees. A predicate that disagrees with the
+  # transformer does not merely answer oddly in isolation — it describes a
+  # designee as something other than the node harmonize mints for it.
+  # Transformer#map_entity_type sends "person" down the person branch and
+  # every other value, blank included, down the organization branch, so
+  # these are the values the predicates have to agree with.
+  describe 'agreement with the class harmonize builds' do
+    def minted_type(entity_type)
+      record = described_class.new(name: 'ACME LTD', reference_number: '42',
+                                   entity_type: entity_type)
+      Ammitto::Sources::Tr::Transformer.new.transform(record)[:entity]
+                                       .entity_type
+    end
+
+    ['person', 'organization', 'entity', 'Individual', '', nil]
+      .each do |entity_type|
+      it "reads #{entity_type.inspect} as the type harmonize mints" do
+        record = described_class.new(name: 'ACME LTD', reference_number: '42',
+                                     entity_type: entity_type)
+        minted = minted_type(entity_type)
+
+        expect({ person: record.person?, organization: record.organization? })
+          .to eq(person: minted == 'person',
+                 organization: minted == 'organization')
+      end
+    end
+  end
 end

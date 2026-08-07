@@ -260,23 +260,35 @@ module Ammitto
           }.freeze
         }.freeze
 
-        # Whether Turkey listed this record as a natural person.
+        # Whether this record carries the parser's "person"
+        # classification.
         #
-        # The word compared is the one the record actually carries.
-        # .detect_entity_type classifies every row of the workbook as
-        # "person" or "organization", fetch saves that word verbatim, and
-        # harmonize reads it back — so those two are the whole vocabulary
-        # a record can arrive with. Comparing against "individual"
-        # instead made this false for every record, and #organization?
-        # false with it, leaving no value of entity_type for which either
-        # predicate answered true.
+        # The word compared is the one .detect_entity_type emits — that
+        # method writes "person" or "organization" and nothing else, and
+        # fetch saves the word verbatim. That bounds the parser, not the
+        # record: harmonize re-reads record files, and the YAML mapping
+        # admits whatever string a file carries. The pair of predicates
+        # stays total over that open set because this one matches the
+        # single word meaning person and #organization? takes the
+        # complement, mirroring Transformer#map_entity_type. Comparing
+        # against "individual" instead made this false for every record,
+        # and #organization? false with it, leaving no value of
+        # entity_type for which either predicate answered true.
+        #
+        # A true answer repeats the classification; it does not vouch
+        # for the designee. The classifier's only organisation signal is
+        # a marker column Turkey fills on some organisation rows and
+        # leaves blank on others, so part of List D's organisations —
+        # DEFENCE INDUSTRIES ORGANISATION (DIO) among them — carry
+        # "person" and answer true here.
         #
         # @return [Boolean]
         def person?
           entity_type.to_s.downcase == 'person'
         end
 
-        # Whether this record is anything other than a natural person.
+        # Whether this record carries anything but the "person"
+        # classification.
         #
         # The complement rather than an equality test, so that it agrees
         # with Transformer#map_entity_type for every value rather than
@@ -975,12 +987,23 @@ module Ammitto
           end.join('; ')
         end
 
-        # Detect entity type from row data
+        # Detect entity type from row data.
+        #
+        # Best effort, not ground truth. In the live workbook the
+        # "Gerçek Kişi" column carries EVERY designee's name,
+        # organisations included, and the "Tüzel Kuruluş/Organizasyon"
+        # column is a type marker (the literal text "Tüzel
+        # Kişi/Kuruluş/Organizasyon") rather than a name — filled on
+        # some organisation rows and left blank on others. A row whose
+        # marker Turkey omitted is indistinguishable here from a person
+        # row: no other column separates them (many real persons carry
+        # no birth data either), so such a row classifies "person"
+        # however organisation-shaped its name reads.
         def self.detect_entity_type(row)
-          # If organization_name column has data, it's an organization
+          # Marker column filled: Turkey typed the row as an organisation
           if row[:organization_name] && !row[:organization_name].empty?
             'organization'
-          # If name column has data (individual name column), it's a person
+          # A name with no marker: presumed person (see above)
           elsif row[:name] && !row[:name].empty?
             'person'
           # Check other indicators

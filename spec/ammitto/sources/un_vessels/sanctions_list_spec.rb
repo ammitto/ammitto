@@ -51,6 +51,14 @@ RSpec.describe Ammitto::Sources::UnVessels::SanctionsList do
       expect(names.map(&:is_primary)).to eq([true, false, false])
     end
 
+    it 'stamps every vessel with the 1718 resolution' do
+      # The transformer keys the UN-1718 regime off vessel.resolution;
+      # a nil resolution degrades every vessel to the generic UN
+      # regime.
+      expect(list.vessels.map(&:resolution).uniq)
+        .to eq([described_class::RESOLUTION])
+    end
+
     it 'keeps the vessel listed without an IMO under a stable name slug' do
       vessel = list.vessels.last
 
@@ -138,6 +146,30 @@ RSpec.describe Ammitto::Sources::UnVessels::SanctionsList do
         .to include('/entity/un_vessels/min-ning-de-you-078')
       expect(result[:entry].id).to include('min-ning-de-you-078')
       expect(result[:entry].id).not_to include('/unknown')
+    end
+  end
+
+  describe 'harmonization of the sanction regime' do
+    it 'derives the UN-1718 regime from the stamped resolution' do
+      result = Ammitto::Sources::UnVessels::Transformer.new
+                                                       .transform(list.vessels.first)
+
+      expect(result[:entry].regime.code).to eq('UN-1718')
+      expect(result[:entry].regime.name)
+        .to eq('UN Security Council - Resolution 1718 (2006)')
+    end
+  end
+
+  describe 'local id hygiene' do
+    it 'strips a whitespace-padded IMO number from curated YAML' do
+      # The PDF row regexp cannot produce padding, but from_hash also
+      # ingests hand-curated YAML; local_id feeds filenames and IRIs,
+      # so a padded IMO must not mint an unstable identifier.
+      vessel = Ammitto::Sources::UnVessels::Vessel.from_hash(
+        'imo_number' => ' 7303803 '
+      )
+
+      expect(vessel.local_id).to eq('7303803')
     end
   end
 end

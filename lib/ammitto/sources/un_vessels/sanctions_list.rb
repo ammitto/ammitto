@@ -42,6 +42,14 @@ module Ammitto
         # Names inside the numbered-name cell are separated by " N: ".
         NAME_SEPARATOR = /\s+\d+:\s+/
 
+        # Every row of this PDF is a 1718 Committee (DPRK) designation:
+        # the resolution is a property of the document, not of a row,
+        # so it is stamped constant onto each minted vessel.
+        # Transformer#create_regime keys the UN-1718 regime off it —
+        # left nil, every vessel would fall back to the generic UN
+        # regime.
+        RESOLUTION = 'Resolution 1718 (2006)'
+
         # Create SanctionsList from manually converted data
         # @param data [Hash] structured data from PDF conversion
         # @return [SanctionsList]
@@ -138,6 +146,7 @@ module Ammitto
             vessel.names = name_variants(match[:names])
             vessel.imo_number = match[:imo] if /\A\d{7}\z/.match?(match[:imo])
             vessel.designation_date = Vessel.parse_date(match[:date])
+            vessel.resolution = RESOLUTION
             vessel.id = "un-vessel-#{vessel.local_id}"
           end
         end

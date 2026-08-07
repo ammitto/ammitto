@@ -39,7 +39,7 @@ module Ammitto
         # @return [VesselEntity]
         def create_entity(vessel)
           Ammitto::VesselEntity.new.tap do |entity|
-            entity.id = generate_entity_id(vessel.imo_number)
+            entity.id = generate_entity_id(vessel.local_id)
             entity.entity_type = 'vessel'
             entity.names = build_names(vessel)
             entity.imo_number = vessel.imo_number
@@ -73,7 +73,7 @@ module Ammitto
         def build_source_references(vessel)
           ref = Ammitto::SourceReference.new(
             source_code: 'un_vessels',
-            reference_number: vessel.imo_number,
+            reference_number: vessel.local_id,
             retrieved_at: Time.now.utc.iso8601
           )
           # SourceReference (models layer) has no resolution attribute yet —
@@ -90,7 +90,7 @@ module Ammitto
         # @return [SanctionEntry]
         def create_entry(vessel, entity)
           Ammitto::SanctionEntry.new.tap do |entry|
-            entry.id = generate_entry_id(vessel.imo_number)
+            entry.id = generate_entry_id(vessel.local_id)
             entry.entity_id = entity.id
             entry.authority = authority
             entry.regime = create_regime(vessel)

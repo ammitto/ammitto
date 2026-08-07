@@ -124,6 +124,25 @@ module Ammitto
           end
         end
 
+        # Stable local identifier for filenames and harmonized IRIs:
+        # the IMO number when the list provides one, stripped — the
+        # PDF row regexp cannot yield padding, but from_hash accepts
+        # hand-curated YAML that can, and a padded IMO here would mint
+        # an unstable filename and IRI. One designated vessel (MIN
+        # NING DE YOU 078) is listed with IMO "Does not exist"; its
+        # identity falls back to a slug of its primary name, which is
+        # stable across harvests — unlike an object_id fallback, which
+        # would re-mint the record's filename and IRI on every run.
+        # @return [String, nil]
+        def local_id
+          imo = imo_number.to_s.strip
+          return imo unless imo.empty?
+
+          slug = vessel_name.to_s.downcase.gsub(/[^a-z0-9]+/, '-')
+                            .gsub(/\A-+|-+\z/, '')
+          slug.empty? ? nil : slug
+        end
+
         # Get unique identifier (IMO number)
         def unique_identifier
           "IMO-#{imo_number}"

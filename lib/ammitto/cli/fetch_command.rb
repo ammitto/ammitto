@@ -168,11 +168,15 @@ module Ammitto
                when :au, :tr, :nz, :eu_vessels
                  # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
                  parse_xlsx(model_class, content, extractor)
-               when :jp, :un_vessels
-                 # JP, UN Vessels are PDF-based - requires manual conversion
+               when :jp
+                 # JP is PDF-based - requires manual conversion
                  puts "[#{source}] Note: #{source.upcase} data is PDF-based"
                  puts "[#{source}] Data requires manual conversion from PDF"
                  model_class.from_pdf(content)
+               when :un_vessels
+                 # UN Vessels parses the downloaded PDF directly -
+                 # content is the path to the extractor's temp file
+                 parse_pdf(model_class, content, extractor)
                else
                  # XML sources - content is already a string from extractor
                  model_class.from_xml(content)
@@ -254,6 +258,27 @@ module Ammitto
         # $! is the exception on its way out, if any. Captured before
         # disposal so a failure here is measured against the reason the
         # parse ended, not against itself.
+        interrupted = $ERROR_INFO
+        begin
+          cleanup_extractor(extractor)
+        rescue StandardError => e
+          raise unless interrupted
+
+          warn "[cleanup] #{e.message}"
+        end
+      end
+
+      # PDF twin of parse_xlsx: same disposal contract, for the same
+      # reason — the download is a Tempfile, and a parse that refuses
+      # the payload must not leak it.
+      #
+      # @param model_class [Class] source model to parse with
+      # @param content [String] path to the downloaded PDF
+      # @param extractor [Object] extractor owning the temporary file
+      # @return [Object] the parsed model
+      def parse_pdf(model_class, content, extractor)
+        model_class.from_pdf(content)
+      ensure
         interrupted = $ERROR_INFO
         begin
           cleanup_extractor(extractor)
@@ -473,7 +498,12 @@ module Ammitto
           ref = item.id || item.unique_identifier || "unknown-#{item.object_id}"
           "jp-#{ref}.yaml"
         when :un_vessels
-          ref = item.imo_number || item.unique_identifier || "unknown-#{item.object_id}"
+          # local_id, not unique_identifier: the fallback identity for
+          # the one vessel listed without an IMO number must be its
+          # name slug, which is stable across harvests — the previous
+          # unique_identifier fallback stringified a nil IMO into the
+          # constant ref "IMO-".
+          ref = item.local_id || "unknown-#{item.object_id}"
           "un-vessel-#{ref}.yaml"
         else
           "#{item.object_id}.yaml"

@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'moxml', '~> 0.1', '>= 0.1.25'
   spec.add_dependency 'multi_json', '~> 1.15'
   spec.add_dependency 'nokogiri', '>= 1.15'
+  spec.add_dependency 'pdf-reader', '~> 2.11'
   spec.add_dependency 'rdf', '~> 3.3'
   spec.add_dependency 'rdf-turtle', '~> 3.3'
   spec.add_dependency 'roo', '~> 2.10'

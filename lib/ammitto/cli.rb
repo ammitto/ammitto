@@ -144,7 +144,7 @@ module Ammitto
     DESC
     option :dry_run, type: :boolean, default: false, desc: 'Show what would be done'
     option :all, type: :boolean, default: false,
-                 desc: 'Fetch all automatable sources (skips cn)'
+                 desc: 'Fetch all automatable sources (skips cn and jp)'
     option :format, type: :string, default: 'yaml', desc: 'Output format (yaml, jsonld)'
     option :output_dir, type: :string, desc: 'Output directory for YAML files'
     def fetch(*sources)

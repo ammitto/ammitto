@@ -1,0 +1,26 @@
+# Repositories watched by the fleet health monitor (scripts/fleet_health.sh).
+# One repository name per line; the org is fixed to "ammitto" (override with
+# FLEET_HEALTH_ORG). Blank lines and "#" comments are ignored.
+#
+# Keep this list in sync with DATA_REPO_TO_SOURCE in
+# lib/ammitto/config/defaults.rb — adding a source there without adding its
+# repo here leaves the new schedule unwatched.
+#
+# data-cn is listed even though its YAML is manually managed: its fetch.yml
+# still runs on a schedule (verified 2026-08-07, conclusion success), so it
+# can die the same silent death as the others.
+data-au
+data-ca
+data-ch
+data-cn
+data-eu
+data-eu-vessels
+data-jp
+data-nz
+data-ru
+data-tr
+data-uk
+data-un
+data-un-vessels
+data-us
+data-wb

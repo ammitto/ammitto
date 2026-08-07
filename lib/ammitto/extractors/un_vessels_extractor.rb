@@ -49,7 +49,10 @@ module Ammitto
         PDF_URL
       end
 
-      # Fetch raw data (PDF format)
+      # Fetch raw data (PDF format). A failed download disposes of the
+      # just-created temp file before re-raising: a 403 from a UA
+      # change is this source's expected failure mode, and it must not
+      # strand the file until process exit.
       # @return [String] path to downloaded PDF temp file
       def fetch
         require 'open-uri'
@@ -58,21 +61,36 @@ module Ammitto
         puts "[#{code}] Downloading PDF from: #{api_endpoint}" if verbose
 
         @temp_file = Tempfile.new(['un_vessels', '.pdf'])
-        @temp_file.binmode
-        URI.open(api_endpoint,
-                 'User-Agent' => USER_AGENT,
-                 'Accept' => 'application/pdf, */*') do |remote_file|
-          @temp_file.write(remote_file.read)
+        begin
+          @temp_file.binmode
+          URI.open(api_endpoint,
+                   'User-Agent' => USER_AGENT,
+                   'Accept' => 'application/pdf, */*') do |remote_file|
+            @temp_file.write(remote_file.read)
+          end
+          @temp_file.close
+        rescue StandardError
+          cleanup
+          raise
         end
-        @temp_file.close
 
         @temp_file.path
       end
 
       # Clean up temp file after processing
       def cleanup
+        @temp_file&.close
         @temp_file&.unlink
         @temp_file = nil
+      end
+
+      # The legacy non-YAML path never reaches FetchCommand#parse_pdf,
+      # whose ensure block owns disposal in the YAML pipeline — so
+      # this path disposes of its download itself.
+      def run
+        super
+      ensure
+        cleanup
       end
 
       # Extract entities from data

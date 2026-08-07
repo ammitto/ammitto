@@ -18,7 +18,7 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     expect(result[:error]).to match(/manually managed in data-cn/)
   end
 
-  it 'reports RU as manually managed instead of a silent zero-entity scrape' do
+  it 'reports RU as blocked by the anti-bot wall instead of a silent zero-entity scrape' do
     # mid.ru serves a JavaScript anti-bot challenge to non-browser
     # clients; the scraper structurally yields zero entities, which used
     # to count as success. The command must refuse before scraping.
@@ -27,7 +27,7 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
       result = cmd.send(:fetch_source, :ru)
 
       expect(result[:status]).to eq(:error)
-      expect(result[:error]).to match(/manually managed in data-ru/)
+      expect(result[:error]).to match(/blocked.*anti-bot challenge/)
       expect(Dir.children(dir)).to be_empty
     end
   end

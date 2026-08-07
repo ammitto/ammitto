@@ -108,7 +108,13 @@ module Ammitto
         # content links), so the Mechanize scraper structurally cannot see
         # the announcements. Refusing here beats a scrape that "succeeds"
         # with zero entities. Verified against the live site on 2026-08-06.
-        return error_result(source, 'RU data is manually managed in data-ru; mid.ru serves a JavaScript anti-bot challenge, so automated fetch is not supported') if source == :ru
+        if source == :ru
+          return error_result(source,
+                              'RU fetching is blocked: mid.ru serves a JavaScript ' \
+                              'anti-bot challenge the scraper cannot pass, so automated ' \
+                              'fetch does not work; refusing rather than reporting an ' \
+                              'empty scrape as success')
+        end
 
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class

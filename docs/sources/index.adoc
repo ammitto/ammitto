@@ -259,11 +259,11 @@ announcement-based reference documents; there is no automated fetch.
 
 Russia maintains the "Unfriendly Countries" list and related sanctions.
 
-[source,bash]
-----
-# Fetch Russia data
-ammitto fetch ru
-----
+Automated fetching is currently blocked: mid.ru answers every request with a
+JavaScript anti-bot challenge the scraper cannot pass (verified 2026-08-06).
+`ammitto fetch ru` reports this and exits nonzero, and `--all` skips RU, so a
+blocked scrape can never be mistaken for an empty list. The committed corpus
+in `data-ru` remains the data of record until a working path exists.
 
 === Turkey (`tr`)
 

@@ -124,10 +124,9 @@ module Ammitto
           dmy = identity.day_month_year
           return [] unless dmy.year
 
-          # Year-only Swiss records keep their year even when no full date
-          # can be parsed
-          date_str = dmy.to_iso_date
-          [create_birth_info(date: parse_date(date_str), year: dmy.year&.to_i)]
+          # Year-only and year-month Swiss records keep their year; only
+          # a fully stated day-month-year becomes a date
+          [create_birth_info(date: dmy.to_iso_date, year: dmy.year&.to_i)]
         end
 
         def create_entry(target, entity_id)

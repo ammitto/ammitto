@@ -303,8 +303,11 @@ module Ammitto
 
             birth_location = details.birth_details&.primary_location
 
+            # A partial DOB ("00/00/1975", "1975-00-00") keeps its year;
+            # only a fully stated day-month-year becomes a date
             birth_infos << create_birth_info(
               date: parse_uk_date(dob_str),
+              year: extract_birth_year(dob_str),
               city: birth_location&.town_of_birth,
               country: birth_location&.country_of_birth
             )
@@ -373,7 +376,8 @@ module Ammitto
           end
         end
 
-        # Parse UK date format (DD/MM/YYYY)
+        # Parse UK date format (DD/MM/YYYY), yielding a Date only for a
+        # complete day-month-year
         # @param date_str [String]
         # @return [Date, nil]
         def parse_uk_date(date_str)
@@ -384,10 +388,10 @@ module Ammitto
             begin
               Date.strptime(date_str, '%d/%m/%Y')
             rescue Date::Error
-              parse_date(date_str) # Fall back to standard parsing
+              parse_complete_date(date_str) # Fall back to standard parsing
             end
           else
-            parse_date(date_str)
+            parse_complete_date(date_str)
           end
         end
 

@@ -469,6 +469,79 @@ FLEET_HEALTH_STREAK=100 FLEET_HEALTH_FIXTURES="$FIX" \
 [ "$rc" -ne 64 ] && pass "accepts the largest honourable threshold (100)" \
   || fail "threshold 100 was refused"
 
+echo "== streak: a leading zero means the same number everywhere =="
+# bash reads a leading zero as octal inside $((…)) but as decimal in
+# [ … -lt … ]. Unnormalised, FLEET_HEALTH_STREAK=012 sized the page as 10
+# while every comparison read 12 — a page one short of the threshold, the
+# exact silent OK the block above exists to kill. 008 and 09 are not octal
+# at all and aborted the run with an arithmetic error instead of exit 64.
+: > "$TMP/paths012.txt"
+rc=0
+PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths012.txt" \
+  SCHED_TS="$(iso '3 hours ago')" FLEET_HEALTH_FIXTURES= \
+  FLEET_HEALTH_STREAK=012 FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_012.md" > /dev/null || rc=$?
+grep -q 'status=completed&per_page=13' "$TMP/paths012.txt" \
+  && pass "threshold 012 asks for 13, the same as 12" \
+  || fail "012 was read as octal: $(grep -o 'per_page=[0-9]*' "$TMP/paths012.txt" | tr '\n' ' ')"
+
+# A padded threshold must be indistinguishable from its plain spelling —
+# same exit code, same verdict — not merely "does not crash", since the
+# fleet's own unhealthy exit code is easy to mistake for survival.
+for pair in 008:8 09:9 0100:100; do
+  zeroed=${pair%:*}; plain=${pair#*:}
+  rc_z=0; rc_p=0
+  FLEET_HEALTH_STREAK="$zeroed" FLEET_HEALTH_FIXTURES="$FIX" \
+    FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_z.md" \
+    > /dev/null 2>&1 || rc_z=$?
+  FLEET_HEALTH_STREAK="$plain" FLEET_HEALTH_FIXTURES="$FIX" \
+    FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_p.md" \
+    > /dev/null 2>&1 || rc_p=$?
+  if [ "$rc_z" = "$rc_p" ] && diff -q "$TMP/report_z.md" "$TMP/report_p.md" \
+       > /dev/null 2>&1; then
+    pass "FLEET_HEALTH_STREAK=$zeroed behaves exactly like $plain (exit $rc_p)"
+  else
+    fail "$zeroed exited $rc_z and $plain exited $rc_p, reports differ"
+  fi
+done
+
+# Bash arithmetic wraps at 64 bits: 2^64+1 evaluates to 1, which is a
+# perfectly valid threshold, so a range check performed after evaluation
+# waves it through and the monitor silently runs at a threshold nobody
+# configured.
+for huge in 18446744073709551617 99999999999999999999999; do
+  rc=0
+  FLEET_HEALTH_STREAK="$huge" FLEET_HEALTH_FIXTURES="$FIX" \
+    FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_huge.md" \
+    > /dev/null 2>&1 || rc=$?
+  [ "$rc" -eq 64 ] && pass "refuses FLEET_HEALTH_STREAK=$huge (exit 64)" \
+    || fail "FLEET_HEALTH_STREAK=$huge exited $rc, wanted 64 — it wrapped"
+done
+
+echo "== the staleness limit is validated at startup too =="
+# MAX_AGE_HOURS is only ever compared, never used in arithmetic, so octal
+# cannot bite it — but an unvalidated non-numeric value used to abort the
+# sweep partway through the fleet instead of refusing at startup.
+for bad in abc 0 ''; do
+  rc=0
+  FLEET_HEALTH_MAX_AGE_HOURS="$bad" FLEET_HEALTH_FIXTURES="$FIX" \
+    FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_age.md" \
+    > /dev/null 2>&1 || rc=$?
+  if [ -z "$bad" ]; then
+    # An empty value is the shell's own "use the default" spelling, and
+    # the default is the strict end of the range — it must not be refused.
+    [ "$rc" -ne 64 ] && pass "an empty staleness limit falls back to the default" \
+      || fail "empty FLEET_HEALTH_MAX_AGE_HOURS was refused"
+  else
+    [ "$rc" -eq 64 ] && pass "refuses FLEET_HEALTH_MAX_AGE_HOURS=$bad (exit 64)" \
+      || fail "FLEET_HEALTH_MAX_AGE_HOURS=$bad exited $rc, wanted 64"
+  fi
+done
+
 echo "== curl fallback presents the token the environment notes promise =="
 # Without gh the token was dropped, so a tokened run quietly spent the
 # anonymous 60/hour budget that one 45-call sweep nearly exhausts. gh is

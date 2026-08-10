@@ -128,15 +128,47 @@ done
 # refused at startup rather than discovered in a quiet report. 100 is the
 # API's per_page ceiling, so a larger threshold cannot be judged from the
 # single page the streak query fetches.
-case "$STREAK_LIMIT" in
-  ''|*[!0-9]*)
-    echo "FLEET_HEALTH_STREAK must be a whole number: $STREAK_LIMIT" >&2
-    exit 64 ;;
-esac
-if [ "$STREAK_LIMIT" -lt 1 ] || [ "$STREAK_LIMIT" -gt 100 ]; then
-  echo "FLEET_HEALTH_STREAK must be between 1 and 100: $STREAK_LIMIT" >&2
-  exit 64
-fi
+#
+# The value is re-emitted in base 10 because bash reads a leading zero as
+# octal in $((…)) but not in [ … -lt … ]: FLEET_HEALTH_STREAK=012 would
+# size the query as 10 while every comparison read it as 12, restoring the
+# short page this check exists to prevent. 008 and 09 are not octal at all
+# and abort the script mid-run.
+# Called directly, never in $(…): a subshell's exit would only end the
+# subshell and let the script run on with an unvalidated threshold.
+check_whole_number() {
+  # name value min max
+  local digits
+  case "$2" in
+    ''|*[!0-9]*)
+      echo "$1 must be a whole number: $2" >&2
+      exit 64 ;;
+  esac
+  # Bash arithmetic wraps at 64 bits, so 18446744073709551617 evaluates to
+  # 1 and would pass the range check below as a valid threshold. Measure
+  # the digit count instead — with the leading zeros stripped first, so
+  # 0000012 counts as two digits and not seven — and refuse anything
+  # longer than the ceiling before it is ever evaluated.
+  digits=${2#"${2%%[!0]*}"}
+  [ -n "$digits" ] || digits=0
+  if [ "${#digits}" -gt "${#4}" ]; then
+    echo "$1 must be between $3 and $4: $2" >&2
+    exit 64
+  fi
+  if [ "$digits" -lt "$3" ] || [ "$digits" -gt "$4" ]; then
+    echo "$1 must be between $3 and $4: $2" >&2
+    exit 64
+  fi
+}
+
+# The staleness limit is checked too — not for the octal split (it is only
+# ever compared, never used in arithmetic) but because a non-numeric value
+# aborts the run mid-report instead of at startup. A ceiling of one year
+# keeps it from silently meaning "never stale".
+check_whole_number FLEET_HEALTH_STREAK "$STREAK_LIMIT" 1 100
+check_whole_number FLEET_HEALTH_MAX_AGE_HOURS "$MAX_AGE_HOURS" 1 8760
+STREAK_LIMIT=$((10#$STREAK_LIMIT))
+MAX_AGE_HOURS=$((10#$MAX_AGE_HOURS))
 
 # The streak window is every run before the most recent success, so a
 # page shorter than the threshold can never show a streak that long. Ask

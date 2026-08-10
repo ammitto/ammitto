@@ -42,10 +42,11 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
       expect(data['@graph']).to be_an(Array)
     end
 
-    # The ontology and the JSON-LD context describe the SAME properties.
-    # A consumer that reads both must not be told two datatypes for one
-    # property, so the year-valued BirthInfo properties are gYear in
-    # both places.
+    # The ontology browser and the JSON-LD context describe the same
+    # fields to the same reader (under different bases, so they are not
+    # literally one RDF property). Telling that reader "integer" in one
+    # and "gYear" in the other is a contradiction, so the year-valued
+    # BirthInfo properties are gYear in both.
     describe 'the BirthInfo year properties' do
       let(:properties) do
         file = File.join(output_dir, 'ontology', 'properties.jsonld')

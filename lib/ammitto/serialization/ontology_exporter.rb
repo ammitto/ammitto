@@ -276,12 +276,15 @@ module Ammitto
         { id: 'expiryDate', label: 'Expiry Date', comment: 'Expiry date', domain: 'Identifier', range: 'date' },
 
         # BirthInfo properties. The three year-valued ones are gYear,
-        # matching the JSON-LD context: the ontology and the context
-        # describe the same properties, and a consumer reading both must
-        # not be told two different datatypes. 'year' was integer here
-        # and gYear in the context before the bounds existed; adding the
-        # bounds is what made the disagreement worth resolving rather
-        # than propagating.
+        # matching the JSON-LD context. The two artifacts mint their
+        # terms under different bases — this vocabulary under BASE_URI,
+        # the context under its own @vocab — so they are not literally
+        # the same RDF property, but they describe the same field to the
+        # same reader, and telling that reader "integer" in the ontology
+        # browser and "gYear" in the data is a contradiction either way.
+        # 'year' carried that contradiction before the bounds existed;
+        # adding the bounds is what made it worth resolving rather than
+        # propagating into two more properties.
         { id: 'year', label: 'Year', comment: 'Birth year', domain: 'BirthInfo', range: 'gYear' },
         { id: 'yearRangeFrom', label: 'Year Range From',
           comment: 'Lower bound of a stated span of birth years',

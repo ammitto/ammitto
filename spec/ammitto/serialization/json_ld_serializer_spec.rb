@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'ammitto'
+require 'json/ld'
 
 RSpec.describe Ammitto::Serialization::JsonLdSerializer do
   subject(:serializer) { described_class.new }
@@ -203,6 +204,27 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
     it 'keeps the existing birthYear term untouched' do
       expect(terms['birthYear'])
         .to eq({ '@id' => 'birthYear', '@type' => 'xsd:gYear' })
+    end
+
+    # Two configuration hashes agreeing proves only that two hashes
+    # agree. This expands a real birth node against the real context and
+    # reads the datatype off the resulting literals, which is what a
+    # consumer actually gets.
+    it 'expands the year keys to gYear literals, not bare numbers' do
+      node = serializer.serialize_entity(
+        build_entity(birth_info: [Ammitto::BirthInfo.new(
+          year_range_from: 1953, year_range_to: 1958
+        )])
+      ).merge(Ammitto::Schema::Context.context)
+
+      vocab = 'https://ammitto.org/schema/v1/'
+      birth = JSON::LD::API.expand(node).first["#{vocab}birthInfo"].first
+
+      %w[yearRangeFrom yearRangeTo].each do |term|
+        literal = birth["#{vocab}#{term}"].first
+        expect(literal['@type'])
+          .to eq('http://www.w3.org/2001/XMLSchema#gYear')
+      end
     end
   end
 

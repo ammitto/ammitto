@@ -133,6 +133,19 @@ printf '{"message":"Not Found","documentation_url":"https://docs.github.com"}' \
 healthy_fixture data-truncated
 printf '{"workflow_runs":[{"conclu' > "$FIX/data-truncated__completed_runs.json"
 
+# A runs array whose MEMBERS are unusable: validating only the array type
+# let {"workflow_runs":[null]} read as "no scheduled run" -- indistinguishable
+# from the silent death this monitor exists to catch.
+healthy_fixture data-nullmember
+printf '{"workflow_runs":[null]}' > "$FIX/data-nullmember__schedule_runs.json"
+
+healthy_fixture data-scalarmember
+printf '{"workflow_runs":["oops"]}' > "$FIX/data-scalarmember__completed_runs.json"
+
+healthy_fixture data-blankdate
+printf '{"workflow_runs":[{"created_at":"","conclusion":"success"}]}' \
+  > "$FIX/data-blankdate__schedule_runs.json"
+
 # An empty body is the trap that looks safest: `jq -e` exits 0 on empty
 # input, so an unguarded validator would wave this through as healthy.
 healthy_fixture data-empty
@@ -141,7 +154,8 @@ healthy_fixture data-empty
 repos_all="$TMP/repos_all.txt"
 printf '%s\n' data-dead data-stale data-failing data-quiet data-two-fails \
   data-cancelled data-mixed data-ghost data-badwf data-badsched \
-  data-badcompleted data-truncated data-empty > "$repos_all"
+  data-badcompleted data-truncated data-empty \
+  data-nullmember data-scalarmember data-blankdate > "$repos_all"
 repos_healthy="$TMP/repos_healthy.txt"
 printf '%s\n' data-quiet data-two-fails > "$repos_healthy"
 
@@ -197,6 +211,12 @@ expect_status data-badsched UNREADABLE
 expect_reason data-badsched "schedule-runs document unreadable"
 expect_status data-badcompleted UNREADABLE
 expect_reason data-badcompleted "completed-runs document unreadable"
+expect_status data-nullmember UNREADABLE
+expect_reason data-nullmember "schedule-runs document unreadable"
+expect_status data-scalarmember UNREADABLE
+expect_reason data-scalarmember "completed-runs document unreadable"
+expect_status data-blankdate UNREADABLE
+expect_reason data-blankdate "schedule-runs document unreadable"
 expect_status data-truncated UNREADABLE
 expect_status data-empty UNREADABLE
 for r in data-badwf data-badsched data-badcompleted data-truncated data-empty; do

@@ -178,8 +178,20 @@ doc_valid() { # kind json
     workflow)
       jq -e 'type == "object" and (.state | type == "string")
              and (.state | length > 0)' >/dev/null 2>&1 <<<"$json" ;;
+    schedule_runs)
+      # Members must be objects with a usable created_at: a runs array
+      # holding null or a scalar would otherwise validate and read as
+      # "no scheduled run" -- which is the silent-death signal itself.
+      jq -e 'type == "object" and (.workflow_runs | type == "array")
+             and (.workflow_runs | all(type == "object"
+                   and (.created_at | type == "string")
+                   and (.created_at | length > 0)
+                   and ((.conclusion == null) or (.conclusion | type == "string"))))' \
+        >/dev/null 2>&1 <<<"$json" ;;
     *)
-      jq -e 'type == "object" and (.workflow_runs | type == "array")' \
+      jq -e 'type == "object" and (.workflow_runs | type == "array")
+             and (.workflow_runs | all(type == "object"
+                   and ((.conclusion == null) or (.conclusion | type == "string"))))' \
         >/dev/null 2>&1 <<<"$json" ;;
   esac
 }

@@ -69,6 +69,26 @@ module Ammitto
       # publish one endpoint as though the source had stated it alone.
       SPAN_CONNECTOR = /\s+(?:to|and)\s+/i
 
+      # A full-date span whose endpoints are complete dates, e.g.
+      # "01 Jan 1962 to 31 Dec 1962". OFAC writes this in dozens of
+      # spellings and it must not become its opening date — but when
+      # both endpoints carry the SAME year, that year is stated
+      # outright, twice, and the whole interval lies inside it. Reading
+      # it out is parsing, not inference, so the year survives even
+      # though no single day does.
+      #
+      # Deliberately strict: both endpoints must be complete. An
+      # abbreviated tail ("01 Jan 1973 to 31 Dec") states no year on its
+      # second endpoint, and a qualified value ("circa ...") is a
+      # different grammar that has not been designed.
+      SAME_YEAR_FULL_DATE_SPAN = /
+        \A
+        \d{1,2}\s+[[:alpha:]]{3,9}\s+(\d{4})
+        \s+to\s+
+        \d{1,2}\s+[[:alpha:]]{3,9}\s+(\d{4})
+        \z
+      /ix
+
       attr_reader :source_code, :list_type
 
       # Initialize with source code and optional list type
@@ -290,7 +310,8 @@ module Ammitto
           region: region,
           country: country,
           country_iso_code: country_iso_code,
-          year: normalize_year(year) || parsed_date&.year || extract_birth_year(date)
+          year: normalize_year(year) || parsed_date&.year ||
+                same_year_full_date_span(date) || extract_birth_year(date)
         )
       end
 
@@ -438,6 +459,26 @@ module Ammitto
       # here but not matched there publishes nothing, which is the point
       # — it is rejection of a value known to be misparsed, not support
       # for a spelling.
+      # The year both endpoints of a full-date span agree on, or nil.
+      #
+      # This runs only after parse_complete_date has already declined
+      # the value, so it never competes with a real date — it recovers
+      # the one fact a same-year span states unambiguously. A span whose
+      # endpoints name different years returns nil: no single birth year
+      # is asserted there, and the model has no date-valued range to
+      # hold what is.
+      #
+      # @param value [Object] candidate date string
+      # @return [Integer, nil]
+      def same_year_full_date_span(value)
+        return nil unless value.is_a?(String)
+
+        match = SAME_YEAR_FULL_DATE_SPAN.match(value.strip)
+        return nil unless match && match[1] == match[2]
+
+        match[1].to_i
+      end
+
       # @param value [Object] candidate date string
       # @return [Boolean]
       def date_span?(value)

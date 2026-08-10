@@ -157,8 +157,9 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       end
     end
 
-    # A full-date span carries days the year bounds cannot hold, so it
-    # publishes nothing at all rather than a coarsened or invented claim.
+    # A full-date span crossing years carries days the year bounds
+    # cannot hold and names no single birth year, so it publishes
+    # nothing rather than a coarsened or invented claim.
     it 'does not reduce a full-date span to a year span' do
       info = birth(date: '28 Feb 1962 to 28 Feb 1963')
 
@@ -166,6 +167,39 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect(info.year_range_to).to be_nil
       expect(info.date).to be_nil
       expect(info.year).to be_nil
+    end
+
+    # ...but when both endpoints state the SAME year, that year is
+    # asserted outright, twice, and the whole interval lies inside it.
+    # Publishing nothing there would discard a certainly-true fact to
+    # avoid a false one that is not on offer.
+    it 'retains the exact year from a same-year full-date span' do
+      info = birth(date: '01 Jan 1962 to 31 Dec 1962')
+
+      expect(info.year).to eq(1962)
+      expect(info.date).to be_nil
+      expect(info.year_range_from).to be_nil
+      expect(info.year_range_to).to be_nil
+    end
+
+    # Not special-cased to whole-calendar-year endpoints — what matters
+    # is that both endpoints name the same year, not which days they are.
+    it 'retains the year from a partial same-year span' do
+      info = birth(date: '28 Feb 1962 to 07 Dec 1962')
+
+      expect(info.year).to eq(1962)
+      expect(info.date).to be_nil
+    end
+
+    # A qualified span is a grammar nobody designed. It stays silent
+    # rather than being folded into the strict same-year rule.
+    it 'stays silent on a qualified same-year span' do
+      info = birth(date: 'circa 01 Jan 1962 to 31 Dec 1962')
+
+      expect(info.year).to be_nil
+      expect(info.date).to be_nil
+      expect(info.year_range_from).to be_nil
+      expect(info.year_range_to).to be_nil
     end
 
     it 'does not reduce a month span either' do

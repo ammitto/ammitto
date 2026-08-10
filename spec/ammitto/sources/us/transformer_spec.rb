@@ -95,10 +95,18 @@ RSpec.describe Ammitto::Sources::Us::Transformer do
     # to go: OFAC writes "01 Jan YYYY to 31 Dec YYYY" 37 distinct ways to
     # mean "some day that year". Reading it as 1 January asserted the
     # invented January date this gem set out to stop asserting.
-    it 'never reads a whole-year span as its 1 January opening date' do
+    #
+    # The year survives, though. Both endpoints state 1973 and the whole
+    # interval lies inside it, so discarding the year to avoid the false
+    # day would throw away a certainly-true fact about a sanctioned
+    # person. All four fields are asserted because getting the day right
+    # and the bounds wrong would be just as much a defect.
+    it 'keeps the stated year of a whole-year span without its 1 January date' do
       birth = birth_for('01 Jan 1973 to 31 Dec 1973')
       expect(birth.date).to be_nil
-      expect(birth.year).to be_nil
+      expect(birth.year).to eq(1973)
+      expect(birth.year_range_from).to be_nil
+      expect(birth.year_range_to).to be_nil
     end
 
     it 'still resolves an ordinary date that merely contains a month name' do

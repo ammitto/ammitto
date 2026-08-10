@@ -6,6 +6,18 @@
 # lib/ammitto/config/defaults.rb — adding a source there without adding its
 # repo here leaves the new schedule unwatched.
 #
+# A line may carry an acknowledgement:
+#
+#   <repo> ack:<reason>:<review-by YYYY-MM-DD>
+#
+# The repo still appears in every report, but as ACKNOWLEDGED: it is left out
+# of the paging count and never reaches the tracking issue. The date is a
+# deadline, not a mute button — from the day after review-by the repo reports
+# EXPIRED-ACK and pages like anything else, so a parked decision cannot stay
+# parked by accident. The reason may contain colons; the date is taken from
+# the last one. A malformed acknowledgement pages instead of suppressing, so a
+# typo cannot silence a repo forever.
+#
 # data-cn is listed even though its YAML is manually managed: its fetch.yml
 # still runs on a schedule (verified 2026-08-07, conclusion success), so it
 # can die the same silent death as the others.
@@ -17,7 +29,7 @@ data-eu
 data-eu-vessels
 data-jp
 data-nz
-data-ru
+data-ru ack:parked for maintainer ruling on ru revival:2026-09-07
 data-tr
 data-uk
 data-un

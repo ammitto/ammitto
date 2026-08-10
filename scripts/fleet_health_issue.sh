@@ -1,14 +1,37 @@
 #!/usr/bin/env bash
-# Create-or-update the SINGLE fleet-health tracking issue.
+# Announce fleet-health STATE CHANGES on a single tracking issue.
 #
-# Called by .github/workflows/fleet-health.yml only when the fleet is
-# unhealthy. Idempotent by title: if an open issue with the exact title
-# already exists, the fresh report is added as a comment; otherwise one
-# issue is created. One alert channel, never fifteen, never a duplicate
-# per day.
+# Called by .github/workflows/fleet-health.yml on every run, healthy or
+# not. Idempotent by title: at most one open issue with the exact title
+# exists at a time. Pull requests share the issues listing and could
+# share the title, so anything carrying a pull_request key is ignored
+# when matching.
 #
-# Pull requests share the issues listing and could share the title, so
-# anything carrying a pull_request key is ignored when matching.
+# Only changes are announced
+# --------------------------
+# A daily job that comments every time the fleet is unhealthy trains
+# everyone to ignore it, and the thing this monitor exists to prevent is
+# exactly a signal nobody reads. So fleet_health.sh ends its report with
+#
+#   <!-- fleet-health-state: data-eu=UNHEALTHY data-ru=EXPIRED-ACK -->
+#
+# an order-independent signature of every PAGING repo (acknowledged
+# repos are deliberately absent — acknowledging a repo must not open an
+# issue about it). The same signature is stored in the tracking issue's
+# body, so this script can compare today against the last announcement
+# with no database, cache or artifact anywhere:
+#
+#   signature unchanged        -> say nothing, write nothing
+#   new or different problems  -> comment the report, restore the body
+#                                 to carry the new signature
+#   signature now "healthy"    -> comment the recovery and CLOSE the
+#                                 issue, because an open issue titled
+#                                 "schedules unhealthy" over a healthy
+#                                 fleet is the same kind of lie this
+#                                 monitor was built to kill
+#
+# An acknowledgement expiring changes the signature (nothing ->
+# repo=EXPIRED-ACK), so it announces itself through the same path.
 #
 # Guarded: outside GitHub Actions this script refuses to run unless
 # FLEET_HEALTH_ALLOW_ISSUE_WRITE=1, so a local invocation of the monitor
@@ -37,15 +60,64 @@ fi
   exit 64
 }
 
-existing="$(gh api "repos/$REPO/issues?state=open&per_page=100" |
+marker_of() { # file
+  sed -n 's/.*fleet-health-state:[[:space:]]*\(.*\)[[:space:]]*-->.*/\1/p' \
+    "$1" | tail -n 1 | sed 's/[[:space:]]*$//'
+}
+
+new_state="$(marker_of "$REPORT")"
+# No marker means the report did not come from this version of
+# fleet_health.sh. Refusing loudly beats guessing "healthy".
+[ -n "$new_state" ] || {
+  echo "no fleet-health-state marker in $REPORT — is it a fleet_health.sh report?" >&2
+  exit 65
+}
+
+open_json="$(gh api "repos/$REPO/issues?state=open&per_page=100")"
+existing="$(jq -r --arg t "$TITLE" \
+  '[.[] | select(has("pull_request") | not) | select(.title == $t)]
+   | .[0].number // empty' <<<"$open_json")"
+old_state=""
+if [ -n "$existing" ]; then
+  TMP_BODY="$(mktemp)"
+  trap 'rm -f "$TMP_BODY"' EXIT
   jq -r --arg t "$TITLE" \
     '[.[] | select(has("pull_request") | not) | select(.title == $t)]
-     | .[0].number // empty')"
-
-if [ -n "$existing" ]; then
-  gh issue comment "$existing" --repo "$REPO" --body-file "$REPORT"
-  echo "updated existing tracking issue #$existing"
-else
-  gh issue create --repo "$REPO" --title "$TITLE" --body-file "$REPORT"
-  echo "created new tracking issue"
+     | .[0].body // ""' <<<"$open_json" > "$TMP_BODY"
+  old_state="$(marker_of "$TMP_BODY")"
 fi
+
+# The unchanged check comes FIRST, before the healthy/unhealthy split.
+# Ordering it the other way makes a healthy fleet with an open issue
+# comment "recovered" and close it on every single run.
+if [ -z "$existing" ]; then
+  if [ "$new_state" = "healthy" ]; then
+    echo "fleet healthy, no open tracking issue — nothing to announce"
+    exit 0
+  fi
+  gh issue create --repo "$REPO" --title "$TITLE" --body-file "$REPORT"
+  echo "new tracking issue created for state: $new_state"
+  exit 0
+fi
+
+if [ "$old_state" = "$new_state" ]; then
+  echo "no state change since the last announcement ($new_state) — staying quiet"
+  exit 0
+fi
+
+if [ "$new_state" = "healthy" ]; then
+  RECOVERY="$(mktemp)"
+  trap 'rm -f "$TMP_BODY" "$RECOVERY"' EXIT
+  {
+    printf '%s\n\n' "Recovered — every watched schedule is healthy again. Closing; a new incident opens a fresh issue."
+    cat "$REPORT"
+  } > "$RECOVERY"
+  gh issue comment "$existing" --repo "$REPO" --body-file "$RECOVERY"
+  gh issue close "$existing" --repo "$REPO"
+  echo "fleet recovered — commented and closed tracking issue #$existing"
+  exit 0
+fi
+
+gh issue comment "$existing" --repo "$REPO" --body-file "$REPORT"
+gh issue edit "$existing" --repo "$REPO" --body-file "$REPORT"
+echo "state changed on #$existing: '${old_state:-none}' -> '$new_state'"

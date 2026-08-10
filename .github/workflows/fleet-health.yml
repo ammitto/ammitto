@@ -9,14 +9,18 @@ name: fleet-health
 # Actions API — every fleet repo is public, so the default GITHUB_TOKEN
 # is enough (anonymous reads work too; the token only buys rate limit) —
 # and fails loudly when any schedule is dead, stale (>48h without a
-# schedule-event run) or failing (3+ consecutive failed runs). A run
+# schedule-event run), failing (3+ hard failures since the last success)
+# or unreadable. Only scheduled runs are counted, so a red PR run never
+# pages the fleet and a green push run never clears a real streak. A run
 # that commits nothing is healthy: only run conclusions are read, never
 # commit deltas, so zero-delta days are never flagged.
 #
-# One alert channel: on detection the job appends a per-repo report to
-# the job summary and creates-or-updates a SINGLE tracking issue on this
-# repo (matched by exact title; an open match gets a comment, so there
-# is never a duplicate). Then the job exits non-zero.
+# One alert channel: the job appends a per-repo report to the job summary
+# and keeps a SINGLE tracking issue on this repo (matched by exact
+# title). The issue step runs on every pass, healthy or not, because it
+# is what announces recovery — but it only writes when the set of paging
+# repos actually CHANGES, so an unhealthy fleet does not generate a
+# comment a day until someone mutes the whole channel.
 #
 # This monitor runs on a schedule, so IT can die the same death.
 # Mitigations: workflow_dispatch allows a manual heartbeat at any time;
@@ -61,24 +65,33 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Self-test the monitor
-        # Offline fixture proof (dead / stale / failing / healthy-quiet
-        # / unreadable, plus issue-upsert idempotency with a stubbed
-        # gh). A monitor whose parser silently broke would report
-        # "healthy" forever — the exact failure mode this workflow
-        # exists to kill — so the live check only runs after the logic
-        # proves itself. Costs <1s and no API calls.
+        # Offline fixture proof (dead / stale / failing / cancelled-
+        # forever / healthy-quiet / unreadable documents / acknowledged
+        # / expired acknowledgement, the scheduled-runs-only query, plus
+        # the issue state machine against a stubbed gh). A monitor whose
+        # parser silently broke would report "healthy" forever — the
+        # exact failure mode this workflow exists to kill — so the live
+        # check only runs after the logic proves itself. Costs <1s and
+        # no API calls.
         run: scripts/fleet_health_test.sh
 
       - name: Check fleet health
         id: fleet
         env:
           GH_TOKEN: ${{ github.token }}
-        # Exit 0 = healthy, 1 = unhealthy (report tells which repos and
-        # why), anything else = the script itself broke and the job must
-        # fail as a monitor outage, not masquerade as a health verdict.
+        # Exit 0 = nothing paging, 1 = at least one repo pages (report
+        # tells which and why), 69 = every repo was unreadable so the
+        # monitor's own view is down, anything else = the script broke.
+        # All of those fail the job here and skip the issue step, so an
+        # auth or rate-limit outage never masquerades as a health
+        # verdict or manufactures an incident about fifteen repos.
         run: |
           rc=0
           scripts/fleet_health.sh --report fleet-report.md || rc=$?
+          if [ "$rc" -eq 69 ]; then
+            echo "::error::fleet health could not read ANY repo — auth, rate limit or API outage"
+            exit "$rc"
+          fi
           if [ "$rc" -gt 1 ]; then
             echo "::error::fleet_health.sh crashed with exit $rc"
             exit "$rc"
@@ -89,12 +102,18 @@ jobs:
             echo "healthy=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create or update the single tracking issue
-        if: steps.fleet.outputs.healthy == 'false'
+      # Runs on healthy passes too: recovery is a state change and has to
+      # be announced, and a healthy pass with no open issue writes
+      # nothing at all. The script decides; the default `if: success()`
+      # keeps it from running when the check above crashed.
+      - name: Announce fleet-health state changes
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/fleet_health_issue.sh fleet-report.md
 
+      # Always fails while anything pages, even on the days the issue
+      # step stayed quiet because nothing changed: the red run is the
+      # standing signal, the issue comment is only the change notice.
       - name: Fail loudly
         if: steps.fleet.outputs.healthy == 'false'
         run: |

@@ -64,8 +64,15 @@ module Ammitto
         @temp_file.path
       end
 
-      # Clean up temp file after processing
+      # Clean up temp file after processing.
+      #
+      # Closes before unlinking: Tempfile#unlink removes the pathname
+      # but leaves the descriptor open until GC, so unlink-only left a
+      # live handle on a file nobody could find — and on platforms that
+      # refuse to unlink an open file it raises, which on the failure
+      # path would replace the download error that actually mattered.
       def cleanup
+        @temp_file&.close
         @temp_file&.unlink
         @temp_file = nil
       end

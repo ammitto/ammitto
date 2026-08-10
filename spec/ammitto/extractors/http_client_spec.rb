@@ -23,12 +23,15 @@ RSpec.describe Ammitto::Extractors::HttpClient do
   end
 
   # Records each requested URI and replays +responses+ in order.
+  # The proxy arrives as positional args (p_addr, p_port, ...), so they
+  # are captured rather than ignored — the proxy contract is asserted.
   def stub_hops(*responses)
     requested = []
-    allow(Net::HTTP).to receive(:start) do |host, _port, **opts, &block|
+    allow(Net::HTTP).to receive(:start) do |host, _port, *pos, **opts, &block|
       http = instance_double(Net::HTTP)
       allow(http).to receive(:request) do |req|
         requested << { host: host, path: req.path, headers: req,
+                       proxy: [pos[0], pos[1]],
                        use_ssl: opts[:use_ssl],
                        open_timeout: opts[:open_timeout],
                        read_timeout: opts[:read_timeout] }
@@ -37,6 +40,15 @@ RSpec.describe Ammitto::Extractors::HttpClient do
       block.call(http)
     end
     requested
+  end
+
+  # Sets env vars for the block and restores them afterwards.
+  def with_env(vars)
+    previous = vars.keys.to_h { |k| [k, ENV.fetch(k, nil)] }
+    vars.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+    yield
+  ensure
+    previous.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
   end
 
   describe 'the happy path' do
@@ -65,14 +77,43 @@ RSpec.describe Ammitto::Extractors::HttpClient do
       expect(hops[1].values_at(:open_timeout, :read_timeout)).to eq([120, 600])
     end
 
-    it 'leaves Accept-Encoding unset so gzip stays transparent' do
+    # Narrow claim on purpose: Net::HTTP.start is stubbed, so no real
+    # body is ever decompressed here. What this proves is that the
+    # request is still ELIGIBLE for automatic decoding — Net::HTTP::Get
+    # generated its own Accept-Encoding and nothing overrode it. Real
+    # decompression is Ruby's, and only a live fetch exercises it.
+    it 'leaves the request eligible for automatic gzip decoding' do
       hops = stub_hops(response('200'))
 
       described_class.get(url)
 
-      # Net::HTTP::Get sets its own decodable encodings and decodes the
-      # body only while the caller has not overridden the header.
       expect(hops.first[:headers].decode_content).to be(true)
+    end
+
+    # The proxy must be resolved per-URI. Net::HTTP's own :ENV default
+    # reads http_proxy and IGNORES https_proxy on Ruby 3.3/3.4, so an
+    # operator behind an https-only proxy would silently go direct —
+    # which is not what open-uri did.
+    it 'honours https_proxy, which Net::HTTP\'s own default ignores' do
+      hops = stub_hops(response('200'))
+
+      with_env('https_proxy' => 'http://proxy.local:8080',
+               'http_proxy' => nil, 'no_proxy' => nil) do
+        described_class.get(url)
+      end
+
+      expect(hops.first[:proxy]).to eq(['proxy.local', 8080])
+    end
+
+    it 'goes direct when no_proxy covers the host' do
+      hops = stub_hops(response('200'))
+
+      with_env('https_proxy' => 'http://proxy.local:8080',
+               'http_proxy' => nil, 'no_proxy' => 'example.gov') do
+        described_class.get(url)
+      end
+
+      expect(hops.first[:proxy]).to eq([nil, nil])
     end
   end
 
@@ -119,6 +160,28 @@ RSpec.describe Ammitto::Extractors::HttpClient do
 
       expect { described_class.get(url) }
         .to raise_error(OpenURI::HTTPError, /without a Location/)
+    end
+
+    it 'refuses a Location that cannot be parsed, as the same error' do
+      stub_hops(response('302', location: 'http://[bad'))
+
+      expect { described_class.get(url) }
+        .to raise_error(OpenURI::HTTPError, /unparseable Location/)
+    end
+
+    # Headers travel with every hop by design. A mutant that dropped
+    # them after the first request would otherwise survive, since the
+    # credential examples only exercise the :same_origin branch.
+    it 'carries the caller headers across a cross-host hop' do
+      hops = stub_hops(
+        response('302', location: 'https://cdn.example.gov/f.xlsx'),
+        response('200')
+      )
+
+      described_class.get(url, headers: { 'User-Agent' => 'Mozilla/5.0' })
+
+      expect(hops.last[:host]).to eq('cdn.example.gov')
+      expect(hops.last[:headers]['User-Agent']).to eq('Mozilla/5.0')
     end
 
     it 'refuses a loop rather than spending every hop on it' do
@@ -180,7 +243,7 @@ RSpec.describe Ammitto::Extractors::HttpClient do
       stub_hops(response('302', location: 'https://elsewhere.example/f'))
 
       expect do
-        described_class.get(url, headers: key, redirect: :same_origin)
+        described_class.get(url, headers: key, redirect_policy: :same_origin)
       end.to raise_error(OpenURI::HTTPError, /cross-origin redirect forbidden/)
     end
 
@@ -190,10 +253,28 @@ RSpec.describe Ammitto::Extractors::HttpClient do
         response('200', body: 'SAME')
       )
 
-      result = described_class.get(url, headers: key, redirect: :same_origin)
+      result = described_class.get(url, headers: key,
+                                        redirect_policy: :same_origin)
 
       expect(result).to eq('SAME')
       expect(hops.last[:headers]['apikey']).to eq('SECRET')
+    end
+
+    # A misspelled policy previously fell through to :any_https, which
+    # silently disabled the credential boundary. Nothing in the request
+    # would have looked wrong.
+    it 'refuses an unrecognised policy instead of defaulting to open' do
+      expect do
+        described_class.get(url, headers: key, redirect_policy: :same_orgin)
+      end.to raise_error(ArgumentError, /redirect_policy must be one of/)
+    end
+
+    it 'refuses the policy before making any request' do
+      hops = stub_hops(response('200'))
+
+      expect { described_class.get(url, redirect_policy: :nope) }
+        .to raise_error(ArgumentError)
+      expect(hops).to be_empty
     end
   end
 

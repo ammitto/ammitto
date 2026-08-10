@@ -23,9 +23,13 @@ module Ammitto
     # - HTTPS-only, at every hop. open-uri already refuses an
     #   https->http redirect; so does this. Nothing here closes a
     #   downgrade that open-uri permitted.
-    # - Environment proxies. +Net::HTTP.start+ consults http_proxy /
-    #   https_proxy / no_proxy by default and that default is left
-    #   alone.
+    # - Environment proxies, resolved the way open-uri resolved them.
+    #   +Net::HTTP+'s own :ENV default is NOT equivalent: on Ruby 3.3
+    #   and 3.4 it reads http_proxy and ignores https_proxy, so an
+    #   operator behind an https-only proxy would have silently gone
+    #   direct. +URI#find_proxy+ picks the right variable for the
+    #   scheme and honours no_proxy, so the proxy is resolved here and
+    #   passed in explicitly.
     # - Transparent gzip. Net::HTTP advertises the encodings it can
     #   decode and decodes them, but only while the caller leaves
     #   Accept-Encoding unset — so this never sets it.
@@ -50,28 +54,38 @@ module Ammitto
       # blindly turns a valid response into a crash.
       REDIRECT_CODES = %w[301 302 303 307 308].freeze
 
+      # Recognised redirect policies. An unrecognised value is refused
+      # rather than defaulted: silently falling back to :any_https
+      # would turn a typo like :same_orgin into a credential leak, and
+      # nothing in the request would look wrong.
+      REDIRECT_POLICIES = %i[any_https same_origin].freeze
+
       class << self
         # Fetches +url+ and returns the response body.
         #
         # @param url [String] an https URL
         # @param headers [Hash] request headers, sent on every hop
-        #   unless +redirect+ is :same_origin
+        #   unless +redirect_policy+ is :same_origin
         # @param open_timeout [Integer] seconds to wait for the connection
         # @param read_timeout [Integer] seconds to wait for the body
         # @param max_redirects [Integer] hops allowed after the first request
-        # @param redirect [Symbol] :any_https follows an https redirect to
-        #   any host — correct for public downloads. :same_origin refuses
-        #   to leave the original scheme/host/port, which is what a
-        #   request carrying a credential needs: +headers+ travel with
-        #   every hop, so a cross-host redirect would hand the secret to
-        #   whoever answered.
+        # @param redirect_policy [Symbol] :any_https follows an https
+        #   redirect to any host — correct for public downloads.
+        #   :same_origin refuses to leave the original host/port, which
+        #   is what a request carrying a credential needs: +headers+
+        #   travel with every hop, so a cross-host redirect would hand
+        #   the secret to whoever answered.
         # @return [String] the response body
-        # @raise [OpenURI::HTTPError] on a non-2xx terminal response, a
-        #   non-https hop, or a missing Location
-        # @raise [ArgumentError] if +url+ is not https
+        # @raise [OpenURI::HTTPError] on a non-2xx terminal response, or
+        #   any redirect this client refuses to follow — non-https,
+        #   cross-origin while credentialed, missing or unparseable
+        #   Location, a loop, or too many hops
+        # @raise [ArgumentError] if +url+ is not https, or
+        #   +redirect_policy+ is not one of REDIRECT_POLICIES
         def get(url, headers: {}, open_timeout: OPEN_TIMEOUT,
                 read_timeout: READ_TIMEOUT, max_redirects: MAX_REDIRECTS,
-                redirect: :any_https)
+                redirect_policy: :any_https)
+          validate_policy(redirect_policy)
           uri = parse_https(url)
           origin = uri.dup
           seen = [uri.to_s]
@@ -80,7 +94,7 @@ module Ammitto
             response = request(uri, headers, open_timeout, read_timeout)
             return response.body if response.is_a?(Net::HTTPSuccess)
 
-            uri = redirect_target(response, uri, origin, redirect, seen)
+            uri = redirect_target(response, uri, origin, redirect_policy, seen)
             seen << uri.to_s
           end
 
@@ -90,6 +104,15 @@ module Ammitto
         end
 
         private
+
+        # @raise [ArgumentError] on an unrecognised policy
+        def validate_policy(policy)
+          return if REDIRECT_POLICIES.include?(policy)
+
+          raise ArgumentError,
+                'redirect_policy must be one of ' \
+                "#{REDIRECT_POLICIES.inspect}, got: #{policy.inspect}"
+        end
 
         # Anything that is not a usable https URL is refused the same
         # way, whether it parses to another scheme or does not parse at
@@ -112,7 +135,7 @@ module Ammitto
         # Resolves one redirect, or raises if it must not be followed.
         #
         # @return [URI::HTTPS]
-        def redirect_target(response, uri, origin, redirect, seen)
+        def redirect_target(response, uri, origin, redirect_policy, seen)
           unless REDIRECT_CODES.include?(response.code)
             raise OpenURI::HTTPError.new(
               "#{response.code} #{response.message}", nil
@@ -126,20 +149,31 @@ module Ammitto
             )
           end
 
-          target = URI.join(uri.to_s, location)
-          check_hop(target, origin, redirect, seen)
+          # A server that sends a Location we cannot parse is a failed
+          # redirect, not a caller error — it surfaces as the same
+          # OpenURI::HTTPError every other refused hop raises, so
+          # callers need one rescue rather than two.
+          target = begin
+            URI.join(uri.to_s, location)
+          rescue URI::InvalidURIError => e
+            raise OpenURI::HTTPError.new(
+              "#{response.code} unparseable Location: #{e.message}", nil
+            )
+          end
+
+          check_hop(target, origin, redirect_policy, seen)
           target
         end
 
         # @raise [OpenURI::HTTPError] if the hop breaks policy
-        def check_hop(target, origin, redirect, seen)
+        def check_hop(target, origin, redirect_policy, seen)
           unless target.is_a?(URI::HTTPS)
             raise OpenURI::HTTPError.new(
               "redirection to non-https forbidden: #{target}", nil
             )
           end
 
-          if redirect == :same_origin && !same_origin?(target, origin)
+          if redirect_policy == :same_origin && !same_origin?(target, origin)
             raise OpenURI::HTTPError.new(
               'cross-origin redirect forbidden for a credentialed ' \
               "request: #{target}", nil
@@ -158,14 +192,20 @@ module Ammitto
 
         # One GET; the caller's loop owns redirect following.
         #
-        # Net::HTTP.start's proxy argument is left at its default so the
-        # environment's proxy settings keep applying, and
-        # Accept-Encoding is never set so gzip stays transparent.
+        # The proxy is resolved per-URI rather than left to
+        # Net::HTTP's :ENV default — see the class comment. A nil proxy
+        # means "go direct", which is exactly what find_proxy returns
+        # when no_proxy matches or nothing is configured.
+        #
+        # Accept-Encoding is never set, so Net::HTTP::Get advertises the
+        # encodings it can decode and gzip stays transparent.
         #
         # @return [Net::HTTPResponse]
         def request(uri, headers, open_timeout, read_timeout)
+          proxy = uri.find_proxy
           Net::HTTP.start(
             uri.host, uri.port,
+            proxy&.host, proxy&.port, proxy&.user, proxy&.password,
             use_ssl: true,
             open_timeout: open_timeout, read_timeout: read_timeout
           ) do |http|

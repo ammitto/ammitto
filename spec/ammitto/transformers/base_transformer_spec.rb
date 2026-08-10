@@ -209,6 +209,41 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
     end
   end
 
+  # Presence is decided before normalization. Deciding it after would
+  # turn a stated-but-unusable bound into "no bound stated", which hands
+  # authority back to the date string: the record would then publish a
+  # span read out of its text while the bounds the source actually
+  # stated were dropped without a word.
+  describe 'a stated bound that is not a year' do
+    it 'is rejected rather than falling back to the date string' do
+      expect do
+        transformer.send(:create_birth_info, date: '1962 to 1964',
+                                             year_range_from: 'unknown')
+      end.to raise_error(Ammitto::Transformers::InvalidYearRangeError,
+                         /not a year/)
+    end
+
+    it 'is rejected on the upper bound too' do
+      expect do
+        transformer.send(:create_birth_info, year_range_to: 'n/a')
+      end.to raise_error(Ammitto::Transformers::InvalidYearRangeError)
+    end
+
+    it 'is rejected when the bound is a non-positive number' do
+      expect do
+        transformer.send(:create_birth_info, year_range_from: 0)
+      end.to raise_error(Ammitto::Transformers::InvalidYearRangeError)
+    end
+
+    # Absent is not malformed: no bound at all still lets the date
+    # string speak.
+    it 'still reads the date string when no bound is stated at all' do
+      info = transformer.send(:create_birth_info, date: '1962 to 1964')
+
+      expect(info.year_range_from).to eq(1962)
+    end
+  end
+
   describe '#extract_year_range' do
     it 'accepts only a value that is wholly a year span' do
       expect(transformer.send(:extract_year_range, '1962 to 1964'))
@@ -270,6 +305,21 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
 
     it 'needs a year on both sides of the connector' do
       expect(transformer.send(:date_span?, 'Jan and Feb 1970')).to be false
+    end
+
+    # Every connector is tried, not only the first, so a value whose
+    # opening connector is not the span connector still reads correctly.
+    it 'finds the span even when an earlier connector is not the span' do
+      expect(transformer.send(:date_span?, 'Jan and Feb 1970 to 1972'))
+        .to be true
+    end
+
+    # KNOWN BOUNDARY, stated rather than discovered later: an
+    # abbreviated span whose second half omits the year is not
+    # recognised. No corpus states one, so the shape is left unhandled
+    # rather than guessed at.
+    it 'does not recognise a span whose second half omits the year' do
+      expect(transformer.send(:date_span?, '01 Jan 1973 to 31 Dec')).to be false
     end
   end
 

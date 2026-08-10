@@ -314,16 +314,32 @@ module Ammitto
 
       # Bounds a caller stated outright, as the EU does through its
       # yearRangeFrom / yearRangeTo XML attributes.
+      #
+      # Presence is decided BEFORE normalization, so a stated bound that
+      # is not a year cannot quietly become "no bound stated" and hand
+      # authority back to the date string. That fallback would let a
+      # record publish a span extracted from its text while the bounds
+      # the source actually stated were dropped unmentioned.
       # @param from [Integer, String, nil] lower bound
       # @param to [Integer, String, nil] upper bound
-      # @raise [InvalidYearRangeError] when a closed span runs backwards
+      # @raise [InvalidYearRangeError] when a bound is not a year, or a
+      #   closed span runs backwards
       # @return [Array<Integer, nil>, nil] validated bounds, or nil
       def stated_year_range(from, to)
-        lower = normalize_year(from)
-        upper = normalize_year(to)
-        return nil if lower.nil? && upper.nil?
+        return nil if from.nil? && to.nil?
 
-        validate_year_range(lower, upper)
+        validate_year_range(year_bound(from), year_bound(to))
+      end
+
+      # @param value [Integer, String, nil] a stated bound
+      # @raise [InvalidYearRangeError] when stated but not a year
+      # @return [Integer, nil]
+      def year_bound(value)
+        return nil if value.nil?
+
+        normalize_year(value) ||
+          raise(InvalidYearRangeError,
+                "birth year range bound is not a year: #{value.inspect}")
       end
 
       # Bounds of a span stated as text, or nil when the value names no
@@ -388,23 +404,47 @@ module Ammitto
         nil
       end
 
-      # Whether a value states a span rather than one point in time.
-      # A connector splits it into two halves and each half names a
-      # year: "1962 to 1964", "28 Feb 1962 to 28 Feb 1963",
-      # "Between 1959 and 1965". Both halves are required to carry a
-      # year so that ordinary values keep parsing — "Jan and Feb 1970"
-      # splits into a yearless first half and is not a span.
+      # Whether a value states a span rather than one point in time:
+      # some connector in it splits the value into two halves that each
+      # name a year. "1962 to 1964", "28 Feb 1962 to 28 Feb 1963",
+      # "Between 1959 and 1965". Both halves must carry a year so that
+      # ordinary values keep parsing — "Jan and Feb 1970" has a yearless
+      # first half and is not a span.
+      #
+      # EVERY connector is tried, not only the first, so a value whose
+      # opening connector is not the span connector still reads
+      # correctly. The two rules agree on all evidence available — 5795
+      # distinct OFAC dateOfBirth values and 12433 distinct birth-field
+      # strings across the fetched corpora classify identically either
+      # way — so this is the cheaper assumption to drop, not a fix for
+      # an observed failure.
       #
       # This is broader than #multiple_years? on purpose:
       # "01 Jan 1973 to 31 Dec 1973" names one distinct year twice, and
       # a uniqueness test cannot see the span in it.
+      #
+      # Known boundary: an abbreviated span whose second half omits the
+      # year ("01 Jan 1973 to 31 Dec") is NOT recognised, and Date._parse
+      # would still yield its opening endpoint. No corpus states one —
+      # 0 of 5795 OFAC values, 0 across the fetched corpora — so the
+      # shape is left unhandled rather than guessed at.
       # @param value [Object] candidate date string
       # @return [Boolean]
       def date_span?(value)
         return false unless value.is_a?(String)
 
-        halves = value.strip.split(SPAN_CONNECTOR, 2)
-        halves.length == 2 && halves.all? { |half| /\d{4}/.match?(half) }
+        str = value.strip
+        span_connector_offsets(str).any? do |start, finish|
+          /\d{4}/.match?(str[0...start]) && /\d{4}/.match?(str[finish..])
+        end
+      end
+
+      # @param str [String] candidate date string
+      # @return [Array<Array<Integer>>] each connector's [start, end]
+      def span_connector_offsets(str)
+        offsets = []
+        str.scan(SPAN_CONNECTOR) { offsets << Regexp.last_match.offset(0) }
+        offsets
       end
 
       # Year stated by a partial date string ("1975", "circa 1975",

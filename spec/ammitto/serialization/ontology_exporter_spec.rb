@@ -42,6 +42,47 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
       expect(data['@graph']).to be_an(Array)
     end
 
+    # The ontology and the JSON-LD context describe the SAME properties.
+    # A consumer that reads both must not be told two datatypes for one
+    # property, so the year-valued BirthInfo properties are gYear in
+    # both places.
+    describe 'the BirthInfo year properties' do
+      let(:properties) do
+        file = File.join(output_dir, 'ontology', 'properties.jsonld')
+        JSON.parse(File.read(file))['@graph']
+      end
+
+      def range_of(id)
+        properties.find { |p| p['@id'].to_s.end_with?("/#{id}") }&.fetch('range')
+      end
+
+      it 'publishes both range bounds' do
+        expect(range_of('yearRangeFrom'))
+          .to eq('http://www.w3.org/2001/XMLSchema#gYear')
+        expect(range_of('yearRangeTo'))
+          .to eq('http://www.w3.org/2001/XMLSchema#gYear')
+      end
+
+      it 'agrees with the context on the year datatype' do
+        context_type =
+          Ammitto::Schema::Context.context['@context']['year']['@type']
+
+        expect(context_type).to eq('xsd:gYear')
+        expect(range_of('year'))
+          .to eq('http://www.w3.org/2001/XMLSchema#gYear')
+      end
+
+      it 'lists both bounds among the BirthInfo class properties' do
+        file = File.join(output_dir, 'ontology', 'classes.jsonld')
+        birth = JSON.parse(File.read(file))['@graph']
+                    .find { |c| c['@id'].to_s.end_with?('/BirthInfo') }
+
+        expect(birth['properties'])
+          .to include('https://www.ammitto.org/ontology/yearRangeFrom',
+                      'https://www.ammitto.org/ontology/yearRangeTo')
+      end
+    end
+
     it 'creates hierarchy.json' do
       hierarchy_file = File.join(output_dir, 'ontology', 'hierarchy.json')
       expect(File.exist?(hierarchy_file)).to be true

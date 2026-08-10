@@ -316,7 +316,7 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       end
     end
 
-    it 'needs a year on both sides of the connector' do
+    it 'needs a year before the connector' do
       expect(transformer.send(:date_span?, 'Jan and Feb 1970')).to be false
     end
 

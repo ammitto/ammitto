@@ -159,8 +159,9 @@ results.to_json
 
 All entities inherit from `Ammitto::Entity`, which is what `require "ammitto"`
 loads. An `Ammitto::Search::ResultSet` can also hold `Ammitto::SanctionEntry`
-records; `entity_types` and `by_entity_type` assume entity-only results and
-raise on a mixed set.
+records, which carry no `entity_type`; `entity_types` skips them and
+`by_entity_type` filters them out, the way `by_authority` and `by_status`
+already skip entities.
 
 === PersonEntity
 

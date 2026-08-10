@@ -58,10 +58,20 @@ module Ammitto
       alias length size
 
       # Filter results by entity type
+      #
+      # Guarded the way #by_authority and #by_status are, because a set
+      # holds whatever the search returned: SanctionEntry has no
+      # entity_type, Entity has neither authority nor status, and any of
+      # the three filters can be handed a set containing both. An entry
+      # simply is not an entity of the requested type, so it drops out —
+      # the same answer #by_authority gives an Entity.
+      #
       # @param type [Symbol, String] the entity type
       # @return [ResultSet] filtered results
       def by_entity_type(type)
-        filtered = entries.select { |e| e.entity_type == type.to_s }
+        filtered = entries.select do |e|
+          e.respond_to?(:entity_type) && e.entity_type == type.to_s
+        end
         ResultSet.new(filtered, term: term, total_count: total_count)
       end
 
@@ -86,9 +96,15 @@ module Ammitto
       end
 
       # Get unique entity types in results
+      #
+      # Guarded like #authorities: a member that carries no entity_type
+      # contributes nothing, rather than raising and taking the types of
+      # every member that does have one down with it.
+      #
       # @return [Array<String>]
       def entity_types
-        entries.map(&:entity_type).uniq.compact
+        entries.map { |e| e.respond_to?(:entity_type) ? e.entity_type : nil }
+               .uniq.compact
       end
 
       # Get unique authorities in results

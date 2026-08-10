@@ -407,6 +407,129 @@ env -u GH_TOKEN -u GITHUB_TOKEN PATH="$TMP/bin2:$PATH" \
   && fail "fell through to anonymous curl: $(cat "$TMP/curl.log")" \
   || pass "did not fall through to anonymous curl"
 
+echo "== streak: the page must be large enough to reach the threshold =="
+# per_page was pinned at 10 while FLEET_HEALTH_STREAK is configurable, so
+# any threshold above 10 could never be reached: the streak stayed short
+# of the limit forever and a dead repo read healthy — the silent OK this
+# monitor exists to kill.
+: > "$TMP/paths12.txt"
+rc=0
+PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths12.txt" \
+  SCHED_TS="$(iso '3 hours ago')" FLEET_HEALTH_FIXTURES= \
+  FLEET_HEALTH_STREAK=12 FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_12q.md" > /dev/null || rc=$?
+grep -q 'status=completed&per_page=13' "$TMP/paths12.txt" \
+  && pass "threshold 12 asks the API for 13 completed runs" \
+  || fail "streak page ignored the threshold: $(grep -o 'per_page=[0-9]*' "$TMP/paths12.txt" | tr '\n' ' ')"
+grep -q 'status=completed&per_page=10' "$TMP/paths.txt" \
+  && pass "the default threshold still asks for 10" \
+  || fail "default page size changed: $(grep -o 'per_page=[0-9]*' "$TMP/paths.txt" | tr '\n' ' ')"
+
+# The fixture layer bypasses URL building, so this proves the other half:
+# with the runs in hand, a threshold above the old page size does reach a
+# verdict instead of sitting one short of it forever.
+printf 'data-streak12\n' > "$TMP/repos_12.txt"
+workflow_fixture data-streak12 active
+schedule_fixture data-streak12 '5 hours ago' failure
+completed_fixture data-streak12 failure failure failure failure failure \
+  failure failure failure failure failure failure failure
+rc=0
+FLEET_HEALTH_STREAK=12 FLEET_HEALTH_FIXTURES="$FIX" \
+  FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_12.md" > /dev/null || rc=$?
+expect_status data-streak12 UNHEALTHY "$TMP/report_12.md"
+expect_reason data-streak12 "12 hard failures since the last success" \
+  "$TMP/report_12.md"
+
+# ...and that it stays a threshold, not a hair trigger: eleven is below it.
+completed_fixture data-streak12 failure failure failure failure failure \
+  failure failure failure failure failure failure
+rc=0
+FLEET_HEALTH_STREAK=12 FLEET_HEALTH_FIXTURES="$FIX" \
+  FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_11.md" > /dev/null || rc=$?
+expect_status data-streak12 OK "$TMP/report_11.md"
+
+echo "== streak: a threshold the query cannot honour is refused =="
+# 100 is the API per_page ceiling. A larger threshold, or a non-numeric
+# one, is refused at startup rather than discovered as a quiet "OK".
+for bad in 0 101 abc -1; do
+  rc=0
+  FLEET_HEALTH_STREAK="$bad" FLEET_HEALTH_FIXTURES="$FIX" \
+    FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_bad.md" \
+    > /dev/null 2>&1 || rc=$?
+  [ "$rc" -eq 64 ] && pass "refuses FLEET_HEALTH_STREAK=$bad (exit 64)" \
+    || fail "FLEET_HEALTH_STREAK=$bad exited $rc, wanted 64"
+done
+rc=0
+FLEET_HEALTH_STREAK=100 FLEET_HEALTH_FIXTURES="$FIX" \
+  FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_100.md" > /dev/null || rc=$?
+[ "$rc" -ne 64 ] && pass "accepts the largest honourable threshold (100)" \
+  || fail "threshold 100 was refused"
+
+echo "== curl fallback presents the token the environment notes promise =="
+# Without gh the token was dropped, so a tokened run quietly spent the
+# anonymous 60/hour budget that one 45-call sweep nearly exhausts. gh is
+# kept off PATH entirely here: with a token set the gh branch would win
+# and the curl path would never be reached.
+mkdir -p "$TMP/bin3"
+for b in bash cat date dirname jq sort tr; do
+  ln -sf "$(command -v "$b")" "$TMP/bin3/$b"
+done
+cat > "$TMP/bin3/curl" <<'STUB'
+#!/usr/bin/env bash
+# One argument per line so an assertion can match a header exactly.
+{ for a in "$@"; do echo "$a"; done; } >> "$CURL_LOG"
+case "$*" in
+  *status=completed*) printf '{"workflow_runs":[{"conclusion":"success"}]}' ;;
+  *event=schedule*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
+  *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
+esac
+STUB
+chmod +x "$TMP/bin3/curl"
+
+: > "$TMP/curl_tok.log"
+rc=0
+env PATH="$TMP/bin3" GH_TOKEN=stub-token CURL_LOG="$TMP/curl_tok.log" \
+  SCHED_TS="$(iso '3 hours ago')" FLEET_HEALTH_FIXTURES= \
+  FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_curl.md" > /dev/null || rc=$?
+[ "$rc" -eq 0 ] && pass "the curl path produces a verdict" \
+  || fail "curl path exit was $rc"
+grep -qx 'Authorization: Bearer stub-token' "$TMP/curl_tok.log" \
+  && pass "curl sends Authorization when a token is set" \
+  || fail "curl sent no Authorization header"
+grep -q 'stub-token' "$TMP/report_curl.md" \
+  && fail "the report leaked the token" \
+  || pass "the token stays out of the report"
+
+# GITHUB_TOKEN is the workflow's spelling; it must work the same.
+: > "$TMP/curl_gt.log"
+rc=0
+env -u GH_TOKEN PATH="$TMP/bin3" GITHUB_TOKEN=stub-gt \
+  CURL_LOG="$TMP/curl_gt.log" SCHED_TS="$(iso '3 hours ago')" \
+  FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_curl_gt.md" > /dev/null || rc=$?
+grep -qx 'Authorization: Bearer stub-gt' "$TMP/curl_gt.log" \
+  && pass "GITHUB_TOKEN reaches curl too" \
+  || fail "GITHUB_TOKEN was dropped on the curl path"
+
+# No token must stay anonymous — an empty header would be a 401, which is
+# worse than the anonymous read the fleet's public repos allow.
+: > "$TMP/curl_anon.log"
+rc=0
+env -u GH_TOKEN -u GITHUB_TOKEN PATH="$TMP/bin3" \
+  CURL_LOG="$TMP/curl_anon.log" SCHED_TS="$(iso '3 hours ago')" \
+  FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_anon.md" > /dev/null || rc=$?
+[ -s "$TMP/curl_anon.log" ] && pass "an untokened run still reaches curl" \
+  || fail "curl was never called"
+grep -q 'Authorization' "$TMP/curl_anon.log" \
+  && fail "an untokened run sent an Authorization header" \
+  || pass "no token, no Authorization header"
+
 echo "== issue: announces state changes, and only state changes =="
 # gh stub: logs every invocation; "gh api" answers with a canned issue
 # list so the title match runs against realistic JSON.

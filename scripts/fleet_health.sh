@@ -83,12 +83,15 @@
 #   FLEET_HEALTH_ORG            owner org (default ammitto)
 #   FLEET_HEALTH_WORKFLOW       workflow file name (default fetch.yml)
 #   FLEET_HEALTH_MAX_AGE_HOURS  staleness limit (default 48)
-#   FLEET_HEALTH_STREAK         failure/inconclusive limit (default 3)
+#   FLEET_HEALTH_STREAK         failure/inconclusive limit (default 3);
+#                               1-100, and the streak query asks for
+#                               enough runs to reach whatever is set
 #   FLEET_HEALTH_REPOS_FILE     repo list (default scripts/fleet_repos.txt)
 #   FLEET_HEALTH_FIXTURES       dir of fixture JSON; no network at all
 #   FLEET_HEALTH_NOW_EPOCH      freeze "now" for tests
 #   GH_TOKEN / GITHUB_TOKEN     optional; raises the API rate limit from
-#                               60/h to 1000/h. The fleet is public, so
+#                               60/h to 1000/h, on the gh path and the
+#                               curl path alike. The fleet is public, so
 #                               anonymous reads work (verified 2026-08-07)
 #                               but one 15-repo pass costs 45 of the 60.
 #
@@ -120,12 +123,36 @@ done
 
 [ -f "$REPOS_FILE" ] || { echo "repos file not found: $REPOS_FILE" >&2; exit 66; }
 
+# A threshold the streak query cannot reach would report every repo
+# healthy forever — the silent "OK" this monitor exists to kill. It is
+# refused at startup rather than discovered in a quiet report. 100 is the
+# API's per_page ceiling, so a larger threshold cannot be judged from the
+# single page the streak query fetches.
+case "$STREAK_LIMIT" in
+  ''|*[!0-9]*)
+    echo "FLEET_HEALTH_STREAK must be a whole number: $STREAK_LIMIT" >&2
+    exit 64 ;;
+esac
+if [ "$STREAK_LIMIT" -lt 1 ] || [ "$STREAK_LIMIT" -gt 100 ]; then
+  echo "FLEET_HEALTH_STREAK must be between 1 and 100: $STREAK_LIMIT" >&2
+  exit 64
+fi
+
+# The streak window is every run before the most recent success, so a
+# page shorter than the threshold can never show a streak that long. Ask
+# for one more than the threshold — the extra run is the success that
+# closes the window — and never fewer than the 10 this has always used.
+COMPLETED_PER_PAGE=$((STREAK_LIMIT + 1))
+if [ "$COMPLETED_PER_PAGE" -lt 10 ]; then COMPLETED_PER_PAGE=10; fi
+if [ "$COMPLETED_PER_PAGE" -gt 100 ]; then COMPLETED_PER_PAGE=100; fi
+
 # Fetch one API document. kind: workflow | schedule_runs | completed_runs.
 # Prints the JSON body, or nothing on any failure — the caller validates
 # the body and treats anything unexpected as UNREADABLE rather than
 # crashing, so one repo's outage cannot hide the other fourteen.
 api_get() {
-  local kind="$1" repo="$2" path base
+  local kind="$1" repo="$2" path base token
+  local -a auth
   if [ -n "$FIXTURES" ]; then
     cat "$FIXTURES/${repo}__${kind}.json" 2>/dev/null || true
     return 0
@@ -141,7 +168,7 @@ api_get() {
     # Streak: scheduled runs only. A red PR run must never page the
     # fleet, and a green push run must never clear a real streak.
     completed_runs)
-      path="$base/runs?event=schedule&status=completed&per_page=10" ;;
+      path="$base/runs?event=schedule&status=completed&per_page=$COMPLETED_PER_PAGE" ;;
     *)
       return 1 ;;
   esac
@@ -157,7 +184,19 @@ api_get() {
        gh auth status >/dev/null 2>&1; }; then
     gh api "$path" 2>/dev/null || true
   else
+    # Without gh, the token has to be presented by hand or it buys
+    # nothing and the pass runs on the anonymous 60/hour budget that one
+    # 45-call sweep nearly exhausts — which the environment notes above
+    # promise it does not. Built as an argument array so the token is
+    # never interpolated into a logged string, and left empty when no
+    # token is set so an anonymous read stays anonymous.
+    auth=()
+    token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+    if [ -n "$token" ]; then
+      auth=(-H "Authorization: Bearer $token")
+    fi
     curl -sS --max-time 30 -H 'Accept: application/vnd.github+json' \
+      ${auth[@]+"${auth[@]}"} \
       "https://api.github.com/$path" 2>/dev/null || true
   fi
 }

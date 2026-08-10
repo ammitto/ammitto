@@ -277,6 +277,12 @@ module Ammitto
 
         # BirthInfo properties
         { id: 'year', label: 'Year', comment: 'Birth year', domain: 'BirthInfo', range: 'integer' },
+        { id: 'yearRangeFrom', label: 'Year Range From',
+          comment: 'Lower bound of a stated span of birth years',
+          domain: 'BirthInfo', range: 'integer' },
+        { id: 'yearRangeTo', label: 'Year Range To',
+          comment: 'Upper bound of a stated span of birth years',
+          domain: 'BirthInfo', range: 'integer' },
         { id: 'place', label: 'Place', comment: 'Birth place', domain: 'BirthInfo', range: 'string' },
         { id: 'circa', label: 'Circa', comment: 'Approximate date', domain: 'BirthInfo', range: 'boolean' }
       ].freeze

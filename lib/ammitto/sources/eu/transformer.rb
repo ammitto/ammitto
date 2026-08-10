@@ -190,11 +190,17 @@ module Ammitto
 
           birthdates.map do |bd|
             # A year without a full birthdate stays a year — it is not
-            # padded into an invented January 1 date
+            # padded into an invented January 1 date. A stated span of
+            # years rides in the range bounds instead, where it suppresses
+            # both scalars; either bound may arrive alone, and circa is
+            # passed through untouched because the EU sets it both with
+            # and without a span.
             create_birth_info(
               date: bd.birthdate,
               circa: bd.circa,
               year: bd.year,
+              year_range_from: bd.year_range_from,
+              year_range_to: bd.year_range_to,
               city: [bd.city, bd.place].compact.first,
               region: bd.region,
               country: bd.country_description,

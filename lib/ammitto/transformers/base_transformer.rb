@@ -5,6 +5,21 @@ require_relative '../utils/list_types_registry'
 
 module Ammitto
   module Transformers
+    # Raised when a source states a closed span of birth years whose
+    # lower bound is above its upper bound.
+    #
+    # The span is rejected rather than reordered. Reordering would
+    # publish a claim the source never made, and a reversed pair is far
+    # likelier to be a source or parsing defect than an intended fact.
+    # Rejection raises rather than returning nil so that "this value
+    # names no span" and "this value names a span that cannot be true"
+    # stay distinguishable — the second is a defect and must be visible.
+    #
+    # HarmonizeCommand rescues per file, records the offending filename,
+    # and fails its health gate, so one bad record neither aborts the
+    # run nor vanishes from it.
+    class InvalidYearRangeError < StandardError; end
+
     # BaseTransformer provides common functionality for transforming
     # source-specific models to the harmonized Ammitto ontology.
     #
@@ -30,6 +45,30 @@ module Ammitto
     #   end
     #
     class BaseTransformer
+      # Spellings read as a bare span of birth years. Every pattern is
+      # ANCHORED at both ends: a span is recognised only when the WHOLE
+      # value is one. "28 Feb 1962 to 28 Feb 1963" and "Mar 1980 to Mar
+      # 1981" are both live OFAC shapes that carry finer precision than
+      # a year span, and flattening them into one would discard the
+      # months and days the source did state.
+      #
+      # The hyphen spelling ("1962-1964") is deliberately absent. It
+      # appears in none of the corpora that state spans as text — 0 of
+      # 5795 distinct OFAC dateOfBirth values, none in the DFAT corpus —
+      # and the EU states its bounds as XML attributes rather than text.
+      # Such a value still yields no scalar year, via #multiple_years?,
+      # so it is an unsupported input rather than a misread one.
+      YEAR_RANGE_PATTERNS = [
+        /\A(?:approximately\s*:?\s*)?between\s+(\d{4})\s+and\s+(\d{4})\z/i,
+        /\A(\d{4})\s+to\s+(\d{4})\z/i
+      ].freeze
+
+      # Connectors that join the two halves of a span. Used to tell a
+      # span from a single point in time before Date._parse is asked for
+      # a date, because Date._parse reads only the first half and would
+      # publish one endpoint as though the source had stated it alone.
+      SPAN_CONNECTOR = /\s+(?:to|and)\s+/i
+
       attr_reader :source_code, :list_type
 
       # Initialize with source code and optional list type
@@ -208,9 +247,22 @@ module Ammitto
 
       # Create a BirthInfo from birth data.
       #
-      # Invariant: BirthInfo#date is set only when the source states a
-      # complete day-month-year; a bare or partial year rides in
-      # BirthInfo#year and is never padded into an invented date.
+      # Invariants:
+      #
+      # * BirthInfo#date is set only when the source states a complete
+      #   day-month-year; a bare or partial year rides in BirthInfo#year
+      #   and is never padded into an invented date.
+      # * A span of years rides in BirthInfo#year_range_from /
+      #   #year_range_to, and while one is present both #date and #year
+      #   stay nil. Neither bound is the birth year, so filling #year
+      #   with an endpoint would assert something the source never said.
+      # * circa is carried through from the source, never inferred from
+      #   the presence of a span.
+      #
+      # Bounds passed by a caller are authoritative: when either is
+      # given, the date string is not searched for a span, and a missing
+      # bound stays missing rather than being filled from the string.
+      #
       # @param date [String, Date, nil] birth date
       # @param circa [Boolean] whether the date is approximate
       # @param city [String, nil] birth city
@@ -218,9 +270,17 @@ module Ammitto
       # @param country [String, nil] birth country
       # @param country_iso_code [String, nil] ISO country code
       # @param year [Integer, String, nil] source-stated birth year
+      # @param year_range_from [Integer, String, nil] lower bound
+      # @param year_range_to [Integer, String, nil] upper bound
+      # @raise [InvalidYearRangeError] when a closed span runs backwards
       # @return [BirthInfo] the birth info
       def create_birth_info(date: nil, circa: false, city: nil, region: nil, country: nil,
-                            country_iso_code: nil, year: nil)
+                            country_iso_code: nil, year: nil,
+                            year_range_from: nil, year_range_to: nil)
+        bounds = stated_year_range(year_range_from, year_range_to) ||
+                 extract_year_range(date)
+        return birth_info_for_range(bounds, circa, city, region, country, country_iso_code) if bounds
+
         parsed_date = parse_complete_date(date)
 
         Ammitto::BirthInfo.new(
@@ -234,10 +294,83 @@ module Ammitto
         )
       end
 
+      # A span of years suppresses both scalars: date and year are the
+      # source's single-value claims, and a span makes neither.
+      # @param bounds [Array<Integer, nil>] validated [from, to]
+      # @return [BirthInfo] the birth info
+      def birth_info_for_range(bounds, circa, city, region, country, country_iso_code)
+        Ammitto::BirthInfo.new(
+          date: nil,
+          year: nil,
+          year_range_from: bounds.first,
+          year_range_to: bounds.last,
+          circa: circa,
+          city: city,
+          region: region,
+          country: country,
+          country_iso_code: country_iso_code
+        )
+      end
+
+      # Bounds a caller stated outright, as the EU does through its
+      # yearRangeFrom / yearRangeTo XML attributes.
+      # @param from [Integer, String, nil] lower bound
+      # @param to [Integer, String, nil] upper bound
+      # @raise [InvalidYearRangeError] when a closed span runs backwards
+      # @return [Array<Integer, nil>, nil] validated bounds, or nil
+      def stated_year_range(from, to)
+        lower = normalize_year(from)
+        upper = normalize_year(to)
+        return nil if lower.nil? && upper.nil?
+
+        validate_year_range(lower, upper)
+      end
+
+      # Bounds of a span stated as text, or nil when the value names no
+      # span. Recognition is anchored (see YEAR_RANGE_PATTERNS), so a
+      # value carrying finer precision is left for the scalar path,
+      # where the span guards then keep it from becoming a false date.
+      # @param value [Object] candidate date string
+      # @raise [InvalidYearRangeError] when a closed span runs backwards
+      # @return [Array<Integer>, nil] validated bounds, or nil
+      def extract_year_range(value)
+        return nil unless value.is_a?(String)
+
+        str = value.strip
+        pattern = YEAR_RANGE_PATTERNS.find { |candidate| candidate.match?(str) }
+        return nil unless pattern
+
+        match = pattern.match(str)
+        validate_year_range(match[1].to_i, match[2].to_i)
+      end
+
+      # A closed span must run forwards. Only a closed one can: an open
+      # bound has nothing to be out of order with.
+      # @param lower [Integer, nil] lower bound
+      # @param upper [Integer, nil] upper bound
+      # @raise [InvalidYearRangeError] when a closed span runs backwards
+      # @return [Array<Integer, nil>] the bounds, unchanged
+      def validate_year_range(lower, upper)
+        if lower && upper && lower > upper
+          raise InvalidYearRangeError,
+                "birth year range runs backwards: #{lower} > #{upper}"
+        end
+
+        [lower, upper]
+      end
+
       # Parse a value into a Date only when it states day, month and year.
       # Partial expressions ("1975", "Oct 1988", "00/00/1963") yield nil
       # instead of a date padded with invented components. Date instances
       # pass through: the caller already resolved them.
+      #
+      # A span yields nil too. Date._parse reads only the first half of
+      # "28 Feb 1962 to 28 Feb 1963" and of "01 Jan 1973 to 31 Dec 1973",
+      # so without the guard the opening endpoint was published as
+      # though the source had stated it as the birth date — and for the
+      # "01 Jan" shape, which OFAC writes 37 distinct ways to mean
+      # "some day that year", that is the invented January date this
+      # gem already set out to stop asserting.
       # @param value [Date, String, nil]
       # @return [Date, nil]
       def parse_complete_date(value)
@@ -245,6 +378,7 @@ module Ammitto
 
         str = value.to_s.strip
         return nil if str.empty?
+        return nil if date_span?(str)
 
         parts = Date._parse(str)
         return nil unless parts[:year] && parts[:mon] && parts[:mday]
@@ -254,19 +388,40 @@ module Ammitto
         nil
       end
 
+      # Whether a value states a span rather than one point in time.
+      # A connector splits it into two halves and each half names a
+      # year: "1962 to 1964", "28 Feb 1962 to 28 Feb 1963",
+      # "Between 1959 and 1965". Both halves are required to carry a
+      # year so that ordinary values keep parsing — "Jan and Feb 1970"
+      # splits into a yearless first half and is not a span.
+      #
+      # This is broader than #multiple_years? on purpose:
+      # "01 Jan 1973 to 31 Dec 1973" names one distinct year twice, and
+      # a uniqueness test cannot see the span in it.
+      # @param value [Object] candidate date string
+      # @return [Boolean]
+      def date_span?(value)
+        return false unless value.is_a?(String)
+
+        halves = value.strip.split(SPAN_CONNECTOR, 2)
+        halves.length == 2 && halves.all? { |half| /\d{4}/.match?(half) }
+      end
+
       # Year stated by a partial date string ("1975", "circa 1975",
-      # "Oct 1988", "00/00/1963"). A range such as "1962 to 1964" names
-      # no single year and yields nil — range handling is a separate,
-      # dedicated concern. That rejection is stated here rather than
-      # left to Date._parse, which returns no year for today's range
-      # spellings only incidentally.
+      # "Oct 1988", "00/00/1963"). A span such as "1962 to 1964" or
+      # "01 Jan 1973 to 31 Dec 1973" names no single year and yields
+      # nil: a recognised span rides in the range fields instead, and an
+      # unrecognised one is a shape this gem does not publish. Both
+      # rejections are stated here rather than left to Date._parse,
+      # which returns no year for some span spellings only incidentally
+      # and happily returns one for others.
       # @param value [Object] candidate date string
       # @return [Integer, nil]
       def extract_birth_year(value)
         return nil unless value.is_a?(String)
 
         str = value.strip.sub(/\A(?:circa|approximately|c\.?)\s*/i, '')
-        return nil if multiple_years?(str)
+        return nil if date_span?(str) || multiple_years?(str)
         return str.to_i if /\A\d{4}\z/.match?(str)
 
         year = Date._parse(str)[:year]

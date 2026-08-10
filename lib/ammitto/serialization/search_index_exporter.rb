@@ -33,6 +33,11 @@ module Ammitto
     #   exporter.export('./api/v1')
     #
     class SearchIndexExporter
+      # Bounds of a stated span of birth years, in both spellings the
+      # exporter has to read.
+      BIRTH_YEAR_FROM_KEYS = %w[yearRangeFrom year_range_from].freeze
+      BIRTH_YEAR_TO_KEYS = %w[yearRangeTo year_range_to].freeze
+
       # Authority names for facet display
       AUTHORITY_NAMES = {
         'un' => 'United Nations',
@@ -138,6 +143,8 @@ module Ammitto
           listType: string_presence(extract_list_type(entry)),
           status: string_presence(entry['status']),
           birthYear: string_presence(extract_birth_year(entity)),
+          birthYearFrom: extract_birth_bound(entity, BIRTH_YEAR_FROM_KEYS),
+          birthYearTo: extract_birth_bound(entity, BIRTH_YEAR_TO_KEYS),
           imo: scalar_presence(extract_imo(entity))
         }.compact
       end
@@ -461,7 +468,46 @@ module Ammitto
         nil
       end
 
-      # Extract birth year from entity
+      # Export a span's bounds as their own columns. A bound NEVER
+      # becomes birthYear: birthYear answers "born in this exact year",
+      # and a lower bound is not that year — filling it in would let a
+      # record that named no year answer as though it had. A record with
+      # only one bound exports only that column, so an open span stays
+      # open.
+      # @param entity [Hash] entity data
+      # @param keys [Array<String>] the bound's key spellings
+      # @return [String, nil] the bound, as a string
+      def extract_birth_bound(entity, keys)
+        entity_type = entity['entityType'] || entity['entity_type']
+        return nil unless entity_type == 'person'
+
+        birth = first_birth_info(entity)
+        return nil unless birth
+
+        keys.each do |key|
+          value = scalar_presence(birth[key])
+          return value if value
+        end
+        nil
+      end
+
+      # @param entity [Hash] entity data
+      # @return [Hash, nil] the first birth info record, either spelling
+      def first_birth_info(entity)
+        %w[birth_info birthInfo].each do |key|
+          list = entity[key]
+          next unless list.is_a?(Array) && list.first.is_a?(Hash)
+
+          return list.first
+        end
+        nil
+      end
+
+      # Extract birth year from entity.
+      #
+      # Only an exact date or a stated single year answers here. A span
+      # is read by #extract_birth_bound instead, and the span keys are
+      # deliberately absent from the lookups below.
       # @param entity [Hash] entity data
       # @return [String, nil] birth year
       def extract_birth_year(entity)

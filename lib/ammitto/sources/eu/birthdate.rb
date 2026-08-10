@@ -16,6 +16,16 @@ module Ammitto
       #            countryDescription="IRAQ" regulationLanguage="en" logicalId="14">
       #   <regulationSummary .../>
       # </birthdate>
+      #
+      # The EU also states a span of birth years, as its own pair of
+      # attributes rather than as text:
+      # <birthdate circa="true" calendarType="GREGORIAN"
+      #            city="Tirin Kot District, Uruzgan Province" zipCode=""
+      #            yearRangeFrom="1953" yearRangeTo="1958" ...>
+      #
+      # The two are independent of circa and of each other: the corpus
+      # carries both circa="true" and circa="false" alongside a span, and
+      # one record states only yearRangeTo, leaving the span open below.
       class Birthdate < Lutaml::Model::Serializable
         attribute :birthdate, :string
         attribute :circa, :boolean
@@ -23,6 +33,8 @@ module Ammitto
         attribute :day_of_month, :integer
         attribute :month_of_year, :integer
         attribute :year, :integer
+        attribute :year_range_from, :integer
+        attribute :year_range_to, :integer
         attribute :city, :string
         attribute :region, :string
         attribute :place, :string
@@ -43,6 +55,8 @@ module Ammitto
           map_attribute 'dayOfMonth', to: :day_of_month
           map_attribute 'monthOfYear', to: :month_of_year
           map_attribute 'year', to: :year
+          map_attribute 'yearRangeFrom', to: :year_range_from
+          map_attribute 'yearRangeTo', to: :year_range_to
           map_attribute 'city', to: :city
           map_attribute 'region', to: :region
           map_attribute 'place', to: :place
@@ -61,6 +75,8 @@ module Ammitto
           map 'day_of_month', to: :day_of_month
           map 'month_of_year', to: :month_of_year
           map 'year', to: :year
+          map 'year_range_from', to: :year_range_from
+          map 'year_range_to', to: :year_range_to
           map 'city', to: :city
           map 'region', to: :region
           map 'place', to: :place

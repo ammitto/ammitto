@@ -226,6 +226,8 @@ module Ammitto
           'date' => birth_info.date,
           'circa' => birth_info.circa,
           'year' => birth_info.year,
+          'yearRangeFrom' => birth_info.year_range_from,
+          'yearRangeTo' => birth_info.year_range_to,
           'city' => birth_info.city,
           'region' => birth_info.region,
           'country' => birth_info.country,

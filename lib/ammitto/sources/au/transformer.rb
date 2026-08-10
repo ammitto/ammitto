@@ -250,11 +250,15 @@ module Ammitto
             if dob.respond_to?(:to_date)
               # A FlexibleDate keeps its stated precision: the date is
               # used only when day, month and year all resolved; a bare
-              # year rides in BirthInfo#year instead of vanishing
+              # year rides in BirthInfo#year instead of vanishing; and a
+              # stated span rides in the range bounds, which suppress
+              # both scalars downstream
               create_birth_info(
                 date: complete_date_of(dob),
                 circa: dob.circa || false,
                 year: dob.year,
+                year_range_from: dob.year_range_from,
+                year_range_to: dob.year_range_to,
                 city: pob&.city,
                 country: pob&.country
               )

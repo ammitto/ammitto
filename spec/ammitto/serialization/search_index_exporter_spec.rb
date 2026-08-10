@@ -132,6 +132,63 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:birthYear]).to eq('1984')
     end
 
+    # birthYear answers "born in this exact year". A span names no such
+    # year, so it gets its own columns and birthYear stays absent — a
+    # lower bound written there would let a record that never claimed a
+    # year answer an exact-year query.
+    context 'with a stated span of birth years' do
+      def row_for(birth_info)
+        exporter.add({
+                       '@id' => 'https://www.ammitto.org/entity/eu/test',
+                       'entityType' => 'person',
+                       'names' => [{ 'fullName' => 'Test' }],
+                       'birthInfo' => [birth_info]
+                     },
+                     { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                       'status' => 'active' })
+        exporter.entities.first
+      end
+
+      it 'exports the bounds and omits birthYear entirely' do
+        row = row_for({ 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 })
+
+        expect(row[:birthYearFrom]).to eq('1953')
+        expect(row[:birthYearTo]).to eq('1958')
+        expect(row).not_to have_key(:birthYear)
+      end
+
+      it 'exports only the bound that exists, leaving the span open' do
+        row = row_for({ 'yearRangeTo' => 1980 })
+
+        expect(row[:birthYearTo]).to eq('1980')
+        expect(row).not_to have_key(:birthYearFrom)
+        expect(row).not_to have_key(:birthYear)
+      end
+
+      it 'reads the snake_case spelling too' do
+        row = row_for({ 'year_range_from' => 1959, 'year_range_to' => 1965 })
+
+        expect(row[:birthYearFrom]).to eq('1959')
+        expect(row[:birthYearTo]).to eq('1965')
+      end
+    end
+
+    it 'still exports birthYear for a stated single year, with no bounds' do
+      exporter.add({
+                     '@id' => 'https://www.ammitto.org/entity/eu/y',
+                     'entityType' => 'person',
+                     'names' => [{ 'fullName' => 'Test' }],
+                     'birthInfo' => [{ 'year' => 1964 }]
+                   },
+                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                     'status' => 'active' })
+
+      row = exporter.entities.first
+      expect(row[:birthYear]).to eq('1964')
+      expect(row).not_to have_key(:birthYearFrom)
+      expect(row).not_to have_key(:birthYearTo)
+    end
+
     it 'extracts IMO for vessels' do
       entity = {
         '@id' => 'https://www.ammitto.org/entity/eu_vessels/test',

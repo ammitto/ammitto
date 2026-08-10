@@ -175,6 +175,19 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect(info.date).to be_nil
       expect(info.year).to be_nil
     end
+
+    # Recognising a span and publishing one are separate. An abbreviated
+    # span matches no anchored pattern, so it yields no bounds — but it
+    # must not yield the 1 January date Date._parse reads out of its
+    # opening half either.
+    it 'publishes nothing at all for an abbreviated span' do
+      info = birth(date: '01 Jan 1973 to 31 Dec')
+
+      expect(info.date).to be_nil
+      expect(info.year).to be_nil
+      expect(info.year_range_from).to be_nil
+      expect(info.year_range_to).to be_nil
+    end
   end
 
   # Rejected, not reordered: reordering would publish a span the source
@@ -314,12 +327,17 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
         .to be true
     end
 
-    # KNOWN BOUNDARY, stated rather than discovered later: an
-    # abbreviated span whose second half omits the year is not
-    # recognised. No corpus states one, so the shape is left unhandled
-    # rather than guessed at.
-    it 'does not recognise a span whose second half omits the year' do
-      expect(transformer.send(:date_span?, '01 Jan 1973 to 31 Dec')).to be false
+    # No corpus states an abbreviated span, so no bounds are extracted
+    # from one. It is still recognised as a span, because the question
+    # this predicate answers is "is this NOT one complete date" — and
+    # Date._parse would otherwise read its opening half and publish
+    # 1 January 1973 as a stated birth date.
+    it 'recognises a span whose second half omits the year' do
+      expect(transformer.send(:date_span?, '01 Jan 1973 to 31 Dec')).to be true
+    end
+
+    it 'needs a year in the first half, not merely digits' do
+      expect(transformer.send(:date_span?, 'Jan 5 and Feb 1970')).to be false
     end
   end
 

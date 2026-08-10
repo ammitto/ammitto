@@ -405,29 +405,39 @@ module Ammitto
       end
 
       # Whether a value states a span rather than one point in time:
-      # some connector in it splits the value into two halves that each
-      # name a year. "1962 to 1964", "28 Feb 1962 to 28 Feb 1963",
-      # "Between 1959 and 1965". Both halves must carry a year so that
-      # ordinary values keep parsing — "Jan and Feb 1970" has a yearless
-      # first half and is not a span.
+      # some connector in it splits the value into a dated first half
+      # and a second half that continues the date. "1962 to 1964",
+      # "28 Feb 1962 to 28 Feb 1963", "Between 1959 and 1965".
+      #
+      # The FIRST half must name a year and the second must carry at
+      # least a digit. That asymmetry is deliberate. Requiring a year on
+      # both sides would read "01 Jan 1973 to 31 Dec" as a single date
+      # and publish 1 January 1973 — a date the source never stated —
+      # because Date._parse reads the opening half and stops. This
+      # predicate exists to answer "is this NOT one complete date", and
+      # an abbreviated span is not one, whatever else it may be. The
+      # weaker second-half test costs nothing measurable: over the 5795
+      # distinct OFAC dateOfBirth values and the 12433 distinct
+      # birth-field strings in the fetched corpora it classifies exactly
+      # the same values as the both-halves rule.
+      #
+      # Requiring a year in the FIRST half is what keeps ordinary values
+      # parsing: "Jan and Feb 1970" has a yearless first half and is not
+      # a span.
       #
       # EVERY connector is tried, not only the first, so a value whose
       # opening connector is not the span connector still reads
-      # correctly. The two rules agree on all evidence available — 5795
-      # distinct OFAC dateOfBirth values and 12433 distinct birth-field
-      # strings across the fetched corpora classify identically either
-      # way — so this is the cheaper assumption to drop, not a fix for
-      # an observed failure.
+      # correctly.
       #
       # This is broader than #multiple_years? on purpose:
       # "01 Jan 1973 to 31 Dec 1973" names one distinct year twice, and
       # a uniqueness test cannot see the span in it.
       #
-      # Known boundary: an abbreviated span whose second half omits the
-      # year ("01 Jan 1973 to 31 Dec") is NOT recognised, and Date._parse
-      # would still yield its opening endpoint. No corpus states one —
-      # 0 of 5795 OFAC values, 0 across the fetched corpora — so the
-      # shape is left unhandled rather than guessed at.
+      # Recognising a span is not the same as publishing one: only the
+      # anchored YEAR_RANGE_PATTERNS produce bounds. A span recognised
+      # here but not matched there publishes nothing, which is the point
+      # — it is rejection of a value known to be misparsed, not support
+      # for a spelling.
       # @param value [Object] candidate date string
       # @return [Boolean]
       def date_span?(value)
@@ -435,7 +445,7 @@ module Ammitto
 
         str = value.strip
         span_connector_offsets(str).any? do |start, finish|
-          /\d{4}/.match?(str[0...start]) && /\d{4}/.match?(str[finish..])
+          /\d{4}/.match?(str[0...start]) && /\d/.match?(str[finish..])
         end
       end
 

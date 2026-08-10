@@ -173,6 +173,41 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       end
     end
 
+    # An entity can carry several birth records, and the span is not
+    # always the first one. Reading only the first dropped it silently.
+    context 'with several birth records' do
+      def row_for_all(birth_infos)
+        exporter.add({
+                       '@id' => 'https://www.ammitto.org/entity/eu/multi',
+                       'entityType' => 'person',
+                       'names' => [{ 'fullName' => 'Test' }],
+                       'birthInfo' => birth_infos
+                     },
+                     { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                       'status' => 'active' })
+        exporter.entities.first
+      end
+
+      it 'finds a span that is not the first record' do
+        row = row_for_all([{ 'year' => 1964 },
+                           { 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 }])
+
+        expect(row[:birthYearFrom]).to eq('1953')
+        expect(row[:birthYearTo]).to eq('1958')
+      end
+
+      # Both bounds must come from ONE record. Taking a lower bound from
+      # one and an upper from another would publish a span no source
+      # ever stated.
+      it 'takes both bounds from the same record' do
+        row = row_for_all([{ 'yearRangeFrom' => 1953 },
+                           { 'yearRangeFrom' => 1970, 'yearRangeTo' => 1975 }])
+
+        expect(row[:birthYearFrom]).to eq('1953')
+        expect(row).not_to have_key(:birthYearTo)
+      end
+    end
+
     it 'still exports birthYear for a stated single year, with no bounds' do
       exporter.add({
                      '@id' => 'https://www.ammitto.org/entity/eu/y',

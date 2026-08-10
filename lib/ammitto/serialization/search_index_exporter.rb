@@ -474,6 +474,11 @@ module Ammitto
       # record that named no year answer as though it had. A record with
       # only one bound exports only that column, so an open span stays
       # open.
+      #
+      # An entity may carry several birth records, and the span is not
+      # always the first. Both bounds are read from the FIRST record
+      # that states either — never one bound from one record and the
+      # other from another, which would publish a span no source stated.
       # @param entity [Hash] entity data
       # @param keys [Array<String>] the bound's key spellings
       # @return [String, nil] the bound, as a string
@@ -481,26 +486,32 @@ module Ammitto
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'person'
 
-        birth = first_birth_info(entity)
+        birth = birth_info_with_range(entity)
         return nil unless birth
 
-        keys.each do |key|
-          value = scalar_presence(birth[key])
-          return value if value
-        end
-        nil
+        keys.filter_map { |key| scalar_presence(birth[key]) }.first
       end
 
       # @param entity [Hash] entity data
-      # @return [Hash, nil] the first birth info record, either spelling
-      def first_birth_info(entity)
+      # @return [Hash, nil] the first birth record stating either bound
+      def birth_info_with_range(entity)
+        birth_info_records(entity).find do |birth|
+          (BIRTH_YEAR_FROM_KEYS + BIRTH_YEAR_TO_KEYS)
+            .any? { |key| scalar_presence(birth[key]) }
+        end
+      end
+
+      # @param entity [Hash] entity data
+      # @return [Array<Hash>] birth records, in either key spelling
+      def birth_info_records(entity)
         %w[birth_info birthInfo].each do |key|
           list = entity[key]
-          next unless list.is_a?(Array) && list.first.is_a?(Hash)
+          next unless list.is_a?(Array)
 
-          return list.first
+          records = list.grep(Hash)
+          return records unless records.empty?
         end
-        nil
+        []
       end
 
       # Extract birth year from entity.

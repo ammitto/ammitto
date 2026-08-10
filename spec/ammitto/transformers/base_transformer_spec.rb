@@ -121,9 +121,40 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect(transformer.send(:extract_birth_year, '1962 to 1964')).to be_nil
     end
 
+    it 'yields nil for every spelling of a year range' do
+      ['1962 to 1964', 'between 1962 and 1964', '1962-1964',
+       '1962–1964', 'circa 1962 to 1964'].each do |range|
+        expect(transformer.send(:extract_birth_year, range))
+          .to(be_nil, "expected #{range.inspect} to name no single year")
+      end
+    end
+
     it 'yields nil for non-strings' do
       expect(transformer.send(:extract_birth_year, nil)).to be_nil
       expect(transformer.send(:extract_birth_year, Date.new(1970, 1, 1))).to be_nil
+    end
+  end
+
+  describe '#multiple_years?' do
+    it 'is true only when two different years are named' do
+      expect(transformer.send(:multiple_years?, '1962 to 1964')).to be true
+      expect(transformer.send(:multiple_years?, '1962-1964')).to be true
+      expect(transformer.send(:multiple_years?, 'between 1962 and 1964'))
+        .to be true
+    end
+
+    it 'is false for one year, however it is written' do
+      ['1975', '00/00/1963', '03 Oct 1988', '1963 (1963)']
+        .each do |str|
+          expect(transformer.send(:multiple_years?, str))
+            .to(be(false), "expected #{str.inspect} to name one year")
+        end
+    end
+
+    # A guard reading "19620101" as 1962 and 0101 would reject a date
+    # the parser handles today.
+    it 'does not split a run of digits into two years' do
+      expect(transformer.send(:multiple_years?, '19620101')).to be false
     end
   end
 
@@ -134,9 +165,29 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect(transformer.send(:circa_string?, 'approximately 1965')).to be true
     end
 
+    it 'recognizes the bare "c" marker extract_birth_year strips' do
+      expect(transformer.send(:circa_string?, 'c 1955')).to be true
+      expect(transformer.send(:circa_string?, 'C 1955')).to be true
+    end
+
+    # The year and the circa flag are read from the same string by two
+    # different methods; when they disagree the entity claims an exact
+    # birth year the source only approximated.
+    it 'agrees with extract_birth_year on both "c" spellings' do
+      ['c 1955', 'c. 1955'].each do |str|
+        expect(transformer.send(:extract_birth_year, str)).to eq(1955)
+        expect(transformer.send(:circa_string?, str)).to be true
+      end
+    end
+
     it 'rejects plain dates and non-strings' do
       expect(transformer.send(:circa_string?, '03 Oct 1988')).to be false
       expect(transformer.send(:circa_string?, nil)).to be false
+    end
+
+    it 'does not read a word starting with c as a circa marker' do
+      expect(transformer.send(:circa_string?, 'China 1955')).to be false
+      expect(transformer.send(:circa_string?, 'c1955')).to be false
     end
   end
 end

@@ -257,26 +257,42 @@ module Ammitto
       # Year stated by a partial date string ("1975", "circa 1975",
       # "Oct 1988", "00/00/1963"). A range such as "1962 to 1964" names
       # no single year and yields nil — range handling is a separate,
-      # dedicated concern.
+      # dedicated concern. That rejection is stated here rather than
+      # left to Date._parse, which returns no year for today's range
+      # spellings only incidentally.
       # @param value [Object] candidate date string
       # @return [Integer, nil]
       def extract_birth_year(value)
         return nil unless value.is_a?(String)
 
         str = value.strip.sub(/\A(?:circa|approximately|c\.?)\s*/i, '')
+        return nil if multiple_years?(str)
         return str.to_i if /\A\d{4}\z/.match?(str)
 
         year = Date._parse(str)[:year]
         year&.positive? ? year : nil
       end
 
+      # Whether a date string names more than one year — "1962 to 1964",
+      # "between 1962 and 1964", "1962-1964". Such a string states a
+      # range, not a birth year. Years are matched on word boundaries so
+      # a run of digits ("19620101") is not read as two of them.
+      # @param value [String] date string, circa marker already stripped
+      # @return [Boolean]
+      def multiple_years?(value)
+        value.scan(/\b\d{4}\b/).uniq.size > 1
+      end
+
       # Whether a source date string marks itself approximate
-      # ("circa 1960", "c. 1955", "approximately 1965")
+      # ("circa 1960", "c. 1955", "c 1955", "approximately 1965").
+      # The bare "c" form is recognized because extract_birth_year
+      # strips it and au's FlexibleDate parser reads it as circa; without
+      # it "c 1955" yielded a year with circa left false.
       # @param value [Object] candidate date string
       # @return [Boolean]
       def circa_string?(value)
         value.is_a?(String) &&
-          value.strip.match?(/\A(?:circa|approximately|c\.)\s/i)
+          value.strip.match?(/\A(?:circa|approximately|c\.?)\s/i)
       end
 
       # Coerce a source-stated year to a positive Integer

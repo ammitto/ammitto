@@ -64,8 +64,10 @@ module Ammitto
         # Fetches +url+ and returns the response body.
         #
         # @param url [String] an https URL
-        # @param headers [Hash] request headers, sent on every hop
-        #   unless +redirect_policy+ is :same_origin
+        # @param headers [Hash] request headers, sent unchanged on
+        #   every hop. They are never stripped — a credentialed request
+        #   is protected by refusing the hop, not by dropping the
+        #   header, which is why +redirect_policy+ exists.
         # @param open_timeout [Integer] seconds to wait for the connection
         # @param read_timeout [Integer] seconds to wait for the body
         # @param max_redirects [Integer] hops allowed after the first request

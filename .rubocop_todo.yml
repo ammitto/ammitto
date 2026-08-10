@@ -222,7 +222,6 @@ Security/Open:
     - 'lib/ammitto/extractors/ch_extractor.rb'
     - 'lib/ammitto/extractors/eu_extractor.rb'
     - 'lib/ammitto/extractors/eu_vessels_extractor.rb'
-    - 'lib/ammitto/extractors/nz_extractor.rb'
     - 'lib/ammitto/extractors/tr_extractor.rb'
     - 'lib/ammitto/extractors/us_extractor.rb'
     - 'lib/ammitto/extractors/wb_extractor.rb'

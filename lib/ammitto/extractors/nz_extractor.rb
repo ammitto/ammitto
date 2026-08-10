@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'base_extractor'
+require_relative 'http_client'
 require_relative 'registry'
 
 module Ammitto
@@ -17,6 +18,10 @@ module Ammitto
 
       # URL for Russia Sanctions Register (XLSX)
       RUSSIA_SANCTIONS_URL = 'https://www.mfat.govt.nz/assets/Countries-and-Regions/Europe/Ukraine/Russia-Sanctions-Register.xlsx'
+
+      # MFAT serves the register only to a browser-shaped agent; this is
+      # the string the open-uri download sent.
+      USER_AGENT = 'Mozilla/5.0'
 
       # @return [Symbol] the source code
       def code
@@ -36,17 +41,25 @@ module Ammitto
       # Fetch raw data from New Zealand (XLSX format)
       # @return [String] path to downloaded XLSX temp file
       def fetch
-        require 'open-uri'
         require 'tempfile'
 
         puts "[#{code}] Downloading XLSX from: #{api_endpoint}" if verbose
 
-        # Download XLSX to temp file
+        # Download XLSX to temp file. A failed download disposes of the
+        # just-created temp file before re-raising, so a network error
+        # cannot strand it until process exit — FetchCommand's ensure
+        # block only owns files that reached the parser.
         @temp_file = Tempfile.new(['nz_sanctions', '.xlsx'])
-        URI.open(api_endpoint, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
-          @temp_file.write(remote_file.read)
+        begin
+          @temp_file.binmode
+          @temp_file.write(
+            HttpClient.get(api_endpoint, headers: { 'User-Agent' => USER_AGENT })
+          )
+          @temp_file.close
+        rescue StandardError
+          cleanup
+          raise
         end
-        @temp_file.close
 
         @temp_file.path
       end

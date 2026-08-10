@@ -128,7 +128,12 @@ module Ammitto
       # to MAX_REDIRECTS hops. A non-2xx terminal response raises
       # OpenURI::HTTPError — the class the open-uri download raised —
       # so fetch's temp-file disposal path and its callers see an
-      # unchanged failure mode.
+      # unchanged failure mode. A Location that resolves to anything
+      # but https raises the same class: following it would downgrade
+      # to a cleartext request, which URI.open refused. The host is
+      # deliberately not pinned — open-uri allows cross-host https
+      # redirects, and the request carries no credentials or cookies,
+      # so a relocated PDF on another UN host keeps working.
       #
       # @param url [String] the URL to download
       # @return [String] the response body
@@ -148,6 +153,11 @@ module Ammitto
           end
 
           uri = URI.join(uri.to_s, response['Location'])
+          next if uri.is_a?(URI::HTTPS)
+
+          raise OpenURI::HTTPError.new(
+            "redirection to non-https forbidden: #{uri}", nil
+          )
         end
 
         raise "[#{code}] more than #{MAX_REDIRECTS} redirects for #{url}"

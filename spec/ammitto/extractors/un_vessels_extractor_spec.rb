@@ -68,6 +68,36 @@ RSpec.describe Ammitto::Extractors::UnVesselsExtractor do
       extractor.cleanup
     end
 
+    it 'refuses a redirect that downgrades https to plain http' do
+      # URI.open refused https->http redirects; the Net::HTTP loop
+      # must not reopen that downgrade (the follow-up request would
+      # run with use_ssl: false and fetch the PDF in cleartext).
+      path = capture_tempfile_path
+      moved = http_response(Net::HTTPFound, '302', 'Found',
+                            location: 'http://main.un.org/moved.pdf')
+      allow(Net::HTTP).to receive(:start).and_return(moved)
+
+      expect { extractor.fetch }
+        .to raise_error(OpenURI::HTTPError, /forbidden/)
+      expect(Net::HTTP).to have_received(:start).once
+      expect(File.exist?(path.call)).to be(false)
+    end
+
+    it 'resolves a relative Location against the https base' do
+      moved = http_response(Net::HTTPFound, '302', 'Found',
+                            location: '/relocated.pdf')
+      found = http_response(Net::HTTPOK, '200', 'OK', body: '%PDF-1.4')
+      allow(Net::HTTP).to receive(:start).and_return(moved, found)
+
+      pdf_path = extractor.fetch
+
+      expect(File.binread(pdf_path)).to eq('%PDF-1.4')
+      expect(Net::HTTP).to have_received(:start)
+        .with('main.un.org', 443, hash_including(use_ssl: true)).twice
+    ensure
+      extractor.cleanup
+    end
+
     it 'gives up after the redirect cap instead of looping' do
       path = capture_tempfile_path
       moved = http_response(Net::HTTPFound, '302', 'Found',

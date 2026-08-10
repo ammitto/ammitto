@@ -1,0 +1,121 @@
+name: fleet-health
+
+# Watches the fifteen ammitto/data-* fetch schedules from ONE place.
+#
+# Why: GitHub silently disables a cron workflow after 60 days without
+# repository activity. Six data-repo schedules died exactly that way and
+# nobody noticed for ~3 months (the run gap from 2026-05-11 to 2026-08-07
+# on data-ca/data-cn is the fossil record). This job reads each repo's
+# Actions API — every fleet repo is public, so the default GITHUB_TOKEN
+# is enough (anonymous reads work too; the token only buys rate limit) —
+# and fails loudly when any schedule is dead, stale (>48h without a
+# schedule-event run), failing (3+ hard failures since the last success)
+# or unreadable. Only scheduled runs are counted, so a red PR run never
+# pages the fleet and a green push run never clears a real streak. A run
+# that commits nothing is healthy: only run conclusions are read, never
+# commit deltas, so zero-delta days are never flagged.
+#
+# One alert channel: the job appends a per-repo report to the job summary
+# and keeps a SINGLE tracking issue on this repo (matched by exact
+# title). The issue step runs on every pass, healthy or not, because it
+# is what announces recovery — but it only writes when the set of paging
+# repos actually CHANGES, so an unhealthy fleet does not generate a
+# comment a day until someone mutes the whole channel.
+#
+# This monitor runs on a schedule, so IT can die the same death.
+# Mitigations: workflow_dispatch allows a manual heartbeat at any time;
+# the push trigger below re-runs (and, per GitHub's rules, re-enables)
+# the workflow whenever its own files change, and any commit to the repo
+# resets the 60-day inactivity clock — this hub repo has regular commit
+# traffic, unlike the data repos; GitHub also emails a deactivation
+# warning before disabling. RESIDUAL RISK, stated honestly: if this hub
+# repo itself goes quiet for 60+ days, the watchdog dies silently with
+# everything it watches. No in-repo trigger can prevent that; closing it
+# needs a watcher outside GitHub (e.g. a dead-man's-switch pinger such
+# as healthchecks.io alerting when the daily run STOPS reporting). That
+# is deliberately not added here to stay dependency-free.
+
+on:
+  schedule:
+    - cron: '30 12 * * *'  # Daily, after the fleet's fetch window (~06-10 UTC)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fleet-health.yml'
+      - 'scripts/fleet_health.sh'
+      - 'scripts/fleet_health_issue.sh'
+      - 'scripts/fleet_health_test.sh'
+      - 'scripts/fleet_repos.txt'
+
+permissions:
+  contents: read
+  issues: write
+
+# A slow API day must not let two runs race each other into the
+# tracking issue.
+concurrency:
+  group: fleet-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Self-test the monitor
+        # Offline fixture proof (dead / stale / failing / cancelled-
+        # forever / healthy-quiet / unreadable documents / acknowledged
+        # / expired acknowledgement, the scheduled-runs-only query, plus
+        # the issue state machine against a stubbed gh). A monitor whose
+        # parser silently broke would report "healthy" forever — the
+        # exact failure mode this workflow exists to kill — so the live
+        # check only runs after the logic proves itself. Costs <1s and
+        # no API calls.
+        run: scripts/fleet_health_test.sh
+
+      - name: Check fleet health
+        id: fleet
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Exit 0 = nothing paging, 1 = at least one repo pages (report
+        # tells which and why), 69 = every repo was unreadable so the
+        # monitor's own view is down, anything else = the script broke.
+        # All of those fail the job here and skip the issue step, so an
+        # auth or rate-limit outage never masquerades as a health
+        # verdict or manufactures an incident about fifteen repos.
+        run: |
+          rc=0
+          scripts/fleet_health.sh --report fleet-report.md || rc=$?
+          if [ "$rc" -eq 69 ]; then
+            echo "::error::fleet health could not read ANY repo — auth, rate limit or API outage"
+            exit "$rc"
+          fi
+          if [ "$rc" -gt 1 ]; then
+            echo "::error::fleet_health.sh crashed with exit $rc"
+            exit "$rc"
+          fi
+          if [ "$rc" -eq 0 ]; then
+            echo "healthy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Runs on healthy passes too: recovery is a state change and has to
+      # be announced, and a healthy pass with no open issue writes
+      # nothing at all. The script decides; the default `if: success()`
+      # keeps it from running when the check above crashed.
+      - name: Announce fleet-health state changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/fleet_health_issue.sh fleet-report.md
+
+      # Always fails while anything pages, even on the days the issue
+      # step stayed quiet because nothing changed: the red run is the
+      # standing signal, the issue comment is only the change notice.
+      - name: Fail loudly
+        if: steps.fleet.outputs.healthy == 'false'
+        run: |
+          echo "::error::Fleet unhealthy — per-repo report in the job summary and the tracking issue"
+          exit 1

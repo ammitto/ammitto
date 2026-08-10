@@ -54,6 +54,20 @@ RSpec.describe Ammitto::Extractors::NzExtractor do
         expect { extractor.fetch }.to raise_error(OpenURI::HTTPError, /403/)
       end
 
+      # The download error is what the operator has to act on. A
+      # platform that refuses to unlink an open file, or any other
+      # disposal failure, must not overwrite it with a less useful
+      # error about a temp file.
+      it 'still reports the download error when cleanup itself fails' do
+        allow(Tempfile).to receive(:new).and_wrap_original do |orig, *args|
+          orig.call(*args).tap do |f|
+            allow(f).to receive(:unlink).and_raise(Errno::EACCES)
+          end
+        end
+
+        expect { extractor.fetch }.to raise_error(OpenURI::HTTPError, /403/)
+      end
+
       it 'leaves no temp file on disk' do
         paths = []
         allow(Tempfile).to receive(:new).and_wrap_original do |orig, *args|

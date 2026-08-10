@@ -49,6 +49,11 @@ module Ammitto
         # just-created temp file before re-raising, so a network error
         # cannot strand it until process exit — FetchCommand's ensure
         # block only owns files that reached the parser.
+        #
+        # Disposal must never become the reported failure: a 403 is this
+        # source's expected error and is what the operator needs to see,
+        # so a cleanup that raises on top of it is swallowed rather than
+        # allowed to overwrite the cause.
         @temp_file = Tempfile.new(['nz_sanctions', '.xlsx'])
         begin
           @temp_file.binmode
@@ -57,7 +62,11 @@ module Ammitto
           )
           @temp_file.close
         rescue StandardError
-          cleanup
+          begin
+            cleanup
+          rescue StandardError
+            nil
+          end
           raise
         end
 

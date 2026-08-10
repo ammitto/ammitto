@@ -32,6 +32,7 @@ RSpec.describe Ammitto::Extractors::HttpClient do
       allow(http).to receive(:request) do |req|
         requested << { host: host, path: req.path, headers: req,
                        proxy: [pos[0], pos[1]],
+                       proxy_auth: [pos[2], pos[3]],
                        use_ssl: opts[:use_ssl],
                        open_timeout: opts[:open_timeout],
                        read_timeout: opts[:read_timeout] }
@@ -103,6 +104,17 @@ RSpec.describe Ammitto::Extractors::HttpClient do
       end
 
       expect(hops.first[:proxy]).to eq(['proxy.local', 8080])
+    end
+
+    it 'carries proxy credentials from the environment URL' do
+      hops = stub_hops(response('200'))
+
+      with_env('https_proxy' => 'http://alice:s3cret@proxy.local:8080',
+               'http_proxy' => nil, 'no_proxy' => nil) do
+        described_class.get(url)
+      end
+
+      expect(hops.first[:proxy_auth]).to eq(%w[alice s3cret])
     end
 
     it 'goes direct when no_proxy covers the host' do

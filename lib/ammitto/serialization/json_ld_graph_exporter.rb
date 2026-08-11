@@ -36,6 +36,9 @@ module Ammitto
       # limit (255 minus the 7-byte '.jsonld' suffix)
       MAX_SLUG_BYTES = 248
 
+      # Longest single path component the filesystem accepts
+      MAX_FILENAME_BYTES = 255
+
       # Slug prefix bytes kept when clamping an oversized slug
       CLAMP_PREFIX_BYTES = 100
 
@@ -982,8 +985,14 @@ module Ammitto
         export_slices_by_list
         export_slices_by_status
         export_slices_by_entity_type
-        export_slices_by_organization
-        export_slices_by_document_type
+
+        # Both page slices aggregate the same announcements, so they are
+        # collected once here and passed down rather than cached on the
+        # exporter: a memo would go stale the moment a caller added another
+        # node and exported again.
+        pairs = announcement_pairs
+        export_slices_by_organization(pairs)
+        export_slices_by_document_type(pairs)
       end
 
       # Export slices by authority
@@ -1201,8 +1210,9 @@ module Ammitto
       # The organization page renders three lists — documents the
       # organization published, signed and authorized — so each slice
       # carries those three arrays, already deduplicated and counted.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
       # @return [void]
-      def export_slices_by_organization
+      def export_slices_by_organization(pairs)
         slices_dir = File.join(@output_dir, 'by-organization')
         FileUtils.mkdir_p(slices_dir)
 
@@ -1215,9 +1225,9 @@ module Ammitto
             '@type' => 'Index',
             'slice' => 'by-organization',
             'organization' => { '@id' => org_id },
-            'published' => announcement_summaries(matching_role('publisher', identifier)),
-            'signed' => announcement_summaries(matching_role('signatory', identifier)),
-            'authorized' => announcement_summaries(matching_role('authority', identifier))
+            'published' => announcement_summaries(matching_role(pairs, 'publisher', identifier)),
+            'signed' => announcement_summaries(matching_role(pairs, 'signatory', identifier)),
+            'authorized' => announcement_summaries(matching_role(pairs, 'authority', identifier))
           }
           write_json(slice_path(slices_dir, identifier, 'Organization'), index)
           org_id
@@ -1230,8 +1240,9 @@ module Ammitto
       #
       # The document-type page renders the announcements carrying that type
       # plus the legal instruments declaring it, so each slice carries both.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
       # @return [void]
-      def export_slices_by_document_type
+      def export_slices_by_document_type(pairs)
         slices_dir = File.join(@output_dir, 'by-document-type')
         FileUtils.mkdir_p(slices_dir)
 
@@ -1239,7 +1250,7 @@ module Ammitto
           identifier = type['identifier'].to_s
           next if identifier.empty?
 
-          matching = announcement_pairs.select do |_entry, announcement|
+          matching = pairs.select do |_entry, announcement|
             announcement['documentType'] == identifier
           end
           index = {
@@ -1283,7 +1294,7 @@ module Ammitto
       # @entries.keys.sort, so this walks the same sequence.
       # @return [Array<Array(Hash, Hash)>] entry/announcement pairs
       def announcement_pairs
-        @announcement_pairs ||= @entries.keys.sort.filter_map do |id|
+        @entries.keys.sort.filter_map do |id|
           entry = @entries[id]
           announcement = entry['announcement']
           [entry, announcement] if announcement.is_a?(Hash)
@@ -1298,14 +1309,18 @@ module Ammitto
       # That is over-inclusive — a parent organization absorbs every child
       # whose identifier extends it — but reproducing it is deliberate:
       # this change moves the aggregation, it does not redefine it.
-      # Non-string values are skipped rather than coerced, because
-      # OfficialAnnouncement declares these fields as strings and
-      # stringifying anything else would invent matches the page never made.
+      #
+      # Strings are the whole contract: OfficialAnnouncement declares
+      # publisher, signatory and authority as strings. Anything else is
+      # skipped rather than matched, which is a deliberate narrowing, not
+      # equivalence — JavaScript would have treated an array as a member
+      # test and thrown on a number, aborting the page's whole scan.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
       # @param role [String] announcement field naming the organization
       # @param identifier [String] organization identifier
       # @return [Array<Array(Hash, Hash)>] matching pairs
-      def matching_role(role, identifier)
-        announcement_pairs.select do |_entry, announcement|
+      def matching_role(pairs, role, identifier)
+        pairs.select do |_entry, announcement|
           value = announcement[role]
           value.is_a?(String) && value.include?(identifier)
         end
@@ -1365,10 +1380,12 @@ module Ammitto
         end
       end
 
-      # Whether JavaScript would treat this value as falsy where the page
-      # writes `value || fallback`. Ruby counts "" as truthy and JavaScript
-      # does not, so a blank document id has to reach the same 'unknown'
-      # bucket the page puts it in.
+      # Whether the page's `value || fallback` would take the fallback.
+      #
+      # Covers the two shapes a declared-string field takes, absent and
+      # empty, rather than JavaScript falsiness in general: Ruby counts ""
+      # as truthy and JavaScript does not, so a blank document id has to
+      # reach the same 'unknown' bucket the page puts it in.
       # @param value [Object] value to test
       # @return [Boolean]
       def js_blank?(value)
@@ -1398,10 +1415,15 @@ module Ammitto
         end
 
         filename = components.pop
-        if filename.bytesize > MAX_SLUG_BYTES
+        # Directory components spend the whole 255-byte budget; the last
+        # one also has to fit its '.jsonld' suffix, which is what
+        # MAX_SLUG_BYTES already accounts for.
+        oversized = components.find { |c| c.bytesize > MAX_FILENAME_BYTES }
+        oversized ||= filename if filename.bytesize > MAX_SLUG_BYTES
+        if oversized
           raise Ammitto::Error,
                 "#{kind} identifier #{identifier.inspect} is too long: " \
-                "#{filename.inspect} exceeds #{MAX_SLUG_BYTES} bytes"
+                "#{oversized.inspect} exceeds the filename byte budget"
         end
         if components.empty? && filename == 'index'
           raise Ammitto::Error,

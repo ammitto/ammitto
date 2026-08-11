@@ -89,10 +89,13 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
 
     it 'deduplicates entries of one document into a single counted summary' do
       exporter.add_organization(organization('cn/mofcom'))
-      add_entry('a1', announcement(documentId: 'DOC-1'), group_id: 'https://www.ammitto.org/group/cn/1')
-      add_entry('a2', announcement(documentId: 'DOC-1', title: 'Later title',
+      # Added in reverse of index order, so an implementation that followed
+      # insertion order instead of the sorted entry index would let 'b1'
+      # win the shared fields and fail here.
+      add_entry('b1', announcement(documentId: 'DOC-1', title: 'Later title',
                                    publishDate: '2025-12-31',
                                    url: 'https://example.test/later'))
+      add_entry('a1', announcement(documentId: 'DOC-1'), group_id: 'https://www.ammitto.org/group/cn/1')
       add_entry('a3', announcement(documentId: 'DOC-2', publishDate: '2023-01-01'))
       exporter.export
 
@@ -112,13 +115,49 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
 
     it 'emits summaries in entry-index order, leaving the sort to the page' do
       exporter.add_organization(organization('cn/mofcom'))
+      # Inserted newest-first and lexically-last-first, so neither insertion
+      # order nor a producer-side date sort would produce this sequence:
+      # only the sorted entry index does.
+      add_entry('z1', announcement(documentId: 'NEW', publishDate: '2030-01-01'))
       add_entry('a1', announcement(documentId: 'OLD', publishDate: '2001-01-01'))
-      add_entry('a2', announcement(documentId: 'NEW', publishDate: '2030-01-01'))
       exporter.export
 
       published = slice('by-organization', 'cn', 'mofcom.jsonld')['published']
 
       expect(published.map { |s| s['documentId'] }).to eq(%w[OLD NEW])
+    end
+
+    it 'omits an absent title, url and group rather than emitting null' do
+      exporter.add_organization(organization('cn/mofcom'))
+      add_entry('a1', announcement.tap { |a| a.delete('title') and a.delete('url') })
+      exporter.export
+
+      summary = slice('by-organization', 'cn', 'mofcom.jsonld')['published'].first
+
+      expect(summary.keys).to contain_exactly('documentId', 'publishDate', 'entryCount')
+    end
+
+    it 'names the organization it summarizes' do
+      exporter.add_organization(organization('cn/mofcom'))
+      exporter.export
+
+      expect(slice('by-organization', 'cn', 'mofcom.jsonld')).to include(
+        '@type' => 'Index',
+        'slice' => 'by-organization',
+        'organization' => { '@id' => 'https://www.ammitto.org/organization/cn/mofcom' }
+      )
+    end
+
+    it 'reflects entries added between two exports' do
+      exporter.add_organization(organization('cn/mofcom'))
+      add_entry('a1', announcement(documentId: 'FIRST'))
+      exporter.export
+      add_entry('a2', announcement(documentId: 'SECOND'))
+      exporter.export
+
+      published = slice('by-organization', 'cn', 'mofcom.jsonld')['published']
+
+      expect(published.map { |s| s['documentId'] }).to eq(%w[FIRST SECOND])
     end
 
     it 'groups a blank document id under "unknown", as the page does' do
@@ -169,9 +208,15 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       expect(child.map { |s| s['documentId'] }).to eq(%w[CHILD])
     end
 
-    it 'ignores a non-string relationship value instead of coercing it' do
+    # A deliberate narrowing, NOT page equivalence: JavaScript's
+    # `.includes` would treat an array as a member test and would throw on
+    # a number, aborting the page's whole scan. OfficialAnnouncement
+    # declares these fields as strings, so the producer matches strings and
+    # skips everything else instead of inventing a match.
+    it 'skips a non-string relationship value instead of coercing it' do
       exporter.add_organization(organization('cn/mofcom'))
       add_entry('a1', announcement(publisher: ['cn/mofcom']))
+      add_entry('a2', announcement(publisher: 42))
       exporter.export
 
       expect(slice('by-organization', 'cn', 'mofcom.jsonld')['published']).to eq([])
@@ -265,6 +310,23 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     it 'refuses an identifier whose filename exceeds the byte budget' do
       expect { exporter.send(:slice_path, output_dir, "cn/#{'x' * 300}", 'Document type') }
         .to raise_error(Ammitto::Error, /too long/)
+    end
+
+    it 'refuses an identifier whose directory component exceeds the budget' do
+      expect { exporter.send(:slice_path, output_dir, "#{'x' * 300}/order", 'Document type') }
+        .to raise_error(Ammitto::Error, /too long/)
+    end
+
+    # 'cn' writes cn.jsonld and 'cn/order' writes cn/order.jsonld: the
+    # '.jsonld' suffix keeps the file and the directory distinct names, so
+    # one identifier being a prefix of another is not a collision.
+    it 'lets an identifier coexist with one that extends it' do
+      exporter.add_organization(organization('cn'))
+      exporter.add_organization(organization('cn/order'))
+
+      expect { exporter.export }.not_to raise_error
+      expect(File).to exist(File.join(output_dir, 'by-organization', 'cn.jsonld'))
+      expect(File).to exist(File.join(output_dir, 'by-organization', 'cn', 'order.jsonld'))
     end
 
     it 'refuses an identifier carrying a URL-significant character' do

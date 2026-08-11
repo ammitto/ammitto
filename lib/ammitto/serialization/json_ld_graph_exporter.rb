@@ -883,7 +883,9 @@ module Ammitto
           # Windows rejects, so an unvalidated write here raised
           # Errno::EINVAL on one runner while succeeding quietly on the
           # other — and a '..' component would write outside the node
-          # tree on either. The instrument path applies the same guard.
+          # tree. A component here is source or local_id only — the
+          # intermediate IRI segments are not used as path components. The
+          # instrument path applies the same guard.
           [source, local_id].compact.each do |component|
             next unless unusable_filename_component?(component)
 
@@ -1281,13 +1283,17 @@ module Ammitto
         slices_dir = File.join(@output_dir, 'by-document-type')
         FileUtils.mkdir_p(slices_dir)
 
+        # Grouped once rather than rescanned per type. Selecting inside the
+        # loop is O(types x entries), and this exporter exists to remove
+        # exactly that shape of work from the site — leaving it here would
+        # move the cost from the browser into every harmonize run.
+        by_type = pairs.group_by { |_entry, announcement| announcement['documentType'] }
+
         written = @document_types.filter_map do |type_id, type|
           identifier = type['identifier'].to_s
           next if identifier.empty?
 
-          matching = pairs.select do |_entry, announcement|
-            announcement['documentType'] == identifier
-          end
+          matching = by_type.fetch(identifier, [])
           index = {
             '@context' => @context_url,
             '@type' => 'Index',

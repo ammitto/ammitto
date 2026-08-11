@@ -670,19 +670,27 @@ module Ammitto
           ['.', '..'].include?(component)
       end
 
-      # True when +component+ cannot become a filename.
+      # True when +component+ carries a character this exporter refuses in
+      # a published path.
       #
       # Stricter than #unusable_path_component?, which asks only whether a
-      # component would escape the node tree. This adds the characters that
-      # are legal in a POSIX filename but not a Windows one, so a component
-      # is refused identically on every platform rather than writing fine on
-      # Linux and raising Errno::EINVAL on Windows — a difference CI found
-      # in exactly that asymmetric way.
+      # component would escape the node tree. This adds ?, # and % — the
+      # URL-significant characters that make a published path ambiguous to
+      # a consumer even where the filesystem accepts them.
       #
-      # ?, # and % are also the URL-significant characters that would make
-      # the published path ambiguous to a consumer even where the
-      # filesystem accepts them, which is why the two concerns share one
-      # rule instead of two that drift apart.
+      # It is NOT a Windows-safe filename check, and must not be described
+      # as one. Windows additionally rejects < > : " | *, control
+      # characters, reserved device names such as CON and NUL, and
+      # trailing dots or spaces; none of those is covered here. What this
+      # rule does is refuse ? consistently on every platform, which is the
+      # one divergence the corpus produced — a `?` identifier wrote
+      # happily on Linux and raised Errno::EINVAL on Windows, so the same
+      # export succeeded or failed depending on the runner.
+      #
+      # Widening this to the full Windows contract is a separate decision:
+      # it would reject identifiers that publish correctly today, so it
+      # needs corpus evidence rather than a rule copied from a reference
+      # table.
       #
       # @param component [String] candidate path component
       # @return [Boolean]
@@ -883,7 +891,8 @@ module Ammitto
           # Windows rejects, so an unvalidated write here raised
           # Errno::EINVAL on one runner while succeeding quietly on the
           # other — and a '..' component would write outside the node
-          # tree. A component here is source or local_id only — the
+          # tree. The rule is not a full Windows-safe filename check — see
+          # #unusable_filename_component?. A component here is source or local_id only — the
           # intermediate IRI segments are not used as path components. The
           # instrument path applies the same guard.
           [source, local_id].compact.each do |component|

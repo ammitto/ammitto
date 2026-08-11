@@ -132,6 +132,45 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:birthYear]).to eq('1984')
     end
 
+    # An entity can carry one birth record per contributing source, and
+    # the one holding the exact date is not reliably first. Reading only
+    # `birthInfo.first` dropped a stated year whenever a location-only or
+    # empty record preceded it — while the span path already scanned the
+    # whole list, so a range was found where a more precise year was not.
+    it 'finds an exact year in a birth record that is not the first' do
+      entity = {
+        '@id' => 'https://www.ammitto.org/entity/un/later-record',
+        'entityType' => 'person',
+        'names' => [{ 'fullName' => 'Test' }],
+        'birthInfo' => [
+          { 'city' => 'Pyongyang' },
+          { 'date' => '1984-01-08' }
+        ]
+      }
+
+      exporter.add(entity, 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
+                           'status' => 'active')
+
+      expect(exporter.entities.first[:birthYear]).to eq('1984')
+    end
+
+    it 'still prefers the earliest record that states one' do
+      entity = {
+        '@id' => 'https://www.ammitto.org/entity/un/two-records',
+        'entityType' => 'person',
+        'names' => [{ 'fullName' => 'Test' }],
+        'birthInfo' => [
+          { 'year' => 1984 },
+          { 'date' => '1990-01-08' }
+        ]
+      }
+
+      exporter.add(entity, 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
+                           'status' => 'active')
+
+      expect(exporter.entities.first[:birthYear]).to eq('1984')
+    end
+
     # birthYear answers "born in this exact year". A span names no such
     # year, so it gets its own columns and birthYear stays absent — a
     # lower bound written there would let a record that never claimed a

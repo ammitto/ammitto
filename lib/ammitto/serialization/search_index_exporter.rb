@@ -525,18 +525,19 @@ module Ammitto
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'person'
 
-        # From birth_info (snake_case)
-        if entity['birth_info'].is_a?(Array) && entity['birth_info'].first
-          birth = entity['birth_info'].first
-          date = birth['date'] || birth['year']
-          return extract_year_from_date(date) if date
+        # Every birth record is searched, not only the first. An entity
+        # can carry several — one per contributing source — and the record
+        # holding the exact date is not reliably the one at index 0, so
+        # taking `.first` dropped a stated year whenever another record
+        # happened to precede it. #birth_info_with_range already scans the
+        # whole list for span bounds; a year that is *more* precise than a
+        # span must not be found less often than one.
+        birth = birth_info_records(entity).find do |record|
+          record['date'] || record['year']
         end
-
-        # From birthInfo (camelCase)
-        if entity['birthInfo'].is_a?(Array) && entity['birthInfo'].first
-          birth = entity['birthInfo'].first
-          date = (birth['date'] || birth['year'])&.to_s
-          return date[0, 4] if date && date.length >= 4
+        if birth
+          year = extract_year_from_date(birth['date'] || birth['year'])
+          return year if year
         end
 
         # From birthDate

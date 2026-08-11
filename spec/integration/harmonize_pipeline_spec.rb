@@ -78,6 +78,65 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(stats['total_entities']).to eq(2)
   end
 
+  # A span has to survive every hop the website depends on: the fetch
+  # YAML, the entity node, the search index, and the context artifact
+  # that types the two new keys. Checking the models alone would prove
+  # only that the fields exist, not that they are published.
+  it 'publishes a stated span of birth years end to end' do
+    processed = File.join(@workdir, 'data-eu', 'processed')
+    FileUtils.mkdir_p(processed)
+
+    # Attributes copied from logicalId 1865 of the live EU export.
+    span = Ammitto::Sources::Eu::SanctionEntity.from_yaml({
+      'logical_id' => '1865', 'eu_reference_number' => 'EU.1865',
+      'subject_type' => { 'code' => 'person' },
+      'name_aliases' => [{ 'whole_name' => 'Abdul Ghani' }],
+      'birthdates' => [{ 'year_range_from' => 1953, 'year_range_to' => 1958,
+                         'circa' => true, 'city' => 'Tirin Kot District' }]
+    }.to_yaml)
+    File.write(File.join(processed, 'eu-1865.yaml'), span.to_yaml)
+
+    # logicalId 117055: the one export record with an upper bound only.
+    open_below = Ammitto::Sources::Eu::SanctionEntity.from_yaml({
+      'logical_id' => '117055', 'eu_reference_number' => 'EU.117055',
+      'subject_type' => { 'code' => 'person' },
+      'name_aliases' => [{ 'whole_name' => 'Eritrea Person' }],
+      'birthdates' => [{ 'year_range_to' => 1980, 'circa' => false }]
+    }.to_yaml)
+    File.write(File.join(processed, 'eu-117055.yaml'), open_below.to_yaml)
+
+    run_harmonize(['eu'], @workdir)
+    api = File.join(@workdir, 'api', 'v1')
+
+    graph = JSON.parse(File.read(File.join(api, 'sources', 'eu.jsonld')))['@graph']
+    node = graph.find { |n| n['@id'] == 'https://www.ammitto.org/entity/eu/eu1865' }
+    birth = node['birthInfo'].first
+
+    expect(birth['yearRangeFrom']).to eq(1953)
+    expect(birth['yearRangeTo']).to eq(1958)
+    expect(birth['circa']).to be true
+    # Neither bound is the birth year, so neither scalar is published
+    expect(birth).not_to have_key('year')
+    expect(birth).not_to have_key('date')
+
+    open_node = graph.find { |n| n['@id'] == 'https://www.ammitto.org/entity/eu/eu117055' }
+    open_birth = open_node['birthInfo'].first
+    expect(open_birth['yearRangeTo']).to eq(1980)
+    expect(open_birth).not_to have_key('yearRangeFrom')
+
+    index = JSON.parse(File.read(File.join(api, 'search-index.json')))
+    row = index['entities'].find { |e| e['ref'] == 'eu/eu1865' }
+    expect(row['birthYearFrom']).to eq('1953')
+    expect(row['birthYearTo']).to eq('1958')
+    expect(row).not_to have_key('birthYear')
+
+    # The context artifact the website loads must type the new keys, or
+    # a consumer expanding the graph gets untyped strings
+    context = JSON.parse(File.read(File.join(api, 'context.jsonld')))['@context']
+    expect(context['yearRangeFrom']['@type']).to eq('xsd:gYear')
+    expect(context['yearRangeTo']['@type']).to eq('xsd:gYear')
+  end
+
   it 'harmonizes CH identities and AU vessels into correctly-typed entities' do
     ch_dir = File.join(@workdir, 'data-ch', 'processed')
     FileUtils.mkdir_p(ch_dir)

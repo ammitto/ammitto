@@ -187,6 +187,17 @@ module Ammitto
               # BirthInfo full structure
               'birthDate' => { '@id' => 'schema:birthDate', '@type' => 'xsd:date' },
               'birthYear' => { '@id' => 'birthYear', '@type' => 'xsd:gYear' },
+              # The serializer emits a BirthInfo node's single stated
+              # year as 'year'; the 'birthYear' term above describes the
+              # flat entity-level key and never described this one, so
+              # 'year' went out undeclared.
+              'year' => { '@id' => 'year', '@type' => 'xsd:gYear' },
+              # Bounds of a stated span of birth years. Separate terms,
+              # not a refinement of 'year': a bound is not a birth year,
+              # and a consumer that treated one as such would answer an
+              # exact-year query with a record that never claimed one.
+              'yearRangeFrom' => { '@id' => 'yearRangeFrom', '@type' => 'xsd:gYear' },
+              'yearRangeTo' => { '@id' => 'yearRangeTo', '@type' => 'xsd:gYear' },
               'birthCity' => { '@id' => 'schema:birthPlace' },
               'birthCountry' => { '@id' => 'birthCountry' },
 

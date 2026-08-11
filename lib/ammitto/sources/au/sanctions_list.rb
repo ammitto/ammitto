@@ -194,14 +194,36 @@ module Ammitto
 
       # ISO 8601 date with support for partial/imprecise dates
       class FlexibleDate < Lutaml::Model::Serializable
+        # DFAT states a span of birth years in one shape:
+        # "Approximately: Between 1959 and 1965", and the same shape
+        # without the "Approximately:" prefix. Anchored at both ends, so
+        # only a value that is wholly a span is read as one.
+        #
+        # The "Approximately" prefix is captured rather than discarded:
+        # it is what makes the span circa, and a span is not approximate
+        # by itself. "Between 1959 and 1965" states its bounds exactly.
+        YEAR_RANGE = /
+          \A(?:(approximately)\s*:?\s*)?
+          between\s+(\d{4})\s+and\s+(\d{4})\z
+        /xi
+
         attribute :raw_value, :string    # Original value from CSV
         attribute :year, :integer
         attribute :month, :integer
         attribute :day, :integer
         attribute :circa, :boolean       # Approximate date
-        # 'full', 'month', 'year', 'circa', or 'unknown' when the cell held
-        # no resolvable date at all. Nothing in the gem branches on this
-        # value; it is descriptive metadata carried alongside raw_value.
+        # Lower and upper bound of a stated span of years. While a span
+        # is present year, month and day stay nil: neither bound is the
+        # birth year, so storing one would assert a year DFAT did not
+        # state. An out-of-order span is rejected at the transformer
+        # boundary, where the harmonized contract lives, rather than
+        # reordered here.
+        attribute :year_range_from, :integer
+        attribute :year_range_to, :integer
+        # 'full', 'month', 'year', 'range', 'circa', or 'unknown' when the
+        # cell held no resolvable date at all. Nothing in the gem branches
+        # on this value; it is descriptive metadata carried alongside
+        # raw_value.
         attribute :precision, :string
 
         def self.parse(date_str)
@@ -213,6 +235,14 @@ module Ammitto
           # "5 May 1957", "April 1957", "1957", "circa 1957"
 
           cleaned = date_str.strip.downcase
+
+          # A span is recognised before anything else and returns at
+          # once. The year-only fallback below would otherwise seize the
+          # first year in the value and publish 1959 as THE birth year —
+          # which is what this parser did — and demote_unresolved_month
+          # would then rewrite a yearless span's precision to 'unknown'.
+          range = parse_year_range(flexible, cleaned)
+          return range if range
 
           if cleaned.start_with?('circa', 'c.', 'c')
             flexible.circa = true
@@ -267,6 +297,23 @@ module Ammitto
         # 'unknown' is a state callers did not previously see. It is emitted
         # into the serialized YAML.
         #
+        # Record a stated span of years, or nil when the value states no
+        # span. circa follows the source's own "Approximately" marker
+        # and is never inferred from the span itself.
+        # @param flexible [FlexibleDate] the parse being filled in
+        # @param cleaned [String] the stripped, downcased cell value
+        # @return [FlexibleDate, nil] the finished parse, or nil
+        def self.parse_year_range(flexible, cleaned)
+          match = YEAR_RANGE.match(cleaned)
+          return nil unless match
+
+          flexible.circa = !match[1].nil?
+          flexible.year_range_from = match[2].to_i
+          flexible.year_range_to = match[3].to_i
+          flexible.precision = 'range'
+          flexible
+        end
+
         # @param flexible [FlexibleDate] the parse being finalised
         # @return [void]
         def self.demote_unresolved_month(flexible)

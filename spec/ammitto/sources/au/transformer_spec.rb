@@ -127,6 +127,42 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
       end
     end
 
+    # DFAT states a span of years in one shape, and it is the only
+    # multi-year date-of-birth value in the corpus (record au-8824).
+    # The transformer used to publish 1959 as THE birth year.
+    context 'when transforming a stated span of years' do
+      def birth_for(raw)
+        individual = Ammitto::Sources::Au::Individual.new(
+          reference: '8824',
+          dates_of_birth: [Ammitto::Sources::Au::FlexibleDate.parse(raw)],
+          places_of_birth: []
+        )
+        transformer.send(:transform_birth_info, individual).first
+      end
+
+      it 'carries both bounds through and claims no year or date' do
+        birth = birth_for('Approximately: Between 1959 and 1965')
+
+        expect(birth.year_range_from).to eq(1959)
+        expect(birth.year_range_to).to eq(1965)
+        expect(birth.year).to be_nil
+        expect(birth.date).to be_nil
+      end
+
+      it 'marks the "Approximately" span circa' do
+        expect(birth_for('Approximately: Between 1959 and 1965').circa).to be true
+      end
+
+      # A span is not approximate by itself; without the source's own
+      # marker it states its bounds exactly.
+      it 'leaves a span without the marker un-circa' do
+        birth = birth_for('Between 1959 and 1965')
+
+        expect(birth.year_range_from).to eq(1959)
+        expect(birth.circa).to be false
+      end
+    end
+
     context 'when transforming a vessel' do
       let(:vessel) do
         Ammitto::Sources::Au::Vessel.new(

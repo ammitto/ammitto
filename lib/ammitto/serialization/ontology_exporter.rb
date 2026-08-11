@@ -142,7 +142,7 @@ module Ammitto
           label: 'Birth Information',
           comment: 'Birth date and place information',
           parent: nil,
-          properties: %w[date year place country circa]
+          properties: %w[date year yearRangeFrom yearRangeTo place country circa]
         },
         {
           id: 'Nationality',
@@ -275,8 +275,23 @@ module Ammitto
         { id: 'issueDate', label: 'Issue Date', comment: 'Date issued', domain: 'Identifier', range: 'date' },
         { id: 'expiryDate', label: 'Expiry Date', comment: 'Expiry date', domain: 'Identifier', range: 'date' },
 
-        # BirthInfo properties
-        { id: 'year', label: 'Year', comment: 'Birth year', domain: 'BirthInfo', range: 'integer' },
+        # BirthInfo properties. The three year-valued ones are gYear,
+        # matching the JSON-LD context. The two artifacts mint their
+        # terms under different bases — this vocabulary under BASE_URI,
+        # the context under its own @vocab — so they are not literally
+        # the same RDF property, but they describe the same field to the
+        # same reader, and telling that reader "integer" in the ontology
+        # browser and "gYear" in the data is a contradiction either way.
+        # 'year' carried that contradiction before the bounds existed;
+        # adding the bounds is what made it worth resolving rather than
+        # propagating into two more properties.
+        { id: 'year', label: 'Year', comment: 'Birth year', domain: 'BirthInfo', range: 'gYear' },
+        { id: 'yearRangeFrom', label: 'Year Range From',
+          comment: 'Lower bound of a stated span of birth years',
+          domain: 'BirthInfo', range: 'gYear' },
+        { id: 'yearRangeTo', label: 'Year Range To',
+          comment: 'Upper bound of a stated span of birth years',
+          domain: 'BirthInfo', range: 'gYear' },
         { id: 'place', label: 'Place', comment: 'Birth place', domain: 'BirthInfo', range: 'string' },
         { id: 'circa', label: 'Circa', comment: 'Approximate date', domain: 'BirthInfo', range: 'boolean' }
       ].freeze
@@ -368,7 +383,7 @@ module Ammitto
       # @return [String] URI or XSD type
       def map_range(range)
         case range
-        when 'string', 'integer', 'date', 'boolean'
+        when 'string', 'integer', 'date', 'boolean', 'gYear'
           "http://www.w3.org/2001/XMLSchema##{range}"
         else
           "#{BASE_URI}/#{range}"

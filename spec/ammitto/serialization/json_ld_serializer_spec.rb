@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'ammitto'
+require 'json/ld'
 
 RSpec.describe Ammitto::Serialization::JsonLdSerializer do
   subject(:serializer) { described_class.new }
@@ -138,6 +139,91 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
 
       it 'omits the key when the entry carries no citations' do
         expect(serializer.serialize_entry(build_entry)).not_to have_key('legalCitations')
+      end
+    end
+  end
+
+  # A field that is not serialized is a field the website never sees,
+  # however faithfully the models carry it.
+  describe 'birth year ranges' do
+    def birth_node(**attrs)
+      entity = build_entity(birth_info: [Ammitto::BirthInfo.new(**attrs)])
+      serializer.serialize_entity(entity)['birthInfo'].first
+    end
+
+    it 'emits both bounds under the camelCase contract names' do
+      node = birth_node(year_range_from: 1953, year_range_to: 1958)
+
+      expect(node['yearRangeFrom']).to eq(1953)
+      expect(node['yearRangeTo']).to eq(1958)
+    end
+
+    it 'emits only the bound that exists, leaving the span open' do
+      node = birth_node(year_range_to: 1980)
+
+      expect(node['yearRangeTo']).to eq(1980)
+      expect(node).not_to have_key('yearRangeFrom')
+    end
+
+    it 'emits no year alongside a span' do
+      expect(birth_node(year_range_from: 1953, year_range_to: 1958))
+        .not_to have_key('year')
+    end
+
+    it 'keeps circa independent of the span' do
+      expect(birth_node(year_range_from: 1953, year_range_to: 1958, circa: true)['circa'])
+        .to be true
+    end
+
+    # An exact-year record must come out the shape it always did, so a
+    # consumer reading today's artifacts sees no change at all.
+    it 'leaves an exact-year record byte-identical apart from ordering' do
+      expect(birth_node(year: 1964, city: 'Bern').sort.to_h)
+        .to eq({ '@type' => 'BirthInfo', 'circa' => false,
+                 'year' => 1964, 'city' => 'Bern' }.sort.to_h)
+    end
+  end
+
+  describe 'the generated JSON-LD context' do
+    let(:terms) { Ammitto::Schema::Context.context['@context'] }
+
+    it 'declares both bounds as gYear, so a consumer can type them' do
+      expect(terms['yearRangeFrom'])
+        .to eq({ '@id' => 'yearRangeFrom', '@type' => 'xsd:gYear' })
+      expect(terms['yearRangeTo'])
+        .to eq({ '@id' => 'yearRangeTo', '@type' => 'xsd:gYear' })
+    end
+
+    # The serializer has always emitted 'year' inside a BirthInfo node,
+    # and the pre-existing 'birthYear' term describes the flat
+    # entity-level key, not this one.
+    it 'declares the year key the serializer actually emits' do
+      expect(terms['year']).to eq({ '@id' => 'year', '@type' => 'xsd:gYear' })
+    end
+
+    it 'keeps the existing birthYear term untouched' do
+      expect(terms['birthYear'])
+        .to eq({ '@id' => 'birthYear', '@type' => 'xsd:gYear' })
+    end
+
+    # Two configuration hashes agreeing proves only that two hashes
+    # agree. This expands a real birth node against the real context and
+    # reads the datatype off the resulting literals, which is what a
+    # consumer actually gets.
+    it 'expands the year keys to gYear literals, not bare numbers' do
+      node = serializer.serialize_entity(
+        build_entity(birth_info: [Ammitto::BirthInfo.new(
+          year_range_from: 1953, year_range_to: 1958
+        )])
+      ).merge(Ammitto::Schema::Context.context)
+
+      vocab = 'https://ammitto.org/schema/v1/'
+      birth = JSON::LD::API.expand(node).first["#{vocab}birthInfo"].first
+
+      %w[yearRangeFrom yearRangeTo].each do |term|
+        literal = birth["#{vocab}#{term}"].first
+        expect(literal['@type'])
+          .to eq('http://www.w3.org/2001/XMLSchema#gYear')
       end
     end
   end

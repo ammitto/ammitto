@@ -33,6 +33,11 @@ module Ammitto
     #   exporter.export('./api/v1')
     #
     class SearchIndexExporter
+      # Bounds of a stated span of birth years, in both spellings the
+      # exporter has to read.
+      BIRTH_YEAR_FROM_KEYS = %w[yearRangeFrom year_range_from].freeze
+      BIRTH_YEAR_TO_KEYS = %w[yearRangeTo year_range_to].freeze
+
       # Authority names for facet display
       AUTHORITY_NAMES = {
         'un' => 'United Nations',
@@ -138,6 +143,8 @@ module Ammitto
           listType: string_presence(extract_list_type(entry)),
           status: string_presence(entry['status']),
           birthYear: string_presence(extract_birth_year(entity)),
+          birthYearFrom: extract_birth_bound(entity, BIRTH_YEAR_FROM_KEYS),
+          birthYearTo: extract_birth_bound(entity, BIRTH_YEAR_TO_KEYS),
           imo: scalar_presence(extract_imo(entity))
         }.compact
       end
@@ -461,25 +468,76 @@ module Ammitto
         nil
       end
 
-      # Extract birth year from entity
+      # Export a span's bounds as their own columns. A bound NEVER
+      # becomes birthYear: birthYear answers "born in this exact year",
+      # and a lower bound is not that year — filling it in would let a
+      # record that named no year answer as though it had. A record with
+      # only one bound exports only that column, so an open span stays
+      # open.
+      #
+      # An entity may carry several birth records, and the span is not
+      # always the first. Both bounds are read from the FIRST record
+      # that states either — never one bound from one record and the
+      # other from another, which would publish a span no source stated.
+      # @param entity [Hash] entity data
+      # @param keys [Array<String>] the bound's key spellings
+      # @return [String, nil] the bound, as a string
+      def extract_birth_bound(entity, keys)
+        entity_type = entity['entityType'] || entity['entity_type']
+        return nil unless entity_type == 'person'
+
+        birth = birth_info_with_range(entity)
+        return nil unless birth
+
+        keys.filter_map { |key| scalar_presence(birth[key]) }.first
+      end
+
+      # @param entity [Hash] entity data
+      # @return [Hash, nil] the first birth record stating either bound
+      def birth_info_with_range(entity)
+        birth_info_records(entity).find do |birth|
+          (BIRTH_YEAR_FROM_KEYS + BIRTH_YEAR_TO_KEYS)
+            .any? { |key| scalar_presence(birth[key]) }
+        end
+      end
+
+      # @param entity [Hash] entity data
+      # @return [Array<Hash>] birth records, in either key spelling
+      def birth_info_records(entity)
+        %w[birth_info birthInfo].each do |key|
+          list = entity[key]
+          next unless list.is_a?(Array)
+
+          records = list.grep(Hash)
+          return records unless records.empty?
+        end
+        []
+      end
+
+      # Extract birth year from entity.
+      #
+      # Only an exact date or a stated single year answers here. A span
+      # is read by #extract_birth_bound instead, and the span keys are
+      # deliberately absent from the lookups below.
       # @param entity [Hash] entity data
       # @return [String, nil] birth year
       def extract_birth_year(entity)
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'person'
 
-        # From birth_info (snake_case)
-        if entity['birth_info'].is_a?(Array) && entity['birth_info'].first
-          birth = entity['birth_info'].first
-          date = birth['date'] || birth['year']
-          return extract_year_from_date(date) if date
+        # Every birth record is searched, not only the first. An entity
+        # can carry several — one per contributing source — and the record
+        # holding the exact date is not reliably the one at index 0, so
+        # taking `.first` dropped a stated year whenever another record
+        # happened to precede it. #birth_info_with_range already scans the
+        # whole list for span bounds; a year that is *more* precise than a
+        # span must not be found less often than one.
+        birth = birth_info_records(entity).find do |record|
+          record['date'] || record['year']
         end
-
-        # From birthInfo (camelCase)
-        if entity['birthInfo'].is_a?(Array) && entity['birthInfo'].first
-          birth = entity['birthInfo'].first
-          date = (birth['date'] || birth['year'])&.to_s
-          return date[0, 4] if date && date.length >= 4
+        if birth
+          year = extract_year_from_date(birth['date'] || birth['year'])
+          return year if year
         end
 
         # From birthDate

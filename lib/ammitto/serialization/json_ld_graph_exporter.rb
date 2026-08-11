@@ -670,6 +670,26 @@ module Ammitto
           ['.', '..'].include?(component)
       end
 
+      # True when +component+ cannot become a filename.
+      #
+      # Stricter than #unusable_path_component?, which asks only whether a
+      # component would escape the node tree. This adds the characters that
+      # are legal in a POSIX filename but not a Windows one, so a component
+      # is refused identically on every platform rather than writing fine on
+      # Linux and raising Errno::EINVAL on Windows — a difference CI found
+      # in exactly that asymmetric way.
+      #
+      # ?, # and % are also the URL-significant characters that would make
+      # the published path ambiguous to a consumer even where the
+      # filesystem accepts them, which is why the two concerns share one
+      # rule instead of two that drift apart.
+      #
+      # @param component [String] candidate path component
+      # @return [Boolean]
+      def unusable_filename_component?(component)
+        unusable_path_component?(component) || component.match?(/[?#%]/)
+      end
+
       # Clamp an oversized slug so its "#{slug}.jsonld" filename fits the
       # 255-byte filesystem filename limit. Slugs within budget pass
       # through untouched, so existing short IRIs never change. Oversized
@@ -856,6 +876,21 @@ module Ammitto
           parts = org_id.to_s.split('/')
           source = parts.find { |p| registered_source?(p) }
           local_id = parts.last
+
+          # Refuse a component that cannot safely become a filename,
+          # rather than handing it to the filesystem and letting the
+          # answer depend on the platform. Linux accepts characters
+          # Windows rejects, so an unvalidated write here raised
+          # Errno::EINVAL on one runner while succeeding quietly on the
+          # other — and a '..' component would write outside the node
+          # tree on either. The instrument path applies the same guard.
+          [source, local_id].compact.each do |component|
+            next unless unusable_filename_component?(component)
+
+            raise Ammitto::Error,
+                  "Organization identifier #{org_id.inspect} yields " \
+                  "unusable path component #{component.inspect}"
+          end
 
           if source
             dir = File.join(@output_dir, 'node', 'organization', source)
@@ -1407,7 +1442,7 @@ module Ammitto
       def slice_path(slices_dir, identifier, kind)
         components = identifier.split('/', -1)
         components.each do |component|
-          next unless unusable_path_component?(component) || component.match?(/[?#%]/)
+          next unless unusable_filename_component?(component)
 
           raise Ammitto::Error,
                 "#{kind} identifier #{identifier.inspect} yields " \

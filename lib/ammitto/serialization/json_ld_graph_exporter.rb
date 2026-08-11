@@ -36,6 +36,9 @@ module Ammitto
       # limit (255 minus the 7-byte '.jsonld' suffix)
       MAX_SLUG_BYTES = 248
 
+      # Longest single path component the filesystem accepts
+      MAX_FILENAME_BYTES = 255
+
       # Slug prefix bytes kept when clamping an oversized slug
       CLAMP_PREFIX_BYTES = 100
 
@@ -397,7 +400,9 @@ module Ammitto
           File.join(@output_dir, 'by-regime'),
           File.join(@output_dir, 'by-list'),
           File.join(@output_dir, 'by-status'),
-          File.join(@output_dir, 'by-type')
+          File.join(@output_dir, 'by-type'),
+          File.join(@output_dir, 'by-organization'),
+          File.join(@output_dir, 'by-document-type')
         ]
 
         dirs.each { |dir| FileUtils.mkdir_p(dir) }
@@ -665,6 +670,34 @@ module Ammitto
           ['.', '..'].include?(component)
       end
 
+      # True when +component+ carries a character this exporter refuses in
+      # a published path.
+      #
+      # Stricter than #unusable_path_component?, which asks only whether a
+      # component would escape the node tree. This adds ?, # and % — the
+      # URL-significant characters that make a published path ambiguous to
+      # a consumer even where the filesystem accepts them.
+      #
+      # It is NOT a Windows-safe filename check, and must not be described
+      # as one. Windows additionally rejects < > : " | *, control
+      # characters, reserved device names such as CON and NUL, and
+      # trailing dots or spaces; none of those is covered here. What this
+      # rule does is refuse ? consistently on every platform, which is the
+      # one divergence the corpus produced — a `?` identifier wrote
+      # happily on Linux and raised Errno::EINVAL on Windows, so the same
+      # export succeeded or failed depending on the runner.
+      #
+      # Widening this to the full Windows contract is a separate decision:
+      # it would reject identifiers that publish correctly today, so it
+      # needs corpus evidence rather than a rule copied from a reference
+      # table.
+      #
+      # @param component [String] candidate path component
+      # @return [Boolean]
+      def unusable_filename_component?(component)
+        unusable_path_component?(component) || component.match?(/[?#%]/)
+      end
+
       # Clamp an oversized slug so its "#{slug}.jsonld" filename fits the
       # 255-byte filesystem filename limit. Slugs within budget pass
       # through untouched, so existing short IRIs never change. Oversized
@@ -852,6 +885,24 @@ module Ammitto
           source = parts.find { |p| registered_source?(p) }
           local_id = parts.last
 
+          # Refuse a component that cannot safely become a filename,
+          # rather than handing it to the filesystem and letting the
+          # answer depend on the platform. Linux accepts characters
+          # Windows rejects, so an unvalidated write here raised
+          # Errno::EINVAL on one runner while succeeding quietly on the
+          # other — and a '..' component would write outside the node
+          # tree. The rule is not a full Windows-safe filename check — see
+          # #unusable_filename_component?. A component here is source or local_id only — the
+          # intermediate IRI segments are not used as path components. The
+          # instrument path applies the same guard.
+          [source, local_id].compact.each do |component|
+            next unless unusable_filename_component?(component)
+
+            raise Ammitto::Error,
+                  "Organization identifier #{org_id.inspect} yields " \
+                  "unusable path component #{component.inspect}"
+          end
+
           if source
             dir = File.join(@output_dir, 'node', 'organization', source)
             FileUtils.mkdir_p(dir)
@@ -971,6 +1022,8 @@ module Ammitto
       # - List (by-list/{source}/{list_type}.jsonld)
       # - Status (by-status/{status}.jsonld)
       # - Entity type (by-type/{type}.jsonld)
+      # - Organization (by-organization/{identifier}.jsonld)
+      # - Document type (by-document-type/{identifier}.jsonld)
       # @return [void]
       def export_data_slices
         export_slices_by_authority
@@ -978,6 +1031,14 @@ module Ammitto
         export_slices_by_list
         export_slices_by_status
         export_slices_by_entity_type
+
+        # Both page slices aggregate the same announcements, so they are
+        # collected once here and passed down rather than cached on the
+        # exporter: a memo would go stale the moment a caller added another
+        # node and exported again.
+        pairs = announcement_pairs
+        export_slices_by_organization(pairs)
+        export_slices_by_document_type(pairs)
       end
 
       # Export slices by authority
@@ -1188,6 +1249,239 @@ module Ammitto
           'available' => by_type.keys.sort
         }
         write_json(File.join(slices_dir, 'index.jsonld'), master)
+      end
+
+      # Export page-ready slices keyed by organization
+      #
+      # The organization page renders three lists — documents the
+      # organization published, signed and authorized — so each slice
+      # carries those three arrays, already deduplicated and counted.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
+      # @return [void]
+      def export_slices_by_organization(pairs)
+        slices_dir = File.join(@output_dir, 'by-organization')
+        FileUtils.mkdir_p(slices_dir)
+
+        written = @organizations.filter_map do |org_id, org|
+          identifier = org['identifier'].to_s
+          next if identifier.empty?
+
+          index = {
+            '@context' => @context_url,
+            '@type' => 'Index',
+            'slice' => 'by-organization',
+            'organization' => { '@id' => org_id },
+            'published' => announcement_summaries(matching_role(pairs, 'publisher', identifier)),
+            'signed' => announcement_summaries(matching_role(pairs, 'signatory', identifier)),
+            'authorized' => announcement_summaries(matching_role(pairs, 'authority', identifier))
+          }
+          write_json(slice_path(slices_dir, identifier, 'Organization'), index)
+          org_id
+        end
+
+        write_slice_master(slices_dir, 'by-organization', written)
+      end
+
+      # Export page-ready slices keyed by document type
+      #
+      # The document-type page renders the announcements carrying that type
+      # plus the legal instruments declaring it, so each slice carries both.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
+      # @return [void]
+      def export_slices_by_document_type(pairs)
+        slices_dir = File.join(@output_dir, 'by-document-type')
+        FileUtils.mkdir_p(slices_dir)
+
+        # Grouped once rather than rescanned per type. Selecting inside the
+        # loop is O(types x entries), and this exporter exists to remove
+        # exactly that shape of work from the site — leaving it here would
+        # move the cost from the browser into every harmonize run.
+        by_type = pairs.group_by { |_entry, announcement| announcement['documentType'] }
+
+        written = @document_types.filter_map do |type_id, type|
+          identifier = type['identifier'].to_s
+          next if identifier.empty?
+
+          matching = by_type.fetch(identifier, [])
+          index = {
+            '@context' => @context_url,
+            '@type' => 'Index',
+            'slice' => 'by-document-type',
+            'documentType' => { '@id' => type_id },
+            'announcements' => announcement_summaries(matching),
+            'legalInstruments' => instrument_summaries(identifier)
+          }
+          write_json(slice_path(slices_dir, identifier, 'Document type'), index)
+          type_id
+        end
+
+        write_slice_master(slices_dir, 'by-document-type', written)
+      end
+
+      # Write the master index a slice directory carries alongside its
+      # per-key files, matching the other slice families
+      # @param slices_dir [String] slice directory
+      # @param slice [String] slice name
+      # @param written [Array<String>] IRIs of the slices written
+      # @return [void]
+      def write_slice_master(slices_dir, slice, written)
+        master = {
+          '@context' => @context_url,
+          '@type' => 'Index',
+          'slice' => slice,
+          'available' => written.sort
+        }
+        write_json(File.join(slices_dir, 'index.jsonld'), master)
+      end
+
+      # Entries carrying an announcement, paired with it, in the order the
+      # entry index lists them.
+      #
+      # Order matters twice over: it decides which entry of a document
+      # supplies the rendered title, date, URL and group, and it decides
+      # how equal-dated documents fall once the page sorts them. The page
+      # walks node/entry/index.jsonld, which export_index_files writes as
+      # @entries.keys.sort, so this walks the same sequence.
+      # @return [Array<Array(Hash, Hash)>] entry/announcement pairs
+      def announcement_pairs
+        @entries.keys.sort.filter_map do |id|
+          entry = @entries[id]
+          announcement = entry['announcement']
+          [entry, announcement] if announcement.is_a?(Hash)
+        end
+      end
+
+      # Entry/announcement pairs whose announcement names this identifier
+      # in the given role.
+      #
+      # The page tests `value === identifier || value?.includes(identifier)`.
+      # The first arm is redundant for strings, so this is a substring test.
+      # That is over-inclusive — a parent organization absorbs every child
+      # whose identifier extends it — but reproducing it is deliberate:
+      # this change moves the aggregation, it does not redefine it.
+      #
+      # Strings are the whole contract: OfficialAnnouncement declares
+      # publisher, signatory and authority as strings. Anything else is
+      # skipped rather than matched, which is a deliberate narrowing, not
+      # equivalence — JavaScript would have treated an array as a member
+      # test and thrown on a number, aborting the page's whole scan.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
+      # @param role [String] announcement field naming the organization
+      # @param identifier [String] organization identifier
+      # @return [Array<Array(Hash, Hash)>] matching pairs
+      def matching_role(pairs, role, identifier)
+        pairs.select do |_entry, announcement|
+          value = announcement[role]
+          value.is_a?(String) && value.include?(identifier)
+        end
+      end
+
+      # Collapse entry/announcement pairs into one summary per document.
+      #
+      # Mirrors the page's Map: keyed by document id, the first pair seen
+      # supplies every rendered field, and each further pair only raises the
+      # count. Summaries stay in first-seen order — the page still applies
+      # its own descending publishDate sort, so the ordering it renders is
+      # produced by the same comparison it always used.
+      # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
+      # @return [Array<Hash>] announcement summaries
+      def announcement_summaries(pairs)
+        summaries = {}
+
+        pairs.each do |entry, announcement|
+          document_id = announcement['documentId']
+          document_id = 'unknown' if js_blank?(document_id)
+
+          summary = summaries[document_id] ||= {
+            'documentId' => document_id,
+            'title' => announcement['title'],
+            'publishDate' => js_blank?(announcement['publishDate']) ? '' : announcement['publishDate'],
+            'url' => announcement['url'],
+            'groupId' => entry['groupId'],
+            'entryCount' => 0
+          }.compact
+          summary['entryCount'] += 1
+        end
+
+        summaries.values
+      end
+
+      # Summaries of the legal instruments declaring a document type,
+      # in the order the instrument index lists them (the page rendered
+      # them in index order, without sorting).
+      #
+      # `title` and `name` are passed through untouched: the page resolves
+      # a localized title itself, and resolving it here would bake one
+      # reader's language policy into the artifact.
+      # @param identifier [String] document type identifier
+      # @return [Array<Hash>] instrument summaries
+      def instrument_summaries(identifier)
+        @instruments.keys.sort.filter_map do |id|
+          instrument = @instruments[id]
+          next unless instrument['type'] == identifier
+
+          {
+            '@id' => instrument['@id'] || id,
+            'identifier' => instrument['identifier'],
+            'title' => instrument['title'],
+            'name' => instrument['name'],
+            'publishDate' => instrument['publishDate']
+          }.compact
+        end
+      end
+
+      # Whether the page's `value || fallback` would take the fallback.
+      #
+      # Covers the two shapes a declared-string field takes, absent and
+      # empty, rather than JavaScript falsiness in general: Ruby counts ""
+      # as truthy and JavaScript does not, so a blank document id has to
+      # reach the same 'unknown' bucket the page puts it in.
+      # @param value [Object] value to test
+      # @return [Boolean]
+      def js_blank?(value)
+        value.nil? || value == ''
+      end
+
+      # Path of the slice file named after a taxonomy identifier.
+      #
+      # Identifiers carry slashes ('cn/ministry-of-commerce'), so each
+      # segment becomes a directory and the last becomes the filename.
+      # Components are validated, never rewritten: sanitizing an unsafe
+      # identifier could map two distinct taxonomy entries onto one file,
+      # silently merging them. '?', '#' and '%' are rejected alongside the
+      # filesystem hazards because the site fetches this path as a URL.
+      # @param slices_dir [String] slice directory
+      # @param identifier [String] taxonomy identifier
+      # @param kind [String] taxonomy name, for the error message
+      # @return [String] absolute path of the slice file
+      def slice_path(slices_dir, identifier, kind)
+        components = identifier.split('/', -1)
+        components.each do |component|
+          next unless unusable_filename_component?(component)
+
+          raise Ammitto::Error,
+                "#{kind} identifier #{identifier.inspect} yields " \
+                "unusable path component #{component.inspect}"
+        end
+
+        filename = components.pop
+        # Directory components spend the whole 255-byte budget; the last
+        # one also has to fit its '.jsonld' suffix, which is what
+        # MAX_SLUG_BYTES already accounts for.
+        oversized = components.find { |c| c.bytesize > MAX_FILENAME_BYTES }
+        oversized ||= filename if filename.bytesize > MAX_SLUG_BYTES
+        if oversized
+          raise Ammitto::Error,
+                "#{kind} identifier #{identifier.inspect} is too long: " \
+                "#{oversized.inspect} exceeds the filename byte budget"
+        end
+        if components.empty? && filename == 'index'
+          raise Ammitto::Error,
+                "#{kind} identifier #{identifier.inspect} would overwrite " \
+                'the slice master index'
+        end
+
+        File.join(slices_dir, *components, "#{filename}.jsonld")
       end
 
       # Write context.jsonld to the output directory. The context is defined

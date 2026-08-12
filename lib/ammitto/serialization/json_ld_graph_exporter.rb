@@ -91,13 +91,23 @@ module Ammitto
       # Initialize the graph exporter
       # @param output_dir [String] directory for output files
       # @param context_url [String] URL to the JSON-LD context
+      # @param instruments_dir [String, Array<String>, nil] legal instrument
+      #   directories, in precedence order
+      # @param supporting_dir [String, Array<String>, nil] supporting data
+      #   directories, in precedence order
       def initialize(output_dir:, context_url: nil, combine: true,
                      instruments_dir: nil, supporting_dir: nil)
         @output_dir = output_dir
         @context_url = context_url || Ammitto::Schema::Context.context_url
         @combine = combine
-        @instruments_dir = instruments_dir
-        @supporting_dir = supporting_dir
+        # Every supplied repository contributes. Supplement identifiers are
+        # source-qualified ('cn/act', 'uk/regulation'), so the vocabularies
+        # union rather than compete, and the grouping the slices depend on is
+        # an exact identifier match: a source whose vocabulary never loads can
+        # never be grouped, and its announcements and instruments go
+        # unreachable however complete the rest of the graph is.
+        @instruments_dirs = Array(instruments_dir).compact.uniq
+        @supporting_dirs = Array(supporting_dir).compact.uniq
 
         # Node collectors
         @entities = {}
@@ -128,24 +138,30 @@ module Ammitto
         # Serializer for generating node data
         @serializer = JsonLdSerializer.new
 
-        # Load legal instruments if directory provided
-        load_legal_instruments if @instruments_dir
-
-        # Load supporting data if directory provided
-        load_supporting_data if @supporting_dir
+        load_legal_instruments
+        load_supporting_data
       end
 
-      # Load legal instruments from YAML files
+      # Load legal instruments from every supplied directory
       # @return [void]
       def load_legal_instruments
-        return unless @instruments_dir && Dir.exist?(@instruments_dir)
+        @instruments_dirs.each do |dir|
+          next unless Dir.exist?(dir)
 
-        Dir.glob(File.join(@instruments_dir, '**', '*.yml')).each do |file|
-          load_instrument_file(file)
+          instrument_files(dir).each { |file| load_instrument_file(file) }
         end
-        Dir.glob(File.join(@instruments_dir, '**', '*.yaml')).each do |file|
-          load_instrument_file(file)
-        end
+      end
+
+      # Instrument YAML files under one directory.
+      #
+      # Order is load-bearing now that the first claimant of an identifier
+      # keeps it, and Dir.glob supplies it: it sorts its results, so two
+      # machines resolve the same duplicate the same way.
+      # @param dir [String] instrument directory
+      # @return [Array<String>] YAML file paths
+      def instrument_files(dir)
+        Dir.glob(File.join(dir, '**', '*.yml')) +
+          Dir.glob(File.join(dir, '**', '*.yaml'))
       end
 
       # Load a single legal instrument YAML file
@@ -156,23 +172,55 @@ module Ammitto
         return unless data && data['id']
 
         # Store by the ID (e.g., "cn/mofcom-unreliable-entity-list-provisions")
-        @loaded_instruments[data['id']] = data
+        claim(@loaded_instruments, data['id'], data, 'Legal instrument', file)
       rescue StandardError => e
         puts "Warning: Could not load instrument #{file}: #{e.message}" if ENV['VERBOSE']
       end
 
-      # Load supporting data (document types, organizations) from YAML files
+      # Load supporting data (document types, organizations) from every
+      # supplied directory
       # @return [void]
       def load_supporting_data
-        return unless @supporting_dir && Dir.exist?(@supporting_dir)
+        @supporting_dirs.each do |dir|
+          next unless Dir.exist?(dir)
 
-        # Load document types
-        doc_types_file = File.join(@supporting_dir, 'document-types.yml')
-        load_document_types_file(doc_types_file) if File.exist?(doc_types_file)
+          # Load document types
+          doc_types_file = File.join(dir, 'document-types.yml')
+          load_document_types_file(doc_types_file) if File.exist?(doc_types_file)
 
-        # Load organizations
-        orgs_file = File.join(@supporting_dir, 'organizations.yml')
-        load_organizations_file(orgs_file) if File.exist?(orgs_file)
+          # Load organizations
+          orgs_file = File.join(dir, 'organizations.yml')
+          load_organizations_file(orgs_file) if File.exist?(orgs_file)
+        end
+      end
+
+      # Record the first claimant of a supplement identifier.
+      #
+      # Directories arrive in requested-source order, so keeping the earliest
+      # claim makes the result independent of what is added later: a new
+      # repository can extend a vocabulary but never silently re-point a row
+      # already published under someone else's definition.
+      #
+      # Identifiers are source-qualified, so a clash means two repositories
+      # claim one source's row — a data defect, not a merge to resolve, hence
+      # an unconditional warning rather than the VERBOSE-gated ones nearby
+      # that report unreadable files. It is deliberately not fatal: the
+      # unattended publish spans fifteen repositories, and losing the whole
+      # graph over one duplicated row is the worse outcome.
+      # @param collection [Hash] collection claiming into
+      # @param key [String] identifier being claimed
+      # @param value [Object] node to store
+      # @param kind [String] human-readable node kind
+      # @param origin [String] file the duplicate claim came from
+      # @return [void]
+      def claim(collection, key, value, kind, origin)
+        if collection.key?(key)
+          warn "Warning: #{kind} #{key.inspect} is already defined; " \
+               "ignoring the duplicate declared in #{origin}"
+          return
+        end
+
+        collection[key] = value
       end
 
       # Load document types from YAML file
@@ -209,13 +257,13 @@ module Ammitto
             end
           end
 
-          @document_types[iri] = {
+          claim(@document_types, iri, {
             '@context' => @context_url,
             '@id' => iri,
             '@type' => 'DocumentType',
             'identifier' => type_id,
             'name' => names
-          }.compact
+          }.compact, 'Document type', file)
         end
 
         @stats[:total_document_types] = @document_types.length
@@ -257,7 +305,7 @@ module Ammitto
             end
           end
 
-          @organizations[iri] = {
+          claim(@organizations, iri, {
             '@context' => @context_url,
             '@id' => iri,
             '@type' => 'Organization',
@@ -266,7 +314,7 @@ module Ammitto
             'type' => org_data['type'],
             'parentId' => org_data['parent_id'],
             'url' => org_data['url']
-          }.compact
+          }.compact, 'Organization', file)
         end
 
         @stats[:total_organizations] = @organizations.length

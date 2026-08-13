@@ -145,7 +145,7 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
 
   # A field that is not serialized is a field the website never sees,
   # however faithfully the models carry it.
-  describe 'birth year ranges' do
+  describe 'birth date and year ranges' do
     def birth_node(**attrs)
       entity = build_entity(birth_info: [Ammitto::BirthInfo.new(**attrs)])
       serializer.serialize_entity(entity)['birthInfo'].first
@@ -181,6 +181,51 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
       expect(birth_node(year: 1964, city: 'Bern').sort.to_h)
         .to eq({ '@type' => 'BirthInfo', 'circa' => false,
                  'year' => 1964, 'city' => 'Bern' }.sort.to_h)
+    end
+
+    # The node holds real Date objects, so the bounds are read after
+    # generation: that is the form the website actually receives.
+    it 'emits complete date bounds under the camelCase contract names' do
+      node = JSON.parse(JSON.generate(birth_node(
+                                        date_range_from: Date.new(1961, 1, 1),
+                                        date_range_to: Date.new(1962, 12, 31)
+                                      )))
+
+      expect(node['dateRangeFrom']).to eq('1961-01-01')
+      expect(node['dateRangeTo']).to eq('1962-12-31')
+    end
+
+    it 'emits only the date bound that exists' do
+      node = JSON.parse(JSON.generate(birth_node(
+                                        date_range_to: Date.new(1962, 12, 31)
+                                      )))
+
+      expect(node['dateRangeTo']).to eq('1962-12-31')
+      expect(node).not_to have_key('dateRangeFrom')
+    end
+
+    # A same-year span is the one shape that carries date bounds AND a
+    # scalar year at once, and the scalar is the fragile half: 'year' is
+    # suppressed beside a YEAR span two examples above, so a serializer
+    # that generalised that suppression to date bounds would strip the
+    # exact year off every same-year OFAC span and take birthYear out of
+    # the search index with it. The transformer's half of this is pinned
+    # in base_transformer_spec; this pins that the value survives being
+    # serialized, which is the only form the website ever sees.
+    it 'keeps the exact year of a same-year span beside its date bounds' do
+      node = JSON.parse(JSON.generate(birth_node(
+                                        year: 1962,
+                                        date_range_from: Date.new(1962, 1, 1),
+                                        date_range_to: Date.new(1962, 12, 31),
+                                        year_range_from: 1962,
+                                        year_range_to: 1962
+                                      )))
+
+      expect(node['year']).to eq(1962)
+      expect(node['dateRangeFrom']).to eq('1962-01-01')
+      expect(node['dateRangeTo']).to eq('1962-12-31')
+      expect(node['yearRangeFrom']).to eq(1962)
+      expect(node['yearRangeTo']).to eq(1962)
     end
   end
 
@@ -224,6 +269,32 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
         literal = birth["#{vocab}#{term}"].first
         expect(literal['@type'])
           .to eq('http://www.w3.org/2001/XMLSchema#gYear')
+      end
+    end
+
+    it 'declares both date bounds as xsd:date' do
+      expect(terms['dateRangeFrom'])
+        .to eq({ '@id' => 'dateRangeFrom', '@type' => 'xsd:date' })
+      expect(terms['dateRangeTo'])
+        .to eq({ '@id' => 'dateRangeTo', '@type' => 'xsd:date' })
+    end
+
+    it 'expands the date bounds to xsd:date literals' do
+      node = serializer.serialize_entity(
+        build_entity(birth_info: [Ammitto::BirthInfo.new(
+          date_range_from: Date.new(1961, 1, 1),
+          date_range_to: Date.new(1962, 12, 31)
+        )])
+      ).merge(Ammitto::Schema::Context.context)
+      node = JSON.parse(JSON.generate(node))
+
+      vocab = 'https://ammitto.org/schema/v1/'
+      birth = JSON::LD::API.expand(node).first["#{vocab}birthInfo"].first
+
+      %w[dateRangeFrom dateRangeTo].each do |term|
+        literal = birth["#{vocab}#{term}"].first
+        expect(literal['@type'])
+          .to eq('http://www.w3.org/2001/XMLSchema#date')
       end
     end
   end

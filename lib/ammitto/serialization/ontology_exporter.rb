@@ -142,7 +142,10 @@ module Ammitto
           label: 'Birth Information',
           comment: 'Birth date and place information',
           parent: nil,
-          properties: %w[date year yearRangeFrom yearRangeTo place country circa]
+          properties: %w[
+            date dateRangeFrom dateRangeTo year yearRangeFrom yearRangeTo
+            place country circa
+          ]
         },
         {
           id: 'Nationality',
@@ -275,22 +278,33 @@ module Ammitto
         { id: 'issueDate', label: 'Issue Date', comment: 'Date issued', domain: 'Identifier', range: 'date' },
         { id: 'expiryDate', label: 'Expiry Date', comment: 'Expiry date', domain: 'Identifier', range: 'date' },
 
-        # BirthInfo properties. The three year-valued ones are gYear,
-        # matching the JSON-LD context. The two artifacts mint their
-        # terms under different bases — this vocabulary under BASE_URI,
-        # the context under its own @vocab — so they are not literally
-        # the same RDF property, but they describe the same field to the
-        # same reader, and telling that reader "integer" in the ontology
-        # browser and "gYear" in the data is a contradiction either way.
-        # 'year' carried that contradiction before the bounds existed;
-        # adding the bounds is what made it worth resolving rather than
-        # propagating into two more properties.
+        # BirthInfo temporal properties. The date bounds preserve the
+        # complete endpoint dates; the year bounds are either
+        # source-stated or derived from those endpoints for year-only
+        # discovery. Both datatypes match the JSON-LD context.
+        #
+        # The three year-valued ones are gYear, matching that context.
+        # The two artifacts mint their terms under different bases —
+        # this vocabulary under BASE_URI, the context under its own
+        # @vocab — so they are not literally the same RDF property, but
+        # they describe the same field to the same reader, and telling
+        # that reader "integer" in the ontology browser and "gYear" in
+        # the data is a contradiction either way. 'year' carried that
+        # contradiction before the bounds existed; adding the bounds is
+        # what made it worth resolving rather than propagating into two
+        # more properties.
+        { id: 'dateRangeFrom', label: 'Date Range From',
+          comment: 'Lower bound of a stated span of complete birth dates',
+          domain: 'BirthInfo', range: 'date' },
+        { id: 'dateRangeTo', label: 'Date Range To',
+          comment: 'Upper bound of a stated span of complete birth dates',
+          domain: 'BirthInfo', range: 'date' },
         { id: 'year', label: 'Year', comment: 'Birth year', domain: 'BirthInfo', range: 'gYear' },
         { id: 'yearRangeFrom', label: 'Year Range From',
-          comment: 'Lower bound of a stated span of birth years',
+          comment: 'Lower bound of a birth-year span',
           domain: 'BirthInfo', range: 'gYear' },
         { id: 'yearRangeTo', label: 'Year Range To',
-          comment: 'Upper bound of a stated span of birth years',
+          comment: 'Upper bound of a birth-year span',
           domain: 'BirthInfo', range: 'gYear' },
         { id: 'place', label: 'Place', comment: 'Birth place', domain: 'BirthInfo', range: 'string' },
         { id: 'circa', label: 'Circa', comment: 'Approximate date', domain: 'BirthInfo', range: 'boolean' }

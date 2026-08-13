@@ -46,8 +46,9 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
     # fields to the same reader (under different bases, so they are not
     # literally one RDF property). Telling that reader "integer" in one
     # and "gYear" in the other is a contradiction, so the year-valued
-    # BirthInfo properties are gYear in both.
-    describe 'the BirthInfo year properties' do
+    # BirthInfo properties are gYear in both, and the date-valued ones
+    # are date in both for the same reason.
+    describe 'the BirthInfo temporal properties' do
       let(:properties) do
         file = File.join(output_dir, 'ontology', 'properties.jsonld')
         JSON.parse(File.read(file))['@graph']
@@ -57,11 +58,18 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
         properties.find { |p| p['@id'].to_s.end_with?("/#{id}") }&.fetch('range')
       end
 
-      it 'publishes both range bounds' do
+      it 'publishes both year range bounds as gYear' do
         expect(range_of('yearRangeFrom'))
           .to eq('http://www.w3.org/2001/XMLSchema#gYear')
         expect(range_of('yearRangeTo'))
           .to eq('http://www.w3.org/2001/XMLSchema#gYear')
+      end
+
+      it 'publishes both date range bounds as xsd:date' do
+        expect(range_of('dateRangeFrom'))
+          .to eq('http://www.w3.org/2001/XMLSchema#date')
+        expect(range_of('dateRangeTo'))
+          .to eq('http://www.w3.org/2001/XMLSchema#date')
       end
 
       it 'agrees with the context on the year datatype' do
@@ -73,13 +81,15 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
           .to eq('http://www.w3.org/2001/XMLSchema#gYear')
       end
 
-      it 'lists both bounds among the BirthInfo class properties' do
+      it 'lists all four range bounds among the BirthInfo class properties' do
         file = File.join(output_dir, 'ontology', 'classes.jsonld')
         birth = JSON.parse(File.read(file))['@graph']
                     .find { |c| c['@id'].to_s.end_with?('/BirthInfo') }
 
         expect(birth['properties'])
-          .to include('https://www.ammitto.org/ontology/yearRangeFrom',
+          .to include('https://www.ammitto.org/ontology/dateRangeFrom',
+                      'https://www.ammitto.org/ontology/dateRangeTo',
+                      'https://www.ammitto.org/ontology/yearRangeFrom',
                       'https://www.ammitto.org/ontology/yearRangeTo')
       end
     end

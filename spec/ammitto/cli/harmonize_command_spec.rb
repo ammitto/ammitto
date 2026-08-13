@@ -381,30 +381,47 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       supporting = make_dir('data-cn', 'sources', 'supporting')
       cn = described_class.new(options, ['cn'])
 
-      expect(cn.send(:find_instruments_dir)).to eq(instruments)
-      expect(cn.send(:find_supporting_dir)).to eq(supporting)
+      expect(cn.send(:find_instruments_dirs)).to eq([instruments])
+      expect(cn.send(:find_supporting_dirs)).to eq([supporting])
     end
 
     it 'does not leak cn supplements into other sources' do
       make_dir('data-cn', 'sources', 'legal-instruments')
       make_dir('data-cn', 'sources', 'supporting')
 
-      expect(command.send(:find_instruments_dir)).to be_nil
-      expect(command.send(:find_supporting_dir)).to be_nil
+      expect(command.send(:find_instruments_dirs)).to eq([])
+      expect(command.send(:find_supporting_dirs)).to eq([])
     end
 
     it 'resolves a requested source from its own data repository' do
       instruments = make_dir('data-us', 'sources', 'legal-instruments')
       make_dir('data-cn', 'sources', 'legal-instruments')
 
-      expect(command.send(:find_instruments_dir)).to eq(instruments)
+      expect(command.send(:find_instruments_dirs)).to eq([instruments])
     end
 
     it 'reaches cn supplements in a multi-source run without us ones' do
       instruments = make_dir('data-cn', 'sources', 'legal-instruments')
       multi = described_class.new(options, %w[us cn])
 
-      expect(multi.send(:find_instruments_dir)).to eq(instruments)
+      expect(multi.send(:find_instruments_dirs)).to eq([instruments])
+    end
+
+    it 'returns every requested source in requested order' do
+      us = make_dir('data-us', 'sources', 'supporting')
+      cn = make_dir('data-cn', 'sources', 'supporting')
+
+      expect(described_class.new(options, %w[us cn])
+                            .send(:find_supporting_dirs)).to eq([us, cn])
+      expect(described_class.new(options, %w[cn us])
+                            .send(:find_supporting_dirs)).to eq([cn, us])
+    end
+
+    it 'names a repeated source once' do
+      us = make_dir('data-us', 'sources', 'supporting')
+      repeated = described_class.new(options, %w[us us])
+
+      expect(repeated.send(:find_supporting_dirs)).to eq([us])
     end
 
     it 'falls back to siblings of an explicit input_dir' do
@@ -412,12 +429,45 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       supporting = make_dir('repo', 'sources', 'supporting')
       options[:input_dir] = input_dir
 
-      expect(command.send(:find_supporting_dir)).to eq(supporting)
+      expect(command.send(:find_supporting_dirs)).to eq([supporting])
     end
 
-    it 'returns nil when no supplement directories exist' do
-      expect(command.send(:find_instruments_dir)).to be_nil
-      expect(command.send(:find_supporting_dir)).to be_nil
+    it 'returns an empty array when no supplement directories exist' do
+      expect(command.send(:find_instruments_dirs)).to eq([])
+      expect(command.send(:find_supporting_dirs)).to eq([])
+    end
+  end
+
+  describe 'supplement wiring' do
+    # Reached through harmonize_all rather than the finders directly: the
+    # defect was that only one directory ever arrived at the exporter, and
+    # the finders were only half of that path. Construction is the first
+    # thing harmonize_all does, so raising from the stub captures the real
+    # arguments without needing a source's worth of data behind it.
+    def exporter_kwargs(sources)
+      captured = nil
+      stop = Class.new(StandardError)
+      allow(Ammitto::Serialization::JsonLdGraphExporter)
+        .to receive(:new) do |**kwargs|
+          captured = kwargs
+          raise stop
+        end
+
+      expect { described_class.new(options, sources).send(:harmonize_all) }
+        .to raise_error(stop)
+      captured
+    end
+
+    it 'hands every requested source\'s supplements to the exporter' do
+      us_supporting = make_dir('data-us', 'sources', 'supporting')
+      cn_supporting = make_dir('data-cn', 'sources', 'supporting')
+      cn_instruments = make_dir('data-cn', 'sources', 'legal-instruments')
+      jp_instruments = make_dir('data-jp', 'sources', 'legal-instruments')
+
+      kwargs = exporter_kwargs(%w[us cn jp])
+
+      expect(kwargs[:supporting_dir]).to eq([us_supporting, cn_supporting])
+      expect(kwargs[:instruments_dir]).to eq([cn_instruments, jp_instruments])
     end
   end
 

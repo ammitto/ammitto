@@ -113,8 +113,8 @@ module Ammitto
         @exporter = Serialization::JsonLdGraphExporter.new(
           output_dir: output_dir,
           combine: options[:combine] == true,
-          instruments_dir: find_instruments_dir,
-          supporting_dir: find_supporting_dir
+          instruments_dir: find_instruments_dirs,
+          supporting_dir: find_supporting_dirs
         )
         @search_indexer = Serialization::SearchIndexExporter.new
         @ontology_exporter = Serialization::OntologyExporter.new
@@ -745,39 +745,43 @@ module Ammitto
         File.join(base_dir, subdirs.first)
       end
 
-      # Find legal instruments directory
-      # @return [String, nil] path to instruments directory
-      def find_instruments_dir
-        find_supplement_dir('legal-instruments')
+      # Find legal instruments directories
+      # @return [Array<String>] instrument directories in requested-source order
+      def find_instruments_dirs
+        find_supplement_dirs('legal-instruments')
       end
 
-      # Find supporting data directory (document types, organizations)
-      # @return [String, nil] path to supporting directory
-      def find_supporting_dir
-        find_supplement_dir('supporting')
+      # Find supporting data directories (document types, organizations)
+      # @return [Array<String>] supporting directories in requested-source order
+      def find_supporting_dirs
+        find_supplement_dirs('supporting')
       end
 
-      # Resolve a supplement subtree (legal-instruments/, supporting/) for
-      # the requested sources. Supplements live inside a source's own data
-      # repository (currently only data-cn ships them), so they are looked
-      # up per requested source — a run that does not include a source must
-      # not inject that source's supplement nodes into its output tree.
-      # Known limitation: first match wins in requested-source order, because
-      # the exporter accepts a single directory per supplement kind; if a
-      # second repository ever ships supplements, the exporter API must grow
-      # union loading.
+      # Resolve every supplement subtree (legal-instruments/, supporting/)
+      # belonging to the requested sources. Supplements live inside a
+      # source's own data repository, so they are looked up per requested
+      # source — a run that does not include a source must not inject that
+      # source's supplement nodes into its output tree.
+      #
+      # Every match is returned rather than the first. Six data repositories
+      # ship supplements, and the exporter groups announcements and
+      # instruments by exact source-qualified identifier, so a vocabulary
+      # left unloaded is not a partial result: no slice exists for that
+      # source at all, and the ones that do exist belong to whichever source
+      # happened to sort first.
       # @param subdir [String] supplement directory name
-      # @return [String, nil] path to the supplement directory
-      def find_supplement_dir(subdir)
+      # @return [Array<String>] supplement directories in requested-source order
+      def find_supplement_dirs(subdir)
         sources_dir = options[:sources_dir]
         if sources_dir
-          @sources.each do |source|
+          paths = @sources.filter_map do |source|
             repo = Config::Defaults::DATA_REPO_TO_SOURCE.key(source)
             next unless repo
 
             path = File.join(sources_dir, repo, 'sources', subdir)
-            return path if Dir.exist?(path)
-          end
+            path if Dir.exist?(path)
+          end.uniq
+          return paths unless paths.empty?
         end
 
         # input_dir is already scoped to the repository the caller pointed
@@ -786,10 +790,10 @@ module Ammitto
         input_dir = options[:input_dir]
         if input_dir
           path = File.join(File.dirname(input_dir), subdir)
-          return path if Dir.exist?(path)
+          return [path] if Dir.exist?(path)
         end
 
-        nil
+        []
       end
 
       # Transform data using appropriate transformer

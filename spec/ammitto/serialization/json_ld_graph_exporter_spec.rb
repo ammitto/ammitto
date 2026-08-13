@@ -4,6 +4,7 @@ require 'spec_helper'
 require 'fileutils'
 require 'json'
 require 'tmpdir'
+require 'yaml'
 require 'ammitto/serialization/json_ld_graph_exporter'
 require 'ammitto/serialization/turtle_exporter'
 
@@ -430,6 +431,151 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
 
         expect(entry['legalCitations'].first['citationType']).to eq('canonical')
       end
+    end
+  end
+
+  describe 'supplement loading' do
+    let(:supplements_root) { Dir.mktmpdir('ammitto_supplements') }
+
+    after do
+      FileUtils.rm_rf(supplements_root)
+    end
+
+    def write_yaml(path, data)
+      FileUtils.mkdir_p(File.dirname(path))
+      File.write(path, YAML.dump(data))
+      path
+    end
+
+    def write_document_types(repo, id, name)
+      write_yaml(
+        File.join(supplements_root, repo, 'supporting', 'document-types.yml'),
+        'document_types' => [{ 'id' => id, 'name' => { 'en' => name } }]
+      )
+      File.join(supplements_root, repo, 'supporting')
+    end
+
+    def english_name(node)
+      node['name'].find { |n| n['lang'] == 'en' }['value']
+    end
+
+    it 'combines every directory into populated page slices' do
+      us_supporting = File.join(supplements_root, 'data-us', 'supporting')
+      cn_supporting = File.join(supplements_root, 'data-cn', 'supporting')
+      us_instruments = File.join(supplements_root, 'data-us',
+                                 'legal-instruments')
+      cn_instruments = File.join(supplements_root, 'data-cn',
+                                 'legal-instruments')
+
+      write_yaml(
+        File.join(us_supporting, 'document-types.yml'),
+        'document_types' => [
+          { 'id' => 'us/designation', 'name' => { 'en' => 'Designation' } }
+        ]
+      )
+      write_yaml(
+        File.join(us_supporting, 'organizations.yml'),
+        'organizations' => [{ 'id' => 'us/ofac', 'name' => { 'en' => 'OFAC' } }]
+      )
+      write_yaml(
+        File.join(cn_supporting, 'document-types.yml'),
+        'document_types' => [{ 'id' => 'cn/act', 'name' => { 'en' => 'Act' } }]
+      )
+      write_yaml(
+        File.join(cn_supporting, 'organizations.yml'),
+        'organizations' => [
+          { 'id' => 'cn/ministry', 'name' => { 'en' => 'Ministry' } }
+        ]
+      )
+      write_yaml(File.join(us_instruments, 'law.yml'),
+                 'id' => 'us/law', 'type' => 'us/designation',
+                 'title' => 'US law')
+      write_yaml(File.join(cn_instruments, 'law.yml'),
+                 'id' => 'cn/law', 'type' => 'cn/act', 'title' => 'CN law')
+
+      merged = described_class.new(
+        output_dir: output_dir,
+        context_url: context_url,
+        combine: false,
+        supporting_dir: [us_supporting, cn_supporting],
+        instruments_dir: [us_instruments, cn_instruments]
+      )
+
+      expect(merged.document_types.keys).to contain_exactly(
+        'https://www.ammitto.org/document-type/us/designation',
+        'https://www.ammitto.org/document-type/cn/act'
+      )
+      expect(merged.organizations.keys).to contain_exactly(
+        'https://www.ammitto.org/organization/us/ofac',
+        'https://www.ammitto.org/organization/cn/ministry'
+      )
+      expect(merged.loaded_instruments.keys)
+        .to contain_exactly('us/law', 'cn/law')
+
+      merged.add_node(
+        entity: { '@id' => 'https://www.ammitto.org/entity/cn/1' },
+        entry: {
+          '@id' => 'https://www.ammitto.org/entry/cn/list/1',
+          'announcement' => {
+            'documentType' => 'cn/act',
+            'documentId' => 'CN-1',
+            'publisher' => 'cn/ministry'
+          },
+          'legalCitations' => [{
+            'legalInstrumentId' =>
+              'https://www.ammitto.org/legal_instrument/cn/law'
+          }]
+        },
+        source: :cn
+      )
+      merged.export
+
+      document_slice = JSON.parse(File.read(File.join(
+                                              output_dir, 'by-document-type',
+                                              'cn', 'act.jsonld'
+                                            )))
+      organization_slice = JSON.parse(File.read(File.join(
+                                                  output_dir,
+                                                  'by-organization', 'cn',
+                                                  'ministry.jsonld'
+                                                )))
+
+      expect(document_slice['announcements'])
+        .to match([a_hash_including('documentId' => 'CN-1')])
+      expect(document_slice['legalInstruments'])
+        .to match([a_hash_including('identifier' => 'law')])
+      expect(organization_slice['published'])
+        .to match([a_hash_including('documentId' => 'CN-1')])
+    end
+
+    it 'keeps the first claim on an identifier and reports the duplicate' do
+      first = write_document_types('data-cn', 'cn/act', 'Claimed first')
+      second = write_document_types('data-jp', 'cn/act', 'Claimed second')
+
+      merged = nil
+      expect do
+        merged = described_class.new(
+          output_dir: output_dir, context_url: context_url,
+          supporting_dir: [first, second]
+        )
+      end.to output(%r{Document type .*cn/act.* is already defined})
+        .to_stderr
+
+      expect(merged.document_types.size).to eq(1)
+      expect(english_name(merged.document_types.values.first))
+        .to eq('Claimed first')
+    end
+
+    it 'still accepts a single directory as a bare string' do
+      supporting = write_document_types('data-cn', 'cn/act', 'Act')
+
+      single = described_class.new(
+        output_dir: output_dir, context_url: context_url,
+        supporting_dir: supporting
+      )
+
+      expect(single.document_types.keys)
+        .to eq(['https://www.ammitto.org/document-type/cn/act'])
     end
   end
 end

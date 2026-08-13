@@ -124,6 +124,20 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect(birth(year_range_from: 1953).year_range_to).to be_nil
     end
 
+    # Caller-stated year bounds are authoritative, so the date string is
+    # not consulted at all while they are present — not even when it
+    # states a full-date span, which would otherwise outrank them and
+    # overwrite the very bounds the source declared in its own fields.
+    it 'never lets a date span in the string displace stated year bounds' do
+      info = birth(date: '28 Feb 1962 to 28 Feb 1963',
+                   year_range_from: 1900, year_range_to: 1910)
+
+      expect(info.year_range_from).to eq(1900)
+      expect(info.year_range_to).to eq(1910)
+      expect(info.date_range_from).to be_nil
+      expect(info.date_range_to).to be_nil
+    end
+
     it 'suppresses a caller-stated year when a span is also stated' do
       info = birth(date: '1955', year: 1955,
                    year_range_from: 1953, year_range_to: 1958)
@@ -158,54 +172,99 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
     end
 
     # A full-date span crossing years carries days the year bounds
-    # cannot hold and names no single birth year, so it publishes
-    # nothing rather than a coarsened or invented claim.
-    it 'does not reduce a full-date span to a year span' do
+    # cannot hold, so it keeps them: the complete endpoints ride in the
+    # date bounds, and their years are repeated in the year bounds for
+    # consumers that index only years. Neither scalar is filled, because
+    # no single date or year is stated.
+    it 'publishes complete date bounds and their endpoint years' do
       info = birth(date: '28 Feb 1962 to 28 Feb 1963')
 
-      expect(info.year_range_from).to be_nil
-      expect(info.year_range_to).to be_nil
+      expect(info.date_range_from).to eq(Date.new(1962, 2, 28))
+      expect(info.date_range_to).to eq(Date.new(1963, 2, 28))
+      expect(info.year_range_from).to eq(1962)
+      expect(info.year_range_to).to eq(1963)
       expect(info.date).to be_nil
       expect(info.year).to be_nil
     end
 
     # ...but when both endpoints state the SAME year, that year is
     # asserted outright, twice, and the whole interval lies inside it.
-    # Publishing nothing there would discard a certainly-true fact to
-    # avoid a false one that is not on offer.
+    # The existing scalar therefore remains valid alongside the complete
+    # range and its derived bounds.
     it 'retains the exact year from a same-year full-date span' do
       info = birth(date: '01 Jan 1962 to 31 Dec 1962')
 
+      expect(info.date_range_from).to eq(Date.new(1962, 1, 1))
+      expect(info.date_range_to).to eq(Date.new(1962, 12, 31))
       expect(info.year).to eq(1962)
       expect(info.date).to be_nil
-      expect(info.year_range_from).to be_nil
-      expect(info.year_range_to).to be_nil
+      expect(info.year_range_from).to eq(1962)
+      expect(info.year_range_to).to eq(1962)
     end
 
-    # Not special-cased to whole-calendar-year endpoints — what matters
-    # is that both endpoints name the same year, not which days they are.
-    it 'retains the year from a partial same-year span' do
+    # Not special-cased to whole-calendar-year endpoints: the complete
+    # range is preserved whenever both endpoints are valid.
+    it 'retains the range and year from a partial same-year span' do
       info = birth(date: '28 Feb 1962 to 07 Dec 1962')
 
+      expect(info.date_range_from).to eq(Date.new(1962, 2, 28))
+      expect(info.date_range_to).to eq(Date.new(1962, 12, 7))
       expect(info.year).to eq(1962)
       expect(info.date).to be_nil
     end
 
-    # A qualified span is a grammar nobody designed. It stays silent
-    # rather than being folded into the strict same-year rule.
-    it 'stays silent on a qualified same-year span' do
-      info = birth(date: 'circa 01 Jan 1962 to 31 Dec 1962')
+    # NARROWING, deliberate, and the one place this change publishes
+    # less than before it. A same-year span whose day is OFAC's
+    # zero-padded "unknown" ("00 Jan 1962 to 31 Dec 1962") used to
+    # surrender its year through the old same-year rule, which read the
+    # two year captures and ignored the days entirely. The date bounds
+    # replaced that rule, and they need endpoints that name real days,
+    # so this shape now publishes nothing at all.
+    #
+    # It is recorded rather than repaired because no local raw OFAC
+    # corpus exists to say whether the shape occurs at all, and the
+    # alternative — reading year bounds out of a value whose days are
+    # unreadable — is a second grammar, decided on evidence nobody has.
+    # Raising instead would be worse still: it would fail the harmonize
+    # health gate on a routine partial value.
+    it 'publishes nothing for a same-year span whose day is unreadable' do
+      info = birth(date: '00 Jan 1962 to 31 Dec 1962')
 
+      expect(info.date_range_from).to be_nil
+      expect(info.date_range_to).to be_nil
       expect(info.year).to be_nil
       expect(info.date).to be_nil
       expect(info.year_range_from).to be_nil
-      expect(info.year_range_to).to be_nil
     end
 
-    it 'does not reduce a month span either' do
+    # A qualified span is a grammar nobody designed. It stays silent at
+    # every precision: neither the strict same-year rule nor the month
+    # span may fold one in. "circa" is exactly the word a month slot
+    # spelled as any three-to-nine letters swallows, so the year-only
+    # qualified span is here beside the day-precision one.
+    it 'stays silent on a qualified span' do
+      ['circa 01 Jan 1962 to 31 Dec 1962',
+       'circa 1962 to circa 1964'].each do |value|
+        info = birth(date: value)
+        published = [info.date, info.year, info.year_range_from,
+                     info.year_range_to, info.date_range_from,
+                     info.date_range_to]
+
+        expect(published)
+          .to(all(be_nil), "#{value.inspect} published #{published.inspect}")
+      end
+    end
+
+    # A month span reduces to its years, unlike a day span, which keeps
+    # its days as date bounds. The months are lost because no published
+    # field can hold them without a fabricated day — and the shape used
+    # to publish nothing at all, which lost the years too.
+    it 'reduces a month span to its year bounds' do
       info = birth(date: 'Mar 1980 to Mar 1981')
 
-      expect(info.year_range_from).to be_nil
+      expect(info.year_range_from).to eq(1980)
+      expect(info.year_range_to).to eq(1981)
+      expect(info.date_range_from).to be_nil
       expect(info.date).to be_nil
       expect(info.year).to be_nil
     end
@@ -254,6 +313,22 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect { transformer.send(:create_birth_info, year_range_to: 1958) }
         .not_to raise_error
     end
+
+    it 'rejects a reversed date span stated as text' do
+      expect do
+        transformer.send(:create_birth_info,
+                         date: '28 Feb 1963 to 28 Feb 1962')
+      end.to raise_error(Ammitto::Transformers::InvalidDateRangeError,
+                         /1963-02-28 > 1962-02-28/)
+    end
+
+    it 'accepts a date span whose endpoints are the same day' do
+      info = transformer.send(:create_birth_info,
+                              date: '28 Feb 1962 to 28 Feb 1962')
+
+      expect(info.date_range_from).to eq(Date.new(1962, 2, 28))
+      expect(info.date_range_to).to eq(Date.new(1962, 2, 28))
+    end
   end
 
   # Presence is decided before normalization. Deciding it after would
@@ -299,14 +374,43 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
         .to eq([1959, 1965])
     end
 
-    # Two years in a string is not enough. These carry finer precision,
-    # or no span at all, and reading them as year spans would either
-    # discard stated days or invent a span outright.
+    # A month-precision span is read here, losing its months. It has no
+    # finer home: date bounds cannot hold it without inventing a day, so
+    # refusing it published nothing at all. Six records in the live SDN
+    # export take this shape.
+    #
+    # Abbreviated, full and mixed endpoints are all exercised because
+    # the month slot is a hand-written list of names: a spelling missing
+    # from it returns the shape to publishing nothing, silently. "Sept"
+    # is named for being the one entry with a nested optional tail.
+    it 'reads a month-precision span, since date bounds cannot hold one' do
+      ['Mar 1980 to Mar 1981', 'March 1980 to March 1981',
+       'Mar 1980 to March 1981', 'Sept 1980 to September 1981'].each do |value|
+        expect(transformer.send(:extract_year_range, value))
+          .to(eq([1980, 1981]), "#{value.inspect} is not read as a span")
+      end
+    end
+
+    # A month slot spelled as any three-to-nine letters was anchored but
+    # not month-precision, and read "circa 1962 to circa 1964" as a year
+    # span — the qualified grammar FULL_DATE_SPAN declines, published as
+    # bounds the source never stated. BOTH endpoints must name a month,
+    # since one that does not leaves its own bound unproven.
+    it 'refuses a span whose endpoints name no month' do
+      ['circa 1962 to circa 1964', 'born 1962 to citizen 1964',
+       'circa 1962 to Mar 1964', 'Mar 1962 to circa 1964'].each do |value|
+        expect(transformer.send(:extract_year_range, value))
+          .to(be_nil, "expected #{value.inspect} not to be read as a year span")
+      end
+    end
+
+    # Two years in a string is not enough. A day-precision span keeps its
+    # days through FULL_DATE_SPAN and must not be flattened here; the
+    # rest state no span at all, and reading them as one would invent it.
     it 'refuses strings that merely contain two years' do
-      ['28 Feb 1962 to 28 Feb 1963', 'Mar 1980 to Mar 1981',
-       '01 Jan 1973 to 31 Dec 1973', 'born 1962, naturalised 1964',
-       'passport issued 1962 to 1964', '1962 to 1964 (unconfirmed)',
-       '19621964'].each do |value|
+      ['28 Feb 1962 to 28 Feb 1963', '01 Jan 1973 to 31 Dec 1973',
+       'born 1962, naturalised 1964', 'passport issued 1962 to 1964',
+       '1962 to 1964 (unconfirmed)', '19621964'].each do |value|
         expect(transformer.send(:extract_year_range, value))
           .to(be_nil, "expected #{value.inspect} not to be read as a year span")
       end
@@ -323,6 +427,44 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
     it 'ignores non-strings' do
       expect(transformer.send(:extract_year_range, nil)).to be_nil
       expect(transformer.send(:extract_year_range, Date.new(1970, 1, 1)))
+        .to be_nil
+    end
+  end
+
+  # Anchored for the same reason as the year patterns: a value carrying
+  # less than two complete dates must not be upgraded into a span of
+  # them.
+  describe '#extract_date_range' do
+    it 'returns complete Date-valued bounds' do
+      expect(transformer.send(:extract_date_range, '01 Jan 1961 to 31 Dec 1962'))
+        .to eq([Date.new(1961, 1, 1), Date.new(1962, 12, 31)])
+    end
+
+    it 'does not upgrade incomplete or qualified spans' do
+      ['1961 to 1962', 'Jan 1961 to Dec 1962', '01 Jan 1961 to 31 Dec',
+       'circa 01 Jan 1961 to 31 Dec 1962'].each do |value|
+        expect(transformer.send(:extract_date_range, value))
+          .to(be_nil, "expected #{value.inspect} not to be read as a date span")
+      end
+    end
+
+    # An endpoint of the right SHAPE that names no real day states no
+    # complete-date span. It yields nil rather than raising, because the
+    # text path classifies spellings and only #stated_date_range judges
+    # a bound a source declared for itself. Raising here would turn
+    # OFAC's zero-padded "unknown day" convention into a harmonize
+    # health-gate failure.
+    it 'declines, without raising, an endpoint that names no real day' do
+      ['31 Feb 1962 to 28 Feb 1963', '00 Jan 1962 to 31 Dec 1962',
+       '01 Xxxxx 1962 to 31 Dec 1962'].each do |value|
+        expect(transformer.send(:extract_date_range, value))
+          .to(be_nil, "expected #{value.inspect} to be declined quietly")
+      end
+    end
+
+    it 'ignores non-strings' do
+      expect(transformer.send(:extract_date_range, nil)).to be_nil
+      expect(transformer.send(:extract_date_range, Date.new(1961, 1, 1)))
         .to be_nil
     end
   end

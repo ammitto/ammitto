@@ -29,6 +29,13 @@ RSpec.describe Ammitto::Ontology::ValueObjects::BirthInfo do
       expect(described_class.new(year_range_from: 1953)).to be_present
       expect(described_class.new(year_range_to: 1958)).to be_present
     end
+
+    it 'counts either date-range bound on its own' do
+      expect(described_class.new(date_range_from: Date.new(1961, 1, 1)))
+        .to be_present
+      expect(described_class.new(date_range_to: Date.new(1962, 12, 31)))
+        .to be_present
+    end
   end
 
   describe '#to_s' do
@@ -100,6 +107,57 @@ RSpec.describe Ammitto::Ontology::ValueObjects::BirthInfo do
 
       expect(span.neo4j_properties)
         .to include(year_range_from: 1959, year_range_to: 1965)
+    end
+  end
+
+  describe 'date range display and serialization' do
+    let(:span) do
+      described_class.new(
+        date_range_from: Date.new(1961, 1, 1),
+        date_range_to: Date.new(1962, 12, 31),
+        year_range_from: 1961,
+        year_range_to: 1962
+      )
+    end
+
+    it 'renders complete dates before their derived year bounds' do
+      expect(span.to_s).to eq('1961-01-01-1962-12-31')
+    end
+
+    it 'renders open bounds and circa on every shape' do
+      open_above = described_class.new(
+        date_range_from: Date.new(1961, 1, 1), circa: true
+      )
+      open_below = described_class.new(
+        date_range_to: Date.new(1962, 12, 31), circa: true
+      )
+
+      expect(open_above.to_s).to eq('c. 1961-01-01 or later')
+      expect(open_below.to_s).to eq('c. no later than 1962-12-31')
+    end
+
+    it 'carries the bounds through hashes, YAML and JSON' do
+      expect(span.to_hash).to include(
+        date_range_from: '1961-01-01',
+        date_range_to: '1962-12-31'
+      )
+
+      from_yaml = described_class.from_yaml(span.to_yaml)
+      from_json = described_class.from_json(span.to_json)
+
+      expect(from_yaml.date_range_from).to eq(Date.new(1961, 1, 1))
+      expect(from_yaml.date_range_to).to eq(Date.new(1962, 12, 31))
+      expect(from_json.date_range_from).to eq(Date.new(1961, 1, 1))
+      expect(from_json.date_range_to).to eq(Date.new(1962, 12, 31))
+    end
+
+    # The Neo4j property list drives both import and export, so a name
+    # missing from it is a field that never reaches the graph.
+    it 'carries both bounds into the Neo4j properties' do
+      expect(span.neo4j_properties).to include(
+        date_range_from: '1961-01-01',
+        date_range_to: '1962-12-31'
+      )
     end
   end
 end

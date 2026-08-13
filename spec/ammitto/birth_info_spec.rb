@@ -7,6 +7,44 @@ require 'spec_helper'
 # `year` one year, and the range bounds a span. A span never borrows
 # either scalar, because neither bound is the birth year.
 RSpec.describe Ammitto::BirthInfo do
+  describe 'date range serialization' do
+    let(:span) do
+      described_class.new(
+        date_range_from: Date.new(1961, 1, 1),
+        date_range_to: Date.new(1962, 12, 31)
+      )
+    end
+
+    it 'publishes Date-valued bounds as camelCase JSON keys' do
+      json = JSON.parse(span.to_json)
+
+      expect(json['dateRangeFrom']).to eq('1961-01-01')
+      expect(json['dateRangeTo']).to eq('1962-12-31')
+    end
+
+    # YAML is the fetch artifact's format, so a bound that does not
+    # survive it never reaches harmonize at all.
+    it 'round-trips both bounds through JSON and YAML' do
+      from_json = described_class.from_json(span.to_json)
+      from_yaml = described_class.from_yaml(span.to_yaml)
+
+      expect(from_json.date_range_from).to eq(Date.new(1961, 1, 1))
+      expect(from_json.date_range_to).to eq(Date.new(1962, 12, 31))
+      expect(from_yaml.date_range_from).to eq(Date.new(1961, 1, 1))
+      expect(from_yaml.date_range_to).to eq(Date.new(1962, 12, 31))
+    end
+  end
+
+  describe '#date_range?' do
+    it 'is true for either bound alone, and false for neither' do
+      expect(described_class.new(date_range_from: Date.new(1961, 1, 1)))
+        .to be_date_range
+      expect(described_class.new(date_range_to: Date.new(1962, 12, 31)))
+        .to be_date_range
+      expect(described_class.new(year: 1961)).not_to be_date_range
+    end
+  end
+
   describe 'year range serialization' do
     let(:span) do
       described_class.new(year_range_from: 1959, year_range_to: 1965)
@@ -72,6 +110,45 @@ RSpec.describe Ammitto::BirthInfo do
       expect(described_class.new(year: 1964).formatted_date).to eq('1964')
       expect(described_class.new(date: Date.new(1964, 7, 17)).formatted_date)
         .to eq('1964-07-17')
+    end
+
+    # The date range carries everything the year range does and more, so
+    # a record holding both renders the finer one.
+    it 'renders the complete date range before its derived year range' do
+      span = described_class.new(
+        date_range_from: Date.new(1961, 1, 1),
+        date_range_to: Date.new(1962, 12, 31),
+        year_range_from: 1961,
+        year_range_to: 1962
+      )
+
+      expect(span.formatted_date).to eq('1961-01-01-1962-12-31')
+    end
+
+    it 'renders an open date range in its open direction' do
+      open_above = described_class.new(date_range_from: Date.new(1961, 1, 1))
+      open_below = described_class.new(date_range_to: Date.new(1962, 12, 31))
+
+      expect(open_above.formatted_date).to eq('1961-01-01 or later')
+      expect(open_below.formatted_date).to eq('no later than 1962-12-31')
+    end
+
+    it 'prefixes circa on every date-range shape' do
+      closed = described_class.new(
+        date_range_from: Date.new(1961, 1, 1),
+        date_range_to: Date.new(1962, 12, 31),
+        circa: true
+      )
+      open_above = described_class.new(
+        date_range_from: Date.new(1961, 1, 1), circa: true
+      )
+      open_below = described_class.new(
+        date_range_to: Date.new(1962, 12, 31), circa: true
+      )
+
+      expect(closed.formatted_date).to eq('c. 1961-01-01-1962-12-31')
+      expect(open_above.formatted_date).to eq('c. 1961-01-01 or later')
+      expect(open_below.formatted_date).to eq('c. no later than 1962-12-31')
     end
   end
 

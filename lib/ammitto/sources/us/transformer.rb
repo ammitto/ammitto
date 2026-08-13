@@ -261,9 +261,14 @@ module Ammitto
             pob = pobs[idx]
 
             # OFAC DOBs mix complete dates ("03 Oct 1988") with partial
-            # ones ("1988", "Oct 1988", "circa 1960"): only a complete
-            # date becomes BirthInfo#date, a stated year always survives
-            # in BirthInfo#year
+            # ones ("1988", "Oct 1988", "circa 1960") and with spans
+            # ("01 Jan 1961 to 31 Dec 1962"). The whole string is
+            # forwarded untouched: reading it is create_birth_info's
+            # job, not this transformer's. Only a complete date becomes
+            # BirthInfo#date; a partial value's stated year survives in
+            # BirthInfo#year; a span becomes bounds instead, and only a
+            # span whose endpoints share a year still states a scalar
+            # one.
             birth_infos << create_birth_info(
               date: dob.date_of_birth,
               circa: circa_string?(dob.date_of_birth),

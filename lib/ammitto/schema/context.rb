@@ -192,6 +192,12 @@ module Ammitto
               # flat entity-level key and never described this one, so
               # 'year' went out undeclared.
               'year' => { '@id' => 'year', '@type' => 'xsd:gYear' },
+              # Bounds of a stated span of complete birth dates. These
+              # preserve the endpoint days and months; the year bounds
+              # below are the projection of them a year-only consumer
+              # can index, never a substitute for reading these.
+              'dateRangeFrom' => { '@id' => 'dateRangeFrom', '@type' => 'xsd:date' },
+              'dateRangeTo' => { '@id' => 'dateRangeTo', '@type' => 'xsd:date' },
               # Bounds of a stated span of birth years. Separate terms,
               # not a refinement of 'year': a bound is not a birth year,
               # and a consumer that treated one as such would answer an

@@ -210,6 +210,52 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
         expect(row[:birthYearFrom]).to eq('1959')
         expect(row[:birthYearTo]).to eq('1965')
       end
+
+      # A full-date span reaches this exporter only after the real
+      # transformer derives its year bounds and the real serializer
+      # names them, so this example crosses both boundaries rather than
+      # hand-writing the hash they produce. Feeding a year-range hash
+      # straight in would prove the indexer reads year bounds — which
+      # was never in doubt — not that a date span supplies them.
+      it 'exports year bounds derived from a serialized date span' do
+        transformer = Ammitto::Transformers::BaseTransformer.new(:us)
+        birth = transformer.send(:create_birth_info,
+                                 date: '28 Feb 1962 to 28 Feb 1963')
+        birth_node = Ammitto::Serialization::JsonLdSerializer
+                     .new.send(:serialize_birth_info, birth)
+
+        row = row_for(birth_node)
+
+        expect(row[:birthYearFrom]).to eq('1962')
+        expect(row[:birthYearTo]).to eq('1963')
+        expect(row).not_to have_key(:birthYear)
+      end
+
+      # The same crossing for the OTHER span shape. A same-year span is
+      # the only one that answers an exact-year query AND a range query,
+      # so it is the only one where all five fields must appear at once
+      # — and the example above, being cross-year, asserts birthYear is
+      # ABSENT. Without this one a regression that dropped the scalar
+      # year anywhere along the crossing would leave the suite green and
+      # make every "born in 1962" search miss a person OFAC pinned to
+      # 1962 twice over. Both date bounds are asserted on the node the
+      # row is built from, so the finer precision is shown to survive
+      # into the artifact rather than being reduced to its years.
+      it 'exports birthYear and both bounds for a same-year date span' do
+        transformer = Ammitto::Transformers::BaseTransformer.new(:us)
+        birth = transformer.send(:create_birth_info,
+                                 date: '01 Jan 1962 to 31 Dec 1962')
+        birth_node = Ammitto::Serialization::JsonLdSerializer
+                     .new.send(:serialize_birth_info, birth)
+
+        row = row_for(birth_node)
+
+        expect(birth_node['dateRangeFrom']).to eq(Date.new(1962, 1, 1))
+        expect(birth_node['dateRangeTo']).to eq(Date.new(1962, 12, 31))
+        expect(row[:birthYear]).to eq('1962')
+        expect(row[:birthYearFrom]).to eq('1962')
+        expect(row[:birthYearTo]).to eq('1962')
+      end
     end
 
     # An entity can carry several birth records, and the span is not

@@ -10,16 +10,23 @@ module Ammitto
       # Represents birth information for a person
       #
       # Birth information may be partial (year only, city only, etc.),
-      # may be a span of years, and may be approximate (circa flag).
+      # may be a span of dates or of years, and may be approximate
+      # (circa flag).
       #
       # +date+ carries ONE complete source-stated day/month/year and
       # +year+ ONE source-stated year. A source-stated span rides in
-      # +year_range_from+ / +year_range_to+ instead, and while a span is
-      # present +date+ and +year+ stay nil: neither bound is the birth
-      # year, so filling +year+ with an endpoint would assert something
-      # the source never said. Either bound may stand alone. A reversed
-      # closed pair is rejected upstream, at the transformer boundary,
-      # rather than reordered here.
+      # +date_range_from+ / +date_range_to+ when the source stated
+      # complete endpoint dates, and in +year_range_from+ /
+      # +year_range_to+ when it stated years. While a span is present
+      # +date+ stays nil: neither bound is the birth date. +year+ stays
+      # nil too, unless a date span's endpoints share one year — then
+      # the whole interval lies inside that year and the scalar is read
+      # out rather than invented. A date span also publishes its
+      # endpoint years through the year bounds, so year-only consumers
+      # keep finding the record; those derived bounds supplement the
+      # complete dates, they do not replace them. Either bound may stand
+      # alone. A reversed closed pair is rejected upstream, at the
+      # transformer boundary, rather than reordered here.
       #
       # +circa+ is independent of a span: sources emit circa both with
       # and without a range, so it is carried from the source and never
@@ -38,14 +45,18 @@ module Ammitto
       # @example A source-stated span of years
       #   BirthInfo.new(year_range_from: 1959, year_range_to: 1965)
       #
+      # @example A source-stated span of complete dates
+      #   BirthInfo.new(date_range_from: Date.new(1961, 1, 1),
+      #                 date_range_to: Date.new(1962, 12, 31))
+      #
       class BirthInfo < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for BirthInfo
         neo4j_labels 'BirthInfo'
-        neo4j_property :date, :circa, :year, :year_range_from,
-                       :year_range_to, :city, :region, :country,
-                       :country_iso_code
+        neo4j_property :date, :circa, :year, :date_range_from,
+                       :date_range_to, :year_range_from, :year_range_to,
+                       :city, :region, :country, :country_iso_code
 
         # Exact or approximate birth date
         # @return [Date, nil]
@@ -59,11 +70,21 @@ module Ammitto
         # @return [Integer, nil]
         attribute :year, :integer
 
-        # Lower bound of a source-stated span of birth years
+        # Lower bound of a source-stated span of complete birth dates
+        # @return [Date, nil]
+        attribute :date_range_from, :date
+
+        # Upper bound of a source-stated span of complete birth dates
+        # @return [Date, nil]
+        attribute :date_range_to, :date
+
+        # Lower bound of a birth-year span: either source-stated, or
+        # derived from a date span's endpoints for year-only discovery
         # @return [Integer, nil]
         attribute :year_range_from, :integer
 
-        # Upper bound of a source-stated span of birth years
+        # Upper bound of a birth-year span: either source-stated, or
+        # derived from a date span's endpoints for year-only discovery
         # @return [Integer, nil]
         attribute :year_range_to, :integer
 
@@ -86,10 +107,16 @@ module Ammitto
         # Check if birth info has meaningful content
         # @return [Boolean]
         def present?
-          [date, year, year_range_from, year_range_to, city, region,
-           country].any? do |v|
+          [date, year, date_range_from, date_range_to, year_range_from,
+           year_range_to, city, region, country].any? do |v|
             Utils::Presence.present?(v)
           end
+        end
+
+        # Whether a span of complete dates is stated, on either side
+        # @return [Boolean]
+        def date_range?
+          !date_range_from.nil? || !date_range_to.nil?
         end
 
         # Whether a span of years is stated, on either side
@@ -123,6 +150,8 @@ module Ammitto
           hash[:date] = date.to_s if date
           hash[:circa] = circa if circa
           hash[:year] = year if year
+          hash[:date_range_from] = date_range_from.to_s if date_range_from
+          hash[:date_range_to] = date_range_to.to_s if date_range_to
           hash[:year_range_from] = year_range_from if year_range_from
           hash[:year_range_to] = year_range_to if year_range_to
           hash[:city] = city if city
@@ -135,11 +164,23 @@ module Ammitto
         private
 
         def date_label
+          return date_range_label if date_range?
           return year_range_label if year_range?
           return year.to_s if year && !date
           return date.to_s if date
 
           nil
+        end
+
+        # The date range precedes the year range derived from it,
+        # because it preserves everything the source stated.
+        # @return [String] the span, closed or open on either side
+        def date_range_label
+          closed = date_range_from && date_range_to
+          return "#{date_range_from}-#{date_range_to}" if closed
+          return "#{date_range_from} or later" if date_range_from
+
+          "no later than #{date_range_to}"
         end
 
         # An open bound renders as the direction it leaves open, so a
@@ -158,6 +199,8 @@ module Ammitto
           map :date, to: :date
           map :circa, to: :circa
           map :year, to: :year
+          map :date_range_from, to: :date_range_from
+          map :date_range_to, to: :date_range_to
           map :year_range_from, to: :year_range_from
           map :year_range_to, to: :year_range_to
           map :city, to: :city
@@ -171,6 +214,8 @@ module Ammitto
           map :date, to: :date
           map :circa, to: :circa
           map :year, to: :year
+          map :date_range_from, to: :date_range_from
+          map :date_range_to, to: :date_range_to
           map :year_range_from, to: :year_range_from
           map :year_range_to, to: :year_range_to
           map :city, to: :city

@@ -20,6 +20,22 @@ module Ammitto
     # run nor vanishes from it.
     class InvalidYearRangeError < StandardError; end
 
+    # Raised when a birth-date range is a defect rather than a spelling:
+    # a closed span whose lower bound is above its upper bound.
+    #
+    # A reversed span is rejected rather than reordered for the same
+    # reason as a reversed year range: reordering would publish a claim
+    # the source never made. Rejection raises rather than returning nil
+    # so that "this value names no span" and "this value names a span
+    # that cannot be true" stay distinguishable.
+    #
+    # An unrecognised or unparseable SPELLING is not a defect and does
+    # not raise; see #extract_date_range. As with InvalidYearRangeError,
+    # HarmonizeCommand's per-file rescue records the offending filename
+    # and fails its health gate, so one bad record neither aborts the
+    # run nor vanishes from it.
+    class InvalidDateRangeError < StandardError; end
+
     # BaseTransformer provides common functionality for transforming
     # source-specific models to the harmonized Ammitto ontology.
     #
@@ -45,12 +61,36 @@ module Ammitto
     #   end
     #
     class BaseTransformer
+      # A month-precision span loses its months when it is reduced to
+      # year bounds, so both endpoints must prove they name months
+      # before either bound becomes a published fact.
+      ENGLISH_MONTH_NAME = /
+        (?:
+          Jan(?:uary)? | Feb(?:ruary)? | Mar(?:ch)? | Apr(?:il)? |
+          May | Jun(?:e)? | Jul(?:y)? | Aug(?:ust)? |
+          Sep(?:t(?:ember)?)? | Oct(?:ober)? | Nov(?:ember)? | Dec(?:ember)?
+        )
+      /ix
+
       # Spellings read as a bare span of birth years. Every pattern is
       # ANCHORED at both ends: a span is recognised only when the WHOLE
-      # value is one. "28 Feb 1962 to 28 Feb 1963" and "Mar 1980 to Mar
-      # 1981" are both live OFAC shapes that carry finer precision than
-      # a year span, and flattening them into one would discard the
-      # months and days the source did state.
+      # value is one.
+      #
+      # A day-precision span ("28 Feb 1962 to 28 Feb 1963") is NOT here.
+      # It keeps its days through FULL_DATE_SPAN, which publishes date
+      # bounds and derives year bounds from them, so nothing is lost.
+      #
+      # A month-precision span ("Mar 1980 to Mar 1981") IS here, and the
+      # months are lost. That is the lesser loss: date bounds cannot hold
+      # it without inventing a day, so the alternative is not keeping the
+      # months but publishing nothing at all, which is what this shape
+      # did before. The year span it yields is true, and it is the same
+      # trade already accepted for "1955 to 1957". Anchoring alone does
+      # not earn that trade: an endpoint of ANY word plus a year is
+      # anchored too, and admits "circa 1962 to circa 1964" — a
+      # qualified span, which is the grammar FULL_DATE_SPAN also
+      # declines. Only a named month says the value carries month
+      # precision, so only a named month may be dropped for its year.
       #
       # The hyphen spelling ("1962-1964") is deliberately absent. It
       # appears in none of the corpora that state spans as text — 0 of
@@ -60,7 +100,11 @@ module Ammitto
       # so it is an unsupported input rather than a misread one.
       YEAR_RANGE_PATTERNS = [
         /\A(?:approximately\s*:?\s*)?between\s+(\d{4})\s+and\s+(\d{4})\z/i,
-        /\A(\d{4})\s+to\s+(\d{4})\z/i
+        /\A(\d{4})\s+to\s+(\d{4})\z/i,
+        /
+          \A#{ENGLISH_MONTH_NAME}\s+(\d{4})\s+to\s+
+          #{ENGLISH_MONTH_NAME}\s+(\d{4})\z
+        /ix
       ].freeze
 
       # Connectors that join the two halves of a span. Used to tell a
@@ -69,23 +113,20 @@ module Ammitto
       # publish one endpoint as though the source had stated it alone.
       SPAN_CONNECTOR = /\s+(?:to|and)\s+/i
 
-      # A full-date span whose endpoints are complete dates, e.g.
+      # A full-date span whose endpoints are each a complete date, e.g.
       # "01 Jan 1962 to 31 Dec 1962". OFAC writes this in dozens of
-      # spellings and it must not become its opening date — but when
-      # both endpoints carry the SAME year, that year is stated
-      # outright, twice, and the whole interval lies inside it. Reading
-      # it out is parsing, not inference, so the year survives even
-      # though no single day does.
+      # spellings and it must not become its opening date; both
+      # endpoints are published instead, as the date bounds.
       #
       # Deliberately strict: both endpoints must be complete. An
-      # abbreviated tail ("01 Jan 1973 to 31 Dec") states no year on its
-      # second endpoint, and a qualified value ("circa ...") is a
-      # different grammar that has not been designed.
-      SAME_YEAR_FULL_DATE_SPAN = /
+      # abbreviated tail ("01 Jan 1973 to 31 Dec") states no complete
+      # upper bound, and a qualified value ("circa ...") is a different
+      # grammar that has not been designed.
+      FULL_DATE_SPAN = /
         \A
-        \d{1,2}\s+[[:alpha:]]{3,9}\s+(\d{4})
+        (?<from>\d{1,2}\s+[[:alpha:]]{3,9}\s+\d{4})
         \s+to\s+
-        \d{1,2}\s+[[:alpha:]]{3,9}\s+(\d{4})
+        (?<to>\d{1,2}\s+[[:alpha:]]{3,9}\s+\d{4})
         \z
       /ix
 
@@ -271,7 +312,15 @@ module Ammitto
       #
       # * BirthInfo#date is set only when the source states a complete
       #   day-month-year; a bare or partial year rides in BirthInfo#year
-      #   and is never padded into an invented date.
+      #   and is never padded into an invented date. A span never
+      #   becomes its opening endpoint.
+      # * A span of complete dates rides in BirthInfo#date_range_from /
+      #   #date_range_to, and publishes its endpoint years through the
+      #   year-range fields as well, so year-only indexes keep the
+      #   record. Those derived bounds supplement the source claim; they
+      #   do not replace it.
+      # * A date span wholly inside one year also retains that exact
+      #   year in #year. No scalar year is emitted when it crosses years.
       # * A span of years rides in BirthInfo#year_range_from /
       #   #year_range_to, and while one is present both #date and #year
       #   stay nil. Neither bound is the birth year, so filling #year
@@ -279,9 +328,19 @@ module Ammitto
       # * circa is carried through from the source, never inferred from
       #   the presence of a span.
       #
-      # Bounds passed by a caller are authoritative: when either is
-      # given, the date string is not searched for a span, and a missing
+      # Year bounds passed by a caller are authoritative, as the EU and
+      # DFAT state them in fields of their own: when either is given the
+      # date string is not searched for a span at all, and a missing
       # bound stays missing rather than being filled from the string.
+      #
+      # There is deliberately no caller-stated pair for the DATE bounds.
+      # No source states a complete-date span in fields of its own — OFAC
+      # writes it into the value itself — so the only way to reach the
+      # date bounds is FULL_DATE_SPAN, whose endpoints this method parses
+      # and validates. Adding the keywords back would reopen the ordering
+      # question of which pair wins, and answering it by deriving year
+      # bounds from the dates silently discarded whichever year bounds
+      # the caller had stated.
       #
       # @param date [String, Date, nil] birth date
       # @param circa [Boolean] whether the date is approximate
@@ -290,16 +349,27 @@ module Ammitto
       # @param country [String, nil] birth country
       # @param country_iso_code [String, nil] ISO country code
       # @param year [Integer, String, nil] source-stated birth year
-      # @param year_range_from [Integer, String, nil] lower bound
-      # @param year_range_to [Integer, String, nil] upper bound
-      # @raise [InvalidYearRangeError] when a closed span runs backwards
+      # @param year_range_from [Integer, String, nil] lower year bound
+      # @param year_range_to [Integer, String, nil] upper year bound
+      # @raise [InvalidDateRangeError] when a closed date span read from
+      #   the value runs backwards
+      # @raise [InvalidYearRangeError] when a year bound is not a year,
+      #   or a closed year span runs backwards
       # @return [BirthInfo] the birth info
       def create_birth_info(date: nil, circa: false, city: nil, region: nil, country: nil,
                             country_iso_code: nil, year: nil,
                             year_range_from: nil, year_range_to: nil)
-        bounds = stated_year_range(year_range_from, year_range_to) ||
-                 extract_year_range(date)
-        return birth_info_for_range(bounds, circa, city, region, country, country_iso_code) if bounds
+        date_bounds = nil
+        year_bounds = stated_year_range(year_range_from, year_range_to)
+
+        unless year_bounds
+          date_bounds = extract_date_range(date)
+          year_bounds = extract_year_range(date) unless date_bounds
+        end
+
+        place = [circa, city, region, country, country_iso_code]
+        return birth_info_for_date_range(date_bounds, *place) if date_bounds
+        return birth_info_for_range(year_bounds, *place) if year_bounds
 
         parsed_date = parse_complete_date(date)
 
@@ -311,7 +381,32 @@ module Ammitto
           country: country,
           country_iso_code: country_iso_code,
           year: normalize_year(year) || parsed_date&.year ||
-                same_year_full_date_span(date) || extract_birth_year(date)
+                extract_birth_year(date)
+        )
+      end
+
+      # A date span publishes its complete endpoints and repeats their
+      # years for discovery. When both endpoints share a year the whole
+      # interval lies inside it, so retaining that scalar reads out a
+      # fact the source stated twice rather than inventing a day.
+      # @param bounds [Array<Date, nil>] validated [from, to]
+      # @return [BirthInfo] the birth info
+      def birth_info_for_date_range(bounds, circa, city, region, country, country_iso_code)
+        lower, upper = bounds
+        exact_year = lower.year if lower && upper && lower.year == upper.year
+
+        Ammitto::BirthInfo.new(
+          date: nil,
+          year: exact_year,
+          date_range_from: lower,
+          date_range_to: upper,
+          year_range_from: lower&.year,
+          year_range_to: upper&.year,
+          circa: circa,
+          city: city,
+          region: region,
+          country: country,
+          country_iso_code: country_iso_code
         )
       end
 
@@ -331,6 +426,60 @@ module Ammitto
           country: country,
           country_iso_code: country_iso_code
         )
+      end
+
+      # Bounds of a complete-date span stated as one string, or nil when
+      # the value names no such span. Recognition stays anchored (see
+      # FULL_DATE_SPAN), so month-only, abbreviated and qualified spans
+      # still cannot be upgraded into facts they do not contain.
+      #
+      # An endpoint matching the SHAPE but naming no real calendar day —
+      # "31 Feb 1962", or OFAC's zero-padded "00 Jan 1962" — means the
+      # value does not state a complete-date span, so it yields nil and
+      # the record publishes nothing.
+      #
+      # For a SAME-YEAR span that is a deliberate NARROWING: the rule
+      # this one replaced matched on the two year captures alone and
+      # never looked at the days, so "00 Jan 1962 to 31 Dec 1962" used
+      # to surrender year 1962. Date bounds need endpoints that name
+      # real days, so the shape now publishes nothing instead. It is
+      # accepted rather than repaired because recovering the years from
+      # a value whose days are unreadable is a second grammar, and no
+      # evidence says the shape occurs; see the spec of the same name.
+      #
+      # Yielding nil rather than raising mirrors extract_year_range,
+      # whose text path also stays silent on an unrecognised spelling.
+      # Raising is reserved for a closed span that runs backwards, which
+      # is a value that cannot be true rather than one merely unread.
+      # @param value [Object] candidate date string
+      # @raise [InvalidDateRangeError] when a closed span runs backwards
+      # @return [Array<Date>, nil] validated bounds, or nil
+      def extract_date_range(value)
+        return nil unless value.is_a?(String)
+
+        match = FULL_DATE_SPAN.match(value.strip)
+        return nil unless match
+
+        lower = parse_complete_date(match[:from])
+        upper = parse_complete_date(match[:to])
+        return nil unless lower && upper
+
+        validate_date_range(lower, upper)
+      end
+
+      # A closed span must run forwards. Only a closed one can: an open
+      # bound has nothing to be out of order with.
+      # @param lower [Date, nil] lower bound
+      # @param upper [Date, nil] upper bound
+      # @raise [InvalidDateRangeError] when a closed span runs backwards
+      # @return [Array<Date, nil>] the bounds, unchanged
+      def validate_date_range(lower, upper)
+        if lower && upper && lower > upper
+          raise InvalidDateRangeError,
+                "birth date range runs backwards: #{lower} > #{upper}"
+        end
+
+        [lower, upper]
       end
 
       # Bounds a caller stated outright, as the EU does through its
@@ -455,30 +604,11 @@ module Ammitto
       # a uniqueness test cannot see the span in it.
       #
       # Recognising a span is not the same as publishing one: only the
-      # anchored YEAR_RANGE_PATTERNS produce bounds. A span recognised
-      # here but not matched there publishes nothing, which is the point
-      # — it is rejection of a value known to be misparsed, not support
-      # for a spelling.
-      # The year both endpoints of a full-date span agree on, or nil.
+      # anchored YEAR_RANGE_PATTERNS and FULL_DATE_SPAN produce bounds.
+      # A span recognised here but matched by neither publishes nothing,
+      # which is the point — it is rejection of a value known to be
+      # misparsed, not support for a spelling.
       #
-      # This runs only after parse_complete_date has already declined
-      # the value, so it never competes with a real date — it recovers
-      # the one fact a same-year span states unambiguously. A span whose
-      # endpoints name different years returns nil: no single birth year
-      # is asserted there, and the model has no date-valued range to
-      # hold what is.
-      #
-      # @param value [Object] candidate date string
-      # @return [Integer, nil]
-      def same_year_full_date_span(value)
-        return nil unless value.is_a?(String)
-
-        match = SAME_YEAR_FULL_DATE_SPAN.match(value.strip)
-        return nil unless match && match[1] == match[2]
-
-        match[1].to_i
-      end
-
       # @param value [Object] candidate date string
       # @return [Boolean]
       def date_span?(value)

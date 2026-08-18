@@ -1606,10 +1606,20 @@ module Ammitto
       # @param role [String] announcement field naming the organization
       # @param identifier [String] organization identifier
       # @return [Array<Array(Hash, Hash)>] matching pairs
+      # A role field carries one organization identifier, so the test is
+      # equality. It was a substring test, reproducing what the
+      # organization page's JavaScript did so the published slice and the
+      # page agreed. The page no longer does its own matching — it reads
+      # this slice — so the parity that justified the bug is gone and
+      # what remains is the page's actual meaning: documents published by
+      # this organization.
+      #
+      # Seventeen identifiers in the shipped supporting data are a strict
+      # prefix of another, and cn/ministry-of-commerce precedes five, so
+      # a parent was claiming every child's documents.
       def matching_role(pairs, role, identifier)
         pairs.select do |_entry, announcement|
-          value = announcement[role]
-          value.is_a?(String) && value.include?(identifier)
+          announcement[role] == identifier
         end
       end
 

@@ -88,6 +88,16 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     expect(sources['members']).to include('eu.jsonld')
   end
 
+  # node/ has no files of its own: only node/entity and node/entry, each
+  # with its own index. Judging a collection by its direct files alone
+  # dropped the whole node API from the catalogue.
+  it 'lists a collection whose content is entirely in subdirectories' do
+    node = named('node')
+
+    expect(node).not_to be_nil, 'node/ must appear in the catalogue'
+    expect(node['collections']).to include('entity', 'entry')
+  end
+
   it 'points a collection at its own index where one exists' do
     expect(named('by-authority')['index']).to eq('by-authority/index.jsonld')
   end
@@ -101,7 +111,8 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     end
 
     member_paths = manifest['entries'].flat_map do |e|
-      (e['members'] || []).map { |m| File.join(e['url'], m) }
+      (e['members'] || []).map { |m| File.join(e['url'], m) } +
+        (e['collections'] || []).map { |c| File.join(e['url'], c) }
     end
 
     member_paths.each do |rel|

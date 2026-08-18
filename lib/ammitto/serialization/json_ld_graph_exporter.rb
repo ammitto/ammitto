@@ -486,11 +486,21 @@ module Ammitto
                        .map { |f| File.basename(f) }
                        .reject { |f| f.start_with?('index.') }
                        .sort
-          next if members.empty? && !File.exist?(File.join(dir, 'index.jsonld'))
+          # node/ holds no files of its own, only node/entity and
+          # node/entry, each with its own index. Judging a collection by
+          # its direct files alone dropped the entire node API from the
+          # catalogue while still listing it as something we publish.
+          nested = Dir.glob(File.join(dir, '*'))
+                      .select { |f| File.directory?(f) }
+                      .map { |f| File.basename(f) }
+                      .sort
+          index = File.exist?(File.join(dir, 'index.jsonld'))
+          next if members.empty? && nested.empty? && !index
 
           entry = { 'name' => name, 'url' => name, 'description' => description }
-          entry['index'] = "#{name}/index.jsonld" if File.exist?(File.join(dir, 'index.jsonld'))
+          entry['index'] = "#{name}/index.jsonld" if index
           entry['members'] = members unless members.empty?
+          entry['collections'] = nested unless nested.empty?
           entry
         end
       end

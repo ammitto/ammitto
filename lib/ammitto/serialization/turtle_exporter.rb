@@ -57,9 +57,15 @@ module Ammitto
       end
 
       # Characters an IRIREF cannot contain, per the Turtle grammar:
-      # space and the delimiters. Their presence means the string is
-      # prose that merely starts with a URL, not an identifier.
-      IRI_FORBIDDEN = /[\s<>"{}|^`\\]/
+      # every codepoint in #x00-#x20 plus the delimiters. Their presence
+      # means the string is prose that merely starts with a URL, not an
+      # identifier.
+      #
+      # The range is spelled out rather than written `\s`, which covers
+      # only space, tab, newline, carriage return, form feed and vertical
+      # tab: it would let \x00-\x08 and \x0E-\x1F through. Non-ASCII is
+      # deliberately absent, because a Turtle IRIREF may hold it.
+      IRI_FORBIDDEN = /[\x00-\x20<>"{}|^`\\]/
 
       private
 

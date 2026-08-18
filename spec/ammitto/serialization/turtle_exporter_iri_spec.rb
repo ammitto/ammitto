@@ -37,6 +37,12 @@ RSpec.describe Ammitto::Serialization::TurtleExporter do
     [
       'https://example.test/a b',
       "https://example.test/a\tb",
+      # The grammar forbids every codepoint in #x00-#x20 and Ruby's \s
+      # covers six of them, so the controls it misses are named here.
+      "https://example.test/a\x00b",
+      "https://example.test/a\x08b",
+      "https://example.test/a\x0Eb",
+      "https://example.test/a\x1Fb",
       'https://example.test/a<b',
       'https://example.test/a"b',
       'https://ipnrf.ru/ ; Company Identification No., 1177456104638'
@@ -44,8 +50,17 @@ RSpec.describe Ammitto::Serialization::TurtleExporter do
       result = convert(value).first
       next unless result.start_with?('<')
 
-      expect(result).not_to match(/[\s<>"{}|^`\\]/), "#{value.inspect} -> #{result.inspect}"
+      expect(result).not_to match(/[\x00-\x20<>"{}|^`\\]/),
+                            "#{value.inspect} -> #{result.inspect}"
     end
+  end
+
+  it 'still emits an IRI carrying a character an IRIREF may hold' do
+    # The guard must not reach past the grammar. Non-ASCII is legal in an
+    # IRIREF, so widening to the control range must not demote it.
+    value = 'https://example.test/café'
+
+    expect(convert(value)).to eq(["<#{value}>"])
   end
 
   it 'still types dates and leaves other text alone' do

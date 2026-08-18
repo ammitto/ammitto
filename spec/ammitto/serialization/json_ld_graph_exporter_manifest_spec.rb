@@ -71,8 +71,10 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
   end
 
   it 'reports each dataset size, since one of them is very large' do
-    # all.ttl is over 100 MB in production. A consumer choosing between
-    # serialisations should not have to start the download to find out.
+    # The two serialisations of the same graph differ by an order of
+    # magnitude on the wire, because the host compresses one and not the
+    # other. A consumer choosing between them should not have to start
+    # the download to find that out.
     sizes = manifest['entries'].filter_map { |e| e['bytes'] }
     expect(sizes).to all(be > 0)
     expect(named('all.jsonld')['bytes']).to eq(

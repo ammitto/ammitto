@@ -403,6 +403,98 @@ module Ammitto
         extract_instruments(entry, source_code)
       end
 
+      # Catalogue of everything this run published, at api/v1/index.jsonld
+      #
+      # Deliberately NOT part of #export: the search index and the
+      # ontology are written by the caller afterwards, so a catalogue
+      # built during #export would omit them. The caller invokes this
+      # last, once nothing further will be written.
+      #
+      # Every artefact was already reachable by URL, but nothing listed
+      # them: the full dataset, its Turtle rendering, the ontology, the
+      # facets and all but one source aggregate could only be found by
+      # guessing a path. This is the entry point that makes them
+      # discoverable, and the slice families already follow the same
+      # `Index` shape.
+      #
+      # Entries are emitted only for files that exist on disk once the
+      # rest of the export has run, so the catalogue cannot advertise
+      # something that was never written. A source that failed its gate
+      # is absent here rather than listed and 404ing.
+      # @return [void]
+      def export_manifest
+        entries = manifest_datasets + manifest_collections
+
+        write_json(
+          File.join(@output_dir, 'index.jsonld'),
+          {
+            '@context' => @context_url,
+            '@type' => 'Index',
+            'slice' => 'catalogue',
+            'generated' => @stats[:generated_at],
+            'entries' => entries
+          }
+        )
+      end
+
+      # Single-file artefacts, each described so a consumer can choose
+      # without downloading: all.ttl alone is over a hundred megabytes.
+      # @return [Array<Hash>] present files only
+      def manifest_datasets
+        [
+          ['all.jsonld', 'application/ld+json', 'Every node in one graph'],
+          ['all.ttl', 'text/turtle', 'The same graph as Turtle'],
+          ['search-index.json', 'application/json', 'Flattened records for search'],
+          ['stats.json', 'application/json', 'Entity and entry counts per source'],
+          ['context.jsonld', 'application/ld+json', 'JSON-LD context for every node']
+        ].filter_map do |name, media_type, description|
+          path = File.join(@output_dir, name)
+          next unless File.exist?(path)
+
+          {
+            'name' => name,
+            'url' => name,
+            'mediaType' => media_type,
+            'description' => description,
+            'bytes' => File.size(path)
+          }
+        end
+      end
+
+      # Directory-shaped artefacts. Each reports its own index where one
+      # exists, so a consumer follows one link rather than guessing the
+      # members.
+      # @return [Array<Hash>] present directories only
+      def manifest_collections
+        [
+          ['sources', 'One aggregate per source'],
+          ['facets', 'Value lists for filtering'],
+          ['ontology', 'Classes, properties and hierarchy'],
+          ['node', 'Individual entity and entry nodes'],
+          ['by-authority', 'Entries grouped by authority'],
+          ['by-regime', 'Entries grouped by regime'],
+          ['by-type', 'Entries grouped by entity type'],
+          ['by-status', 'Entries grouped by status'],
+          ['by-list', 'Entries grouped by list'],
+          ['by-organization', 'Documents grouped by organization'],
+          ['by-document-type', 'Documents grouped by document type']
+        ].filter_map do |name, description|
+          dir = File.join(@output_dir, name)
+          next unless Dir.exist?(dir)
+
+          members = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+                       .map { |f| File.basename(f) }
+                       .reject { |f| f.start_with?('index.') }
+                       .sort
+          next if members.empty? && !File.exist?(File.join(dir, 'index.jsonld'))
+
+          entry = { 'name' => name, 'url' => name, 'description' => description }
+          entry['index'] = "#{name}/index.jsonld" if File.exist?(File.join(dir, 'index.jsonld'))
+          entry['members'] = members unless members.empty?
+          entry
+        end
+      end
+
       # Export all nodes to files
       # @return [void]
       def export

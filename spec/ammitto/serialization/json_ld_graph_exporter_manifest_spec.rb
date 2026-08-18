@@ -98,6 +98,16 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     expect(node['collections']).to include('entity', 'entry')
   end
 
+  # `create_directories` makes node/list unconditionally and nothing ever
+  # writes there: list nodes go to node/entry/<source>/<list_type>. The
+  # catalogue must not name it, or it advertises a directory a consumer
+  # cannot fetch anything from.
+  it 'omits a subdirectory nothing was written into' do
+    expect(Dir.exist?(File.join(output_dir, 'node', 'list'))).to be(true)
+
+    expect(named('node')['collections']).not_to include('list')
+  end
+
   it 'points a collection at its own index where one exists' do
     expect(named('by-authority')['index']).to eq('by-authority/index.jsonld')
   end

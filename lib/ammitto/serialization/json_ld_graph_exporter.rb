@@ -461,6 +461,20 @@ module Ammitto
         end
       end
 
+      # Whether a directory holds anything a consumer could fetch: its
+      # own index, a file, or a subdirectory that does.
+      def published?(dir)
+        return true if File.exist?(File.join(dir, 'index.jsonld'))
+
+        files = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+                   .reject { |f| File.basename(f).start_with?('index.') }
+        return true if files.any?
+
+        Dir.glob(File.join(dir, '*'))
+           .select { |f| File.directory?(f) }
+           .any? { |sub| published?(sub) }
+      end
+
       # Directory-shaped artefacts. Each reports its own index where one
       # exists, so a consumer follows one link rather than guessing the
       # members.
@@ -490,8 +504,14 @@ module Ammitto
           # node/entry, each with its own index. Judging a collection by
           # its direct files alone dropped the entire node API from the
           # catalogue while still listing it as something we publish.
+          #
+          # A subdirectory only counts when something was written into
+          # it. `create_directories` makes node/list unconditionally and
+          # nothing ever writes there — list nodes go to
+          # node/entry/<source>/<list_type> — so listing every directory
+          # would advertise an empty one.
           nested = Dir.glob(File.join(dir, '*'))
-                      .select { |f| File.directory?(f) }
+                      .select { |f| File.directory?(f) && published?(f) }
                       .map { |f| File.basename(f) }
                       .sort
           index = File.exist?(File.join(dir, 'index.jsonld'))

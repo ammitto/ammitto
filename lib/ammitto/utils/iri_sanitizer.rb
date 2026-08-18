@@ -270,6 +270,33 @@ module Ammitto
           "#{BASE_URI}/entity/#{sanitize(source)}/#{id}"
         end
 
+        # Generate a regime IRI.
+        #
+        # Regime codes arrive from the source untouched, and Canada
+        # publishes bilingual ones: "CA_Belarus / Bélarus", against
+        # OFAC's "CAATSA - Russia". Interpolating those into an IRI
+        # produced identifiers containing spaces, which a Turtle IRIREF
+        # forbids; the published all.ttl stopped parsing at the first
+        # one rather than degrading.
+        #
+        # Sanitized rather than raised on, unlike a local id: a regime
+        # is a shared classification, so distinct codes collapsing to
+        # one slug is a naming collision to notice, not a record lost.
+        # Accents are dropped rather than transliterated, which is what
+        # #sanitize has always done to every other IRI; changing that
+        # would move identifiers consumers already hold.
+        #
+        # @param code [String] regime code as the source states it
+        # @return [String] Full regime IRI
+        #
+        # @example
+        #   regime_iri("CA_Belarus / Bélarus")
+        #   # => "https://www.ammitto.org/regime/ca_belarus-blarus"
+        #
+        def regime_iri(code)
+          "#{BASE_URI}/regime/#{sanitize(code)}"
+        end
+
         # Generate an entry IRI (LIST-SPECIFIC).
         #
         # Entries are junction records linking entities to specific lists.
@@ -529,6 +556,12 @@ module Ammitto
              .gsub(/^-|-$/, '')          # Remove leading/trailing hyphens
              .downcase                   # Lowercase
              .slice(0, MAX_ID_LENGTH)    # Truncate
+             # Truncation can cut mid-word and leave the hyphen that
+             # preceded it dangling, and this method has to be
+             # idempotent: a slug is re-sanitized wherever an IRI is
+             # rebuilt from a stored key, and one that shortened on the
+             # second pass advertised an @id no node file answered to.
+             .sub(/-\z/, '')
         end
       end
     end

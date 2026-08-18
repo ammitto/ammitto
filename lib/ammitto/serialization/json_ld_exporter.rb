@@ -10,6 +10,7 @@
 #   entity_jsonld = exporter.export_entity(entity_id)
 
 require_relative '../ontology/json_ld_context'
+require_relative '../utils/iri_sanitizer'
 
 module Ammitto
   module Serialization
@@ -141,7 +142,7 @@ module Ammitto
         # Regime reference
         if entry_data['regime_code']
           doc['regime'] = {
-            '@id' => "https://www.ammitto.org/regime/#{entry_data['regime_code']}"
+            '@id' => Ammitto::Utils::IriSanitizer.regime_iri(entry_data['regime_code'])
           }
         end
 

@@ -56,6 +56,11 @@ module Ammitto
         File.write(@output_path, turtle)
       end
 
+      # Characters an IRIREF cannot contain, per the Turtle grammar:
+      # space and the delimiters. Their presence means the string is
+      # prose that merely starts with a URL, not an identifier.
+      IRI_FORBIDDEN = /[\s<>"{}|^`\\]/
+
       private
 
       # Convert JSON-LD data to Turtle format
@@ -207,7 +212,13 @@ module Ammitto
         when Float
           ["\"#{value}\"^^xsd:decimal"]
         when String
-          if value.start_with?('http://', 'https://')
+          # A value is emitted as an IRI on shape alone, and free text
+          # can begin with a URL: Australian remarks open with the
+          # company's website and continue in prose. Those became
+          # IRIREFs containing spaces, which the grammar forbids, and
+          # the published all.ttl stopped parsing at the first one.
+          # Anything a Turtle IRIREF cannot hold is a literal.
+          if value.start_with?('http://', 'https://') && !value.match?(IRI_FORBIDDEN)
             ["<#{value}>"]
           elsif value.match?(/^\d{4}-\d{2}-\d{2}$/)
             ["\"#{value}\"^^xsd:date"]

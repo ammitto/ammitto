@@ -99,33 +99,45 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
                                    'exempted' => 0)
   end
 
-  it 'carries a UTC timestamp' do
+  it 'carries a UTC timestamp taken from the run' do
+    # Format alone would survive a hardcoded date, so the value has to be
+    # pinned to now as well.
+    before = Time.now.utc
+
     report = report_for([{ code: :au, status: :success, entities: 1,
                            entries: 1 }])
 
     expect(report['generated_at']).to match(/\A\d{4}-\d{2}-\d{2}T[\d:]+Z\z/)
+    stamped = Time.parse(report['generated_at'])
+    expect(stamped).to be_between(before - 1, Time.now.utc + 1)
   end
 
-  it 'writes nothing when --report is absent' do
-    bare = described_class.new({}, [])
+  it 'reports an errored source with no count rather than a count of zero' do
+    # 0 is a measurement. A source that never read a file did not measure
+    # anything, and a consumer charting "entities today" must not be
+    # handed a zero it will treat as one.
+    report = report_for([{ code: :ru, status: :error,
+                           error: 'No YAML files found' }])
 
-    expect(bare.options[:report]).to be_nil
-    expect(Dir.children(dir)).to be_empty
+    entry = report['sources'].first
+    expect(entry['entities']).to be_nil
+    expect(entry['entries']).to be_nil
   end
 
   describe 'a run whose gates fail' do
     before { allow($stdout).to receive(:write) }
 
+    def run_options(report: path)
+      sources_dir = File.join(dir, 'sources')
+      FileUtils.mkdir_p(File.join(sources_dir, 'data-ru', 'processed'))
+      opts = { sources_dir: sources_dir, output_dir: File.join(dir, 'out') }
+      report ? opts.merge(report: report) : opts
+    end
+
     # The report exists to describe a failure, so it has to be on disk by
     # the time the gates raise. Ordering the two calls the other way round
     # leaves the caller nothing to read on exactly the runs it needs one.
     it 'still leaves the report on disk' do
-      sources_dir = File.join(dir, 'sources')
-      FileUtils.mkdir_p(File.join(sources_dir, 'data-ru', 'processed'))
-      run_options = { sources_dir: sources_dir,
-                      output_dir: File.join(dir, 'out'),
-                      report: path }
-
       expect { described_class.new(run_options, ['ru']).run }
         .to raise_error(Thor::Error, /ru: No YAML files found/)
 
@@ -133,6 +145,41 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       expect(report['gates_passed']).to be false
       expect(report['sources'].first['gate_failures'])
         .to eq(['ru: No YAML files found'])
+    end
+
+    it 'writes no report at all without the flag' do
+      expect { described_class.new(run_options(report: nil), ['ru']).run }
+        .to raise_error(Thor::Error, /ru: No YAML files found/)
+
+      expect(File.exist?(path)).to be false
+    end
+
+    # An unwritable report must not become the run's diagnosis: the gate
+    # message is what the operator needs, and losing it to an Errno is
+    # exactly the failure the report was added to prevent.
+    it 'keeps the gate failure when the report cannot be written' do
+      blocked = File.join(dir, 'blocked')
+      File.write(blocked, 'not a directory')
+
+      expect do
+        described_class.new(run_options(report: File.join(blocked, 'r.json')),
+                            ['ru']).run
+      end.to raise_error(Thor::Error, /ru: No YAML files found/)
+    end
+
+    # With the gates satisfied there is nothing better to report, so the
+    # write failure is the run's outcome rather than a silent success.
+    it 'fails the run when only the report could not be written' do
+      blocked = File.join(dir, 'blocked2')
+      File.write(blocked, 'not a directory')
+      opts = { sources_dir: File.join(dir, 'sources'),
+               output_dir: File.join(dir, 'out'),
+               allow_empty: 'ru',
+               report: File.join(blocked, 'r.json') }
+      FileUtils.mkdir_p(File.join(dir, 'sources', 'data-ru', 'processed'))
+
+      expect { described_class.new(opts, ['ru']).run }
+        .to raise_error(Thor::Error, /Could not write report/)
     end
   end
 end

@@ -146,9 +146,14 @@ module Ammitto
 
         print_summary(results)
         # Written before the gates raise, because a failing run is
-        # precisely the one a caller needs the report for.
-        write_report(results) if options[:report]
+        # precisely the one a caller needs the report for. A write that
+        # fails must not become the run's diagnosis, though: it is warned
+        # about immediately and raised only once the gates have had their
+        # say, so an unwritable path cannot replace "ru: No YAML files
+        # found" with an Errno the operator has to work backwards from.
+        report_error = options[:report] ? write_report(results) : nil
         enforce_health_gates(results)
+        raise Thor::Error, report_error if report_error
       end
 
       # Health gates: a run that produced no data or swallowed errors must
@@ -1478,12 +1483,19 @@ module Ammitto
       # Thor::Error message as if it were an interface.
       #
       # @param results [Array<Hash>] harmonize results
-      # @return [void]
+      # @return [String, nil] failure message, or nil when written
       def write_report(results)
         path = options[:report]
         FileUtils.mkdir_p(File.dirname(path))
         File.write(path, "#{JSON.pretty_generate(report_payload(results))}\n")
         puts "Wrote report: #{path}" if options[:verbose]
+        nil
+      rescue SystemCallError, IOError => e
+        # Warned here and returned rather than raised: the caller decides
+        # when it can afford to be the run's error (see #run).
+        message = "Could not write report to #{path}: #{e.message}"
+        warn message
+        message
       end
 
       # The report body, classified by the same gate evaluation the exit
@@ -1514,14 +1526,18 @@ module Ammitto
 
       # One source's outcome. Per-file transform errors are reported
       # separately from gate failures because no exemption clears them.
+      #
+      # Counts are passed through rather than coerced: a source that
+      # errored never reached a count, and null says that where 0 would
+      # read as a measurement a jq snippet or a dashboard would trust.
       # @param result [Hash] per-source result
       # @return [Hash] source entry
       def report_source(result)
         {
           'code' => result[:code].to_s,
           'status' => result[:status].to_s,
-          'entities' => result[:entities].to_i,
-          'entries' => result[:entries].to_i,
+          'entities' => result[:entities],
+          'entries' => result[:entries],
           'error' => result[:error],
           'gate_failures' => result[:gate_failures] || [],
           'exempted_failures' => result[:exempted_failures] || [],

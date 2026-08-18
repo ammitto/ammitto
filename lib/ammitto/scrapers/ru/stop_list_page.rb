@@ -132,7 +132,11 @@ module Ammitto
         end
 
         def build_entity(row)
-          cells = row.css('td').map { |c| normalize(c.text) }
+          # Direct children only, matching how the row was selected. A
+          # descendant sweep would pick up a nested table's cells and
+          # shift every column, so the name and the position would be
+          # read out of the wrong places without anything failing.
+          cells = row.xpath('./td').map { |c| normalize(c.text) }
           russian, english = split_names(cells[1])
           return nil if russian.nil? && english.nil?
 

@@ -162,6 +162,30 @@ RSpec.describe Ammitto::Scrapers::Ru::StopListPage do
     end
   end
 
+  describe 'nested tables inside a cell' do
+    # Rows are selected by their direct-child cells. Reading the cells
+    # back with a descendant sweep would count a nested table's cells
+    # too, shifting every column so the name and position came from the
+    # wrong places — and nothing would fail while it happened.
+    it 'reads the row\'s own cells, not a nested table\'s' do
+      html = <<~HTML
+        <html><body><h1>X</h1><h1>персональными санкциями</h1><table>
+          <tr>
+            <td><table><tr><td>сноска</td><td>ещё</td></tr></table></td>
+            <td>Иван ПЕТРОВ (Ivan Petrov)</td>
+            <td>&ndash;</td>
+            <td>депутат</td>
+          </tr>
+        </table></body></html>
+      HTML
+      entity = described_class.new(html, country_code: 'xx', source_url: 'x')
+                              .entities.first
+
+      expect(entity['russian_name']).to eq('Иван ПЕТРОВ')
+      expect(entity['english_name']).to eq('Ivan Petrov')
+    end
+  end
+
   describe 'table selection' do
     # A page-wide `table tr` sweep merged a layout table into the list
     # and read nested cells as if they were the outer row's.

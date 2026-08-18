@@ -1591,32 +1591,26 @@ module Ammitto
       # Entry/announcement pairs whose announcement names this identifier
       # in the given role.
       #
-      # The page tests `value === identifier || value?.includes(identifier)`.
-      # The first arm is redundant for strings, so this is a substring test.
-      # That is over-inclusive — a parent organization absorbs every child
-      # whose identifier extends it — but reproducing it is deliberate:
-      # this change moves the aggregation, it does not redefine it.
+      # The test is equality, because a role field carries exactly one
+      # organization identifier. It was a substring test, reproducing
+      # what the organization page's own scan did — `value === identifier
+      # || value?.includes(identifier)`, whose first arm is redundant for
+      # strings — so that the published slice and the page agreed while
+      # the aggregation moved here.
       #
-      # Strings are the whole contract: OfficialAnnouncement declares
-      # publisher, signatory and authority as strings. Anything else is
-      # skipped rather than matched, which is a deliberate narrowing, not
-      # equivalence — JavaScript would have treated an array as a member
-      # test and thrown on a number, aborting the page's whole scan.
+      # That parity has expired: the page reads this slice now rather
+      # than scanning the corpus, so nothing mirrors the old behaviour
+      # and the over-inclusion has no justification left. Seventeen
+      # identifiers in the shipped supporting data are a strict prefix of
+      # another, and cn/ministry-of-commerce precedes five, so a parent
+      # was claiming every child's documents.
+      #
+      # A non-string value no longer needs special handling. Equality
+      # already excludes it, where the substring form would have raised.
       # @param pairs [Array<Array(Hash, Hash)>] entry/announcement pairs
       # @param role [String] announcement field naming the organization
       # @param identifier [String] organization identifier
       # @return [Array<Array(Hash, Hash)>] matching pairs
-      # A role field carries one organization identifier, so the test is
-      # equality. It was a substring test, reproducing what the
-      # organization page's JavaScript did so the published slice and the
-      # page agreed. The page no longer does its own matching — it reads
-      # this slice — so the parity that justified the bug is gone and
-      # what remains is the page's actual meaning: documents published by
-      # this organization.
-      #
-      # Seventeen identifiers in the shipped supporting data are a strict
-      # prefix of another, and cn/ministry-of-commerce precedes five, so
-      # a parent was claiming every child's documents.
       def matching_role(pairs, role, identifier)
         pairs.select do |_entry, announcement|
           announcement[role] == identifier

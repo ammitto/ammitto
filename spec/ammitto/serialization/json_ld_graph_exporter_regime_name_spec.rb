@@ -57,6 +57,29 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     expect(reference).not_to have_key('name')
   end
 
+  # The search index reads the SAME entry hash, after the graph exporter
+  # has mutated it: harmonize_command.rb calls add_node then
+  # search_indexer.add on one object. So stripping the name off the
+  # reference also blinded the facet builder, whose `name` field fell back
+  # to code.upcase for every regime published — AL_QAIDA where the source
+  # says Al-Qaida. The search-index spec's own fixtures already carried a
+  # name on the reference; nothing produced one.
+  it 'leaves the search index a regime name to put in its facet' do
+    require 'ammitto/serialization/search_index_exporter'
+    indexer = Ammitto::Serialization::SearchIndexExporter.new
+    entity = { '@id' => 'https://www.ammitto.org/entity/un/e1',
+               '@type' => 'PersonEntity',
+               'names' => [{ 'fullName' => 'Someone' }] }
+    entry = { '@id' => 'https://www.ammitto.org/entry/un/consolidated/e1',
+              '@type' => 'SanctionEntry',
+              'regime' => { 'code' => 'AL_QAIDA', 'name' => 'Al-Qaida' } }
+
+    exporter.add_node(entity: entity, entry: entry, source: :un)
+    indexer.add(entity, entry)
+
+    expect(indexer.facets[:regimes]['al_qaida'][:name]).to eq('Al-Qaida')
+  end
+
   it 'leaves the regime node itself unchanged' do
     add_entry('code' => 'AL_QAIDA', 'name' => 'Al-Qaida',
               'description' => 'x')

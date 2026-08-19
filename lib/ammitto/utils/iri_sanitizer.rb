@@ -270,6 +270,58 @@ module Ammitto
           "#{BASE_URI}/entity/#{sanitize(source)}/#{id}"
         end
 
+        # Generate a regime IRI.
+        #
+        # Regime codes arrive from the source untouched, and Canada
+        # publishes bilingual ones: "CA_Belarus / Bélarus", against
+        # OFAC's "CAATSA - Russia". Interpolating those into an IRI
+        # produced identifiers containing spaces, which a Turtle IRIREF
+        # forbids; the published all.ttl stopped parsing at the first
+        # one rather than degrading.
+        #
+        # Sanitized rather than raised on, unlike a local id: a regime
+        # is a shared classification, so distinct codes collapsing to
+        # one slug is a naming collision to notice, not a record lost.
+        # Accents are dropped rather than transliterated, which is what
+        # #sanitize has always done to every other IRI; changing that
+        # would move identifiers consumers already hold.
+        #
+        # @param code [String] regime code as the source states it
+        # @return [String] Full regime IRI
+        #
+        # @example
+        #   regime_iri("CA_Belarus / Bélarus")
+        #   # => "https://www.ammitto.org/regime/ca_belarus-blarus"
+        #
+        def regime_iri(code)
+          "#{BASE_URI}/regime/#{regime_slug(code)}"
+        end
+
+        # Slug for a regime code, as both the node filename and the
+        # last segment of its IRI.
+        #
+        # #sanitize truncates last, so a code cut mid-word keeps the
+        # hyphen that preceded the cut. That is harmless for a local
+        # id, which is sanitized once from the source record and never
+        # again, but a regime slug is re-sanitized every time an IRI is
+        # rebuilt from a stored key, and the second pass strips the
+        # dangling hyphen: the shortened @id then answered to no node
+        # file.
+        #
+        # Repaired here rather than inside #sanitize because that
+        # method also mints entity, entry, announcement and legal
+        # instrument ids. Stripping the hyphen there would merge a
+        # 64-character truncation ending in "-" with the 63-character
+        # id that is otherwise identical, aliasing two records onto one
+        # @id, and would move identifiers consumers already hold.
+        #
+        # @param code [String] regime code as the source states it
+        # @return [String] slug, stable under a second pass
+        #
+        def regime_slug(code)
+          sanitize(code).sub(/-\z/, '')
+        end
+
         # Generate an entry IRI (LIST-SPECIFIC).
         #
         # Entries are junction records linking entities to specific lists.

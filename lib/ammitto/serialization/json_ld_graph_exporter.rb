@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'digest'
+require_relative '../utils/iri_sanitizer'
 require 'fileutils'
 require 'json'
 require 'time'
@@ -511,10 +512,19 @@ module Ammitto
         return unless code
 
         code_lower = code.to_s.downcase
-        regime_id = "#{BASE_URI}/regime/#{code_lower}"
+        # Keyed by the slug, not the raw code. The key becomes a node
+        # filename, and Canada publishes bilingual codes: "CA_China /
+        # Chine" wrote node/regime/"ca_china "/chine.jsonld while the
+        # node advertised .../regime/ca_china-chine, so it 404d at its
+        # own @id. Slugging both from one function is what keeps the
+        # path and the IRI from disagreeing again. It also merges codes
+        # differing only in trailing whitespace: "ca_moldova" and
+        # "ca_moldova " were one regime published as two nodes.
+        slug = Ammitto::Utils::IriSanitizer.regime_slug(code_lower)
+        regime_id = Ammitto::Utils::IriSanitizer.regime_iri(code_lower)
 
         # Store full regime if not already present
-        @regimes[code_lower] ||= {
+        @regimes[slug] ||= {
           '@context' => @context_url,
           '@id' => regime_id,
           '@type' => 'SanctionRegime',
@@ -994,7 +1004,7 @@ module Ammitto
         regime_index = {
           '@context' => @context_url,
           '@type' => 'Index',
-          'nodes' => @regimes.keys.sort.map { |code| { '@id' => "#{BASE_URI}/regime/#{code}" } }
+          'nodes' => @regimes.keys.sort.map { |code| { '@id' => Ammitto::Utils::IriSanitizer.regime_iri(code) } }
         }
         write_json(File.join(@output_dir, 'node', 'regime', 'index.jsonld'), regime_index)
 
@@ -1151,7 +1161,7 @@ module Ammitto
             '@context' => @context_url,
             '@type' => 'Index',
             'slice' => 'by-regime',
-            'regime' => { '@id' => "#{BASE_URI}/regime/#{code}" },
+            'regime' => { '@id' => Ammitto::Utils::IriSanitizer.regime_iri(code) },
             'entries' => entries
           }
           write_json(File.join(slices_dir, "#{code}.jsonld"), index)
@@ -1162,7 +1172,7 @@ module Ammitto
           '@context' => @context_url,
           '@type' => 'Index',
           'slice' => 'by-regime',
-          'available' => by_regime.keys.sort.map { |code| "#{BASE_URI}/regime/#{code}" }
+          'available' => by_regime.keys.sort.map { |code| Ammitto::Utils::IriSanitizer.regime_iri(code) }
         }
         write_json(File.join(slices_dir, 'index.jsonld'), master)
       end

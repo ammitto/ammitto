@@ -167,6 +167,44 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       end.to raise_error(Thor::Error, /ru: No YAML files found/)
     end
 
+    # The report is serialized before it is written, and serialization
+    # can fail on its own: a source error carrying an invalid UTF-8 byte
+    # makes JSON.pretty_generate raise, which is not an IO error. Left
+    # uncaught it replaced the gate message with a JSON error on exactly
+    # the runs the report exists to describe.
+    it 'keeps the gate failure when the report cannot be serialized' do
+      sources_dir = File.join(dir, 'sources')
+      FileUtils.mkdir_p(File.join(sources_dir, 'data-ru', 'processed'))
+      cmd = described_class.new({ sources_dir: sources_dir,
+                                  output_dir: File.join(dir, 'out'),
+                                  report: path }, ['ru'])
+      allow(cmd).to receive(:harmonize_source)
+        .and_return(code: :ru, status: :error, error: "bad byte \xFF".b)
+
+      expect { cmd.run }
+        .to raise_error(Thor::Error, /ru: bad byte/)
+    end
+
+    it 'warns as soon as the report fails, not only at the end' do
+      # The message reaches stderr immediately; the raise waits for the
+      # gates. Without this the warn could be deleted and the file stay
+      # green on the raised error alone.
+      blocked = File.join(dir, 'blocked3')
+      File.write(blocked, 'not a directory')
+      opts = { sources_dir: File.join(dir, 'sources'),
+               output_dir: File.join(dir, 'out'),
+               allow_empty: 'ru',
+               report: File.join(blocked, 'r.json') }
+      FileUtils.mkdir_p(File.join(dir, 'sources', 'data-ru', 'processed'))
+
+      expect do
+        described_class.new(opts, ['ru']).run
+      rescue Thor::Error
+        # The raise is asserted elsewhere; this example is about stderr.
+        nil
+      end.to output(/Could not write report/).to_stderr
+    end
+
     # With the gates satisfied there is nothing better to report, so the
     # write failure is the run's outcome rather than a silent success.
     it 'fails the run when only the report could not be written' do

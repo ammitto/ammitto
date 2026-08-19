@@ -1490,10 +1490,22 @@ module Ammitto
         File.write(path, "#{JSON.pretty_generate(report_payload(results))}\n")
         puts "Wrote report: #{path}" if options[:verbose]
         nil
-      rescue SystemCallError, IOError => e
+      rescue StandardError => e
+        # Deliberately broad. Rescuing only the IO errors left the
+        # serialization uncovered: JSON.pretty_generate raises
+        # JSON::GeneratorError on a source error carrying an invalid
+        # UTF-8 byte, which is neither SystemCallError nor IOError, so it
+        # escaped and replaced "ru: No YAML files found" with a JSON
+        # error on exactly the failing runs this report describes.
+        #
+        # The rule is about precedence, not about which exceptions
+        # exist: producing the diagnostic must never outrank the
+        # diagnosis. Anything that goes wrong here is reported as a
+        # report failure and yields to the gates.
+        #
         # Warned here and returned rather than raised: the caller decides
         # when it can afford to be the run's error (see #run).
-        message = "Could not write report to #{path}: #{e.message}"
+        message = "Could not write report to #{path}: #{e.class}: #{e.message}"
         warn message
         message
       end

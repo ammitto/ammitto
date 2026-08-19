@@ -32,14 +32,16 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     id = 'https://www.ammitto.org/document-type/un/what?'
 
     expect { with_document_type(id) }
-      .to raise_error(Ammitto::Error, /unusable path component "what\?"/)
+      .to raise_error(Ammitto::Error,
+                      /Document type identifier .* unusable path component "what\?"/)
   end
 
   it 'refuses a local id that would climb out of the node tree' do
     id = 'https://www.ammitto.org/document-type/un/..'
 
     expect { with_document_type(id) }
-      .to raise_error(Ammitto::Error, /unusable path component/)
+      .to raise_error(Ammitto::Error,
+                      /Document type identifier .* unusable path component/)
   end
 
   it 'writes an ordinary document type where it always did' do

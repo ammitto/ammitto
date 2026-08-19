@@ -944,6 +944,18 @@ module Ammitto
           # quietly on one runner and raises Errno::EINVAL on the other —
           # and a '..' component would write outside the node tree.
           # Document types were the one path of the three without it.
+          #
+          # Both components are checked to match the organization path
+          # exactly, though only local_id can fail today: source comes from
+          # #registered_source?, so an unsafe segment never matches and
+          # .compact drops the nil. Diverging here to save one comparison
+          # is how the two drift apart again.
+          #
+          # Fatal, unlike the duplicate-claim policy above, because the two
+          # defects differ in kind: a duplicated row has a safe resolution
+          # and keeps the first claimant, while a component the filesystem
+          # cannot hold has none — the alternatives are writing outside the
+          # node tree or behaving differently per platform.
           [source, local_id].compact.each do |component|
             next unless unusable_filename_component?(component)
 

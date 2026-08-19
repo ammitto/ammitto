@@ -21,13 +21,23 @@ RSpec.describe Ammitto::Utils::IriSanitizer do
         'CAATSA - Russia',
         'CA_Extremist Settler Violence / Violence extrémiste des colons',
         'CA_Justice for Victims of Corrupt Foreign Officials Regulations (JVCFOR)',
-        'SOUTH SUDAN'
+        'SOUTH SUDAN',
+        # Synthetic, and the only member that is: no source publishes a
+        # control character today, but the assertion below claims the
+        # whole #x00-#x20 range and an assertion should be given
+        # something in the range it claims.
+        "CA_Belarus\u0001 / B\u001Felarus"
       ]
 
       codes.each do |code|
         iri = described_class.regime_iri(code)
-        # The delimiters the grammar excludes outright.
-        expect(iri).not_to match(/[\s<>"{}|^`\\]/), "#{code.inspect} -> #{iri.inspect}"
+        # The whole set the grammar excludes, matching the exporter's
+        # own IRI_FORBIDDEN: #x00-#x20 and the delimiters. Written out
+        # rather than as \s, which covers six of those codepoints and
+        # would let the rest of the control range past the assertion
+        # while the example's name claims otherwise.
+        expect(iri).not_to match(/[\x00-\x20<>"{}|^`\\]/),
+                           "#{code.inspect} -> #{iri.inspect}"
       end
     end
 

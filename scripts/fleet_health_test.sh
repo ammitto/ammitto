@@ -337,7 +337,7 @@ cat > "$TMP/bin/gh" <<'STUB'
 if [ "$1" = "api" ]; then
   echo "$2" >> "$GH_PATHS"
   case "$2" in
-    *"/runs?"*"event=schedule"*"per_page=1") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
+    *"/runs?"*"event=schedule"*"per_page=5") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
     *"/runs?"*"event=schedule"*) printf '{"workflow_runs":[{"conclusion":"success"},{"conclusion":"success"},{"conclusion":"success"}]}' ;;
     *"/runs?"*) printf '{"workflow_runs":[{"conclusion":"failure"},{"conclusion":"failure"},{"conclusion":"failure"},{"conclusion":"failure"}]}' ;;
     *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
@@ -379,7 +379,7 @@ esac
 if [ "$1" = "api" ]; then
   echo "$2" >> "$GH_PATHS"
   case "$2" in
-    *"/runs?"*"per_page=1") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
+    *"/runs?"*"per_page=5") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
     *"/runs?"*) printf '{"workflow_runs":[{"conclusion":"success"},{"conclusion":"success"}]}' ;;
     *) printf '{"state":"active"}' ;;
   esac
@@ -408,6 +408,39 @@ env -u GH_TOKEN -u GITHUB_TOKEN PATH="$TMP/bin2:$PATH" \
   || pass "did not fall through to anonymous curl"
 
 echo "== streak: the page must be large enough to reach the threshold =="
+# Recency must come from the newest run on the page, not from position
+# zero. The endpoint has been observed serving a stale page: on
+# 2026-08-18 it reported data-uk's last scheduled run as three weeks old
+# while that repository was committing every morning, and the monitor
+# paged on a healthy repo for it. This stub puts the OLD run first, so a
+# reader that trusts position zero calls a healthy repo stale.
+echo "== recency: the newest run on the page wins, whatever its position =="
+cat > "$TMP/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+if [ "$1" = "api" ]; then
+  [ -n "${GH_PATHS:-}" ] && echo "$2" >> "$GH_PATHS"
+  case "$2" in
+    *"/runs?"*"event=schedule"*"status=completed"*)
+      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
+    *"/runs?"*"event=schedule"*)
+      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_OLD" "$SCHED_TS" ;;
+    *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
+  esac
+  exit 0
+fi
+exit 0
+STUB
+chmod +x "$TMP/bin/gh"
+printf 'data-order\n' > "$TMP/repos_order.txt"
+rc=0
+PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token \
+  SCHED_TS="$(iso '3 hours ago')" SCHED_OLD="$(iso '30 days ago')" \
+  FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_order.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_order.md" > /dev/null || rc=$?
+[ "$rc" -eq 0 ] \
+  && pass "the newest run on the page decides recency, not position zero" \
+  || fail "a stale entry ahead of the newest one paged a healthy repo (exit $rc)"
+
 # per_page was pinned at 10 while FLEET_HEALTH_STREAK is configurable, so
 # any threshold above 10 could never be reached: the streak stayed short
 # of the limit forever and a dead repo read healthy — the silent OK this

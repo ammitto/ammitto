@@ -176,6 +176,11 @@ MAX_AGE_HOURS=$((10#$MAX_AGE_HOURS))
 # closes the window — and never fewer than the 10 this has always used.
 COMPLETED_PER_PAGE=$((STREAK_LIMIT + 1))
 if [ "$COMPLETED_PER_PAGE" -lt 10 ]; then COMPLETED_PER_PAGE=10; fi
+# Recency is judged over a page rather than a single item, so one stale
+# entry cannot decide it. Five is enough: the newest of five is right
+# unless the endpoint is stale about all five, and a page this small
+# costs the same one request the one-item page did.
+SCHEDULE_PER_PAGE=5
 if [ "$COMPLETED_PER_PAGE" -gt 100 ]; then COMPLETED_PER_PAGE=100; fi
 
 # Fetch one API document. kind: workflow | schedule_runs | completed_runs.
@@ -195,8 +200,19 @@ api_get() {
       path="$base" ;;
     # Recency: newest scheduled run of any status, so a run still in
     # progress still counts as the cron having fired.
+    #
+    # Several are fetched and the newest is chosen by created_at rather
+    # than taking position zero of a one-item page. This endpoint has
+    # been observed serving a stale page: on 2026-08-18 it reported
+    # data-uk's last scheduled run as 2026-07-22 while that repository
+    # had in fact run and committed every morning, and the monitor paged
+    # on a healthy repo for it. The same query was seen returning three
+    # different answers inside two minutes on 2026-08-19. A false page
+    # trains everyone to ignore the channel, and the identical mechanism
+    # can hand back a recent run for a repository whose cron has died,
+    # which is the failure this monitor exists to prevent.
     schedule_runs)
-      path="$base/runs?event=schedule&per_page=1" ;;
+      path="$base/runs?event=schedule&per_page=$SCHEDULE_PER_PAGE" ;;
     # Streak: scheduled runs only. A red PR run must never page the
     # fleet, and a green push run must never clear a real streak.
     completed_runs)
@@ -344,10 +360,12 @@ while IFS= read -r line <&3; do
 
   if [ "$unreadable" -eq 0 ]; then
     state="$(jq -r '.state' <<<"$workflow_json")"
-    last_sched="$(jq -r '.workflow_runs[0].created_at // empty' \
-      <<<"$schedule_json")"
-    last_sched_conclusion="$(jq -r '.workflow_runs[0].conclusion // empty' \
-      <<<"$schedule_json")"
+    newest_sched="$(jq -c '[.workflow_runs[]?
+          | select(.created_at != null)]
+          | sort_by(.created_at) | last // {}' <<<"$schedule_json")"
+    last_sched="$(jq -r '.created_at // empty' <<<"$newest_sched")"
+    last_sched_conclusion="$(jq -r '.conclusion // empty' \
+      <<<"$newest_sched")"
     seq="$(jq -r '[.workflow_runs[]? | .conclusion
           | if . == "success" then "S"
             elif . == "failure" or . == "timed_out"

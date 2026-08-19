@@ -936,6 +936,40 @@ module Ammitto
           source = parts.find { |p| registered_source?(p) }
           local_id = parts.last
 
+          # The same guard the organization and instrument paths apply,
+          # for the same reason: a component this exporter refuses is
+          # refused here rather than handed to the filesystem. Document
+          # types were the one path of the three without it, so what is
+          # closed is the asymmetry between them.
+          #
+          # The guard is narrow, and #unusable_filename_component? is
+          # explicit that it is not a Windows-safe filename check: it
+          # covers path escapes and the URL-significant ? # %, of which
+          # ? is the one divergence the corpus produced — writing
+          # happily on Linux and raising Errno::EINVAL on Windows, so
+          # the same export succeeded or failed depending on the runner.
+          # Widening it to the full Windows contract belongs with that
+          # predicate, for all three paths at once.
+          #
+          # Both components are checked to match the organization path
+          # exactly, though only local_id can fail today: source comes from
+          # #registered_source?, so an unsafe segment never matches and
+          # .compact drops the nil. Diverging here to save one comparison
+          # is how the two drift apart again.
+          #
+          # Fatal, unlike the duplicate-claim policy above, because the two
+          # defects differ in kind: a duplicated row has a safe resolution
+          # and keeps the first claimant, while a component the filesystem
+          # cannot hold has none — the alternatives are writing outside the
+          # node tree or behaving differently per platform.
+          [source, local_id].compact.each do |component|
+            next unless unusable_filename_component?(component)
+
+            raise Ammitto::Error,
+                  "Document type identifier #{type_id.inspect} yields " \
+                  "unusable path component #{component.inspect}"
+          end
+
           if source
             dir = File.join(@output_dir, 'node', 'document-type', source)
             FileUtils.mkdir_p(dir)

@@ -82,6 +82,38 @@ RSpec.describe 'harmonize pipeline (integration)' do
   # YAML, the entity node, the search index, and the context artifact
   # that types the two new keys. Checking the models alone would prove
   # only that the fields exist, not that they are published.
+  # The manifest spec drives the exporter directly, so it cannot see
+  # whether the CLI still calls export_manifest, or whether it runs late
+  # enough to catalogue what the search indexer and ontology exporter
+  # wrote. Deleting the call site leaves that spec green; this one goes
+  # red, and the sizes are compared against the files on disk rather than
+  # against the numbers the manifest reports about itself.
+  it 'catalogues what the run wrote, after the run wrote it' do
+    write_eu_fixture(@workdir)
+    run_harmonize(['eu'], @workdir)
+    api = File.join(@workdir, 'api', 'v1')
+
+    manifest = JSON.parse(File.read(File.join(api, 'index.jsonld')))
+    named = manifest.fetch('entries').to_h { |e| [e['name'], e] }
+
+    expect(named).to include('search-index.json', 'stats.json', 'sources')
+    expect(named['search-index.json']['bytes'])
+      .to eq(File.size(File.join(api, 'search-index.json')))
+    expect(named['sources']['members']).to include('eu.jsonld')
+    # One artefact from each of the two exporters that run after the
+    # graph exporter, because "late enough" is two orderings, not one.
+    # Asserting only the search index leaves a catalogue written
+    # between the two green while cataloguing no ontology at all.
+    expect(named['ontology']['members']).to include('classes.jsonld')
+    # Every catalogued path resolves to something that exists.
+    named.each_value do |entry|
+      next unless entry['name']
+
+      expect(File.exist?(File.join(api, entry['name'])))
+        .to be(true), "catalogued #{entry['name']} is not on disk"
+    end
+  end
+
   it 'publishes a stated span of birth years end to end' do
     processed = File.join(@workdir, 'data-eu', 'processed')
     FileUtils.mkdir_p(processed)

@@ -142,6 +142,12 @@ module Ammitto
 
           puts 'Exporting ontology data...' if options[:verbose]
           @ontology_exporter.export(output_dir)
+
+          # Last, so the catalogue can see the search index and the
+          # ontology files above as well as everything the graph
+          # exporter wrote. It lists only what is on disk, so anything
+          # a failing source did not produce is simply absent.
+          @exporter.export_manifest
         end
 
         print_summary(results)

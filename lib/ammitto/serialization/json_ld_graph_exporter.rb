@@ -403,6 +403,135 @@ module Ammitto
         extract_instruments(entry, source_code)
       end
 
+      # Catalogue of everything this run published, at api/v1/index.jsonld
+      #
+      # Deliberately NOT part of #export: the search index and the
+      # ontology are written by the caller afterwards, so a catalogue
+      # built during #export would omit them. The caller invokes this
+      # last, once nothing further will be written.
+      #
+      # Every artefact was already reachable by URL, but nothing listed
+      # them: the full dataset, its Turtle rendering, the ontology, the
+      # facets and all but one source aggregate could only be found by
+      # guessing a path. This is the entry point that makes them
+      # discoverable.
+      #
+      # It shares `@type: "Index"` and the `entries` key with the slice
+      # documents, and nothing more: a slice's entries are `{"@id": ...}`
+      # node references, while these carry a name, a media type and a
+      # byte size, and the slice MASTERS use `available` rather than
+      # `entries` at all. Said plainly because a near-miss is worse than
+      # a fresh shape — a consumer written against a slice half-reads
+      # this and then fails on the payload.
+      #
+      # Entries are emitted only for files that exist on disk once the
+      # rest of the export has run, so the catalogue cannot advertise
+      # something that was never written. A source that failed its gate
+      # is absent here rather than listed and 404ing.
+      # @return [void]
+      def export_manifest
+        entries = manifest_datasets + manifest_collections
+
+        write_json(
+          File.join(@output_dir, 'index.jsonld'),
+          {
+            '@context' => @context_url,
+            '@type' => 'Index',
+            'slice' => 'catalogue',
+            'generated' => @stats[:generated_at],
+            'entries' => entries
+          }
+        )
+      end
+
+      # Single-file artefacts, each described so a consumer can choose
+      # without downloading: all.ttl alone is over a hundred megabytes.
+      # @return [Array<Hash>] present files only
+      def manifest_datasets
+        [
+          ['all.jsonld', 'application/ld+json', 'Every node in one graph'],
+          ['all.ttl', 'text/turtle', 'The same graph as Turtle'],
+          ['search-index.json', 'application/json', 'Flattened records for search'],
+          ['stats.json', 'application/json', 'Entity and entry counts per source'],
+          ['context.jsonld', 'application/ld+json', 'JSON-LD context for every node']
+        ].filter_map do |name, media_type, description|
+          path = File.join(@output_dir, name)
+          next unless File.exist?(path)
+
+          {
+            'name' => name,
+            'url' => name,
+            'mediaType' => media_type,
+            'description' => description,
+            'bytes' => File.size(path)
+          }
+        end
+      end
+
+      # Whether a directory holds anything a consumer could fetch: its
+      # own index, a file, or a subdirectory that does.
+      def published?(dir)
+        return true if File.exist?(File.join(dir, 'index.jsonld'))
+
+        files = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+                   .reject { |f| File.basename(f).start_with?('index.') }
+        return true if files.any?
+
+        Dir.glob(File.join(dir, '*'))
+           .select { |f| File.directory?(f) }
+           .any? { |sub| published?(sub) }
+      end
+
+      # Directory-shaped artefacts. Each reports its own index where one
+      # exists, so a consumer follows one link rather than guessing the
+      # members.
+      # @return [Array<Hash>] present directories only
+      def manifest_collections
+        [
+          ['sources', 'One aggregate per source'],
+          ['facets', 'Value lists for filtering'],
+          ['ontology', 'Classes, properties and hierarchy'],
+          ['node', 'Individual entity and entry nodes'],
+          ['by-authority', 'Entries grouped by authority'],
+          ['by-regime', 'Entries grouped by regime'],
+          ['by-type', 'Entries grouped by entity type'],
+          ['by-status', 'Entries grouped by status'],
+          ['by-list', 'Entries grouped by list'],
+          ['by-organization', 'Documents grouped by organization'],
+          ['by-document-type', 'Documents grouped by document type']
+        ].filter_map do |name, description|
+          dir = File.join(@output_dir, name)
+          next unless Dir.exist?(dir)
+
+          members = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+                       .map { |f| File.basename(f) }
+                       .reject { |f| f.start_with?('index.') }
+                       .sort
+          # node/ holds no files of its own, only node/entity and
+          # node/entry, each with its own index. Judging a collection by
+          # its direct files alone dropped the entire node API from the
+          # catalogue while still listing it as something we publish.
+          #
+          # A subdirectory only counts when something was written into
+          # it. `create_directories` makes node/list unconditionally and
+          # nothing ever writes there — list nodes go to
+          # node/entry/<source>/<list_type> — so listing every directory
+          # would advertise an empty one.
+          nested = Dir.glob(File.join(dir, '*'))
+                      .select { |f| File.directory?(f) && published?(f) }
+                      .map { |f| File.basename(f) }
+                      .sort
+          index = File.exist?(File.join(dir, 'index.jsonld'))
+          next if members.empty? && nested.empty? && !index
+
+          entry = { 'name' => name, 'url' => name, 'description' => description }
+          entry['index'] = "#{name}/index.jsonld" if index
+          entry['members'] = members unless members.empty?
+          entry['collections'] = nested unless nested.empty?
+          entry
+        end
+      end
+
       # Export all nodes to files
       # @return [void]
       def export

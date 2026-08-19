@@ -542,8 +542,15 @@ module Ammitto
         # display worse for it — "1533 Democratic People S Republic Of
         # The Congo" where the node says "1533 (Democratic People's
         # Republic of the Congo)", and "Au Afghanistan" for "Afghanistan".
+        #
+        # The label is the node's, not this entry's. Several source codes
+        # can map to one regime — `sources/us/transformer.rb` sends both
+        # IRAN and IRGC to code IRAN, named "Iran" and "Iran (IRGC)" —
+        # and the node keeps whichever arrived first. A reference echoing
+        # its own entry's name would then disagree with the node it
+        # points at, inside one graph.
         entry['regime'] = { '@id' => regime_id,
-                            'name' => regime['name'] }.compact
+                            'name' => @regimes[slug]['name'] }.compact
 
         @stats[:total_regimes] = @regimes.length
       end

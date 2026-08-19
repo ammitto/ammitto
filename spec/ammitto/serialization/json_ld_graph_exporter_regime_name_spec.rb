@@ -18,11 +18,11 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
 
   after { FileUtils.rm_rf(output_dir) }
 
-  def add_entry(regime)
+  def add_entry(regime, ref = 'e1')
     exporter.add_node(
-      entity: { '@id' => 'https://www.ammitto.org/entity/un/e1',
+      entity: { '@id' => "https://www.ammitto.org/entity/un/#{ref}",
                 '@type' => 'PersonEntity' },
-      entry: { '@id' => 'https://www.ammitto.org/entry/un/consolidated/e1',
+      entry: { '@id' => "https://www.ammitto.org/entry/un/consolidated/#{ref}",
                '@type' => 'SanctionEntry', 'regime' => regime },
       source: :un
     )
@@ -64,20 +64,37 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
   # to code.upcase for every regime published — AL_QAIDA where the source
   # says Al-Qaida. The search-index spec's own fixtures already carried a
   # name on the reference; nothing produced one.
-  it 'leaves the search index a regime name to put in its facet' do
+  #
+  # Indexing the SECOND entry is what makes this depend on the mutation.
+  # Its own hash says "Iran (IRGC)"; only the exporter's rewrite carries
+  # the node's "Iran" onto it. An example indexing an unrewritten hash
+  # would pass with `extract_regime` deleted, because the indexer falls
+  # back to the source's own `code` and `name` when there is no `@id`.
+  it 'gives the facet the regime name the node holds, not the entry\'s' do
     require 'ammitto/serialization/search_index_exporter'
     indexer = Ammitto::Serialization::SearchIndexExporter.new
-    entity = { '@id' => 'https://www.ammitto.org/entity/un/e1',
-               '@type' => 'PersonEntity',
-               'names' => [{ 'fullName' => 'Someone' }] }
-    entry = { '@id' => 'https://www.ammitto.org/entry/un/consolidated/e1',
-              '@type' => 'SanctionEntry',
-              'regime' => { 'code' => 'AL_QAIDA', 'name' => 'Al-Qaida' } }
+    add_entry({ 'code' => 'IRAN', 'name' => 'Iran' }, 'e1')
+    add_entry({ 'code' => 'IRAN', 'name' => 'Iran (IRGC)' }, 'e2')
 
-    exporter.add_node(entity: entity, entry: entry, source: :un)
-    indexer.add(entity, entry)
+    second = exporter.entries.values.last
+    indexer.add({ '@id' => 'https://www.ammitto.org/entity/un/e2',
+                  '@type' => 'PersonEntity',
+                  'names' => [{ 'fullName' => 'Someone' }] }, second)
 
-    expect(indexer.facets[:regimes]['al_qaida'][:name]).to eq('Al-Qaida')
+    expect(indexer.facets[:regimes]['iran'][:name]).to eq('Iran')
+  end
+
+  # us/transformer.rb sends IRAN and IRGC to one code under two names,
+  # and the node keeps the first. A reference echoing its own entry's
+  # name would contradict the node it points at, in one graph.
+  it 'publishes the node\'s name on every reference to it' do
+    add_entry({ 'code' => 'IRAN', 'name' => 'Iran' }, 'e1')
+    add_entry({ 'code' => 'IRAN', 'name' => 'Iran (IRGC)' }, 'e2')
+
+    names = exporter.entries.values.map { |e| e.dig('regime', 'name') }
+
+    expect(exporter.regimes.values.map { |r| r['name'] }).to eq(['Iran'])
+    expect(names).to eq(%w[Iran Iran])
   end
 
   it 'leaves the regime node itself unchanged' do

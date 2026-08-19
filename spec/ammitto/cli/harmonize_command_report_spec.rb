@@ -181,8 +181,13 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       allow(cmd).to receive(:harmonize_source)
         .and_return(code: :ru, status: :error, error: "bad byte \xFF".b)
 
-      expect { cmd.run }
-        .to raise_error(Thor::Error, /ru: bad byte/)
+      # Asserting the gate message alone would not prove the report path
+      # ran at all: the gate error already contains "ru: bad byte", so a
+      # mutation that skipped write_report entirely would pass. The
+      # stderr warning is what shows serialization was attempted and
+      # failed, and the raised error shows the gate still won.
+      expect { expect { cmd.run }.to raise_error(Thor::Error, /ru: bad byte/) }
+        .to output(/Could not write report .*JSON::GeneratorError/).to_stderr
     end
 
     it 'warns as soon as the report fails, not only at the end' do

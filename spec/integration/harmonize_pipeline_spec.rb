@@ -100,6 +100,11 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(named['search-index.json']['bytes'])
       .to eq(File.size(File.join(api, 'search-index.json')))
     expect(named['sources']['members']).to include('eu.jsonld')
+    # One artefact from each of the two exporters that run after the
+    # graph exporter, because "late enough" is two orderings, not one.
+    # Asserting only the search index leaves a catalogue written
+    # between the two green while cataloguing no ontology at all.
+    expect(named['ontology']['members']).to include('classes.jsonld')
     # Every catalogued path resolves to something that exists.
     named.each_value do |entry|
       next unless entry['name']

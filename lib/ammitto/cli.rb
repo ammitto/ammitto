@@ -176,6 +176,10 @@ module Ammitto
                          desc: 'Sources exempt from the health gates: zero entities, source errors, ' \
                                'missing aggregates, and the quality floors will not fail the run ' \
                                '(comma-separated). Per-file transform errors always fail.'
+    option :report, type: :string,
+                    desc: 'Write the run outcome as JSON to PATH, including per-source gate ' \
+                          'failures. Written even when the gates fail, so CI can report what ' \
+                          'broke without parsing this command output.'
     def harmonize(*sources)
       require_relative 'cli/harmonize_command'
       Cmd::HarmonizeCommand.new(options, sources).run

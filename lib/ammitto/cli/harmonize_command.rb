@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'yaml'
 require 'json'
+require 'time'
 require_relative '../serialization/json_ld_graph_exporter'
 require_relative '../serialization/search_index_exporter'
 require_relative '../serialization/ontology_exporter'
@@ -47,6 +48,11 @@ module Ammitto
       # entities to be overwhelmingly identifiable.
       MIN_UNIQUE_ID_RATIO = 0.5
       MIN_NAMED_ENTITY_RATIO = 0.9
+
+      # Stamped into every --report file. A consumer that reads a shape
+      # it does not recognise should say so rather than guess, which is
+      # the whole reason for reporting instead of parsing the log.
+      REPORT_SCHEMA = 'ammitto-harmonize-report/v1'
 
       # Initialize with options and sources
       # @param options [Hash] command options
@@ -139,7 +145,21 @@ module Ammitto
         end
 
         print_summary(results)
+        # Written before the gates raise, because a failing run is
+        # precisely the one a caller needs the report for. A write that
+        # fails must not become the run's diagnosis, though: it is warned
+        # about immediately and raised only once the gates have had their
+        # say, so an unwritable path cannot replace "ru: No YAML files
+        # found" with an Errno the operator has to work backwards from.
+        #
+        # The rule is the report's alone, and does not extend upward to
+        # the three exporters. They are what the command exists to
+        # produce; if one raises, the artefacts do not exist, and that
+        # outranks a gate saying one source contributed nothing. Only a
+        # diagnostic ABOUT the run yields to the run's own verdict.
+        report_error = options[:report] ? write_report(results) : nil
         enforce_health_gates(results)
+        raise Thor::Error, report_error if report_error
       end
 
       # Health gates: a run that produced no data or swallowed errors must
@@ -1457,6 +1477,91 @@ module Ammitto
 
         puts "Graph totals: #{stats[:total_entities]} entities, " \
              "#{stats[:total_entries]} entries (deduplicated)"
+      end
+
+      # Write the run's outcome as JSON.
+      #
+      # The printed summary is for a human reading a log; a CI job needs
+      # the same facts without parsing prose. ammitto/data was recovering
+      # them by regexing this command's stdout for "Harmonize health gate
+      # failed:" and two-space-indented rows, which couples a workflow to
+      # wording this command is free to change, and reads a raised
+      # Thor::Error message as if it were an interface.
+      #
+      # @param results [Array<Hash>] harmonize results
+      # @return [String, nil] failure message, or nil when written
+      def write_report(results)
+        path = options[:report]
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, "#{JSON.pretty_generate(report_payload(results))}\n")
+        puts "Wrote report: #{path}" if options[:verbose]
+        nil
+      rescue StandardError => e
+        # Deliberately broad. Rescuing only the IO errors left the
+        # serialization uncovered: JSON.pretty_generate raises
+        # JSON::GeneratorError on a source error carrying an invalid
+        # UTF-8 byte, which is neither SystemCallError nor IOError, so it
+        # escaped and replaced "ru: No YAML files found" with a JSON
+        # error on exactly the failing runs this report describes.
+        #
+        # The rule is about precedence, not about which exceptions
+        # exist: producing the diagnostic must never outrank the
+        # diagnosis. Anything that goes wrong here is reported as a
+        # report failure and yields to the gates.
+        #
+        # Warned here and returned rather than raised: the caller decides
+        # when it can afford to be the run's error (see #run).
+        message = "Could not write report to #{path}: #{e.class}: #{e.message}"
+        warn message
+        message
+      end
+
+      # The report body, classified by the same gate evaluation the exit
+      # code uses, so the two can never disagree.
+      # @param results [Array<Hash>] harmonize results
+      # @return [Hash] report payload
+      def report_payload(results)
+        evaluate_gates(results)
+        failed, rest = results.partition { |r| (r[:gate_failures] || []).any? }
+        exempted, clean = rest.partition { |r| (r[:exempted_failures] || []).any? }
+        stats = @exporter&.stats
+
+        {
+          'schema' => REPORT_SCHEMA,
+          'generated_at' => Time.now.utc.iso8601,
+          # False means #enforce_health_gates is about to raise, so a
+          # caller can act on the outcome without inspecting an exit code
+          # it may have lost to a pipe.
+          'gates_passed' => failed.empty?,
+          'counts' => { 'succeeded' => clean.length,
+                        'failed' => failed.length,
+                        'exempted' => exempted.length },
+          'totals' => { 'entities' => stats&.dig(:total_entities),
+                        'entries' => stats&.dig(:total_entries) },
+          'sources' => results.map { |r| report_source(r) }
+        }
+      end
+
+      # One source's outcome. Per-file transform errors are reported
+      # separately from gate failures because no exemption clears them.
+      #
+      # Counts are passed through rather than coerced: a source that
+      # errored never reached a count, and null says that where 0 would
+      # read as a measurement a jq snippet or a dashboard would trust.
+      # @param result [Hash] per-source result
+      # @return [Hash] source entry
+      def report_source(result)
+        {
+          'code' => result[:code].to_s,
+          'status' => result[:status].to_s,
+          'entities' => result[:entities],
+          'entries' => result[:entries],
+          'error' => result[:error],
+          'gate_failures' => result[:gate_failures] || [],
+          'exempted_failures' => result[:exempted_failures] || [],
+          'transform_errors' => result[:errors] || [],
+          'quality' => result[:quality] || {}
+        }
       end
     end
   end

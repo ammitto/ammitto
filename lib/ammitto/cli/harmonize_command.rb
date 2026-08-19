@@ -151,6 +151,12 @@ module Ammitto
         # about immediately and raised only once the gates have had their
         # say, so an unwritable path cannot replace "ru: No YAML files
         # found" with an Errno the operator has to work backwards from.
+        #
+        # The rule is the report's alone, and does not extend upward to
+        # the three exporters. They are what the command exists to
+        # produce; if one raises, the artefacts do not exist, and that
+        # outranks a gate saying one source contributed nothing. Only a
+        # diagnostic ABOUT the run yields to the run's own verdict.
         report_error = options[:report] ? write_report(results) : nil
         enforce_health_gates(results)
         raise Thor::Error, report_error if report_error

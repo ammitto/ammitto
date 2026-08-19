@@ -276,8 +276,12 @@ doc_valid() { # kind json
                    and ((.conclusion == null) or (.conclusion | type == "string"))))' \
         >/dev/null 2>&1 <<<"$json" ;;
     *)
+      # created_at is required here too, because the streak is ordered by
+      # it rather than by the position the API returned.
       jq -e 'type == "object" and (.workflow_runs | type == "array")
              and (.workflow_runs | all(type == "object"
+                   and (.created_at | type == "string")
+                   and (.created_at | length > 0)
                    and ((.conclusion == null) or (.conclusion | type == "string"))))' \
         >/dev/null 2>&1 <<<"$json" ;;
   esac
@@ -366,11 +370,19 @@ while IFS= read -r line <&3; do
     last_sched="$(jq -r '.created_at // empty' <<<"$newest_sched")"
     last_sched_conclusion="$(jq -r '.conclusion // empty' \
       <<<"$newest_sched")"
-    seq="$(jq -r '[.workflow_runs[]? | .conclusion
-          | if . == "success" then "S"
-            elif . == "failure" or . == "timed_out"
-                 or . == "startup_failure" then "F"
-            else "C" end] | join("")' <<<"$completed_json")"
+    # Newest first, by created_at rather than by the order the API
+    # returned. `window` below takes everything before the first S as
+    # "since the last success", so a stale success ahead of newer
+    # failures clears a real streak, and stale failures ahead of a newer
+    # success invent one. Same reason the recency read was changed: this
+    # endpoint promises filters and paging, not an order.
+    seq="$(jq -r '[.workflow_runs[]? | {created_at, conclusion}]
+          | sort_by(.created_at) | reverse
+          | map(if .conclusion == "success" then "S"
+                elif .conclusion == "failure" or .conclusion == "timed_out"
+                     or .conclusion == "startup_failure" then "F"
+                else "C" end)
+          | join("")' <<<"$completed_json")"
 
     if [ "$state" != "active" ]; then
       reasons+=("workflow state is '$state' — the schedule is not running")

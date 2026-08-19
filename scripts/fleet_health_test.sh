@@ -32,11 +32,16 @@ schedule_fixture() { # repo age conclusion
   printf '{"workflow_runs":[{"created_at":"%s","conclusion":"%s"}]}' \
     "$(iso "$2")" "$3" > "$FIX/$1__schedule_runs.json"
 }
-completed_fixture() { # repo conclusion...
-  local repo="$1" runs="" c
+completed_fixture() { # repo conclusion... (newest first, as the caller reads)
+  local repo="$1" runs="" c i=0
   shift
+  # Timestamps descend with position, so a fixture written newest-first
+  # still reads newest-first once the script orders by created_at. The
+  # real endpoint always carries created_at; a fixture without one would
+  # be testing a document the API does not produce.
   for c in "$@"; do
-    runs="$runs{\"conclusion\":\"$c\"},"
+    runs="$runs{\"created_at\":\"$(iso "$((i + 1)) hours ago")\",\"conclusion\":\"$c\"},"
+    i=$((i + 1))
   done
   printf '{"workflow_runs":[%s]}' "${runs%,}" \
     > "$FIX/${repo}__completed_runs.json"
@@ -338,8 +343,8 @@ if [ "$1" = "api" ]; then
   echo "$2" >> "$GH_PATHS"
   case "$2" in
     *"/runs?"*"event=schedule"*"per_page=5") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
-    *"/runs?"*"event=schedule"*) printf '{"workflow_runs":[{"conclusion":"success"},{"conclusion":"success"},{"conclusion":"success"}]}' ;;
-    *"/runs?"*) printf '{"workflow_runs":[{"conclusion":"failure"},{"conclusion":"failure"},{"conclusion":"failure"},{"conclusion":"failure"}]}' ;;
+    *"/runs?"*"event=schedule"*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" "$SCHED_TS" "$SCHED_TS" ;;
+    *"/runs?"*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"}]}' "$SCHED_TS" "$SCHED_TS" "$SCHED_TS" "$SCHED_TS" ;;
     *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
   esac
   exit 0
@@ -380,7 +385,7 @@ if [ "$1" = "api" ]; then
   echo "$2" >> "$GH_PATHS"
   case "$2" in
     *"/runs?"*"per_page=5") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
-    *"/runs?"*) printf '{"workflow_runs":[{"conclusion":"success"},{"conclusion":"success"}]}' ;;
+    *"/runs?"*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" "$SCHED_TS" ;;
     *) printf '{"state":"active"}' ;;
   esac
 fi
@@ -423,7 +428,7 @@ if [ "$1" = "api" ]; then
     *"/runs?"*"event=schedule"*"status=completed"*)
       printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
     *"/runs?"*"event=schedule"*)
-      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_OLD" "$SCHED_TS" ;;
+      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_OLD" "$SCHED_TS" ;;
     *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
   esac
   exit 0
@@ -440,6 +445,48 @@ PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token \
 [ "$rc" -eq 0 ] \
   && pass "the newest run on the page decides recency, not position zero" \
   || fail "a stale entry ahead of the newest one paged a healthy repo (exit $rc)"
+# The conclusion must come from the same run as the timestamp. It is
+# display-only, so nothing about the verdict catches it: reading it from
+# position zero reports the OLD run's conclusion beside the NEW run's
+# time, which is a row that describes no run that ever happened.
+if grep -q '(success)' "$TMP/report_order.md"; then
+  pass "the reported conclusion belongs to the run reported beside it"
+else
+  fail "conclusion came from a different run than the timestamp: $(grep 'data-order' "$TMP/report_order.md" || true)"
+fi
+
+# The streak reads the same endpoint and had the same positional trust:
+# `window` takes everything before the first S as "since the last
+# success", so an old success served ahead of newer failures clears a
+# real streak. This stub puts the OLD success first and three newer
+# failures after it; ordered correctly the repo pages, ordered by
+# position it reads clean.
+echo "== streak: the newest completed runs decide it, not API position =="
+cat > "$TMP/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+if [ "$1" = "api" ]; then
+  [ -n "${GH_PATHS:-}" ] && echo "$2" >> "$GH_PATHS"
+  case "$2" in
+    *"/runs?"*"event=schedule"*"status=completed"*)
+      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"}]}' "$SCHED_OLD" "$SCHED_MID" "$SCHED_NEWER" "$SCHED_TS" ;;
+    *"/runs?"*"event=schedule"*)
+      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"failure"}]}' "$SCHED_TS" ;;
+    *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
+  esac
+  exit 0
+fi
+exit 0
+STUB
+chmod +x "$TMP/bin/gh"
+rc=0
+PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token \
+  SCHED_TS="$(iso '3 hours ago')" SCHED_NEWER="$(iso '4 hours ago')" \
+  SCHED_MID="$(iso '5 hours ago')" SCHED_OLD="$(iso '30 days ago')" \
+  FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_order.txt" \
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_streak_order.md" > /dev/null || rc=$?
+[ "$rc" -eq 1 ] \
+  && pass "an old success served first cannot clear a real failure streak" \
+  || fail "the streak was cleared by API position (exit $rc)"
 
 # per_page was pinned at 10 while FLEET_HEALTH_STREAK is configurable, so
 # any threshold above 10 could never be reached: the streak stayed short
@@ -589,7 +636,7 @@ cat > "$TMP/bin3/curl" <<'STUB'
 # One argument per line so an assertion can match a header exactly.
 { for a in "$@"; do echo "$a"; done; } >> "$CURL_LOG"
 case "$*" in
-  *status=completed*) printf '{"workflow_runs":[{"conclusion":"success"}]}' ;;
+  *status=completed*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
   *event=schedule*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
   *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
 esac

@@ -414,8 +414,15 @@ module Ammitto
       # them: the full dataset, its Turtle rendering, the ontology, the
       # facets and all but one source aggregate could only be found by
       # guessing a path. This is the entry point that makes them
-      # discoverable, and the slice families already follow the same
-      # `Index` shape.
+      # discoverable.
+      #
+      # It shares `@type: "Index"` and the `entries` key with the slice
+      # documents, and nothing more: a slice's entries are `{"@id": ...}`
+      # node references, while these carry a name, a media type and a
+      # byte size, and the slice MASTERS use `available` rather than
+      # `entries` at all. Said plainly because a near-miss is worse than
+      # a fresh shape — a consumer written against a slice half-reads
+      # this and then fails on the payload.
       #
       # Entries are emitted only for files that exist on disk once the
       # rest of the export has run, so the catalogue cannot advertise

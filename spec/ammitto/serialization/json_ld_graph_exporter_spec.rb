@@ -151,7 +151,8 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
 
       expect(exporter.regimes).to have_key('dprk')
       expect(exporter.regimes['dprk']['name']).to eq('Democratic People\'s Republic of Korea')
-      expect(entry['regime']).to eq({ '@id' => 'https://www.ammitto.org/regime/dprk' })
+      expect(entry['regime']).to eq({ '@id' => 'https://www.ammitto.org/regime/dprk',
+                                      'name' => 'Democratic People\'s Republic of Korea' })
     end
 
     it 'extracts and deduplicates legal instruments' do
@@ -218,7 +219,10 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       data = JSON.parse(File.read(entry_file))
       expect(data['@id']).to eq('https://www.ammitto.org/entry/un/consolidated-list/KPi.066')
       expect(data['authority']).to eq({ '@id' => 'https://www.ammitto.org/authority/un' })
-      expect(data['regime']).to eq({ '@id' => 'https://www.ammitto.org/regime/dprk' })
+      # The regime reference carries its label alongside the identifier, so
+      # a consumer has a name to show without a second fetch.
+      expect(data['regime']).to eq({ '@id' => 'https://www.ammitto.org/regime/dprk',
+                                     'name' => 'DPRK' })
     end
 
     it 'exports authority node files' do

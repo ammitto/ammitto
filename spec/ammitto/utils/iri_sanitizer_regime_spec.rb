@@ -47,14 +47,14 @@ RSpec.describe Ammitto::Utils::IriSanitizer do
     long = 'CA_Justice for victims of corrupt foreign officials ' \
            'regulations (JVCFOR) / Reglement relatif a la justice'
 
-    it 'sanitizes a truncated slug to itself' do
-      once = described_class.sanitize(long)
+    it 'slugs a truncated regime code to itself' do
+      once = described_class.regime_slug(long)
 
-      expect(described_class.sanitize(once)).to eq(once)
+      expect(described_class.regime_slug(once)).to eq(once)
     end
 
     it 'leaves no trailing hyphen after truncating' do
-      expect(described_class.sanitize(long)).not_to end_with('-')
+      expect(described_class.regime_slug(long)).not_to end_with('-')
     end
 
     it 'mints the same regime IRI from a code and from its own slug' do
@@ -62,6 +62,31 @@ RSpec.describe Ammitto::Utils::IriSanitizer do
       slug = iri.split('/').last
 
       expect(described_class.regime_iri(slug)).to eq(iri)
+    end
+  end
+
+  describe 'the repair stays out of the shared sanitizer' do
+    # Local ids are sanitized once, from the source record, and never
+    # rebuilt from a stored key, so they do not need the repair — and
+    # they cannot afford it. Truncation already collapses everything
+    # sharing a 64-character prefix; stripping the trailing hyphen
+    # would put the 63-character id in that same bucket, aliasing two
+    # records onto one @id. #sanitize therefore has to keep the hyphen
+    # even though #regime_slug drops it.
+    cut = "#{'a' * 63}-X"   # truncates to 63 a's plus a dangling hyphen
+    whole = 'a' * 63        # the same prefix, ending there
+
+    it 'keeps a truncated local id distinct from its own prefix' do
+      expect(described_class.entity_iri('ca', cut))
+        .not_to eq(described_class.entity_iri('ca', whole))
+    end
+
+    it 'preserves the hyphen truncation leaves behind' do
+      expect(described_class.sanitize(cut)).to end_with('-')
+    end
+
+    it 'drops that hyphen only for regimes' do
+      expect(described_class.regime_slug(cut)).not_to end_with('-')
     end
   end
 end

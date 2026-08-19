@@ -294,7 +294,32 @@ module Ammitto
         #   # => "https://www.ammitto.org/regime/ca_belarus-blarus"
         #
         def regime_iri(code)
-          "#{BASE_URI}/regime/#{sanitize(code)}"
+          "#{BASE_URI}/regime/#{regime_slug(code)}"
+        end
+
+        # Slug for a regime code, as both the node filename and the
+        # last segment of its IRI.
+        #
+        # #sanitize truncates last, so a code cut mid-word keeps the
+        # hyphen that preceded the cut. That is harmless for a local
+        # id, which is sanitized once from the source record and never
+        # again, but a regime slug is re-sanitized every time an IRI is
+        # rebuilt from a stored key, and the second pass strips the
+        # dangling hyphen: the shortened @id then answered to no node
+        # file.
+        #
+        # Repaired here rather than inside #sanitize because that
+        # method also mints entity, entry, announcement and legal
+        # instrument ids. Stripping the hyphen there would merge a
+        # 64-character truncation ending in "-" with the 63-character
+        # id that is otherwise identical, aliasing two records onto one
+        # @id, and would move identifiers consumers already hold.
+        #
+        # @param code [String] regime code as the source states it
+        # @return [String] slug, stable under a second pass
+        #
+        def regime_slug(code)
+          sanitize(code).sub(/-\z/, '')
         end
 
         # Generate an entry IRI (LIST-SPECIFIC).
@@ -556,12 +581,6 @@ module Ammitto
              .gsub(/^-|-$/, '')          # Remove leading/trailing hyphens
              .downcase                   # Lowercase
              .slice(0, MAX_ID_LENGTH)    # Truncate
-             # Truncation can cut mid-word and leave the hyphen that
-             # preceded it dangling, and this method has to be
-             # idempotent: a slug is re-sanitized wherever an IRI is
-             # rebuilt from a stored key, and one that shortened on the
-             # second pass advertised an @id no node file answered to.
-             .sub(/-\z/, '')
         end
       end
     end

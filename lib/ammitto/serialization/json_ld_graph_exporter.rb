@@ -520,7 +520,7 @@ module Ammitto
         # path and the IRI from disagreeing again. It also merges codes
         # differing only in trailing whitespace: "ca_moldova" and
         # "ca_moldova " were one regime published as two nodes.
-        slug = Ammitto::Utils::IriSanitizer.sanitize(code_lower)
+        slug = Ammitto::Utils::IriSanitizer.regime_slug(code_lower)
         regime_id = Ammitto::Utils::IriSanitizer.regime_iri(code_lower)
 
         # Store full regime if not already present

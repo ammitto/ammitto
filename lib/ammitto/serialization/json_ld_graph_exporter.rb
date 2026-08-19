@@ -936,6 +936,22 @@ module Ammitto
           source = parts.find { |p| registered_source?(p) }
           local_id = parts.last
 
+          # The same guard the organization and instrument paths apply, for
+          # the same reason: a component that cannot safely become a
+          # filename is refused here rather than handed to the filesystem,
+          # where the answer depends on the platform — Linux accepts
+          # characters Windows rejects, so an unvalidated write succeeds
+          # quietly on one runner and raises Errno::EINVAL on the other —
+          # and a '..' component would write outside the node tree.
+          # Document types were the one path of the three without it.
+          [source, local_id].compact.each do |component|
+            next unless unusable_filename_component?(component)
+
+            raise Ammitto::Error,
+                  "Document type identifier #{type_id.inspect} yields " \
+                  "unusable path component #{component.inspect}"
+          end
+
           if source
             dir = File.join(@output_dir, 'node', 'document-type', source)
             FileUtils.mkdir_p(dir)

@@ -411,18 +411,32 @@ while IFS= read -r line <&3; do
                 else "C" end)
           | join("")' <<<"$completed_json")"
 
-    if [ "$state" != "active" ]; then
+    if [ "$state" != "active" ] && [ -z "$no_schedule_reason" ]; then
       reasons+=("workflow state is '$state' — the schedule is not running")
     fi
 
     if [ -n "$no_schedule_reason" ]; then
       # The declaration has to be able to be WRONG, or it is just a mute
-      # button with better wording. A repo declared scheduleless that is
-      # in fact producing scheduled runs has a stale declaration, and
-      # that pages: silence would hide both the runs and the fact that
-      # nobody updated the inventory.
-      if [ -n "$last_sched" ]; then
-        reasons+=("declared 'no-schedule' but a schedule-event run exists ($last_sched) — the declaration is stale, drop it from the repos file")
+      # button with better wording. But "a schedule-event run exists" is
+      # the wrong test: run history outlives the workflow that produced
+      # it, so any repo that EVER had a cron could never be declared
+      # scheduleless. data-jp proved that within the hour — its cron was
+      # removed, its three weeks of history stayed, and it paged on a
+      # designation that was correct.
+      #
+      # The live signal is the workflow itself. GitHub reports a removed
+      # one as state "deleted" and keeps answering for it, so:
+      #
+      #   deleted or absent          -> no cron can fire. Correct.
+      #   active, no runs ever       -> a workflow with no schedule
+      #                                 trigger. Correct.
+      #   active, and runs on record -> it HAD a cron. Either it still
+      #                                 fires, or it is the dead schedule
+      #                                 this monitor exists to catch, and
+      #                                 declaring that scheduleless is
+      #                                 exactly the abuse to refuse.
+      if [ "$state" = "active" ] && [ -n "$last_sched" ]; then
+        reasons+=("declared 'no-schedule' but the workflow is active and has schedule-event runs (latest $last_sched) — either the cron still fires or it died; neither is 'no schedule by design'")
       fi
     elif [ -n "$last_sched" ]; then
       if run_epoch="$(date -ud "$last_sched" +%s 2>/dev/null)" &&

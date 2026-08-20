@@ -257,6 +257,45 @@ grep -q 'All 2 repos healthy' "$TMP/report_ok.md" \
 grep -q '<!-- fleet-health-state: healthy -->' "$TMP/report_ok.md" \
   && pass "healthy state marker present" || fail "healthy state marker missing"
 
+echo "== no-schedule: a designation, and one that can be wrong =="
+# data-noschedule has an active workflow and no schedule-event runs at
+# all, which is exactly what a repo with no cron looks like. Without the
+# designation that is UNHEALTHY ("no schedule-event run on record"); with
+# it, it is BY-DESIGN and silent.
+workflow_fixture data-noschedule active
+printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__completed_runs.json"
+
+repos_nosched="$TMP/repos_nosched.txt"
+printf 'data-noschedule no-schedule:curated by its own scripts\n' > "$repos_nosched"
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched.md")
+[ "$rc" -eq 0 ] && pass "a declared scheduleless repo exits 0" \
+  || fail "no-schedule exit was $rc"
+expect_status data-noschedule BY-DESIGN "$TMP/report_nosched.md"
+expect_reason data-noschedule "no schedule expected" "$TMP/report_nosched.md"
+grep -q '<!-- fleet-health-state: healthy -->' "$TMP/report_nosched.md" \
+  && pass "BY-DESIGN stays out of the state signature" \
+  || fail "BY-DESIGN leaked into the state signature"
+
+# The half that makes it a designation rather than a mute button: if a
+# schedule-event run turns up, the declaration is wrong and must page.
+# Without this the entry would silence a repo forever, including one
+# whose cron someone restored.
+healthy_fixture data-noschedule
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched_stale.md")
+[ "$rc" -eq 1 ] && pass "a scheduled run under no-schedule pages" \
+  || fail "stale no-schedule designation exited $rc"
+expect_reason data-noschedule "the declaration is stale" \
+  "$TMP/report_nosched_stale.md"
+
+# And it must not be usable as a dateless ack: a reasonless entry is
+# malformed, and a malformed entry pages rather than suppresses.
+repos_nosched_bad="$TMP/repos_nosched_bad.txt"
+printf 'data-noschedule no-schedule:\n' > "$repos_nosched_bad"
+rc=$(run_health "$repos_nosched_bad" "$TMP/report_nosched_bad.md")
+[ "$rc" -eq 1 ] && pass "a reasonless no-schedule pages" \
+  || fail "reasonless no-schedule exited $rc"
+
 echo "== acknowledgement: suppresses paging until review-by =="
 # data-dead is thoroughly broken (state disabled_inactively), so it is
 # unhealthy at every frozen instant below; only the acknowledgement can
@@ -807,7 +846,7 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # Every non-comment line is either a bare repo or a well-formed ack.
   bad_lines="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -vE '^[[:space:]]*$' |
-    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+ack:.+:[0-9]{4}-[0-9]{2}-[0-9]{2})?[[:space:]]*$' \
+    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+(ack:.+:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' \
     || true)"
   [ -z "$bad_lines" ] && pass "every repos-file line is well formed" \
     || fail "malformed repos-file lines: $bad_lines"

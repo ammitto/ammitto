@@ -292,6 +292,7 @@ detail_lines=""
 state_pairs=""
 paging=0
 acknowledged=0
+by_design=0
 unreadable_total=0
 total=0
 
@@ -314,6 +315,7 @@ while IFS= read -r line <&3; do
   ack_until=""
   ack_bad=""
   ack_epoch=0
+  no_schedule_reason=""
   if [ -n "$ack_spec" ]; then
     case "$ack_spec" in
       ack:*)
@@ -328,8 +330,17 @@ while IFS= read -r line <&3; do
           ack_bad="acknowledgement review-by '$ack_until' is not a real date"
         fi
         ;;
+      no-schedule:*)
+        # A designation, not a deadline. `ack:` parks a problem until a
+        # date; this says the repo is not supposed to have a schedule at
+        # all, so there is no date to review and nothing to expire.
+        no_schedule_reason="${ack_spec#no-schedule:}"
+        if [ -z "$no_schedule_reason" ]; then
+          ack_bad="no-schedule needs 'no-schedule:<reason>'"
+        fi
+        ;;
       *)
-        ack_bad="unknown entry '$ack_spec' (expected 'ack:<reason>:<YYYY-MM-DD>')"
+        ack_bad="unknown entry '$ack_spec' (expected 'ack:<reason>:<YYYY-MM-DD>' or 'no-schedule:<reason>')"
         ;;
     esac
   fi
@@ -388,7 +399,16 @@ while IFS= read -r line <&3; do
       reasons+=("workflow state is '$state' — the schedule is not running")
     fi
 
-    if [ -n "$last_sched" ]; then
+    if [ -n "$no_schedule_reason" ]; then
+      # The declaration has to be able to be WRONG, or it is just a mute
+      # button with better wording. A repo declared scheduleless that is
+      # in fact producing scheduled runs has a stale declaration, and
+      # that pages: silence would hide both the runs and the fact that
+      # nobody updated the inventory.
+      if [ -n "$last_sched" ]; then
+        reasons+=("declared 'no-schedule' but a schedule-event run exists ($last_sched) — the declaration is stale, drop it from the repos file")
+      fi
+    elif [ -n "$last_sched" ]; then
       if run_epoch="$(date -ud "$last_sched" +%s 2>/dev/null)" &&
          [ "$run_epoch" -gt 0 ]; then
         age_hours=$(( (NOW_EPOCH - run_epoch) / 3600 ))
@@ -410,6 +430,12 @@ while IFS= read -r line <&3; do
     only_c="${window//[^C]/}"
     hard="${#only_f}"
     inconc="${#only_c}"
+    if [ -n "$no_schedule_reason" ]; then
+      # Nothing to have a streak of.
+      hard=0
+      inconc=0
+      window=""
+    fi
     if [ "$hard" -ge "$STREAK_LIMIT" ]; then
       reasons+=("$hard hard failures since the last success (limit $STREAK_LIMIT)")
     fi
@@ -434,6 +460,9 @@ while IFS= read -r line <&3; do
   elif [ -n "$ack_reason" ]; then
     status="ACKNOWLEDGED"
     reasons+=("acknowledged until $ack_until: $ack_reason")
+  elif [ -n "$no_schedule_reason" ] && [ "${#reasons[@]}" -eq 0 ]; then
+    status="BY-DESIGN"
+    reasons+=("no schedule expected: $no_schedule_reason")
   elif [ "$unreadable" -eq 1 ]; then
     status="UNREADABLE"
   elif [ "${#reasons[@]}" -eq 0 ]; then
@@ -452,6 +481,8 @@ while IFS= read -r line <&3; do
     OK) ;;
     ACKNOWLEDGED)
       acknowledged=$((acknowledged + 1)) ;;
+    BY-DESIGN)
+      by_design=$((by_design + 1)) ;;
     *)
       paging=$((paging + 1)) ;;
   esac
@@ -465,7 +496,8 @@ while IFS= read -r line <&3; do
   # Only paging statuses enter the signature. An acknowledged repo stays
   # visible in the report but must not move the signature, or the very
   # act of acknowledging it would open a tracking issue about it.
-  if [ "$status" != "OK" ] && [ "$status" != "ACKNOWLEDGED" ]; then
+  if [ "$status" != "OK" ] && [ "$status" != "ACKNOWLEDGED" ] &&
+     [ "$status" != "BY-DESIGN" ]; then
     state_pairs="$state_pairs$repo=$status
 "
   fi
@@ -505,14 +537,19 @@ if [ -n "$detail_lines" ]; then
   if [ "$acknowledged" -gt 0 ]; then
     ack_note=", $acknowledged acknowledged and deliberately silent"
   fi
+  if [ "$by_design" -gt 0 ]; then
+    ack_note="$ack_note, $by_design with no schedule by design"
+  fi
   report="$report
 ### $paging of $total repos paging$ack_note
 $detail_lines
 
 A quiet repo is not a flagged repo: runs that commit nothing count as
 healthy. ACKNOWLEDGED lines are known-broken and deliberately silent
-until their review-by date; every other line is a schedule that is off,
-silent past the limit, failing, or unreadable."
+until their review-by date. BY-DESIGN lines have no schedule to watch and
+never expire — but they still page if a scheduled run appears, because
+then the designation is wrong. Every other line is a schedule that is
+off, silent past the limit, failing, or unreadable."
 else
   report="$report
 All $total repos healthy."

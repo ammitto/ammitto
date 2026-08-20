@@ -191,10 +191,12 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
         .to eq(localized)
     end
 
-    it 'reproduces the page substring match, including its over-inclusion' do
-      # PRE-EXISTING DEFECT, reproduced deliberately: the page tests
-      # `publisher === id || publisher.includes(id)`, so a parent
-      # organization absorbs every child whose identifier extends it.
+    it 'matches an organization on its exact identifier, never on a prefix' do
+      # This asserted the over-inclusion deliberately, to mirror what the
+      # page's own scan did so the slice and the page agreed. The page
+      # reads this slice now instead of scanning, so the parity is gone
+      # and the prefix matches were simply wrong: a parent organization
+      # was claiming every child's documents.
       exporter.add_organization(organization('cn/mofcom'))
       exporter.add_organization(organization('cn/mofcom-bureau'))
       add_entry('a1', announcement(publisher: 'cn/mofcom', documentId: 'PARENT'))
@@ -204,7 +206,7 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       parent = slice('by-organization', 'cn', 'mofcom.jsonld')['published']
       child = slice('by-organization', 'cn', 'mofcom-bureau.jsonld')['published']
 
-      expect(parent.map { |s| s['documentId'] }).to eq(%w[PARENT CHILD])
+      expect(parent.map { |s| s['documentId'] }).to eq(%w[PARENT])
       expect(child.map { |s| s['documentId'] }).to eq(%w[CHILD])
     end
 

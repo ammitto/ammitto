@@ -257,6 +257,67 @@ grep -q 'All 2 repos healthy' "$TMP/report_ok.md" \
 grep -q '<!-- fleet-health-state: healthy -->' "$TMP/report_ok.md" \
   && pass "healthy state marker present" || fail "healthy state marker missing"
 
+echo "== no-schedule: a designation, and one that can be wrong =="
+# data-noschedule has an active workflow and no schedule-event runs at
+# all, which is exactly what a repo with no cron looks like. Without the
+# designation that is UNHEALTHY ("no schedule-event run on record"); with
+# it, it is BY-DESIGN and silent.
+workflow_fixture data-noschedule active
+printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__completed_runs.json"
+
+repos_nosched="$TMP/repos_nosched.txt"
+printf 'data-noschedule no-schedule:curated by its own scripts\n' > "$repos_nosched"
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched.md")
+[ "$rc" -eq 0 ] && pass "a declared scheduleless repo exits 0" \
+  || fail "no-schedule exit was $rc"
+expect_status data-noschedule BY-DESIGN "$TMP/report_nosched.md"
+expect_reason data-noschedule "no schedule expected" "$TMP/report_nosched.md"
+grep -q '<!-- fleet-health-state: healthy -->' "$TMP/report_nosched.md" \
+  && pass "BY-DESIGN stays out of the state signature" \
+  || fail "BY-DESIGN leaked into the state signature"
+
+# The half that makes it a designation rather than a mute button: if a
+# schedule-event run turns up, the declaration is wrong and must page.
+# Without this the entry would silence a repo forever, including one
+# whose cron someone restored.
+healthy_fixture data-noschedule
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched_stale.md")
+[ "$rc" -eq 1 ] && pass "a scheduled run under no-schedule pages" \
+  || fail "stale no-schedule designation exited $rc"
+expect_reason data-noschedule "the declaration is stale" \
+  "$TMP/report_nosched_stale.md"
+
+# Codex's gap: every fixture above has an empty completed_runs, so the
+# streak bypass was never exercised. Give this one a history of failures
+# and no success — a shape that would page loudly on a scheduled repo —
+# and it must still read BY-DESIGN, because a repo with no cron cannot
+# have a run of failures since its last success.
+printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+completed_fixture data-noschedule failure failure failure failure
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched_hist.md")
+[ "$rc" -eq 0 ] && pass "old completed runs do not revive a streak under no-schedule" \
+  || fail "no-schedule with failure history exited $rc"
+expect_status data-noschedule BY-DESIGN "$TMP/report_nosched_hist.md"
+
+# A line carrying both qualifiers must page, not suppress. Without the
+# guard the whole remainder is one field and the ack is swallowed into
+# the no-schedule reason.
+repos_two_quals="$TMP/repos_two_quals.txt"
+printf 'data-dead no-schedule:looks fine ack:parked:2099-01-01\n' > "$repos_two_quals"
+rc=$(run_health "$repos_two_quals" "$TMP/report_two_quals.md")
+[ "$rc" -eq 1 ] && pass "two qualifiers on one line pages" \
+  || fail "doubled qualifier exited $rc"
+expect_reason data-dead "one qualifier per line" "$TMP/report_two_quals.md"
+
+# And it must not be usable as a dateless ack: a reasonless entry is
+# malformed, and a malformed entry pages rather than suppresses.
+repos_nosched_bad="$TMP/repos_nosched_bad.txt"
+printf 'data-noschedule no-schedule:\n' > "$repos_nosched_bad"
+rc=$(run_health "$repos_nosched_bad" "$TMP/report_nosched_bad.md")
+[ "$rc" -eq 1 ] && pass "a reasonless no-schedule pages" \
+  || fail "reasonless no-schedule exited $rc"
+
 echo "== acknowledgement: suppresses paging until review-by =="
 # data-dead is thoroughly broken (state disabled_inactively), so it is
 # unhealthy at every frozen instant below; only the acknowledgement can
@@ -807,8 +868,33 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # Every non-comment line is either a bare repo or a well-formed ack.
   bad_lines="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -vE '^[[:space:]]*$' |
-    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+ack:.+:[0-9]{4}-[0-9]{2}-[0-9]{2})?[[:space:]]*$' \
+    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' \
     || true)"
+  # A line may carry at most one qualifier; "no-schedule:x ack:y:DATE"
+  # would otherwise read as a no-schedule whose reason contains an ack.
+  doubled_re='(ack:.*no-schedule:|no-schedule:.*ack:)'
+  doubled="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
+    grep -E "$doubled_re" || true)"
+  [ -z "$doubled" ] && pass "no shipped line carries two qualifiers" \
+    || fail "lines with two qualifiers: $doubled"
+
+  # The two checks above are one contract, and it has to match the
+  # runtime parser: `ack:` and `no-schedule:` are reserved substrings
+  # anywhere in a reason, not merely prefixes. Prove the pair rejects
+  # what the parser rejects, in BOTH orders — the leading regex alone
+  # accepts an ack whose reason contains "no-schedule:", and only the
+  # doubled check catches it.
+  for probe in \
+    'data-x ack:contains no-schedule: prose:2026-09-07' \
+    'data-x no-schedule:contains ack:bar:2026-09-07'; do
+    if printf '%s\n' "$probe" |
+       grep -qvE '^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' ||
+       printf '%s\n' "$probe" | grep -qE "$doubled_re"; then
+      pass "validator rejects a doubled qualifier: ${probe#data-x }"
+    else
+      fail "validator accepted a line the parser rejects: $probe"
+    fi
+  done
   [ -z "$bad_lines" ] && pass "every repos-file line is well formed" \
     || fail "malformed repos-file lines: $bad_lines"
 else

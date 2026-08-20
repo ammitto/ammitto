@@ -9,6 +9,7 @@
 # A line may carry an acknowledgement:
 #
 #   <repo> ack:<reason>:<review-by YYYY-MM-DD>
+#   <repo> no-schedule:<reason>
 #
 # The repo still appears in every report, but as ACKNOWLEDGED: it is left out
 # of the paging count and never reaches the tracking issue. The date is a
@@ -17,6 +18,12 @@
 # parked by accident. The reason may contain colons; the date is taken from
 # the last one. A malformed acknowledgement pages instead of suppressing, so a
 # typo cannot silence a repo forever.
+#
+# `no-schedule:` is a designation rather than a deadline: it says the repo is
+# not meant to have a scheduled fetch at all, so there is nothing to review by
+# and nothing to expire. It is not a quieter `ack:` — a repo declared this way
+# still pages if a schedule-event run turns up, because that means the
+# designation is wrong and nobody updated this file.
 #
 # data-cn is listed even though its YAML is manually managed: its fetch.yml
 # still runs on a schedule (verified 2026-08-07, conclusion success), so it
@@ -27,7 +34,7 @@ data-ch
 data-cn
 data-eu
 data-eu-vessels
-data-jp
+data-jp no-schedule:corpus is curated by data-jp's own scripts into sources/; the gem has no fetch path for jp
 data-nz
 data-ru ack:parked for maintainer ruling on ru revival:2026-09-07
 data-tr

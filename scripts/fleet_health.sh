@@ -341,11 +341,17 @@ while IFS= read -r line <&3; do
           ack_bad="no-schedule needs 'no-schedule:<reason>'"
         elif [[ "$no_schedule_reason" == *"ack:"* ]] ||
              [[ "$no_schedule_reason" == *"no-schedule:"* ]]; then
-          # The whole remainder of the line is one field, so a second
-          # designator would otherwise be swallowed into the reason:
-          # "no-schedule:foo ack:bar:2026-09-07" would suppress as a
-          # no-schedule whose reason happens to contain an ack. Two
-          # qualifiers on one line is a mistake, and a mistake must page.
+          # `ack:` and `no-schedule:` are RESERVED substrings, not just
+          # prefixes. The whole remainder of the line is one field, so a
+          # second designator would otherwise be swallowed into the
+          # reason: "no-schedule:foo ack:bar:2026-09-07" would suppress
+          # as a no-schedule whose reason happens to contain an ack.
+          #
+          # Rejecting them anywhere in a reason costs a reason the
+          # ability to write "ack:" as prose, which nothing needs, and
+          # buys the guarantee that no line can carry a hidden second
+          # qualifier. Two qualifiers on one line is a mistake, and a
+          # mistake must page rather than suppress.
           ack_bad="one qualifier per line: '$ack_spec' carries more than one"
         fi
         ;;

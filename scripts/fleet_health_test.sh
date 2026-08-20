@@ -872,10 +872,29 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
     || true)"
   # A line may carry at most one qualifier; "no-schedule:x ack:y:DATE"
   # would otherwise read as a no-schedule whose reason contains an ack.
+  doubled_re='(ack:.*no-schedule:|no-schedule:.*ack:)'
   doubled="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
-    grep -E '(ack:.*no-schedule:|no-schedule:.*ack:)' || true)"
+    grep -E "$doubled_re" || true)"
   [ -z "$doubled" ] && pass "no shipped line carries two qualifiers" \
     || fail "lines with two qualifiers: $doubled"
+
+  # The two checks above are one contract, and it has to match the
+  # runtime parser: `ack:` and `no-schedule:` are reserved substrings
+  # anywhere in a reason, not merely prefixes. Prove the pair rejects
+  # what the parser rejects, in BOTH orders — the leading regex alone
+  # accepts an ack whose reason contains "no-schedule:", and only the
+  # doubled check catches it.
+  for probe in \
+    'data-x ack:contains no-schedule: prose:2026-09-07' \
+    'data-x no-schedule:contains ack:bar:2026-09-07'; do
+    if printf '%s\n' "$probe" |
+       grep -qvE '^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' ||
+       printf '%s\n' "$probe" | grep -qE "$doubled_re"; then
+      pass "validator rejects a doubled qualifier: ${probe#data-x }"
+    else
+      fail "validator accepted a line the parser rejects: $probe"
+    fi
+  done
   [ -z "$bad_lines" ] && pass "every repos-file line is well formed" \
     || fail "malformed repos-file lines: $bad_lines"
 else

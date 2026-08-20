@@ -411,7 +411,14 @@ while IFS= read -r line <&3; do
                 else "C" end)
           | join("")' <<<"$completed_json")"
 
-    if [ "$state" != "active" ] && [ -z "$no_schedule_reason" ]; then
+    # `deleted` is the only state a no-schedule declaration excuses. The
+    # disabled_* family — disabled_manually, disabled_inactivity,
+    # disabled_fork — means the workflow still EXISTS with its schedule
+    # and is not running, which is the death this monitor was built to
+    # catch. Excusing those would let the designation hide exactly the
+    # failure it must not.
+    if [ "$state" != "active" ] &&
+       ! { [ -n "$no_schedule_reason" ] && [ "$state" = "deleted" ]; }; then
       reasons+=("workflow state is '$state' — the schedule is not running")
     fi
 

@@ -308,6 +308,24 @@ grep -q "workflow state is 'deleted'" "$TMP/report_nosched_deleted.md" \
   && fail "a deleted workflow was reported as a fault under no-schedule" \
   || pass "deleted state is not a fault under no-schedule"
 
+# But `deleted` is the ONLY state it excuses. The disabled_* family means
+# the workflow still exists WITH its schedule and is not running — the
+# death this monitor was built for. A designation that swallowed those
+# would hide the one thing it must never hide.
+for dead_state in disabled_manually disabled_inactivity disabled_fork; do
+  workflow_fixture data-noschedule "$dead_state"
+  printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+  printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__completed_runs.json"
+  rc=$(run_health "$repos_nosched" "$TMP/report_nosched_$dead_state.md")
+  [ "$rc" -eq 1 ] \
+    && pass "no-schedule does not excuse $dead_state" \
+    || fail "$dead_state under no-schedule exited $rc"
+done
+# Put the fixture back: the cases below reuse this repo and expect an
+# active workflow. Leaving it disabled_fork made them fail for a reason
+# that had nothing to do with what they test.
+workflow_fixture data-noschedule active
+
 # Codex's gap: every fixture above has an empty completed_runs, so the
 # streak bypass was never exercised. Give this one a history of failures
 # and no success — a shape that would page loudly on a scheduled repo —

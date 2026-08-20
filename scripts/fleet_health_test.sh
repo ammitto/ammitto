@@ -288,6 +288,28 @@ rc=$(run_health "$repos_nosched" "$TMP/report_nosched_stale.md")
 expect_reason data-noschedule "the declaration is stale" \
   "$TMP/report_nosched_stale.md"
 
+# Codex's gap: every fixture above has an empty completed_runs, so the
+# streak bypass was never exercised. Give this one a history of failures
+# and no success — a shape that would page loudly on a scheduled repo —
+# and it must still read BY-DESIGN, because a repo with no cron cannot
+# have a run of failures since its last success.
+printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+completed_fixture data-noschedule failure failure failure failure
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched_hist.md")
+[ "$rc" -eq 0 ] && pass "old completed runs do not revive a streak under no-schedule" \
+  || fail "no-schedule with failure history exited $rc"
+expect_status data-noschedule BY-DESIGN "$TMP/report_nosched_hist.md"
+
+# A line carrying both qualifiers must page, not suppress. Without the
+# guard the whole remainder is one field and the ack is swallowed into
+# the no-schedule reason.
+repos_two_quals="$TMP/repos_two_quals.txt"
+printf 'data-dead no-schedule:looks fine ack:parked:2099-01-01\n' > "$repos_two_quals"
+rc=$(run_health "$repos_two_quals" "$TMP/report_two_quals.md")
+[ "$rc" -eq 1 ] && pass "two qualifiers on one line pages" \
+  || fail "doubled qualifier exited $rc"
+expect_reason data-dead "one qualifier per line" "$TMP/report_two_quals.md"
+
 # And it must not be usable as a dateless ack: a reasonless entry is
 # malformed, and a malformed entry pages rather than suppresses.
 repos_nosched_bad="$TMP/repos_nosched_bad.txt"
@@ -846,8 +868,14 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # Every non-comment line is either a bare repo or a well-formed ack.
   bad_lines="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -vE '^[[:space:]]*$' |
-    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+(ack:.+:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' \
+    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' \
     || true)"
+  # A line may carry at most one qualifier; "no-schedule:x ack:y:DATE"
+  # would otherwise read as a no-schedule whose reason contains an ack.
+  doubled="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
+    grep -E '(ack:.*no-schedule:|no-schedule:.*ack:)' || true)"
+  [ -z "$doubled" ] && pass "no shipped line carries two qualifiers" \
+    || fail "lines with two qualifiers: $doubled"
   [ -z "$bad_lines" ] && pass "every repos-file line is well formed" \
     || fail "malformed repos-file lines: $bad_lines"
 else

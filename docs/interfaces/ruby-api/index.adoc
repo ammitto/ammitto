@@ -85,8 +85,15 @@ sources = Ammitto.sources
 
 === Data Repository
 
-`query` and `get` read `api/v1/all.jsonld` under `local_path` and raise
-`Ammitto::NotFoundError` when it is missing.
+`query` and `get` prefer `api/v1/all.jsonld` under `local_path`. When it is
+absent they fall back to concatenating `api/v1/sources/*.jsonld` and log a
+warning, and they raise `Ammitto::NotFoundError` only when there is nothing to
+fall back to either.
+
+The fallback is deliberately narrower than the aggregate: per-source files carry
+entity and entry nodes, not the shared authorities, regimes, legal instruments,
+document types and organizations the aggregate adds. Each of those is published
+as its own document.
 
 [source,ruby]
 ----

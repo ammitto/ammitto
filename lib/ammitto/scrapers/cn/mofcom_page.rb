@@ -30,12 +30,17 @@ module Ammitto
           export_control: 'export_control'
         }.freeze
 
+        # @return [Array<Hash>] detail-page failures collected by the last
+        #   #fetch_all_announcements, as { url:, error: } hashes
+        attr_reader :detail_errors
+
         # Initialize with list type
         # @param list_type [Symbol] :unreliable_entity or :export_control
         # @param options [Hash] scraper options
         def initialize(list_type: :unreliable_entity, options: {})
           super(options)
           @list_type = list_type
+          @detail_errors = []
         end
 
         # The URL to scrape based on list type
@@ -69,13 +74,29 @@ module Ammitto
         end
 
         # Fetch and parse all announcements from MOFCOM
+        #
+        # A failed fetch raises instead of degrading to an empty array:
+        # BasePage#fetch swallows network errors into a nil return, and an
+        # empty return here is indistinguishable from "the site listed no
+        # announcements", so the pipeline reported success on a dead or
+        # blocked site. The check keys on the fetch return value, not
+        # @page: fetch does not clear @page on failure, so a page left by
+        # an earlier successful fetch must not mask a failed refetch with
+        # stale content. This is the same refusal MidPage already makes.
+        #
         # @return [Array<Hash>] array of parsed announcements
+        # @raise [Ammitto::NetworkError] when the index page could not
+        #   be fetched
         def fetch_all_announcements
-          announcements = []
+          unless fetch
+            raise Ammitto::NetworkError.new(
+              'MofcomPage: failed to fetch the index page ' \
+              '(network error or non-success response)', url: url
+            )
+          end
 
-          # First, fetch the index page
-          fetch
-          return announcements unless @page
+          @detail_errors = []
+          announcements = []
 
           # Find and follow links to individual announcements
           links = find_announcement_links
@@ -85,6 +106,7 @@ module Ammitto
             announcements << announcement if announcement
           rescue StandardError => e
             puts "[MofcomPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
+            @detail_errors << { url: link_info[:url], error: e.message }
           end
 
           announcements
@@ -162,17 +184,17 @@ module Ammitto
         end
 
         # Fetch and parse an individual announcement page
+        #
+        # Deliberately does not rescue the fetch — see MfaPage for why.
+        # The per-link rescue in #fetch_all_announcements records it.
+        #
         # @param announcement_url [String]
         # @return [Hash, nil]
+        # @raise [StandardError] when the detail page could not be fetched
         def fetch_and_parse_announcement(announcement_url)
           puts "[MofcomPage] Fetching announcement: #{announcement_url}" if verbose?
 
-          begin
-            detail_page = @agent.get(announcement_url)
-          rescue StandardError => e
-            puts "[MofcomPage] Error fetching #{announcement_url}: #{e.message}" if verbose?
-            return nil
-          end
+          detail_page = @agent.get(announcement_url)
 
           parse_announcement_detail(detail_page, announcement_url)
         end

@@ -45,7 +45,7 @@ module Ammitto
         # Try local reference docs first
         if reference_docs_path && Dir.exist?(reference_docs_path)
           puts "[#{code}] Fetching China sanctions from local reference docs..." if verbose?
-          return fetch_from_reference_docs
+          return refuse_empty_harvest(fetch_from_reference_docs)
         end
 
         # Fall back to web scraping
@@ -83,6 +83,31 @@ module Ammitto
 
         @fetched_data = scraper.fetch_all
 
+        # Refuse rather than report an empty harvest as a success. The
+        # scraper collects per-source errors instead of raising, so a
+        # blocked or restructured site arrives here as {entities: [],
+        # errors: [...]} — and a caller reading only :entities concludes
+        # China sanctions nobody. RuExtractor already makes both checks;
+        # this is the same refusal.
+        errors = @fetched_data[:errors] || []
+        unless errors.empty?
+          details = errors.map { |e| "#{e[:source]}: #{e[:error]}" }
+          # Ammitto::Error, not NetworkError: the scraper's boundaries
+          # rescue StandardError, so this list can hold parse failures as
+          # well as fetch failures. Calling a mixed set "network" tells a
+          # caller to retry when the site's format may simply have
+          # changed. No :url either — it spans MOFCOM's two lists and MFA.
+          raise Ammitto::Error,
+                "cn scrape failed: #{details.join('; ')}"
+        end
+
+        if (@fetched_data[:entities] || []).empty?
+          raise Ammitto::ParseError.new(
+            'cn scrape yielded zero entities: the site is blocked or its ' \
+            'structure changed; refusing to report success', format: :html
+          )
+        end
+
         puts "[#{code}] Fetched #{@fetched_data[:entities].length} entities" if verbose?
 
         @fetched_data
@@ -117,6 +142,37 @@ module Ammitto
       end
 
       private
+
+      # Refuse a harvest that found nothing, whichever route produced it.
+      #
+      # The web route makes this check inline. The reference-docs route
+      # returned straight to the caller, so an empty or unreadable
+      # directory produced {announcements: [], entities: []} and then
+      # {status: :success, entities: 0} — the same false negative the web
+      # route was fixed to stop making.
+      #
+      # @param data [Hash] a fetch result
+      # @return [Hash] the same result when it holds entities
+      # @raise [Ammitto::ParseError] when it holds none
+      def refuse_empty_harvest(data)
+        errors = data[:errors] || []
+        unless errors.empty?
+          details = errors.map { |e| "#{e[:source]}: #{e[:error]}" }
+          raise Ammitto::ParseError.new(
+            "cn reference docs failed: #{details.join('; ')}", format: :yaml
+          )
+        end
+
+        if (data[:entities] || []).empty?
+          raise Ammitto::ParseError.new(
+            'cn reference docs yielded zero entities: the directory is ' \
+            'empty, unreadable, or contained no extractable entities; ' \
+            'refusing to report success', format: :yaml
+          )
+        end
+
+        data
+      end
 
       # Build entity hash from parsed data
       # @param data [Hash] parsed entity data

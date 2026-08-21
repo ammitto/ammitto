@@ -7,14 +7,14 @@ module Ammitto
   #
   # @example Basic configuration
   #   Ammitto.configure do |config|
-  #     config.api_base_url = "https://ammitto.org/api/v1"
+  #     config.api_base_url = "https://www.ammitto.org/api/v1"
   #     config.cache_dir = File.expand_path("~/.ammitto")
   #     config.cache_ttl = 3600
   #   end
   #
   # @example Accessing configuration
   #   Ammitto.configuration.api_base_url
-  #   # => "https://ammitto.org/api/v1"
+  #   # => "https://www.ammitto.org/api/v1"
   #
   class Configuration
     # @return [String] Base URL for the Ammitto API

@@ -12,9 +12,17 @@ module Ammitto
       # Default cache directory
       CACHE_DIR = File.expand_path('~/.ammitto')
 
-      # Default API base URL (ammitto.org serves the API;
-      # www.ammitto.com only redirects the root and 404s /api/*)
-      API_BASE_URL = 'https://ammitto.org/api/v1'
+      # Default API base URL. The host here is a correctness constraint,
+      # not a preference: ApiClient builds its Faraday connection with no
+      # redirect middleware, so a 3xx is not `success?` and every fetch
+      # raises. `https://ammitto.org/api/v1` answers 301 to the www host,
+      # which made `Ammitto.search` fail on all fifteen sources with
+      # "Failed to download <code> data". www.ammitto.org answers 200.
+      #
+      # This is separate from the context IRI, which the producer emits
+      # WITHOUT www (Schema::Context::CONTEXT_URL). That one is an
+      # identifier and is never fetched, so it stays as it is.
+      API_BASE_URL = 'https://www.ammitto.org/api/v1'
 
       # Default cache TTL (1 hour in seconds)
       CACHE_TTL = 3600

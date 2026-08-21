@@ -86,8 +86,21 @@ module Ammitto
       dir = File.dirname(cache_path)
       FileUtils.mkdir_p(dir)
 
-      # Download from API
-      response = Faraday.get(api_endpoint)
+      # A transport failure has to arrive as NetworkError like every
+      # other download failure. QueryBuilder#execute rescues NetworkError
+      # so that one unreachable source cannot take a whole search down —
+      # its own comment says so — but Faraday raises its own error class
+      # from underneath, which slipped past that rescue and killed the
+      # call. On a cold cache with no network, `Ammitto.search` died with
+      # Faraday::ConnectionFailed instead of returning what it could.
+      begin
+        response = Faraday.get(api_endpoint)
+      rescue Faraday::Error => e
+        raise NetworkError.new(
+          "Failed to download #{code} data: #{e.message}",
+          url: api_endpoint
+        )
+      end
 
       unless response.success?
         raise NetworkError.new(

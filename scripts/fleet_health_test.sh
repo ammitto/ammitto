@@ -277,16 +277,54 @@ grep -q '<!-- fleet-health-state: healthy -->' "$TMP/report_nosched.md" \
   && pass "BY-DESIGN stays out of the state signature" \
   || fail "BY-DESIGN leaked into the state signature"
 
-# The half that makes it a designation rather than a mute button: if a
-# schedule-event run turns up, the declaration is wrong and must page.
-# Without this the entry would silence a repo forever, including one
-# whose cron someone restored.
+# The half that makes it a designation rather than a mute button: an
+# ACTIVE workflow that has produced scheduled runs means either the cron
+# still fires or it is the dead schedule this monitor exists to catch.
+# Either way the declaration is wrong and must page.
 healthy_fixture data-noschedule
 rc=$(run_health "$repos_nosched" "$TMP/report_nosched_stale.md")
-[ "$rc" -eq 1 ] && pass "a scheduled run under no-schedule pages" \
+[ "$rc" -eq 1 ] && pass "an active cron under no-schedule pages" \
   || fail "stale no-schedule designation exited $rc"
-expect_reason data-noschedule "the declaration is stale" \
+expect_reason data-noschedule "the workflow is active and has schedule-event runs" \
   "$TMP/report_nosched_stale.md"
+
+# Run history OUTLIVES the workflow that produced it, and testing for
+# its existence rather than for a live workflow is what paged on data-jp
+# an hour after its cron was deliberately removed. A deleted workflow
+# with weeks of history behind it is the designation working, not a
+# stale declaration — and it must clear immediately, not wait for the
+# history to age out of the API page.
+workflow_fixture data-noschedule deleted
+schedule_fixture data-noschedule '3 hours ago' success
+completed_fixture data-noschedule success success success
+rc=$(run_health "$repos_nosched" "$TMP/report_nosched_deleted.md")
+[ "$rc" -eq 0 ] && pass "a deleted workflow with run history stays BY-DESIGN" \
+  || fail "deleted workflow under no-schedule exited $rc"
+expect_status data-noschedule BY-DESIGN "$TMP/report_nosched_deleted.md"
+
+# And the deleted state must not itself be reported as a fault: for a
+# declared-scheduleless repo it is the expected condition.
+grep -q "workflow state is 'deleted'" "$TMP/report_nosched_deleted.md" \
+  && fail "a deleted workflow was reported as a fault under no-schedule" \
+  || pass "deleted state is not a fault under no-schedule"
+
+# But `deleted` is the ONLY state it excuses. The disabled_* family means
+# the workflow still exists WITH its schedule and is not running — the
+# death this monitor was built for. A designation that swallowed those
+# would hide the one thing it must never hide.
+for dead_state in disabled_manually disabled_inactivity disabled_fork; do
+  workflow_fixture data-noschedule "$dead_state"
+  printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+  printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__completed_runs.json"
+  rc=$(run_health "$repos_nosched" "$TMP/report_nosched_$dead_state.md")
+  [ "$rc" -eq 1 ] \
+    && pass "no-schedule does not excuse $dead_state" \
+    || fail "$dead_state under no-schedule exited $rc"
+done
+# Put the fixture back: the cases below reuse this repo and expect an
+# active workflow. Leaving it disabled_fork made them fail for a reason
+# that had nothing to do with what they test.
+workflow_fixture data-noschedule active
 
 # Codex's gap: every fixture above has an empty completed_runs, so the
 # streak bypass was never exercised. Give this one a history of failures

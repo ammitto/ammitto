@@ -17,7 +17,7 @@ module Ammitto
   #     end
   #
   #     def api_endpoint
-  #       "https://ammitto.org/api/v1/sources/eu.jsonld"
+  #       "https://www.ammitto.org/api/v1/sources/eu.jsonld"
   #     end
   #   end
   #

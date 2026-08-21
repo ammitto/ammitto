@@ -23,7 +23,7 @@ require 'logger'
 Ammitto.configure do |config|
   # API and caching. cache_dir is stored verbatim, so expand "~" yourself;
   # the sources live in "#{cache_dir}/cache/sources".
-  config.api_base_url = "https://ammitto.org/api/v1"
+  config.api_base_url = "https://www.ammitto.org/api/v1"
   config.cache_dir = File.expand_path("~/.ammitto")
   config.cache_ttl = 3600  # 1 hour
 
@@ -50,7 +50,7 @@ end
 | `api_base_url`
 | String
 | Base URL for the Ammitto API
-| `https://ammitto.org/api/v1`
+| `https://www.ammitto.org/api/v1`
 
 | `cache_dir`
 | String

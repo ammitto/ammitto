@@ -53,7 +53,7 @@ gem install ammitto
 require 'ammitto'
 
 Ammitto.configure do |config|
-  config.api_base_url = "https://ammitto.org/api/v1"       # default
+  config.api_base_url = "https://www.ammitto.org/api/v1"   # default
   config.cache_dir = File.expand_path("~/.ammitto")       # default
   config.cache_ttl = 3600                                  # 1 hour, default
   config.verbose = true                                    # default: false
@@ -165,7 +165,7 @@ A `SanctionEntry` represents a single sanction against an entity, including:
                               │ Downloads from
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ammitto.org/api/v1/                       │
+│                    www.ammitto.org/api/v1/                      │
 │                                                                  │
 │  /sources/eu.jsonld    /sources/un.jsonld    /sources/us.jsonld │
 │  /sources/gb.jsonld    /sources/cn.jsonld    /all.jsonld        │
@@ -266,7 +266,7 @@ The Ammitto data pipeline consists of four phases:
 │   Triggered by repository_dispatch from data repo                                    │
 │         │                                                                            │
 │         ▼                                                                            │
-│   https://ammitto.org/api/v1/*.jsonld                                            │
+│   https://www.ammitto.org/api/v1/*.jsonld                                            │
 │                                                                                      │
 │  ══════════════════════════════════════════════════════════════════════             │
 │                                                                                      │
@@ -532,7 +532,7 @@ gh repo create ammitto/data-xx --public --description "Ammitto Data repository f
 | Variable | Description | Default
 
 | `AMMITTO_CACHE_DIR` | Local cache directory | `~/.ammitto`
-| `AMMITTO_API_BASE_URL` | API base URL | `https://ammitto.org/api/v1`
+| `AMMITTO_API_BASE_URL` | API base URL | `https://www.ammitto.org/api/v1`
 | `AMMITTO_LOG_LEVEL` | Logging level (debug, info, warn, error) | `info`
 | `AMMITTO_SOURCES` | Comma-separated sources to process | all sources
 |===

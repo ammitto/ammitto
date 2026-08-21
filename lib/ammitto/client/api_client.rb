@@ -25,7 +25,7 @@ module Ammitto
       # @return [Hash] the parsed JSON-LD data
       def fetch_source(source_code)
         url = "#{base_url}/sources/#{source_code}.jsonld"
-        response = connection.get(url)
+        response = get(url)
 
         unless response.success?
           raise NetworkError.new(
@@ -42,7 +42,7 @@ module Ammitto
       # @return [Hash] the combined JSON-LD data
       def fetch_all
         url = "#{base_url}/all.jsonld"
-        response = connection.get(url)
+        response = get(url)
 
         unless response.success?
           raise NetworkError.new(
@@ -59,7 +59,7 @@ module Ammitto
       # @return [Hash] the JSON-LD context
       def fetch_context
         url = "#{base_url}/context.jsonld"
-        response = connection.get(url)
+        response = get(url)
 
         unless response.success?
           raise NetworkError.new(
@@ -73,6 +73,22 @@ module Ammitto
       end
 
       private
+
+      # A transport failure — DNS, refused connection, timeout, TLS —
+      # has to reach the caller as NetworkError like every other fetch
+      # failure. Faraday raises its own class from underneath, and a
+      # caller rescuing NetworkError would miss it. Ordinary 4xx/5xx
+      # responses are unaffected: no response-raising middleware is
+      # installed, so those still return a response and are reported by
+      # the `success?` check at each call site.
+      # @param url [String] the URL to fetch
+      # @return [Faraday::Response]
+      # @raise [NetworkError] on any transport failure
+      def get(url)
+        connection.get(url)
+      rescue Faraday::Error => e
+        raise NetworkError.new("Failed to reach #{url}: #{e.message}", url: url)
+      end
 
       # Build the Faraday connection
       # @return [Faraday::Connection]

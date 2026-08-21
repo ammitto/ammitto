@@ -174,12 +174,35 @@ module Ammitto
         if format == 'yaml' && source_model_class_for(source)
           fetch_with_source_models(source, extractor, output_dir)
         else
-          extractor.run
+          # The same refusal has to cover this branch. BaseExtractor#run
+          # reports :success with entities: 0 when the parse yielded
+          # nothing, and `--format jsonld` is a documented value, so
+          # guarding only the yaml path would leave the lie reachable
+          # through a supported flag.
+          refuse_empty_extraction(source, extractor.run)
         end
       rescue StandardError => e
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         puts e.backtrace.first(5).join("\n") if options[:verbose]
         error_result(source, e.message)
+      end
+
+      # Turn an extractor run that parsed to nothing into an error.
+      #
+      # @param source [Symbol] source code
+      # @param result [Hash] the extractor's own result
+      # @return [Hash] the result, or an error result when it found nothing
+      def refuse_empty_extraction(source, result)
+        return result unless result[:status] == :success
+        return result unless result[:entities].to_i.zero? &&
+                             result[:entries].to_i.zero?
+
+        error_result(
+          source,
+          "extracted 0 records: #{source} returned a document that " \
+          'parsed to nothing. The source format has probably changed; ' \
+          'refusing to report success.'
+        )
       end
 
       # Fetch data using Lutaml::Model source models
@@ -220,6 +243,30 @@ module Ammitto
 
         # Save as individual YAML files
         count = save_as_yaml(source, data, output_dir)
+
+        # A harvest that wrote nothing is a failure, not a quiet success.
+        # `count` was recorded and never consulted: enforce_exit_status
+        # selects on :error only, so a source whose document parsed to
+        # nothing — a changed namespace, a maintenance page served with a
+        # 200, a renamed root element — reported "1 succeeded, 0 failed"
+        # and exited 0. Nothing deletes the previous harvest either, so
+        # the downstream harmonize gate then passed on yesterday's files
+        # and stayed green too.
+        #
+        # These are sanctions lists. RuExtractor already states the
+        # principle for its own source: the stop-list is never
+        # legitimately empty. This applies it to every source that has a
+        # fetch path.
+        if count.zero?
+          return {
+            code: source,
+            status: :error,
+            error: "wrote 0 records: #{source} returned a document that " \
+                   'parsed to nothing. The source format has probably ' \
+                   'changed; refusing to report success.',
+            output_dir: output_dir
+          }
+        end
 
         {
           code: source,

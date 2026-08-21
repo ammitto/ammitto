@@ -39,8 +39,10 @@ module Ammitto
         repo = create_repository
 
         unless repo.cloned?
-          puts "Data repository not found. Run 'ammitto data clone' first."
-          puts 'Or set AMMITTO_DATA_REPOSITORY environment variable.'
+          # stderr, not stdout: this command has a machine-readable mode,
+          # and a refusal printed to stdout is read as output.
+          warn "Data repository not found. Run 'ammitto data clone' first."
+          warn 'Or set AMMITTO_DATA_REPOSITORY environment variable.'
           exit 1
         end
 

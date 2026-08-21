@@ -78,19 +78,23 @@ module Ammitto
         }
       end
 
-      # Count entities in JSON-LD file
+      # Count entities in JSON-LD file.
+      #
+      # Deliberately does not rescue. A file that cannot be read or parsed
+      # is not a file holding zero entities, and returning 0 here made
+      # `status` report the source as `cached` with a clean count — the
+      # same false negative this change exists to remove. The caller's
+      # rescue turns the failure into status 'error', which is the truth.
+      #
       # @param file [String] file path
       # @return [Integer] entity count
       def count_entities(file)
-        content = File.read(file)
-        data = JSON.parse(content)
+        data = JSON.parse(File.read(file))
 
         graph = data['@graph'] || data
         return 0 unless graph.is_a?(Array)
 
         graph.count { |item| item['@type']&.include?('Entity') }
-      rescue StandardError
-        0
       end
 
       # Output as table

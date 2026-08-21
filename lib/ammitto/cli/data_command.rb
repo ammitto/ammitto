@@ -62,6 +62,21 @@ module Ammitto
 
       private
 
+      # Refuse rather than return, and refuse on stderr.
+      #
+      # Each of these commands printed this message and returned, so the
+      # process exited 0 — a caller could not tell "the repository is not
+      # here" from "the answer is empty". `run_query` and `run_get` are the
+      # dangerous pair: for a sanctions dataset a benign empty answer reads
+      # as a clean screening result. stderr keeps the refusal out of stdout
+      # so a caller parsing output does not read it as data.
+      #
+      # @raise [SystemExit] always
+      def refuse_without_repository
+        warn "Repository not cloned. Run 'ammitto data clone' first."
+        exit 1
+      end
+
       # Get the repository instance
       # @return [Ammitto::Data::Repository]
       def repo
@@ -85,10 +100,7 @@ module Ammitto
 
       # Pull updates
       def run_pull
-        unless repo.cloned?
-          puts "Repository not cloned. Run 'ammitto data clone' first."
-          return
-        end
+        refuse_without_repository unless repo.cloned?
 
         puts 'Pulling updates...'
         repo.pull
@@ -114,10 +126,7 @@ module Ammitto
 
       # Query entities
       def run_query
-        unless repo.cloned?
-          puts "Repository not cloned. Run 'ammitto data clone' first."
-          return
-        end
+        refuse_without_repository unless repo.cloned?
 
         criteria = {}
         criteria[:name] = options[:name] if options[:name]
@@ -141,10 +150,7 @@ module Ammitto
 
       # Get an entity by ID
       def run_get
-        unless repo.cloned?
-          puts "Repository not cloned. Run 'ammitto data clone' first."
-          return
-        end
+        refuse_without_repository unless repo.cloned?
 
         id = args.first
         unless id
@@ -165,10 +171,7 @@ module Ammitto
 
       # List available sources
       def run_sources
-        unless repo.cloned?
-          puts "Repository not cloned. Run 'ammitto data clone' first."
-          return
-        end
+        refuse_without_repository unless repo.cloned?
 
         sources = repo.sources
         stats = repo.stats
@@ -185,10 +188,7 @@ module Ammitto
 
       # Show data statistics
       def run_stats
-        unless repo.cloned?
-          puts "Repository not cloned. Run 'ammitto data clone' first."
-          return
-        end
+        refuse_without_repository unless repo.cloned?
 
         stats = repo.stats
 

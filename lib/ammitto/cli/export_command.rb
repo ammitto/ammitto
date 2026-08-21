@@ -32,6 +32,13 @@ module Ammitto
         else
           export_single_format
         end
+      rescue Ammitto::CacheError => e
+        # A cache we cannot read must not become an export saying the
+        # source sanctions nobody. Only this error is caught: a serializer
+        # or output-write failure is a genuine export bug and must stay
+        # visible rather than being reported as a bad cache.
+        warn "Export failed: #{e.message}. Run 'ammitto refresh' and try again."
+        exit 1
       end
 
       private
@@ -175,21 +182,45 @@ module Ammitto
         puts "[all] Exported to #{output_file}" if options[:verbose]
       end
 
-      # Load entities from JSON-LD cache file
+      # Load entities from JSON-LD cache file.
+      #
+      # Never returns [] for a cache it could not read. Doing so made
+      # `export` write an empty .ttl, print "Exported" and exit 0 — a file
+      # saying this source sanctions nobody, produced because we could not
+      # read it. Read and parse failures are translated into
+      # Ammitto::CacheError, which carries the path; everything else is left
+      # alone so a genuine export bug stays visible.
+      #
       # @param file [String] file path
       # @return [Array<Hash>]
+      # @raise [StandardError] when the cache cannot be read or parsed
       def load_entities_from_cache(file)
         require 'json'
 
-        data = JSON.parse(File.read(file))
+        # binread + force_encoding, not File.read: File.read tags the string
+        # with Encoding.default_external, so under a US-ASCII locale a
+        # perfectly valid UTF-8 cache containing an accented name would be
+        # judged invalid and refused. Refusing good data is the same class
+        # of lie as accepting bad data, pointed the other way.
+        raw = File.binread(file).force_encoding(Encoding::UTF_8)
+        unless raw.valid_encoding?
+          raise Ammitto::CacheError.new(
+            "cached source #{file} could not be read " \
+            '(invalid byte sequence in UTF-8)', path: file
+          )
+        end
+
+        data = JSON.parse(raw)
         graph = data['@graph'] || []
 
         graph.select do |item|
           type = item['@type']
           type.is_a?(String) && type.include?('Entity')
         end
-      rescue StandardError
-        []
+      rescue JSON::ParserError, SystemCallError, IOError => e
+        raise Ammitto::CacheError.new(
+          "cached source #{file} could not be read (#{e.message})", path: file
+        )
       end
 
       # Get file extension for format

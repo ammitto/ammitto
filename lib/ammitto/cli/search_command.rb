@@ -81,10 +81,15 @@ module Ammitto
       def perform_search
         repo = create_repository
 
+        # Exit nonzero rather than returning nothing. Returning [] here fell
+        # through to "No results found" and an exit status of 0, so a caller
+        # screening a name against a machine that had never cloned the data
+        # got a clean negative for every query. `get` already refuses this
+        # way; search disagreeing with it was the defect.
         unless repo.cloned?
-          puts "Data repository not found. Run 'ammitto data clone' first."
-          puts 'Or set AMMITTO_DATA_REPOSITORY environment variable.'
-          return []
+          warn "Data repository not found. Run 'ammitto data clone' first."
+          warn 'Or set AMMITTO_DATA_REPOSITORY environment variable.'
+          exit 1
         end
 
         criteria = build_criteria

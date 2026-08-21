@@ -46,10 +46,10 @@ module Ammitto
 
         exit(report[:valid] ? 0 : 1)
       rescue ArgumentError => e
-        puts "Error: #{e.message}"
+        warn "Error: #{e.message}"
         exit(2)
       rescue Ammitto::Data::China::SchemaNotFoundError => e
-        puts "Schema error: #{e.message}"
+        warn "Schema error: #{e.message}"
         exit(2)
       end
 
@@ -68,7 +68,7 @@ module Ammitto
         sources_dir = path || options[:sources]
 
         unless Dir.exist?(sources_dir)
-          puts "Error: Sources directory not found: #{sources_dir}"
+          warn "Error: Sources directory not found: #{sources_dir}"
           exit(2)
         end
 

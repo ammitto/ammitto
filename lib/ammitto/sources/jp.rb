@@ -14,7 +14,9 @@ require 'lutaml/model'
 # Note: This list is primarily for export control purposes, not financial
 # sanctions. It lists entities that may be involved in WMD proliferation.
 #
-# Data source is PDF-based and requires manual conversion to structured data.
+# The published source is a spreadsheet behind a revision-stamped METI
+# URL. This gem has no fetch path for it; data-jp downloads and converts
+# it with its own scripts, and harmonize reads the YAML that produces.
 #
 # @example Loading Japan data
 #   require 'ammitto/sources/jp'

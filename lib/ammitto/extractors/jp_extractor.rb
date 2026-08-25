@@ -8,7 +8,17 @@ module Ammitto
     # JpExtractor extracts Japan End-User List from METI
     #
     # Source: https://www.meti.go.jp/policy/anpo/english/law/doc/EndUserListE.html
-    # Format: PDF (requires manual conversion to structured data)
+    #
+    # This extractor never read the source. `fetch` refuses, the extract_*
+    # methods return [], and #api_endpoint is left to BaseExtractor, which
+    # refuses too — there is no endpoint to name. `ammitto fetch jp` stops
+    # earlier still, at FetchCommand::NO_FETCH_PATH, so none of it is
+    # reached from the CLI.
+    #
+    # It used to advertise a .pdf URL. METI publishes a spreadsheet behind
+    # a revision-stamped URL discovered from the index page, which is what
+    # data-jp downloads and converts, so that constant named a document
+    # that does not exist.
     #
     # The End-User List is maintained under Japan's Foreign Exchange and Foreign
     # Trade Act (FEFTA) and related export control regulations.
@@ -22,9 +32,6 @@ module Ammitto
       # Index page URL
       INDEX_URL = 'https://www.meti.go.jp/policy/anpo/english/law/doc/EndUserListE.html'
 
-      # PDF download URL (this may change - check the index page)
-      PDF_URL = 'https://www.meti.go.jp/policy/anpo/english/law/doc/EndUserListE.pdf'
-
       # @return [Symbol] the source code
       def code
         :jp
@@ -35,25 +42,20 @@ module Ammitto
         'Japan Ministry of Economy, Trade and Industry (METI)'
       end
 
-      # @return [String] primary API endpoint
-      def api_endpoint
-        PDF_URL
-      end
-
-      # Fetch raw data
-      # Note: PDF requires manual conversion to structured data
-      # @return [Hash] metadata about the source
+      # Refuse rather than describe a source this class cannot read. The
+      # hash this used to return said format 'pdf' and
+      # requires_manual_conversion, and both were false: the METI list is
+      # a spreadsheet and data-jp converts it automatically. A caller that
+      # believed it would go looking for a PDF that is not published.
+      #
+      # @raise [NotImplementedError] always
       def fetch
-        puts "[#{code}] Note: Japan End-User List is PDF-based" if verbose
-        puts "[#{code}] Source: #{INDEX_URL}" if verbose
-
-        {
-          source: code,
-          format: 'pdf',
-          index_url: INDEX_URL,
-          pdf_url: PDF_URL,
-          requires_manual_conversion: true
-        }
+        raise NotImplementedError,
+              'JpExtractor is a placeholder that never read the source. ' \
+              'For programmatic access use ' \
+              'Ammitto::Data::Japan::Meti::Extractor, which downloads and ' \
+              'parses the METI Foreign User List spreadsheet. The ' \
+              'country-specific source CLI does not currently reach it.'
       end
 
       # Extract entities from data
@@ -62,8 +64,7 @@ module Ammitto
       def extract_entities(data)
         return [] unless data
 
-        # PDF data requires manual conversion
-        # This returns empty until manual conversion is implemented
+        # Placeholder: this extractor has never parsed the source.
         []
       end
 
@@ -73,7 +74,7 @@ module Ammitto
       def extract_entries(data)
         return [] unless data
 
-        # PDF data requires manual conversion
+        # Placeholder: this extractor has never parsed the source.
         []
       end
     end

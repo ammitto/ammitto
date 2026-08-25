@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'stringio'
 require 'tmpdir'
 require 'fileutils'
 require 'ammitto'
@@ -10,12 +11,23 @@ require 'ammitto/cli/fetch_command'
 require 'ammitto/extractors/tr_extractor'
 
 RSpec.describe Ammitto::Cmd::FetchCommand do
-  it 'reports CN as manually managed instead of a silent extractor success' do
+  def capture_stdout
+    original = $stdout
+    $stdout = StringIO.new
+    yield
+    $stdout.string
+  ensure
+    $stdout = original
+  end
+
+  it 'refuses CN rather than reporting a fetch it cannot perform' do
+    # data-cn curates its YAML with its own tooling; this command has no
+    # path to that data and used to say otherwise.
     cmd = described_class.new({}, ['cn'])
     result = cmd.send(:fetch_source, :cn)
 
     expect(result[:status]).to eq(:error)
-    expect(result[:error]).to match(/manually managed in data-cn/)
+    expect(result[:error]).to match(/no automated fetch path/)
   end
 
   it 'reports RU as blocked by the anti-bot wall instead of a silent zero-entity scrape' do
@@ -32,18 +44,47 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     end
   end
 
+  it 'refuses JP rather than saving zero files and calling it success' do
+    # jp IS fetched and processed — by data-jp's own scripts, into the
+    # curated sources/ that harmonize reads for its 5,097 entities. What
+    # this command's jp path did was save nothing and exit 0.
+    cmd = described_class.new({}, ['jp'])
+    result = cmd.send(:fetch_source, :jp)
+
+    expect(result[:status]).to eq(:error)
+    expect(result[:error]).to match(/no automated fetch path/)
+  end
+
+  it 'does not advertise an endpoint for a source it will refuse to fetch' do
+    # `fetch jp` refuses, but --dry-run resolved the extractor directly and
+    # printed JpExtractor's URL, so the two disagreed on the one path a user
+    # checks before running anything.
+    cmd = described_class.new({ dry_run: true }, %w[jp cn ru])
+    output = capture_stdout { cmd.send(:dry_run) }
+
+    expect(output).to include('no automated fetch path')
+    expect(output).not_to match(%r{jp:\s+https?://})
+    expect(output).not_to match(%r{cn:\s+https?://})
+    expect(output).not_to match(%r{ru:\s+https?://})
+  end
+
   it 'requires sources or --all' do
     expect { described_class.new({}, []) }
       .to raise_error(Thor::Error, /No sources specified/)
   end
 
-  it 'excludes cn and ru from --all so full runs can succeed' do
+  it 'excludes cn, ru and jp from --all so full runs can succeed' do
+    # None of the three can be fetched by this command. cn and jp are
+    # produced by their own data repos' tooling, and mid.ru answers
+    # non-browser clients with an anti-bot challenge. A full run must
+    # skip them rather than fail on them.
     cmd = described_class.new({ all: true }, [])
 
     expect(cmd.sources).not_to include(:cn)
     expect(cmd.sources).not_to include(:ru)
+    expect(cmd.sources).not_to include(:jp)
     expect(cmd.sources)
-      .to match_array(Ammitto::Config::Defaults::ALL_SOURCES - %i[cn ru])
+      .to match_array(Ammitto::Config::Defaults::ALL_SOURCES - %i[cn ru jp])
   end
 
   describe 'exit honesty' do
@@ -52,6 +93,14 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
 
       expect { cmd.run }
         .to raise_error(Thor::Error, /Fetch failed for: cn/)
+        .and output(/0 succeeded, 1 failed/).to_stdout
+    end
+
+    it 'fails an explicit jp fetch loudly' do
+      cmd = described_class.new({}, ['jp'])
+
+      expect { cmd.run }
+        .to raise_error(Thor::Error, /Fetch failed for: jp/)
         .and output(/0 succeeded, 1 failed/).to_stdout
     end
 

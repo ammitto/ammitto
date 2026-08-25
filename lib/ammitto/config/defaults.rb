@@ -42,14 +42,34 @@ module Ammitto
       # All available sources
       ALL_SOURCES = %i[eu un us wb uk au ca ch cn ru tr nz jp eu_vessels un_vessels].freeze
 
-      # Sources with an automated fetch path. CN and RU are excluded:
-      # their YAML is manually managed (data-cn, data-ru), so `fetch
-      # --all` must not fail on a source that cannot be fetched
-      # automatically (an explicit `fetch cn` / `fetch ru` still reports
-      # the manual-management error). RU cannot be scraped: mid.ru
-      # serves an F5/TSPD JavaScript anti-bot challenge to non-browser
-      # clients, so Mechanize never sees the announcement links.
-      FETCHABLE_SOURCES = (ALL_SOURCES - %i[cn ru]).freeze
+      # Sources with an automated fetch path IN THIS GEM. CN, RU and JP
+      # are excluded so `fetch --all` does not fail on a source the gem
+      # cannot fetch. An explicit `fetch cn` / `fetch ru` / `fetch jp`
+      # still reports the missing fetch path rather than saving nothing
+      # and calling it a success.
+      #
+      # The three are excluded for different reasons, worth keeping
+      # straight:
+      #
+      # - cn has no automated source fetch, here or in data-cn, whose
+      #   fetch.yml declares the implementation a TODO, prints "CN source
+      #   not yet implemented" and suppresses the failure with `|| true`.
+      # - jp IS automated — just not here. data-jp drives METI itself
+      #   with scripts/download_foreign_user_list.rb (Mechanize against
+      #   meti.go.jp) and scripts/convert_foreign_user_list_to_yaml.rb.
+      #   The gap is where the automation lives, not whether it exists.
+      # - ru has a source and cannot reach it: mid.ru serves an F5/TSPD
+      #   JavaScript anti-bot challenge to non-browser clients, so
+      #   Mechanize never sees the announcement links.
+      #
+      # Absence from this list says nothing about whether a source
+      # PUBLISHES. cn and jp both publish, from YAML their own data repos
+      # maintain. ru contributes nothing to the published graph — not
+      # because data-ru is empty, but because nothing reaches it: the
+      # deploy harmonizes ru with --allow-empty. `harmonize` runs over
+      # ALL_SOURCES, not this list, so exclusion here withholds none of
+      # them from the graph.
+      FETCHABLE_SOURCES = (ALL_SOURCES - %i[cn ru jp]).freeze
 
       # Default output format
       DEFAULT_OUTPUT_FORMAT = 'jsonld'

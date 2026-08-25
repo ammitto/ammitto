@@ -262,9 +262,9 @@ canonical model.
 | au | Australia DFAT | CSV | `data-au`
 | ca | Canada Global Affairs | XML | `data-ca`
 | ch | Switzerland SECO | XML | `data-ch`
-| cn | China MOFCOM/MFA | Markdown (manual) | `data-cn`
-| ru | Russia MID | Markdown | `data-ru`
-| jp | Japan METI | PDF→HTML | `data-jp`
+| cn | China MOFCOM/MFA | HTML (no fetch path in this gem) | `data-cn`
+| ru | Russia MID | HTML (fetch blocked by anti-bot) | `data-ru`
+| jp | Japan METI/MOFA/MOF | PDF, XLSX (no fetch path in this gem) | `data-jp`
 | nz | New Zealand MFAT | XML | `data-nz`
 | tr | Turkey HMB | XML | `data-tr`
 | wb | World Bank | XML | `data-wb`

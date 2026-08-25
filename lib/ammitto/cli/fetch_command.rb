@@ -13,10 +13,56 @@ module Ammitto
     # @example Fetch UK data as YAML
     #   ammitto fetch uk --format yaml --output-dir ./processed
     #
-    # @example Fetch all automatable sources (skips manually managed cn)
+    # @example Fetch every source with a working fetch path (skips cn,
+    #   ru and jp, none of which this command can reach)
     #   ammitto fetch --all
     #
     class FetchCommand
+      # Sources this command has no way to fetch, keyed to the error an
+      # explicit fetch reports. This is a statement about capability, not
+      # about how anyone chose to manage the data: reporting the absence
+      # beats a fetch path that succeeds without writing anything.
+      #
+      # cn: no automated source fetch exists, here or in data-cn, whose
+      #     scripts only load, merge and validate what is already there.
+      # jp: announcement YAML under data-jp/sources/sanction-lists, curated
+      #     with data-jp's own scripts from METI/MOFA/MOF publications (the METI
+      #     End User List URL is revision-stamped and discovered from a
+      #     Japanese index page). The gem's from_pdf was a placeholder that
+      #     saved zero files, and harmonize prefers processed/ over the
+      #     curated announcements, so partial automated output would shadow
+      #     the curated data.
+      # Not "unmaintained" — fetched and processed elsewhere. data-jp
+      # carries its own toolchain (download_foreign_user_list.rb,
+      # convert_html_to_yaml.rb, update_foreign_user_list.rb,
+      # validate_yaml_structure.rb) which produces the curated YAML under
+      # its sources/, and that is what harmonize reads: 5,097 published
+      # entities on 2026-08-20. data-cn is NOT the same shape — it has no
+      # downloader and no converter; its YAML is gathered by hand.
+      #
+      # What THIS command's jp path does is nothing. On 2026-08-20 the
+      # scheduled run logged "Saved 0 files to processed" and exited a
+      # success, as it had each of the four mornings before — a
+      # placeholder from_pdf reporting a fetch it never performed. That
+      # is the lie being removed here, not a policy being declared.
+      # ru: a source exists and cannot be reached. mid.ru answers every
+      #     request with an F5/TSPD JavaScript anti-bot challenge shell
+      #     (HTTP 200, zero content links), so the Mechanize scraper
+      #     structurally cannot see the announcements. Verified against
+      #     the live site on 2026-08-06.
+      NO_FETCH_PATH = {
+        cn: 'CN has no automated fetch path; its YAML is curated in ' \
+            'data-cn',
+        jp: 'JP has no automated fetch path in this gem: data-jp ' \
+            'fetches and converts the End-User List with its own ' \
+            'scripts, and this command would save zero files and ' \
+            'report success',
+        ru: 'RU fetching is blocked: mid.ru serves a JavaScript ' \
+            'anti-bot challenge the scraper cannot pass, so automated ' \
+            'fetch does not work; refusing rather than reporting an ' \
+            'empty scrape as success'
+      }.freeze
+
       # @return [Hash] command options
       attr_reader :options
 
@@ -75,6 +121,16 @@ module Ammitto
       def dry_run
         puts 'Would fetch data from:'
         @sources.each do |source|
+          # A source with no fetch path must not advertise an endpoint.
+          # These sources still have an extractor class, so asking it for
+          # an api_endpoint prints a URL and implies a fetch that
+          # `fetch #{source}` then refuses — and --dry-run is the path a
+          # user checks first, so it is the one that must not mislead.
+          if (no_path = NO_FETCH_PATH[source])
+            puts "  #{source}: #{no_path}"
+            next
+          end
+
           extractor_class = extractor_class_for(source)
           endpoint = extractor_class&.new&.api_endpoint
           puts "  #{source}: #{endpoint || 'N/A'}"
@@ -98,23 +154,8 @@ module Ammitto
       def fetch_source(source)
         puts "[#{source}] Fetching..." if options[:verbose]
 
-        # CN has no automated fetch: its YAML is manually managed in data-cn
-        # (announcement-based reference docs). Reporting this explicitly beats
-        # the extractor path returning success without writing anything.
-        return error_result(source, 'CN data is manually managed in data-cn; automated fetch is not supported') if source == :cn
-
-        # RU has no automated fetch either: mid.ru answers every request with
-        # an F5/TSPD JavaScript anti-bot challenge shell (HTTP 200, zero
-        # content links), so the Mechanize scraper structurally cannot see
-        # the announcements. Refusing here beats a scrape that "succeeds"
-        # with zero entities. Verified against the live site on 2026-08-06.
-        if source == :ru
-          return error_result(source,
-                              'RU fetching is blocked: mid.ru serves a JavaScript ' \
-                              'anti-bot challenge the scraper cannot pass, so automated ' \
-                              'fetch does not work; refusing rather than reporting an ' \
-                              'empty scrape as success')
-        end
+        no_path = NO_FETCH_PATH[source]
+        return error_result(source, no_path) if no_path
 
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class
@@ -168,11 +209,6 @@ module Ammitto
                when :au, :tr, :nz, :eu_vessels
                  # AU, TR, NZ, EU Vessels use XLSX - content is path to temp file
                  parse_xlsx(model_class, content, extractor)
-               when :jp
-                 # JP is PDF-based - requires manual conversion
-                 puts "[#{source}] Note: #{source.upcase} data is PDF-based"
-                 puts "[#{source}] Data requires manual conversion from PDF"
-                 model_class.from_pdf(content)
                when :un_vessels
                  # UN Vessels parses the downloaded PDF directly -
                  # content is the path to the extractor's temp file

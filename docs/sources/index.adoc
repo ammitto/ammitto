@@ -247,9 +247,12 @@ ammitto fetch ch
 
 China publishes sanctions through official announcements and maintains lists of sanctioned entities.
 
-China data is manually managed in the `data-cn` repository as
-announcement-based reference documents; there is no automated fetch.
-`ammitto fetch cn` reports this and exits nonzero, and `--all` skips CN.
+China's corpus is curated in the `data-cn` repository from
+announcement-based reference documents. Unlike `data-jp`, that repository
+carries no downloading or converting tooling of its own -- its scripts
+validate and merge what is already there -- so nothing automates the
+step. This gem has no path to the source either: `ammitto fetch cn`
+reports that and exits nonzero, and `--all` skips CN.
 
 === Russia (`ru`)
 
@@ -284,17 +287,21 @@ ammitto fetch tr
 
 === Japan (`jp`)
 
-*Provider:* Ministry of Economy, Trade and Industry (METI)
+*Provider:* Ministry of Economy, Trade and Industry (METI), Ministry of Foreign Affairs (MOFA), Ministry of Finance (MOF)
 *URL:* https://www.meti.go.jp/policy/anpo/index.html
-*Format:* HTML, XLSX
+*Format:* PDF, XLSX
 
 Japan maintains the End User List and implements UN sanctions.
 
-[source,bash]
-----
-# Fetch Japan data
-ammitto fetch jp
-----
+Japan data is curated in the `data-jp` repository from reference
+documents covering six sanction lists:
+the METI Foreign User List and FEFTA End-User List, the MOFA export
+prohibitions (Belarus, Russia, and third-country), and the MOF
+asset-freeze lists, all converted with `data-jp`'s own scripts. That
+tooling is the fetch: it downloads from METI and converts, and what it
+produces is what `harmonize` reads. What this gem has no path to is the
+same data — `ammitto fetch jp` reports that and exits nonzero, and
+`--all` skips JP.
 
 === New Zealand (`nz`)
 

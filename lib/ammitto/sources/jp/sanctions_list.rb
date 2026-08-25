@@ -7,16 +7,17 @@ module Ammitto
     module Jp
       # SanctionsList represents the Japan End-User List
       #
-      # Note: The Japan End-User List is published as a PDF document.
-      # This class provides methods for parsing the data after manual conversion
-      # from PDF to structured format.
+      # Note: this class has no ingestion path for a METI publication.
+      # data-jp holds announcement YAML under sources/sanction-lists,
+      # produced by its own scripts, and this class only builds a list
+      # from that already-converted structured data.
       #
       class SanctionsList < Lutaml::Model::Serializable
         attribute :entities, Entity, collection: true
         attribute :fetched_at, :string
         attribute :source, :string
 
-        # Create SanctionsList from manually converted data
+        # Create SanctionsList from already-converted data
         # @param data [Hash] structured data from PDF conversion
         # @return [SanctionsList]
         def self.from_converted_data(data)
@@ -29,18 +30,18 @@ module Ammitto
           list
         end
 
-        # Create SanctionsList from PDF (placeholder - requires manual conversion)
+        # Refuse to parse a PDF. This used to be a placeholder that
+        # printed a note and returned an empty list, so `fetch jp`
+        # reported success while saving zero files. There is no PDF
+        # ingestion: raising keeps any caller from mistaking an empty
+        # list for a harvest.
         # @param _pdf_path [String] path to PDF file
-        # @return [SanctionsList]
+        # @raise [NotImplementedError] always
         def self.from_pdf(_pdf_path)
-          puts 'Note: Japan End-User List is PDF-based and requires manual conversion'
-          puts 'Please convert the PDF to structured data and use from_converted_data'
-
-          new.tap do |list|
-            list.source = 'jp'
-            list.fetched_at = Time.now.utc.iso8601
-            list.entities = []
-          end
+          raise NotImplementedError,
+                'Jp::SanctionsList cannot parse PDFs; use ' \
+                'from_converted_data with already-converted structured ' \
+                'data.'
         end
 
         # Get all entities

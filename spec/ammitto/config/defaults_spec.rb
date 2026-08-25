@@ -33,13 +33,25 @@ RSpec.describe Ammitto::Config::Defaults do
   end
 
   describe '::FETCHABLE_SOURCES' do
-    it 'excludes the manually managed sources cn and ru' do
-      # cn: announcement-based reference docs, manual by policy.
+    it 'excludes the three sources it has no fetch path for' do
+      # cn: curated in data-cn by that repo's own tooling.
       # ru: mid.ru is behind an F5/TSPD JavaScript anti-bot challenge,
       # so the Mechanize scraper structurally cannot fetch it.
-      expect(described_class::FETCHABLE_SOURCES).not_to include(:cn, :ru)
+      # jp: produced by data-jp's own scripts; the gem's path was a
+      # placeholder that saved zero files and reported success.
+      expect(described_class::FETCHABLE_SOURCES).not_to include(:cn, :ru, :jp)
       expect(described_class::FETCHABLE_SOURCES)
-        .to match_array(described_class::ALL_SOURCES - %i[cn ru])
+        .to match_array(described_class::ALL_SOURCES - %i[cn ru jp])
+    end
+
+    it 'still harmonizes every source it refuses to fetch' do
+      # Exclusion here is about FETCHING, not publishing: cn and jp are
+      # populated from their own repos' curated YAML, and harmonize runs
+      # over ALL_SOURCES. Conflating the two would silently drop 5,419
+      # published entities.
+      %i[cn ru jp].each do |code|
+        expect(described_class::ALL_SOURCES).to include(code)
+      end
     end
   end
 

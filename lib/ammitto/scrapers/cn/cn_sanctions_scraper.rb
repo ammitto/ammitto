@@ -81,6 +81,17 @@ module Ammitto
                 entities << build_entity(entity_data, announcement)
               end
             end
+
+            # A detail page that failed is data we did not read. Without
+            # this, one working announcement alongside several failures
+            # produced a non-empty harvest and an empty error list, and
+            # the extractor accepted the partial result as success.
+            scraper.detail_errors.each do |detail_error|
+              errors << {
+                source: "mofcom_#{list_type}",
+                error: "#{detail_error[:url]}: #{detail_error[:error]}"
+              }
+            end
           rescue StandardError => e
             errors << { source: "mofcom_#{list_type}", error: e.message }
             puts "[CnSanctionsScraper] MOFCOM #{list_type} error: #{e.message}" if verbose?
@@ -109,6 +120,13 @@ module Ammitto
               (announcement[:entities] || []).each do |entity_data|
                 entities << build_entity(entity_data, announcement)
               end
+            end
+
+            scraper.detail_errors.each do |detail_error|
+              errors << {
+                source: 'mfa',
+                error: "#{detail_error[:url]}: #{detail_error[:error]}"
+              }
             end
           rescue StandardError => e
             errors << { source: 'mfa', error: e.message }

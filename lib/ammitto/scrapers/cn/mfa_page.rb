@@ -25,10 +25,15 @@ module Ammitto
         # List type identifier
         LIST_TYPE = 'anti_sanctions'
 
+        # @return [Array<Hash>] detail-page failures collected by the
+        #   last #parse, as { url:, error: } hashes
+        attr_reader :detail_errors
+
         # Initialize with options
         # @param options [Hash] scraper options
         def initialize(options = {})
           super
+          @detail_errors = []
         end
 
         # The URL to scrape
@@ -38,8 +43,16 @@ module Ammitto
         end
 
         # Parse the MFA page
+        #
+        # Per-announcement failures keep the scrape going but are recorded
+        # in #detail_errors rather than only warned. One successful detail
+        # page alongside failures otherwise reports success with partial
+        # data, which is the same lie as an empty harvest reporting
+        # success. This mirrors MidPage.
+        #
         # @return [Array<Hash>] array of announcement data
         def parse
+          @detail_errors = []
           return [] unless @page
 
           # Find and parse announcement links
@@ -51,15 +64,34 @@ module Ammitto
             announcements << announcement if announcement
           rescue StandardError => e
             puts "[MfaPage] Error parsing #{link_info[:url]}: #{e.message}" if verbose?
+            @detail_errors << { url: link_info[:url], error: e.message }
           end
 
           announcements
         end
 
         # Fetch and parse all announcements
+        #
+        # A failed fetch raises instead of degrading to an empty array:
+        # BasePage#fetch swallows network errors into a nil return, and an
+        # empty return here is indistinguishable from "the site listed no
+        # announcements", so the pipeline reported success on a dead or
+        # blocked site. The check keys on the fetch return value, not
+        # @page: fetch does not clear @page on failure, so a page left by
+        # an earlier successful fetch must not mask a failed refetch with
+        # stale content. This is the same refusal MidPage already makes.
+        #
         # @return [Array<Hash>]
+        # @raise [Ammitto::NetworkError] when the index page could not
+        #   be fetched
         def fetch_all_announcements
-          fetch
+          unless fetch
+            raise Ammitto::NetworkError.new(
+              'MfaPage: failed to fetch the index page ' \
+              '(network error or non-success response)', url: url
+            )
+          end
+
           parse
         end
 
@@ -122,18 +154,21 @@ module Ammitto
         end
 
         # Fetch and parse an individual announcement
+        #
+        # Deliberately does not rescue the fetch. Swallowing it here and
+        # returning nil meant #parse's per-link rescue never ran for the
+        # principal failure — a detail page we could not reach — so a
+        # harvest with one good page and four dead ones arrived with an
+        # empty #detail_errors and was accepted as success. MidPage lets
+        # the exception out for exactly this reason.
+        #
         # @param url [String]
         # @return [Hash, nil]
+        # @raise [StandardError] when the detail page could not be fetched
         def fetch_and_parse_announcement(url)
           puts "[MfaPage] Fetching announcement: #{url}" if verbose?
 
-          begin
-            detail_page = @agent.get(url)
-          rescue StandardError => e
-            puts "[MfaPage] Error fetching #{url}: #{e.message}" if verbose?
-            return nil
-          end
-
+          detail_page = @agent.get(url)
           parse_announcement_detail(detail_page, url)
         end
 

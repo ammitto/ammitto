@@ -53,10 +53,11 @@ module Ammitto
       NO_FETCH_PATH = {
         cn: 'CN has no automated fetch path; its YAML is curated in ' \
             'data-cn',
-        jp: 'JP has no automated fetch path in this gem: data-jp ' \
-            'fetches and converts the End-User List with its own ' \
-            'scripts, and this command would save zero files and ' \
-            'report success',
+        jp: 'JP has no automated fetch path through `ammitto fetch`: ' \
+            'data-jp fetches and converts the End-User List with its ' \
+            'own scripts, and this command would save zero files and ' \
+            'report success. `ammitto source japan fetch meti` writes a ' \
+            'standalone METI export, which is not what harmonize reads',
         ru: 'RU fetching is blocked: mid.ru serves a JavaScript ' \
             'anti-bot challenge the scraper cannot pass, so automated ' \
             'fetch does not work; refusing rather than reporting an ' \

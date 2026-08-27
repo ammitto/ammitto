@@ -308,20 +308,38 @@ module Ammitto
     # ---- Source Command ----
 
     desc 'source COUNTRY SUBCOMMAND', 'Fetch data from country-specific sources'
-    long_desc <<~DESC
+    # wrap: false because Thor reflows a long_desc into one paragraph
+    # otherwise, and this one is a list and a set of example command
+    # lines. Without it `ammitto help source` renders the countries as
+    # "china - MOFCOM and MFA lists japan - METI Foreign User List".
+    long_desc <<~DESC, wrap: false
       Fetch sanction data from specific country authorities.
 
       Countries:
-        japan - Japan authorities (METI, MOFA, MOF)
+        china - MOFCOM and MFA lists
+        japan - METI Foreign User List
+
+      MOFA and MOF publish Japanese sanctions too; neither has a fetch
+      path here, so neither is listed.
 
       Examples:
         ammitto source japan fetch meti              # Fetch METI Foreign User List
         ammitto source japan fetch meti --verbose    # Fetch with verbose output
         ammitto source japan fetch meti --output-dir ./data  # Save to custom directory
     DESC
-    def source(country, *args)
+    # Thor dispatches on the FIRST element of the argv it is handed, so the
+    # subcommand has to lead. This passed `[country] + args`, which made
+    # every documented invocation — `ammitto source japan fetch meti` —
+    # look for a command named `japan`, print `Could not find command
+    # "japan"` and, because SourceCommand defined no `exit_on_failure?`,
+    # exit 0 having done nothing.
+    #
+    # @param country [String] country name, e.g. `japan`
+    # @param subcommand [String] SourceCommand command, e.g. `fetch`
+    # @param args [Array<String>] remaining arguments, e.g. the source code
+    def source(country, subcommand, *args)
       require_relative 'cli/source_command'
-      Cmd::SourceCommand.start([country] + args)
+      Cmd::SourceCommand.start([subcommand, country] + args)
     end
 
     # ---- Validate Command ----

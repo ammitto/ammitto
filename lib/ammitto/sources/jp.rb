@@ -15,8 +15,10 @@ require 'lutaml/model'
 # sanctions. It lists entities that may be involved in WMD proliferation.
 #
 # The published source is a spreadsheet behind a revision-stamped METI
-# URL. This gem has no fetch path for it; data-jp downloads and converts
-# it with its own scripts, and harmonize reads the YAML that produces.
+# URL. `ammitto source japan fetch meti` downloads and parses it into a
+# standalone YAML export, but that is not what feeds this source:
+# data-jp converts the spreadsheet with its own scripts, and harmonize
+# reads the YAML that produces.
 #
 # @example Loading Japan data
 #   require 'ammitto/sources/jp'

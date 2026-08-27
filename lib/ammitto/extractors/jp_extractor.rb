@@ -54,8 +54,8 @@ module Ammitto
               'JpExtractor is a placeholder that never read the source. ' \
               'For programmatic access use ' \
               'Ammitto::Data::Japan::Meti::Extractor, which downloads and ' \
-              'parses the METI Foreign User List spreadsheet. The ' \
-              'country-specific source CLI does not currently reach it.'
+              'parses the METI Foreign User List spreadsheet, or run ' \
+              '`ammitto source japan fetch meti`, which reaches it.'
       end
 
       # Extract entities from data

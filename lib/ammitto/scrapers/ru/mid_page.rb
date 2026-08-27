@@ -81,11 +81,14 @@ module Ammitto
         # not mask a failed refetch with stale content.
         #
         # @return [Array<Hash>]
-        # @raise [RuntimeError] when the index page could not be fetched
+        # @raise [Ammitto::NetworkError] when the index page could not
+        #   be fetched
         def fetch_all_announcements
           unless fetch
-            raise "MidPage: failed to fetch #{url} " \
-                  '(network error or non-success response)'
+            raise Ammitto::NetworkError.new(
+              'MidPage: failed to fetch the index page ' \
+              '(network error or non-success response)', url: url
+            )
           end
 
           parse

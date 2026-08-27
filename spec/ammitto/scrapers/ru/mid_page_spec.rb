@@ -19,7 +19,7 @@ RSpec.describe Ammitto::Scrapers::Ru::MidPage do
       allow(agent).to receive(:get).and_raise(SocketError, 'unreachable')
 
       expect { page.fetch_all_announcements }
-        .to raise_error(RuntimeError, /failed to fetch/)
+        .to raise_error(Ammitto::NetworkError, /failed to fetch/)
     end
 
     it 'raises on a failed refetch even when an earlier fetch left a page' do
@@ -30,7 +30,7 @@ RSpec.describe Ammitto::Scrapers::Ru::MidPage do
       allow(agent).to receive(:get).and_raise(SocketError, 'unreachable')
 
       expect { page.fetch_all_announcements }
-        .to raise_error(RuntimeError, /failed to fetch/)
+        .to raise_error(Ammitto::NetworkError, /failed to fetch/)
     end
 
     it 'parses the fetched page instead of raising when the fetch worked' do

@@ -30,7 +30,21 @@ module Ammitto
       # @return [String] the search term
       attr_reader :term
 
-      # Delegate array methods
+      # @return [Array<Symbol>] sources that could not be read for this
+      #   search. Non-empty means the result set is a partial view of the
+      #   corpus, and a caller screening a name must treat "no match" as
+      #   inconclusive rather than negative.
+      attr_reader :skipped_sources
+
+      # Delegate array methods.
+      #
+      # These retain their normal Array return values, as Ruby callers
+      # expect — `map` returning a ResultSet would surprise every one of
+      # them. The consequence is that #skipped_sources and #complete? do
+      # NOT survive `map`, `to_a` or a `[]` slice. Read completeness from
+      # the result set itself before converting it, never from what a
+      # conversion produced. Only the domain filters — #by_entity_type,
+      # #by_authority, #by_status — return a ResultSet and carry it.
       def_delegators :entries, :[], :each, :map, :size, :length, :empty?,
                      :first, :last, :any?, :count, :to_a
 
@@ -38,10 +52,23 @@ module Ammitto
       # @param entries [Array<Hash, SanctionEntry>] the results
       # @param term [String] the search term
       # @param total_count [Integer, nil] total count
-      def initialize(entries, term: nil, total_count: nil)
+      # @param skipped_sources [Array<Symbol>, nil] sources that could not
+      #   be read; nil and [] both mean the search was complete
+      def initialize(entries, term: nil, total_count: nil, skipped_sources: nil)
         @entries = normalize_entries(entries)
         @term = term
         @total_count = total_count || @entries.size
+        # Frozen copy: `complete?` reads this, and a caller who mutated it
+        # — or a derived set sharing the same array — could turn an
+        # incomplete result into a complete-looking one.
+        @skipped_sources = (skipped_sources || []).dup.freeze
+      end
+
+      # Whether every source was read.
+      #
+      # @return [Boolean] false when at least one source was skipped
+      def complete?
+        skipped_sources.empty?
       end
 
       # Check if results are empty
@@ -72,7 +99,8 @@ module Ammitto
         filtered = entries.select do |e|
           e.respond_to?(:entity_type) && e.entity_type == type.to_s
         end
-        ResultSet.new(filtered, term: term, total_count: total_count)
+        ResultSet.new(filtered, term: term, total_count: total_count,
+                                skipped_sources: skipped_sources)
       end
 
       # Filter results by authority
@@ -82,7 +110,8 @@ module Ammitto
         filtered = entries.select do |e|
           e.respond_to?(:authority) && e.authority&.id == code.to_s
         end
-        ResultSet.new(filtered, term: term, total_count: total_count)
+        ResultSet.new(filtered, term: term, total_count: total_count,
+                                skipped_sources: skipped_sources)
       end
 
       # Filter results by status
@@ -92,7 +121,8 @@ module Ammitto
         filtered = entries.select do |e|
           e.respond_to?(:status) && e.status == status.to_s
         end
-        ResultSet.new(filtered, term: term, total_count: total_count)
+        ResultSet.new(filtered, term: term, total_count: total_count,
+                                skipped_sources: skipped_sources)
       end
 
       # Get unique entity types in results

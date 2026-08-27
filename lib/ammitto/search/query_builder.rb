@@ -32,6 +32,7 @@ module Ammitto
         @sources = normalize_sources(options[:sources])
         @limit = options[:limit]
         @offset = options[:offset] || 0
+        @skipped_sources = []
       end
 
       # Build the query (returns self for chaining)
@@ -40,16 +41,36 @@ module Ammitto
         self
       end
 
+      # Sources this query could not read, populated by #execute.
+      #
+      # A search that quietly returns fewer results than the corpus holds
+      # is the dangerous direction for a sanctions dataset: the caller
+      # sees no match and cannot tell that from "three sources did not
+      # load". The skip itself is correct — one unreachable source must
+      # not take the whole search down — but it has to be reportable.
+      #
+      # @return [Array<Symbol>] source codes skipped by the last #execute
+      attr_reader :skipped_sources
+
       # Execute the search
       # @return [Array<Hash>] matching results
       def execute
+        @skipped_sources = []
         return [] if term.empty?
 
         results = []
 
         sources.each do |code|
           source = Registry.instance(code)
-          next unless source
+          unless source
+            # The registry is mutable and #instance may return nil. A code
+            # we cannot instantiate is a source we did not read, and the
+            # whole point of this list is that unread is not the same as
+            # empty — so record it rather than dropping it silently.
+            Logger.warn("Search skipping #{code}: no registered source")
+            @skipped_sources << code
+            next
+          end
 
           # The registry knows every source the gem has ever shipped;
           # the published API only carries the currently built ones.
@@ -60,6 +81,7 @@ module Ammitto
             data = source.load_data
           rescue NetworkError => e
             Logger.warn("Search skipping #{code}: #{e.message}")
+            @skipped_sources << code
             next
           end
 

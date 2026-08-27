@@ -175,7 +175,9 @@ module Ammitto
         # Store by the ID (e.g., "cn/mofcom-unreliable-entity-list-provisions")
         claim(@loaded_instruments, data['id'], data, 'Legal instrument', file)
       rescue StandardError => e
-        puts "Warning: Could not load instrument #{file}: #{e.message}" if ENV['VERBOSE']
+        # stderr: this reports input omitted from an otherwise successful
+        # export. Continuing is right; putting it on stdout is not.
+        warn "Warning: Could not load instrument #{file}: #{e.message}" if ENV['VERBOSE']
       end
 
       # Load supporting data (document types, organizations) from every
@@ -269,7 +271,9 @@ module Ammitto
 
         @stats[:total_document_types] = @document_types.length
       rescue StandardError => e
-        puts "Warning: Could not load document types #{file}: #{e.message}" if ENV['VERBOSE']
+        # stderr: this reports input omitted from an otherwise successful
+        # export. Continuing is right; putting it on stdout is not.
+        warn "Warning: Could not load document types #{file}: #{e.message}" if ENV['VERBOSE']
       end
 
       # Load organizations from YAML file
@@ -320,7 +324,9 @@ module Ammitto
 
         @stats[:total_organizations] = @organizations.length
       rescue StandardError => e
-        puts "Warning: Could not load organizations #{file}: #{e.message}" if ENV['VERBOSE']
+        # stderr: this reports input omitted from an otherwise successful
+        # export. Continuing is right; putting it on stdout is not.
+        warn "Warning: Could not load organizations #{file}: #{e.message}" if ENV['VERBOSE']
       end
 
       # Add a document type to the graph

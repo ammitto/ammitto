@@ -4,6 +4,12 @@ require 'fileutils'
 require 'json'
 require 'open3'
 require_relative '../errors/base_error'
+# load_all warns through Ammitto::Logger, which reads Ammitto.configuration.
+# Declared here so this file stays independently loadable, as its other
+# requires already keep it — requiring only the logger is not enough, because
+# Logger.log reaches for the configuration.
+require_relative '../configuration'
+require_relative '../logger'
 
 module Ammitto
   module Data
@@ -163,13 +169,52 @@ module Ammitto
 
       # Load all entities from all sources
       #
+      # Prefers the combined aggregate and falls back to concatenating the
+      # per-source files, because the aggregate is not guaranteed to be
+      # there. `harmonize` only writes it under `--combine`, and the data
+      # repository's copy has not advanced since 2026-07-22 — its harmonize
+      # workflow has failed every run since, for more than one reason over
+      # time. Raising in that case made every unscoped `query` and `get`
+      # fail on a clone that holds the whole corpus in `sources/`.
+      #
+      # The reason does not matter to this method: what matters is that the
+      # aggregate's presence is not something a caller can rely on, and
+      # tying the fallback to one named cause would date it.
+      #
+      # The fallback is NARROWER than the aggregate, deliberately. Each
+      # `sources/{code}.jsonld` carries the entity/entry pairs for that
+      # source, which is what an entity lookup needs. The aggregate also
+      # carries shared nodes — authorities, regimes, legal instruments,
+      # document types, organizations — and the per-source files do not.
+      #
+      # So under fallback, unscoped #query returns entity and entry nodes
+      # only, and #get can no longer resolve a SHARED node by its full @id.
+      # Entity and entry lookups keep working; only the five shared kinds
+      # above go missing. Each of those is published as its own document —
+      # read it directly rather than expecting it here.
+      #
       # @return [Array<Hash>] Array of all entities
       def load_all
         all_file = File.join(api_path, 'all.jsonld')
-        raise Ammitto::NotFoundError, 'Combined data not found' unless File.exist?(all_file)
+        return read_graph(all_file) if File.exist?(all_file)
 
-        data = JSON.parse(File.read(all_file))
-        data['@graph'] || []
+        # Dir.glob sorts on the supported Rubies (the gemspec floor is
+        # 3.3.0), so the concatenation order is deterministic. That matters
+        # for stable result ordering, and for #get, which returns the first
+        # exact match — this method concatenates and does not dedupe, so a
+        # duplicate @id would appear twice in #query.
+        source_files = Dir.glob(File.join(sources_path, '*.jsonld'))
+        if source_files.empty?
+          raise Ammitto::NotFoundError,
+                'Combined data not found, and no per-source files to fall back to'
+        end
+
+        # Say so. This library's characteristic failure is silence, and a
+        # caller handed a narrower dataset should be able to find out why.
+        Logger.warn("Combined aggregate absent; reading #{source_files.size} " \
+                    'per-source files instead. Shared nodes are not included.')
+
+        source_files.flat_map { |file| read_graph(file) }
       end
 
       # Query entities by criteria
@@ -285,6 +330,15 @@ module Ammitto
       end
 
       private
+
+      # Read a JSON-LD document's @graph, tolerating a document that has
+      # none rather than returning nil into a flat_map.
+      #
+      # @param path [String] path to a JSON-LD document
+      # @return [Array<Hash>]
+      def read_graph(path)
+        JSON.parse(File.read(path))['@graph'] || []
+      end
 
       # Node identifier — JSON-LD graphs use '@id'; older exports used 'id'
       # @param node [Hash]

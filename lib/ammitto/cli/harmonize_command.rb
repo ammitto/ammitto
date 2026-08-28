@@ -1142,10 +1142,19 @@ module Ammitto
       end
 
       # Transform RU data
+      #
+      # data-ru stores one file per MID announcement with the parties it
+      # names inside, the same shape data-cn uses. The per-entity branch
+      # below is kept because `Ru::SanctionedEntity` is still a public
+      # model, but no file in data-ru has ever been in that shape.
+      #
       # @param transformer [Object] transformer instance
       # @param data [Hash] source data
-      # @return [Hash]
+      # @return [Hash, Array<Hash>] single result or array of results
       def transform_ru(transformer, data)
+        return transform_ru_announcement(transformer, data) if
+          data.key?('announcement') && data.key?('sanction_details')
+
         require_relative '../sources/ru/sanctions_list'
 
         source = Ammitto::Sources::Ru::SanctionedEntity.from_hash(data)
@@ -1155,6 +1164,26 @@ module Ammitto
           entity: entity_to_hash(result[:entity]),
           entry: entry_to_hash(result[:entry])
         }
+      end
+
+      # Transform one RU announcement and everyone it names
+      # @param transformer [Object] transformer instance
+      # @param data [Hash] source data
+      # @return [Array<Hash>] one entity/entry pair per party named
+      def transform_ru_announcement(transformer, data)
+        require_relative '../sources/ru/announcement'
+
+        announcement = Ammitto::Sources::Ru::Announcement.from_hash(data)
+        result = transformer.transform_announcement(announcement)
+
+        @exporter.add_group(result[:group], source: :ru) if result[:group]
+
+        result[:entities].zip(result[:entries]).map do |entity, entry|
+          {
+            entity: entity_to_hash(entity),
+            entry: entry_to_hash(entry)
+          }
+        end
       end
 
       # Transform NZ data

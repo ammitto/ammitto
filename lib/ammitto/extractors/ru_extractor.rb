@@ -44,7 +44,9 @@ module Ammitto
       # status :error, which fails the fetch CLI's exit status.
       #
       # @return [Hash] { announcements: [...], entities: [...], errors: [...] }
-      # @raise [RuntimeError] when the scrape errored or yielded nothing
+      # @raise [Ammitto::Error] when the scrape collected failures. The
+      #   base class, not NetworkError: the list is heterogeneous.
+      # @raise [Ammitto::ParseError] when it yielded no entities
       def fetch
         puts "[#{code}] Fetching Russia sanctions data via web scraping..." if verbose?
 
@@ -60,12 +62,21 @@ module Ammitto
         errors = @fetched_data[:errors] || []
         unless errors.empty?
           details = errors.map { |e| "#{e[:source]}: #{e[:error]}" }
-          raise "ru scrape failed: #{details.join('; ')}"
+          # Ammitto::Error, not NetworkError: RuSanctionsScraper's
+          # boundaries rescue StandardError, so this list can hold parse
+          # failures as well as fetch failures. Calling a mixed set
+          # "network" tells a caller to retry when the site's format may
+          # simply have changed. No :url either — it spans the index and
+          # every announcement it followed.
+          raise Ammitto::Error,
+                "ru scrape failed: #{details.join('; ')}"
         end
 
         if (@fetched_data[:entities] || []).empty?
-          raise 'ru scrape yielded zero entities: the site is blocked or ' \
-                'its structure changed; refusing to report success'
+          raise Ammitto::ParseError.new(
+            'ru scrape yielded zero entities: the site is blocked or its ' \
+            'structure changed; refusing to report success', format: :html
+          )
         end
 
         puts "[#{code}] Fetched #{@fetched_data[:entities].length} entities" if verbose?

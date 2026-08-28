@@ -22,7 +22,7 @@ RSpec.describe Ammitto::Extractors::RuExtractor do
       stub_scrape({ announcements: [], entities: [], errors: [] })
 
       expect { extractor.fetch }
-        .to raise_error(RuntimeError, /zero entities/)
+        .to raise_error(Ammitto::ParseError, /zero entities/)
     end
 
     it 'raises when the scraper collected errors instead of dropping them' do
@@ -32,8 +32,18 @@ RSpec.describe Ammitto::Extractors::RuExtractor do
       stub_scrape({ announcements: [], entities: [],
                     errors: [{ source: 'mid', error: 'connection refused' }] })
 
-      expect { extractor.fetch }
-        .to raise_error(RuntimeError, /mid: connection refused/)
+      # The exact class, not "an Error": `raise_error(Ammitto::Error)`
+      # accepts NetworkError too, so it would not catch a regression back
+      # to typing this heterogeneous aggregate as a transport failure.
+      error = begin
+        extractor.fetch
+        nil
+      rescue Ammitto::Error => e
+        e
+      end
+
+      expect(error.class).to eq(Ammitto::Error)
+      expect(error.message).to match(/mid: connection refused/)
     end
 
     it 'returns the scraped data when entities were actually yielded' do

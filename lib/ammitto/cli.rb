@@ -148,6 +148,11 @@ module Ammitto
                  desc: 'Fetch every source with a working fetch path (skips cn, ru, jp)'
     option :format, type: :string, default: 'yaml', desc: 'Output format (yaml, jsonld)'
     option :output_dir, type: :string, desc: 'Output directory for YAML files'
+    option :allow_shrink, type: :boolean, default: false,
+                          desc: 'Accept a harvest that produced less than ' \
+                                'half the records of the previous one ' \
+                                '(refused by default: a drop that large is ' \
+                                'usually a parser that stopped matching)'
     def fetch(*sources)
       require_relative 'cli/fetch_command'
       Cmd::FetchCommand.new(options, sources).run

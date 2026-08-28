@@ -17,10 +17,10 @@ module Ammitto
         attribute :country, :string
         attribute :last_name, :string
         attribute :given_name, :string
-        # <EntityOrShip> carries the only name an organization or vessel
-        # record has: 2175 of the 5684 records in sema-lmes.xml have no
-        # LastName and no GivenName, so leaving this element unmapped
-        # publishes them as nameless entity nodes.
+        # <EntityOrShip-EntiteOuNavire> carries the only name an
+        # organization or vessel record has. Well over a third of
+        # sema-lmes.xml has no personal-name element at all, so leaving
+        # this one unmapped publishes those records as nameless nodes.
         attribute :entity_or_ship, :string
         attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :date_of_birth_or_ship_build_date, :string
@@ -28,16 +28,25 @@ module Ammitto
         attribute :item, :string
         attribute :date_of_listing, :string
 
+        # Canada renamed every element to a bilingual form between the
+        # 24 and 25 August 2026 harvests: <Country> became <Country-Pays>,
+        # <LastName> became <LastName-NomDeFamille>, and so on. The root
+        # and <record> names did not change, so the document still parsed
+        # into 5690 Records — every one of them with every field nil.
+        # Names below are transcribed from the live file, fetched
+        # 2026-08-27: 2,881,628 bytes, 5690 <record> elements.
         xml do
           root 'record'
-          map_element 'Country', to: :country
-          map_element 'LastName', to: :last_name
-          map_element 'GivenName', to: :given_name
-          map_element 'EntityOrShip', to: :entity_or_ship
-          map_element 'DateOfBirthOrShipBuildDate', to: :date_of_birth_or_ship_build_date
-          map_element 'Schedule', to: :schedule
-          map_element 'Item', to: :item
-          map_element 'DateOfListing', to: :date_of_listing
+          map_element 'Country-Pays', to: :country
+          map_element 'LastName-NomDeFamille', to: :last_name
+          map_element 'GivenName-Prenom', to: :given_name
+          map_element 'EntityOrShip-EntiteOuNavire', to: :entity_or_ship
+          map_element 'DateOfBirthOrShipBuildDate-' \
+                      'DateDeNaissanceOuDateDeConstructionDuNavire',
+                      to: :date_of_birth_or_ship_build_date
+          map_element 'Schedule-Annexe', to: :schedule
+          map_element 'Item-NumeroDarticle', to: :item
+          map_element 'DateOfListing-DateDinscription', to: :date_of_listing
         end
 
         # YAML mapping for processed YAML files

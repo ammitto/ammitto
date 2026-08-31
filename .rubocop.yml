@@ -9,13 +9,46 @@ plugins:
 
 AllCops:
   TargetRubyVersion: 3.3
-  Rails:
-    Enabled: false
-  Layout:
-    IndentationWidth: 2
-    LineLength: 80
   NewCops: enable
   SuggestExtensions: false
+
+# `Rails:` and `Layout:` used to sit inside AllCops above. Neither is an
+# AllCops parameter, so RuboCop printed "AllCops does not support ...
+# parameter" twice per run -- roughly fifty lines of warning ahead of every
+# local and CI invocation -- and then ignored both. `Rails: {Enabled: false}`
+# was inert twice over: rubocop-rails is not in the bundle, so there is no
+# Rails cop to disable.
+#
+# The Layout pair was the load-bearing loss. Written that way they read as
+# the Ribose guide's 2-space indent and 80-column limit; enforced, they were
+# nothing. Restated below at the values actually in force, so this file stops
+# claiming a limit the gate does not apply.
+
+# Ribose's width, and RuboCop's default too -- stated because the guide does.
+# Note the parameter is `Width`; the old nested key called it
+# `IndentationWidth`, which is the cop's name, not its parameter.
+Layout/IndentationWidth:
+  Width: 2
+
+# Layout/LineLength is NOT restated here. The guide asks for 80;
+# .rubocop_todo.yml carries `Max: 188`, the figure `--auto-gen-config`
+# recorded from the corpus once the AllCops key above turned out to do
+# nothing. Closing that gap is its own change with its own decision behind
+# it, so the number stays in the todo where grandfathered debt belongs
+# rather than being asserted here where it would be false.
+#
+# The wider version of that decision is inheriting the guide directly, the
+# way the sibling gems do:
+#
+#   inherit_from:
+#     - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
+#     - .rubocop_todo.yml
+#
+# That is the right destination and it is not a tidy-up. Measured on this
+# tree: it needs rubocop-performance added, and it raises 22,868 offenses
+# across 447 files, of which 21,174 are Style/StringLiterals because the
+# guide enforces double quotes and this gem is written in single. It is a
+# migration with a style decision inside it, not a config correction.
 
 Style/FrozenStringLiteralComment:
   Enabled: false

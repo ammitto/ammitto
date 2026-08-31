@@ -33,6 +33,9 @@ module Ammitto
       # Legacy URL (fallback)
       LEGACY_SDN_URL = 'https://www.treasury.gov/ofac/downloads/sdn.xml'
 
+      # treasury.gov serves 403 to the default Ruby agent
+      USER_AGENT = 'Mozilla/5.0'
+
       # @return [Symbol] the source code
       def code
         :us
@@ -49,52 +52,35 @@ module Ammitto
       end
 
       # Fetch raw data from US OFAC
-      # Downloads ZIP, extracts XML, returns XML content
+      #
+      # Tries the legacy flat XML first because it is the format this
+      # extractor's model matches, and falls back to the newer ZIP export.
+      #
       # @return [String] raw XML content
+      # @raise [Ammitto::Error] when neither endpoint yields XML
+      #   (Ammitto::ParseError when the archive arrived and held none)
       def fetch
         require 'open-uri'
 
         # Use legacy XML URL (simpler format that matches our model)
-        puts "[#{code}] Downloading SDN list from #{LEGACY_SDN_URL}..." if verbose
+        report("Downloading SDN list from #{LEGACY_SDN_URL}...")
 
-        URI.open(LEGACY_SDN_URL, 'User-Agent' => 'Mozilla/5.0').read
-      rescue StandardError
-        puts "[#{code}] Legacy URL failed, trying ZIP format..." if verbose
-
-        # Fallback to ZIP format
-        require 'tempfile'
-        require 'zip'
-
-        puts "[#{code}] Downloading SDN list from #{SDN_ZIP_URL}..." if verbose
-
-        # Download ZIP file
-        @temp_file = Tempfile.new(['us_sdn', '.zip'])
-        URI.open(SDN_ZIP_URL, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
-          @temp_file.write(remote_file.read)
-        end
-        @temp_file.close
-
-        puts "[#{code}] Extracting XML from ZIP..." if verbose
-
-        # Extract XML from ZIP
-        xml_content = nil
-        Zip::File.open(@temp_file.path) do |zip_file|
-          # Find the XML file (usually sdn.xml)
-          xml_entry = zip_file.entries.find { |e| e.name =~ /\.xml$/i }
-          raise 'No XML file found in ZIP archive' unless xml_entry
-
-          xml_content = xml_entry.get_input_stream.read
-        end
-
-        xml_content
+        URI.open(LEGACY_SDN_URL, 'User-Agent' => USER_AGENT).read
       rescue StandardError => e
-        puts "[#{code}] Error with ZIP download: #{e.message}, trying legacy URL..." if verbose
-        # Fallback to legacy URL
-        URI.open(LEGACY_SDN_URL, 'User-Agent' => 'Mozilla/5.0').read
+        report("Legacy URL failed (#{safe_message(e)}), trying ZIP...")
+
+        fetch_from_zip(e)
       end
 
-      # Clean up temp file
+      # Clean up temp file.
+      #
+      # Closes before unlinking, for the reason NzExtractor#cleanup records:
+      # Tempfile#unlink removes the pathname but leaves the descriptor open
+      # until GC, and on platforms that refuse to unlink an open file it
+      # raises — which on the failure path would replace the download error
+      # that actually mattered.
       def cleanup
+        @temp_file&.close
         @temp_file&.unlink
         @temp_file = nil
       end
@@ -128,6 +114,188 @@ module Ammitto
       end
 
       private
+
+      # The ZIP export, as a method rather than a second rescue clause on
+      # #fetch.
+      #
+      # It used to be inline, followed by a `rescue StandardError` meant to
+      # catch it. That clause could never run: a raise from inside a rescue
+      # clause is not caught by a sibling rescue on the same body, so every
+      # ZIP failure left #fetch as whatever raw exception the download or
+      # the archive produced, and stranded the temp file. Its recovery was
+      # also circular — it retried LEGACY_SDN_URL, the URL whose failure is
+      # the only way to reach this code at all.
+      #
+      # @param legacy_error [StandardError] why the legacy URL was abandoned
+      # @return [String] raw XML content
+      # @raise [Ammitto::ParseError] when the archive holds no XML
+      # @raise [Ammitto::Error] when either endpoint failed for another reason
+      def fetch_from_zip(legacy_error)
+        require 'tempfile'
+        require 'zip'
+
+        report("Downloading SDN list from #{SDN_ZIP_URL}...")
+
+        download_zip
+        read_xml_from_zip
+      rescue Ammitto::ParseError => e
+        # Split from the clause below rather than folded into it. The two
+        # clauses match different classes and neither depends on the other
+        # running, so this is not the sibling-rescue trap the comment above
+        # describes -- ParseError is listed first because it is a subclass
+        # of Ammitto::Error and Ruby takes the first clause that matches.
+        #
+        # A ZIP that downloaded intact and carries no XML is unusable
+        # content, which is what CnExtractor calls ParseError at
+        # cn_extractor.rb:104. Reporting it as a generic failure would tell
+        # an operator to retry a fetch that will keep succeeding.
+        raise Ammitto::ParseError.new(
+          both_endpoints_failed(legacy_error, e), format: :zip
+        )
+      rescue StandardError => e
+        # Generic Ammitto::Error for the reason CnExtractor records at
+        # cn_extractor.rb:95: the causes here cannot be told apart. The
+        # legacy failure came through `rescue StandardError` and may be
+        # anything, and this one is whatever the download raised. Calling a
+        # mixed set "network" tells the caller to retry when OFAC may
+        # simply have changed what it ships.
+        raise Ammitto::Error, both_endpoints_failed(legacy_error, e)
+      ensure
+        # Both paths, because nothing downstream disposes of this one.
+        # FetchCommand#cleanup_extractor is reached only from #parse_xlsx
+        # and #parse_pdf; us is an XML source and takes the `else` branch
+        # of the format dispatch, which hands back a String and never calls
+        # cleanup. The archive is finished with either way — the success
+        # path has already read its bytes into memory.
+        dispose_archive
+      end
+
+      # Both attempts, in one sentence. An operator reading a red harvest
+      # cannot act on a message that names only the endpoint that happened
+      # to fail last.
+      #
+      # @param legacy_error [StandardError] why the legacy URL was abandoned
+      # @param zip_error [StandardError] why the ZIP export did not answer
+      # @return [String]
+      def both_endpoints_failed(legacy_error, zip_error)
+        'us: neither OFAC endpoint yielded XML — legacy ' \
+          "(#{safe_message(legacy_error)}); " \
+          "ZIP export (#{safe_message(zip_error)})"
+      end
+
+      # Disposal must never become the reported failure, so this swallows
+      # its own error rather than replacing the endpoint failure above —
+      # the same contract NzExtractor#fetch keeps.
+      #
+      # @return [void]
+      def dispose_archive
+        cleanup
+      rescue StandardError => e
+        complain("could not dispose the ZIP archive: #{safe_message(e)}")
+      end
+
+      # An exception's own message, for a message that must not raise.
+      #
+      # `#message` is evaluated by the interpolation BEFORE #report or
+      # #complain is entered, so their rescue clauses never see it: an
+      # exception whose message formatter raises escaped #fetch and took
+      # the ZIP fallback with it, measured as NoMethodError leaving the
+      # method. The class name is kept in the fallback because that is the
+      # part an operator can still act on.
+      #
+      # @param error [Exception]
+      # @return [String]
+      def safe_message(error)
+        error.message.to_s
+      rescue StandardError
+        "#{safe_class_name(error)} (message unavailable)"
+      end
+
+      # The fallback's own fallback. Interpolating `error.class` is not
+      # free either — a class whose #to_s raises puts the guard back in the
+      # position it exists to prevent — and this is the last interpolation
+      # in the chain, so it has to end somewhere that cannot raise.
+      #
+      # @param error [Exception]
+      # @return [String]
+      def safe_class_name(error)
+        error.class.to_s
+      rescue StandardError
+        'unknown error'
+      end
+
+      # Verbose progress, on a stream that may not accept it.
+      #
+      # Every caller of this and of #complain is inside a rescue clause, and
+      # a raise from inside a rescue clause is not caught by a sibling
+      # clause on the same body — the exact shape this file exists to fix.
+      # `puts` and `warn` both raise IOError when the embedding process has
+      # closed or redirected the stream, so an unguarded log line on the
+      # failure path could swallow the ZIP fallback whole: measured, with
+      # $stdout closed, as IOError escaping #fetch before #fetch_from_zip
+      # was ever called.
+      #
+      # @param message [String] progress line, without the source prefix
+      # @return [void]
+      def report(message)
+        return unless verbose
+
+        puts "[#{code}] #{message}"
+      rescue StandardError
+        nil
+      end
+
+      # The stderr twin of #report, for a failure worth mentioning even
+      # when the operator did not ask for progress.
+      #
+      # @param message [String] the line, without the source prefix
+      # @return [void]
+      def complain(message)
+        warn "[#{code}] #{message}"
+      rescue StandardError
+        nil
+      end
+
+      # @return [void]
+      def download_zip
+        @temp_file = Tempfile.new(['us_sdn', '.zip'])
+        # Binary, as NzExtractor and UnVesselsExtractor already do for
+        # their downloads. A Tempfile opened in text mode expands every
+        # 0x0A on Windows, which corrupts the archive: the download
+        # succeeds, the ZIP then holds no readable member, and the
+        # fallback refuses with "No XML file found in ZIP archive" on
+        # Windows alone. Measured on this gem's Windows CI, where all
+        # three Ruby versions failed this way and Linux and macOS passed.
+        @temp_file.binmode
+        URI.open(SDN_ZIP_URL, 'User-Agent' => USER_AGENT) do |remote_file|
+          @temp_file.write(remote_file.read)
+        end
+        @temp_file.close
+      end
+
+      # @return [String] the first XML member of the downloaded archive
+      # @raise [Ammitto::ParseError] when the archive carries no XML member
+      def read_xml_from_zip
+        report('Extracting XML from ZIP...')
+
+        Zip::File.open(@temp_file.path) do |zip_file|
+          # Find the XML file (usually sdn.xml)
+          xml_entry = zip_file.entries.find { |e| e.name =~ /\.xml$/i }
+          unless xml_entry
+            raise Ammitto::ParseError.new(
+              'No XML file found in ZIP archive', format: :zip
+            )
+          end
+
+          # Block form, because rubyzip closes the entry stream only when
+          # given one: rubyzip-2.4.1 lib/zip/entry.rb:577-584 closes in an
+          # ensure inside `if block_given?`, and returns the open
+          # Zip::InputStream otherwise. Left open, the handle keeps the
+          # archive live on Windows and makes the unlink below fail --
+          # which is the leak this method is part of fixing.
+          xml_entry.get_input_stream(&:read)
+        end
+      end
 
       # Extract an entity
       # @param node [Nokogiri::XML::Element]

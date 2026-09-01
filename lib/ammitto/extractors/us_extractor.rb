@@ -26,12 +26,22 @@ module Ammitto
     class UsExtractor < BaseExtractor
       attr_accessor :verbose
 
-      # New OFAC API endpoints (ZIP files containing XML)
-      SDN_ZIP_URL = 'https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN_ADVANCED.ZIP'
-      CONSOLIDATED_ZIP_URL = 'https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/CONS_ADVANCED.ZIP'
+      # The flat SDN list. Named "legacy" by OFAC, but it is the only export
+      # this gem can read: SdnList maps root 'sdnList' and SdnEntry maps
+      # 'sdnEntry', and those are the elements this file contains.
+      #
+      # OFAC also publishes SDN_ADVANCED.ZIP. It is NOT a fallback for this
+      # one and was removed as such. Measured 2026-09-01 against the live
+      # endpoint: the archive is 5.7 MB, expands to a 126 MB
+      # SDN_ADVANCED.XML whose root is <Sanctions> with 19,321
+      # <DistinctParty> children and ZERO occurrences of <sdnList> or
+      # <sdnEntry>. Feeding it to SdnList.from_xml parses for 288 seconds
+      # and yields 0 entries. Reading it would need its own model, which is
+      # a feature rather than a fallback.
+      SDN_URL = 'https://www.treasury.gov/ofac/downloads/sdn.xml'
 
-      # Legacy URL (fallback)
-      LEGACY_SDN_URL = 'https://www.treasury.gov/ofac/downloads/sdn.xml'
+      # treasury.gov serves 403 to the default Ruby agent
+      USER_AGENT = 'Mozilla/5.0'
 
       # @return [Symbol] the source code
       def code
@@ -45,58 +55,29 @@ module Ammitto
 
       # @return [String] API endpoint
       def api_endpoint
-        SDN_ZIP_URL
+        SDN_URL
       end
 
       # Fetch raw data from US OFAC
-      # Downloads ZIP, extracts XML, returns XML content
+      #
       # @return [String] raw XML content
+      # @raise [Ammitto::NetworkError] when the list cannot be downloaded
       def fetch
         require 'open-uri'
 
-        # Use legacy XML URL (simpler format that matches our model)
-        puts "[#{code}] Downloading SDN list from #{LEGACY_SDN_URL}..." if verbose
+        report("Downloading SDN list from #{SDN_URL}...")
 
-        URI.open(LEGACY_SDN_URL, 'User-Agent' => 'Mozilla/5.0').read
-      rescue StandardError
-        puts "[#{code}] Legacy URL failed, trying ZIP format..." if verbose
-
-        # Fallback to ZIP format
-        require 'tempfile'
-        require 'zip'
-
-        puts "[#{code}] Downloading SDN list from #{SDN_ZIP_URL}..." if verbose
-
-        # Download ZIP file
-        @temp_file = Tempfile.new(['us_sdn', '.zip'])
-        URI.open(SDN_ZIP_URL, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
-          @temp_file.write(remote_file.read)
-        end
-        @temp_file.close
-
-        puts "[#{code}] Extracting XML from ZIP..." if verbose
-
-        # Extract XML from ZIP
-        xml_content = nil
-        Zip::File.open(@temp_file.path) do |zip_file|
-          # Find the XML file (usually sdn.xml)
-          xml_entry = zip_file.entries.find { |e| e.name =~ /\.xml$/i }
-          raise 'No XML file found in ZIP archive' unless xml_entry
-
-          xml_content = xml_entry.get_input_stream.read
-        end
-
-        xml_content
+        URI.open(SDN_URL, 'User-Agent' => USER_AGENT).read
       rescue StandardError => e
-        puts "[#{code}] Error with ZIP download: #{e.message}, trying legacy URL..." if verbose
-        # Fallback to legacy URL
-        URI.open(LEGACY_SDN_URL, 'User-Agent' => 'Mozilla/5.0').read
-      end
-
-      # Clean up temp file
-      def cleanup
-        @temp_file&.unlink
-        @temp_file = nil
+        # Refuses rather than falling back. The ZIP export used to sit here
+        # as a second attempt and could never have produced records; see the
+        # note on SDN_URL. A fetch that cannot reach its one source is a
+        # failure, and saying so is worth more than five minutes spent
+        # parsing the wrong schema to zero.
+        raise Ammitto::NetworkError.new(
+          "us: could not download the SDN list (#{safe_message(e)})",
+          url: SDN_URL
+        )
       end
 
       # Extract entities from US XML
@@ -128,6 +109,54 @@ module Ammitto
       end
 
       private
+
+      # Verbose progress, on a stream that may not accept it.
+      #
+      # `puts` raises IOError when the embedding process has closed or
+      # redirected $stdout. Unguarded, that raise reaches #fetch's rescue
+      # and is reported as a download failure, so the operator is told the
+      # source is unreachable when the real fault is the log stream. The
+      # refusal must name what actually failed.
+      #
+      # Reads `verbose?`, not the `verbose` accessor: BaseExtractor#verbose?
+      # also honours AMMITTO_VERBOSE, and an extractor that ignored the
+      # env var would go quiet for an operator who had asked every other
+      # source to talk.
+      #
+      # @param message [String] progress line, without the source prefix
+      # @return [void]
+      def report(message)
+        return unless verbose?
+
+        puts "[#{code}] #{message}"
+      rescue StandardError
+        nil
+      end
+
+      # An exception's own message, for a message that must not raise.
+      #
+      # #message is evaluated by the interpolation BEFORE the refusal is
+      # built, so an exception whose message formatter raises would escape
+      # in place of the typed error.
+      #
+      # @param error [Exception]
+      # @return [String]
+      def safe_message(error)
+        error.message.to_s
+      rescue StandardError
+        safe_class_name(error)
+      end
+
+      # The fallback's own fallback, because interpolating `error.class` is
+      # not free either. Terminates in a literal so the chain cannot raise.
+      #
+      # @param error [Exception]
+      # @return [String]
+      def safe_class_name(error)
+        error.class.to_s
+      rescue StandardError
+        'unknown error'
+      end
 
       # Extract an entity
       # @param node [Nokogiri::XML::Element]

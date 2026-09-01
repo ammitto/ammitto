@@ -147,6 +147,42 @@ module Ammitto
         @verbose || ENV['AMMITTO_VERBOSE'] == 'true'
       end
 
+      # Download a binary payload to a Tempfile and hand back its path.
+      #
+      # Binary because these payloads are ZIP containers (XLSX): a Tempfile
+      # in text mode expands every 0x0A on Windows and the archive is then
+      # unreadable. A download that fails after the file exists disposes of
+      # it before re-raising, because FetchCommand's ensure block only owns
+      # what reached the parser; the inner rescue keeps a failing cleanup
+      # from replacing the download error.
+      #
+      # @param url [String] where to fetch from
+      # @param prefix [String] Tempfile basename prefix
+      # @param ext [String] Tempfile extension, including the dot
+      # @param headers [Hash] request headers, passed positionally the
+      #   way every other call site in this class does
+      # @return [String] path to the downloaded file
+      def download_binary_to_temp_file(url, prefix:, ext:, headers: {})
+        require 'open-uri'
+        require 'tempfile'
+
+        @temp_file = Tempfile.new([prefix, ext])
+        begin
+          @temp_file.binmode
+          URI.open(url, headers) { |remote| @temp_file.write(remote.read) }
+          @temp_file.close
+        rescue StandardError
+          begin
+            cleanup
+          rescue StandardError
+            nil
+          end
+          raise
+        end
+
+        @temp_file.path
+      end
+
       # Download XML from URL
       # @param url [String] the URL
       # @param headers [Hash] optional HTTP headers

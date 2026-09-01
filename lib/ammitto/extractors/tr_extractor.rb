@@ -60,26 +60,24 @@ module Ammitto
       # Fetch raw data from Turkey (List D - XLSX format)
       # @return [String] path to downloaded XLSX temp file
       def fetch
-        require 'open-uri'
-        require 'tempfile'
-
         # Use the known file URL for list D (XLSX format)
         file_url = KNOWN_FILE_URLS[:d]
 
         puts "[#{code}] Downloading XLSX from: #{file_url}" if verbose
 
-        # Download XLSX to temp file
-        @temp_file = Tempfile.new(['tr_sanctions', '.xlsx'])
-        URI.open(file_url, 'User-Agent' => 'Mozilla/5.0') do |remote_file|
-          @temp_file.write(remote_file.read)
-        end
-        @temp_file.close
-
-        @temp_file.path
+        download_binary_to_temp_file(
+          file_url, prefix: 'tr_sanctions', ext: '.xlsx',
+                    headers: { 'User-Agent' => 'Mozilla/5.0' }
+        )
       end
 
       # Clean up temp file after processing
       def cleanup
+        # Closes before unlinking, for the reason NzExtractor#cleanup
+        # records: unlink drops the pathname but leaves the descriptor open
+        # until GC, and on Windows it raises on an open file — which on the
+        # failure path would replace the download error that mattered.
+        @temp_file&.close
         @temp_file&.unlink
         @temp_file = nil
       end

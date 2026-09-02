@@ -187,6 +187,24 @@ RSpec.describe Ammitto::Sources::Ru::AnnouncementTransformer do
     end
   end
 
+  describe 'an instrument with a blank identifier' do
+    it 'falls back to the law rather than raising' do
+      blank = Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'X-9' },
+        'sanction_details' => {
+          'instruments' => [{ 'id' => '', 'law' => 'Decree 123' }],
+          'entities' => [{ 'name' => { 'en' => 'Someone' },
+                           'type' => 'individual' }]
+        }
+      )
+
+      citations = transformer.transform_announcement(blank)[:legal_citations]
+
+      expect(citations.length).to eq(1)
+      expect(citations.first.legal_instrument_id).to include('decree-123')
+    end
+  end
+
   describe 'an announcement whose parties were lost in extraction' do
     # Real shape: data-ru sources/announcements/20220407.yml records an
     # empty entity list while its own text lists the people by number.

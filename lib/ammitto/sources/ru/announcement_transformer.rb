@@ -443,8 +443,10 @@ module Ammitto
           return [] if instruments.nil? || instruments.empty?
 
           instruments.map do |instrument|
-            local_id = instrument.id&.sub(%r{^ru/}, '')
-            local_id ||= sanitize_id(instrument.law || 'unknown')
+            # `&.` guards nil, not blank, and "" is truthy — so a record
+            # with `id: ""` skipped the fallback and raised.
+            local_id = instrument.id.to_s.sub(%r{^ru/}, '')
+            local_id = sanitize_id(instrument.law || 'unknown') if local_id.empty?
             instrument.to_legal_citation(
               instrument_id: generate_legal_instrument_id(local_id)
             )

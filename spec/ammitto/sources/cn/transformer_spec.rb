@@ -68,4 +68,27 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       expect(entry.regime.code).to eq('CN_EXPORT_CONTROL')
     end
   end
+
+  describe 'an instrument with a blank identifier' do
+    # `if instrument.id` guards nil, not blank, and "" is truthy, so a
+    # record carrying `id: ""` used to reach the sanitizer and raise.
+    def citation_for(id)
+      instrument = Ammitto::Sources::Cn::Instrument.new(id: id,
+                                                        law: 'Order 123')
+      transformer.send(:create_legal_citations, [instrument]).first
+    end
+
+    it 'falls back to the law rather than raising' do
+      expect(citation_for('').legal_instrument_id).to include('order-123')
+    end
+
+    it 'still falls back when the id is absent' do
+      expect(citation_for(nil).legal_instrument_id).to include('order-123')
+    end
+
+    it 'still uses a real id, with the cn/ prefix stripped' do
+      expect(citation_for('cn/mofcom-2025-14').legal_instrument_id)
+        .to end_with('/cn/mofcom-2025-14')
+    end
+  end
 end

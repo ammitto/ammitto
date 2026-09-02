@@ -5,6 +5,7 @@ require 'json'
 require_relative '../../transformers/base_transformer'
 require_relative '../../utils/iri_sanitizer'
 require_relative '../../ontology/types'
+require_relative 'lost_party_guard'
 require_relative '../../official_announcement'
 require_relative '../../person_entity'
 require_relative '../../organization_entity'
@@ -28,6 +29,8 @@ module Ammitto
       # harmonize treats the two sources alike.
       #
       class AnnouncementTransformer < Ammitto::Transformers::BaseTransformer
+        include LostPartyGuard
+
         # Regimes for the lists MID publishes, by list code.
         #
         # Defined here rather than taken from Transformer's copy: that
@@ -62,6 +65,7 @@ module Ammitto
         #   legal_citations, the same contract Sources::Cn::Transformer
         #   returns so harmonize can treat the two sources alike
         def transform_announcement(announcement)
+          refuse_if_parties_were_lost(announcement)
           citations = announcement_legal_citations(announcement.instruments)
           official = official_announcement_from(announcement.announcement)
 

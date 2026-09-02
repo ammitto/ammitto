@@ -187,6 +187,51 @@ RSpec.describe Ammitto::Sources::Ru::AnnouncementTransformer do
     end
   end
 
+  describe 'an announcement whose parties were lost in extraction' do
+    # Real shape: data-ru sources/announcements/20220407.yml records an
+    # empty entity list while its own text lists the people by number.
+    def announcement_listing(text, entities: [])
+      Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => '755-07-04-2022',
+                            'content' => { 'ru' => text } },
+        'sanction_details' => { 'entities' => entities }
+      )
+    end
+
+    let(:party_list) do
+      "Ниже следует список граждан Австралии.\n\n" \
+        "1        Скотт Моррисон (Scott Morrison)    премьер-министр\n\n" \
+        "2        Барнаби Джойс (Barnaby Joyce)       заместитель\n\n" \
+        '3        Карен Эндрюс (Karen Andrews)       министр'
+    end
+
+    it 'refuses rather than publishing an announcement against nobody' do
+      expect { transformer.transform_announcement(announcement_listing(party_list)) }
+        .to raise_error(Ammitto::ParseError, /parsed no parties.*lists 3 of them/m)
+    end
+
+    it 'lets a statement that genuinely names no one through' do
+      prose = 'Заявление МИД России о недружественных действиях. ' \
+              'Никаких персональных санкций не вводится.'
+
+      result = transformer.transform_announcement(announcement_listing(prose))
+
+      expect(result[:entities]).to eq([])
+      expect(result[:entries]).to eq([])
+    end
+
+    it 'says nothing when the parties did parse' do
+      listed = announcement_listing(
+        party_list,
+        entities: [{ 'name' => { 'en' => 'Scott Morrison' },
+                     'type' => 'individual' }]
+      )
+
+      expect(transformer.transform_announcement(listed)[:entities].length)
+        .to eq(1)
+    end
+  end
+
   describe 'a Cyrillic name filed under the English field' do
     it 'reports the script the text is in, not the field it came from' do
       # Real shape: seven parties in

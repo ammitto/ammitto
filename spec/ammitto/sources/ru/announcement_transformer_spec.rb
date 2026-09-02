@@ -187,8 +187,86 @@ RSpec.describe Ammitto::Sources::Ru::AnnouncementTransformer do
     end
   end
 
+  describe 'a Cyrillic name filed under the English field' do
+    it 'reports the script the text is in, not the field it came from' do
+      # Real shape: seven parties in
+      # data-ru sources/announcements/20250926.yml carry an empty `ru`
+      # and a Cyrillic name under `en`. This is one of them.
+      misfiled = Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'X-5' },
+        'sanction_details' => {
+          'entities' => [{ 'name' => { 'en' => 'Бирн, Джеймс', 'ru' => '' },
+                           'type' => 'individual' }]
+        }
+      )
+
+      names = transformer.transform_announcement(misfiled)[:entities]
+                         .first.names
+
+      expect(names.length).to eq(1)
+      expect(names.first.full_name).to eq('Бирн, Джеймс')
+      expect(names.first.script).to eq('Cyrl')
+      # The `en` field still decides which name leads, whatever script
+      # the text turns out to be in.
+      expect(names.first.is_primary).to be(true)
+    end
+
+    it 'still reports Latn for a romanised name' do
+      normal = Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'X-6' },
+        'sanction_details' => {
+          'entities' => [{ 'name' => { 'en' => 'Byrne, James',
+                                       'ru' => 'Бирн, Джеймс' },
+                           'type' => 'individual' }]
+        }
+      )
+
+      names = transformer.transform_announcement(normal)[:entities]
+                         .first.names
+
+      expect(names.map(&:script)).to eq(%w[Latn Cyrl])
+      expect(names.map(&:is_primary)).to eq([true, false])
+    end
+  end
+
+  describe 'a measure that says something but does not say what' do
+    it 'keeps the wording and claims no type' do
+      untyped = Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'X-3' },
+        'sanction_details' => {
+          'entities' => [{ 'name' => { 'en' => 'Someone' },
+                           'type' => 'individual',
+                           'measures' => [{ 'en' => 'Measures apply.' }] }]
+        }
+      )
+
+      effects = transformer.transform_announcement(untyped)[:entries]
+                           .first.effects
+
+      # The description is evidence and survives; the category is not
+      # stated and is not guessed.
+      expect(effects.length).to eq(1)
+      expect(effects.first.effect_type).to be_nil
+      expect(effects.first.description.map(&:value)).to eq(['Measures apply.'])
+    end
+
+    it 'produces nothing when it says neither a type nor a word' do
+      silent = Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'X-4' },
+        'sanction_details' => {
+          'entities' => [{ 'name' => { 'en' => 'Someone' },
+                           'type' => 'individual',
+                           'measures' => [{}] }]
+        }
+      )
+
+      expect(transformer.transform_announcement(silent)[:entries]
+               .first.effects).to eq([])
+    end
+  end
+
   describe 'a party with nothing recorded against it' do
-    it 'still produces an entry rather than dropping the party' do
+    it 'produces an entry that claims no effect' do
       bare = Ammitto::Sources::Ru::Announcement.from_hash(
         'announcement' => { 'document_id' => 'X-1' },
         'sanction_details' => {
@@ -201,8 +279,10 @@ RSpec.describe Ammitto::Sources::Ru::AnnouncementTransformer do
 
       expect(transformed[:entities].length).to eq(1)
       expect(transformed[:entries].first.reasons).to eq([])
-      expect(transformed[:entries].first.effects.map(&:effect_type))
-        .to eq(['entry_ban'])
+      # Not ['entry_ban']. The announcement records no measure against
+      # this party, and an entry ban it never stated must not appear
+      # against a named person.
+      expect(transformed[:entries].first.effects).to eq([])
     end
   end
 end

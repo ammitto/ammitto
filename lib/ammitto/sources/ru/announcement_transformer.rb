@@ -4,6 +4,7 @@ require 'digest'
 require 'json'
 require_relative '../../transformers/base_transformer'
 require_relative '../../utils/iri_sanitizer'
+require_relative '../../ontology/types'
 require_relative '../../official_announcement'
 require_relative '../../person_entity'
 require_relative '../../organization_entity'
@@ -205,22 +206,39 @@ module Ammitto
           end
         end
 
+        # The field a name arrives in says which language RU meant it to
+        # be; it does not say what script the text is written in, and the
+        # two disagree in the corpus. Seven parties in
+        # sources/announcements/20250926.yml carry an empty `ru` and a
+        # Cyrillic name under `en` -- "Бирн, Джеймс", "Дуган, Дэвид
+        # Майкл" and five more. Taking the script from the field stamped
+        # those as Latn, so a consumer transliterating or collating by
+        # script was told Cyrillic text was Latin.
+        #
+        # The script is read from the text instead. The field still
+        # decides which name leads: `en` is RU's own romanisation and is
+        # the primary when present, whatever script it turns out to hold.
         def announcement_names(entity)
           english = entity.english_name.to_s.strip
           russian = entity.russian_name.to_s.strip
           names = []
 
           unless english.empty?
-            names << create_name_variant(full_name: english, script: 'Latn',
+            names << create_name_variant(full_name: english,
+                                         script: script_for(english),
                                          is_primary: true)
           end
           unless russian.empty?
-            names << create_name_variant(full_name: russian, script: 'Cyrl',
+            names << create_name_variant(full_name: russian,
+                                         script: script_for(russian),
                                          is_primary: english.empty?)
           end
 
           names
         end
+
+        # @return [String] the ISO 15924 code for the text's own script
+        def script_for(text) = Ammitto::Ontology::Types.detect_script(text).to_s
 
         def create_announcement_entry(entity, reference, entity_id,
                                       citations, announcement)
@@ -313,17 +331,36 @@ module Ammitto
         #
         # CN keeps only the first; the schema allows several and dropping
         # the rest would publish a narrower sanction than was imposed.
+        # RU announcements do not always say what a measure does, and this
+        # method used to answer that silence with 'entry_ban' twice over:
+        # once for a party carrying no measures at all, once for a measure
+        # whose type list was empty. Both invent a sanction the source
+        # never stated, against a named person, on a register other people
+        # act on. A reader cannot tell an invented entry ban from a real
+        # one.
+        #
+        # Absence is published as absence. No measures yields no effects.
+        # A measure that carries a description but no type yields one
+        # effect holding that description and no type, so the source's
+        # own words survive without a category being put in its mouth --
+        # SanctionEntry#effect_types compacts nils, so a typeless effect
+        # is a shape the model already expects. A measure carrying neither
+        # a type nor a description says nothing and produces nothing.
         def announcement_effects(measures)
-          return [create_effect(effect_type: 'entry_ban')] if measures.nil? ||
-                                                              measures.empty?
+          return [] if measures.nil? || measures.empty?
 
           measures.flat_map do |measure|
+            descriptions = announcement_measure_descriptions(measure)
             types = measure.type
-            types = ['entry_ban'] if types.nil? || types.empty?
+            types = [nil] if types.nil? || types.empty?
 
-            types.map do |type|
+            types.filter_map do |type|
+              # Neither a type nor a word: the measure says nothing, so
+              # there is nothing to publish about it.
+              next if type.nil? && descriptions.empty?
+
               create_effect(effect_type: type, scope: 'full',
-                            description: announcement_measure_descriptions(measure))
+                            description: descriptions)
             end
           end
         end

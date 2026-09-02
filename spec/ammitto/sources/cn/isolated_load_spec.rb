@@ -59,12 +59,28 @@ RSpec.describe 'Ammitto::Sources::Cn model files' do
   # Loading is not enough. These models reference Ammitto::Ontology classes
   # from inside method bodies, which Ruby does not resolve until the method
   # runs — so a file could load cleanly and raise NameError on first use.
-  # That was true here: three files constructed Ontology classes without
+  # That was true here: several files constructed Ontology classes without
   # requiring them, on this branch and on main before it.
+  #
+  # Every expression below must REACH the constant, not merely build the
+  # object that owns it. Two of these once stopped at `.new`, and deleting
+  # the require they were written to protect left this file green — the
+  # constant lives in the method, so the call has to enter the method. The
+  # `.new(...)` arguments exist for the same reason: `localized_titles`
+  # returns early on an empty title list and never reaches LocalizedString.
   {
-    'localized_name_entry' => 'Ammitto::Sources::Cn::LocalizedNameEntry.new(en: "x").to_localized_strings',
-    'document_type_entry' => 'Ammitto::Sources::Cn::DocumentTypeEntry.new',
-    'organization_entry' => 'Ammitto::Sources::Cn::OrganizationEntry.new'
+    'localized_name_entry' =>
+      'Ammitto::Sources::Cn::LocalizedNameEntry.new(en: "x").to_localized_strings',
+    'document_type_entry' =>
+      'Ammitto::Sources::Cn::DocumentTypeEntry.new.to_document_type',
+    'organization_entry' =>
+      'Ammitto::Sources::Cn::OrganizationEntry.new.to_organization',
+    'instrument' =>
+      'Ammitto::Sources::Cn::Instrument.new.to_legal_citation(instrument_id: "x")',
+    'announcement_block' =>
+      'raise "no LocalizedString built" if Ammitto::Sources::Cn::AnnouncementBlock' \
+      '.new(title: [Ammitto::Sources::Cn::LocalizedTitleEntry.new(en: "x")])' \
+      '.localized_titles.empty?'
   }.each do |name, call|
     it "#{name} resolves the Ontology constants it names, loaded alone" do
       ok, err = load_in_subprocess("ammitto/sources/cn/#{name}", call)

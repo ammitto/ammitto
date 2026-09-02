@@ -12,6 +12,22 @@ require 'ammitto/sources/ru'
 # parties named inside, `name` keyed by language — the same schema data-cn
 # uses and publishes 322 entities from.
 RSpec.describe Ammitto::Sources::Ru::Announcement do
+  # Two classes held this name, in two files with incompatible schemas, so
+  # whichever loaded last won: after a plain `require "ammitto"` the
+  # constant resolved to the flat stop-list model and the announcement
+  # models were unreachable. The other is `ListAnnouncement` now.
+  describe 'the name the constant resolves to' do
+    it 'is the announcement-file model, not the flat stop-list one' do
+      expect(described_class.attributes.keys)
+        .to contain_exactly(:announcement, :sanction_details)
+    end
+
+    it 'leaves the flat stop-list model reachable under its own name' do
+      expect(Ammitto::Sources::Ru::ListAnnouncement.attributes.keys)
+        .to include(:number, :list_type, :entities)
+    end
+  end
+
   include RuAnnouncementFixtures
 
   subject(:announcement) { ru_announcement }

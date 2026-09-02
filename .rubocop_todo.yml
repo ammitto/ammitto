@@ -59,12 +59,6 @@ Lint/BinaryOperatorWithIdenticalOperands:
 Lint/DuplicateBranch:
   Enabled: false
 
-# Offense count: 4
-Lint/DuplicateMethods:
-  Exclude:
-    - 'lib/ammitto/search/result_set.rb'
-    - 'lib/ammitto/sources/tr/sanctions_list.rb'
-
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Lint/DuplicateRequire:

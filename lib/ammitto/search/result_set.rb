@@ -45,7 +45,12 @@ module Ammitto
       # the result set itself before converting it, never from what a
       # conversion produced. Only the domain filters — #by_entity_type,
       # #by_authority, #by_status — return a ResultSet and carry it.
-      def_delegators :entries, :[], :each, :map, :size, :length, :empty?,
+      # #size, #length and #empty? are NOT delegated here. They were
+      # listed here AND defined below, and the definitions replaced the
+      # delegators at dispatch, so removing the delegators changes
+      # nothing. `.rubocop_todo.yml` excluded this file for that
+      # duplication; the exclusion is gone with it.
+      def_delegators :entries, :[], :each, :map,
                      :first, :last, :any?, :count, :to_a
 
       # Initialize the result set

@@ -360,9 +360,14 @@ module Ammitto
             # a record carrying `id: ""` skipped the fallback and raised
             # MissingLocalIdError out of the sanitizer instead of naming the
             # law. Treat a blank id as an absent one.
+            # The law is handed over raw. `sanitize_id` would turn a blank law
+            # into DEFAULT_ID, and a record with neither id nor law would then
+            # take a shared `.../legal_instrument/cn/unknown` instead of
+            # raising — the collapse iri_sanitizer.rb refuses by design.
+            # `generate_legal_instrument_id` sanitizes and raises on its own.
             local_id = instrument.id.to_s.strip.sub(%r{^cn/}, '')
             instrument_id = if local_id.empty?
-                              generate_legal_instrument_id(sanitize_id(instrument.law))
+                              generate_legal_instrument_id(instrument.law)
                             else
                               generate_legal_instrument_id(local_id)
                             end

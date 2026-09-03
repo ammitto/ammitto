@@ -86,8 +86,16 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       expect(citation_for(nil).legal_instrument_id).to include('order-123')
     end
 
+    it 'falls back when the id contains only whitespace' do
+      expect(citation_for('   ').legal_instrument_id).to include('order-123')
+    end
+
+    it 'falls back when the prefixed id has no local part' do
+      expect(citation_for('cn/   ').legal_instrument_id).to include('order-123')
+    end
+
     it 'still uses a real id, with the cn/ prefix stripped' do
-      expect(citation_for('cn/mofcom-2025-14').legal_instrument_id)
+      expect(citation_for(' cn/mofcom-2025-14 ').legal_instrument_id)
         .to end_with('/cn/mofcom-2025-14')
     end
   end

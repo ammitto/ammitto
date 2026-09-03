@@ -360,7 +360,7 @@ module Ammitto
             # a record carrying `id: ""` skipped the fallback and raised
             # MissingLocalIdError out of the sanitizer instead of naming the
             # law. Treat a blank id as an absent one.
-            local_id = instrument.id.to_s.sub(%r{^cn/}, '')
+            local_id = instrument.id.to_s.strip.sub(%r{^cn/}, '')
             instrument_id = if local_id.empty?
                               generate_legal_instrument_id(sanitize_id(instrument.law))
                             else

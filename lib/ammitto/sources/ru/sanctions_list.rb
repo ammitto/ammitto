@@ -70,8 +70,19 @@ module Ammitto
         end
       end
 
-      # Announcement containing sanctioned entities
-      class Announcement < Lutaml::Model::Serializable
+      # A stop-list announcement in the flat shape this file's models use.
+      #
+      # NOT `Ru::Announcement`. That name now belongs to
+      # `ru/announcement.rb`, which models the `sources/announcements/*.yml`
+      # files data-ru actually publishes and which `HarmonizeCommand`
+      # loads. Both classes carried the same name until this change, in
+      # different files with incompatible schemas, so whichever loaded
+      # last won: after a plain `require "ammitto"` the constant resolved
+      # to this one and the announcement models were unreachable.
+      #
+      # Kept rather than deleted: `from_parsed_data` still works, and
+      # nothing in the repository designates it as dead.
+      class ListAnnouncement < Lutaml::Model::Serializable
         attribute :number, :string
         attribute :date, :string
         attribute :title, :string
@@ -124,7 +135,7 @@ module Ammitto
 
       # Collection of announcements
       class SanctionsList < Lutaml::Model::Serializable
-        attribute :announcements, Announcement, collection: true
+        attribute :announcements, ListAnnouncement, collection: true
 
         def all_entities
           announcements.flat_map(&:entities)

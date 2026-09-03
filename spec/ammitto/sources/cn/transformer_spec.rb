@@ -113,4 +113,68 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       end
     end
   end
+
+  describe 'an announcement reference with an unusable document_id' do
+    let(:entity) do
+      Ammitto::Sources::Cn::Entity.new(
+        name: { 'zh-Hans' => '北京ABC科技有限公司', 'en' => 'Beijing ABC' },
+        type: 'organization'
+      )
+    end
+
+    def reference_for(announcement_fields)
+      announcement = Ammitto::Sources::Cn::Announcement.from_hash(
+        'announcement' => announcement_fields
+      )
+      transformer.send(:create_entity_reference, entity, announcement)
+    end
+
+    # `sanitize_id` returns DEFAULT_ID for every id it cannot use, but the
+    # old `||` fallback only rejected nil. So an entity's reference
+    # depended on how its source spelled "no document id": an absent one
+    # gave "cn-", and each of these gave "unknown-".
+    it 'treats a blank document_id the same as an absent one' do
+      blank = reference_for('document_id' => '')
+
+      expect(blank).to eq(reference_for({}))
+      expect(blank).to start_with('cn-')
+    end
+
+    it 'treats a whitespace-only document_id the same as an absent one' do
+      whitespace = reference_for('document_id' => "  \t ")
+
+      expect(whitespace).to eq(reference_for({}))
+      expect(whitespace).to start_with('cn-')
+    end
+
+    # The shape this source actually produces: a document id written in
+    # Chinese leaves no ASCII behind, so the sanitizer cannot build an id
+    # from it either.
+    it 'treats a document_id that sanitizes to nothing as an absent one' do
+      cjk = reference_for('document_id' => '公告')
+
+      expect(Ammitto::Utils::IriSanitizer.sanitize('公告'))
+        .to eq(Ammitto::Utils::IriSanitizer::DEFAULT_ID)
+      expect(cjk).to eq(reference_for({}))
+      expect(cjk).to start_with('cn-')
+    end
+
+    # A source that writes the word out is spelling "no id" as well. It
+    # joins the same bucket, which separates nothing main held apart: it
+    # already sanitized to DEFAULT_ID alongside the blank and CJK cases.
+    it 'treats a literal "unknown" document_id as an absent one' do
+      literal = reference_for(
+        'document_id' => Ammitto::Utils::IriSanitizer::DEFAULT_ID
+      )
+
+      expect(literal).to eq(reference_for({}))
+      expect(literal).to start_with('cn-')
+    end
+
+    it 'still uses a document_id the sanitizer can build an id from' do
+      usable = reference_for('document_id' => 'mofcom-2026-01')
+
+      expect(usable).to start_with('mofcom-2026-01-')
+    end
+  end
 end

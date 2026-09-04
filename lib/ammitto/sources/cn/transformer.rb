@@ -34,6 +34,18 @@ module Ammitto
       #   entries = result[:entries]
       #
       class Transformer < Ammitto::Transformers::BaseTransformer
+        # The sanitizer's sentinel, treated here as "no usable id".
+        # `sanitize_id` returns it for an id it cannot build anything
+        # from, and also for one that sanitizes to the sentinel itself —
+        # a source that writes "unknown". Both are unusable to us.
+        UNUSABLE_ID = Ammitto::Utils::IriSanitizer::DEFAULT_ID
+
+        # Reference prefix for an entity whose announcement carries no
+        # usable document id. Not a real document id, so it shares a
+        # bucket with any source id that happens to sanitize to "cn" —
+        # the same exposure `|| 'CN'` already carried.
+        NO_DOCUMENT_ID = 'CN'
+
         # Mapping of Chinese list types to regime codes and list type slugs
         LIST_TYPE_MAPPING = {
           'unreliable_entity' => {
@@ -169,10 +181,25 @@ module Ammitto
           { entity: org, entry: entry }
         end
 
+        # `||` only rejected nil, but `sanitize_id` returns DEFAULT_ID for
+        # everything it cannot build an id from: blank, whitespace, and —
+        # the likely shape on a Chinese source — an id with no ASCII left
+        # after sanitizing ("公告" sanitizes to "unknown"). Those all
+        # skipped the 'CN' fallback and came back "unknown-", where an
+        # absent document_id gave "cn-", so the same entity got two
+        # references depending on how the source spelled "no id". Ask the
+        # sanitizer whether it got an id; it cannot then disagree with us.
+        #
+        # A source that writes the word "unknown" is spelling "no id" too,
+        # and it lands in this bucket with the rest. That merges nothing
+        # main kept apart: "unknown", "" and "公告" all sanitized to
+        # DEFAULT_ID already, so they shared a bucket before this change
+        # and share one after. What changes is which bucket.
         def create_entity_reference(entity, announcement)
-          doc_id = announcement.announcement&.document_id || 'CN'
+          doc_id = sanitize_id(announcement.announcement&.document_id)
+          doc_id = sanitize_id(NO_DOCUMENT_ID) if doc_id == UNUSABLE_ID
           name_ref = entity.english_name || entity.chinese_name
-          "#{sanitize_id(doc_id)}-#{sanitize_id(name_ref.to_s[0..30])}"
+          "#{doc_id}-#{sanitize_id(name_ref.to_s[0..30])}"
         end
 
         def transform_names(entity)

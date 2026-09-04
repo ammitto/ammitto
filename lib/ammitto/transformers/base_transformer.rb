@@ -1,7 +1,27 @@
 # frozen_string_literal: true
 
+# The models required below declare `class X < Lutaml::Model::Serializable`
+# at read time and do not require it themselves yet (gem #90 is the fix
+# for that). Requiring it here means this file's require list works in
+# any order rather than because one entry happens to pull it in first.
+require 'lutaml/model'
 require_relative '../utils/iri_sanitizer'
 require_relative '../utils/list_types_registry'
+# `create_reason` names this. It survives without the require today
+# because `sanction_reason` and `sanction_effect` both pull it in, which is
+# the kind of edge this list exists to stop depending on — removing this
+# line fails no example, and that is the point of stating it here.
+require_relative '../ontology/value_objects/localized_string'
+require_relative '../address'
+require_relative '../authority'
+require_relative '../birth_info'
+require_relative '../identification'
+require_relative '../name_variant'
+require_relative '../raw_source_data'
+require_relative '../sanction_effect'
+require_relative '../sanction_reason'
+require_relative '../sanction_regime'
+require_relative '../temporal_period'
 
 module Ammitto
   module Transformers

@@ -3,6 +3,9 @@
 require 'yaml'
 require 'fileutils'
 require_relative '../utils/iri_sanitizer'
+# Same shape: `harmonize_names` calls Types.detect_script inside the
+# method, so loading this file alone succeeds and the call raises.
+require_relative '../ontology/types'
 
 module Ammitto
   module Data

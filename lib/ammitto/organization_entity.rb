@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+require_relative 'entity'
+require_relative 'address'
+require_relative 'contact_info'
+require_relative 'entity_link'
+require_relative 'identification'
+
 module Ammitto
   # OrganizationEntity represents a sanctioned organization or company
   #

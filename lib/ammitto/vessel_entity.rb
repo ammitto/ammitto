@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative 'entity'
+require_relative 'entity_link'
+require_relative 'tonnage'
+
 module Ammitto
   # VesselEntity represents a sanctioned vessel/ship
   #

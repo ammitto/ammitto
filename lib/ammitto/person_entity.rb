@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+require_relative 'entity'
+require_relative 'address'
+require_relative 'birth_info'
+require_relative 'contact_info'
+require_relative 'identification'
+
 module Ammitto
   # PersonEntity represents a sanctioned individual person
   #

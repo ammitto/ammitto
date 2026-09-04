@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative 'entity_link'
+require_relative 'name_variant'
+require_relative 'source_reference'
+
 module Ammitto
   # Entity is the abstract base class for all sanctioned entities
   #

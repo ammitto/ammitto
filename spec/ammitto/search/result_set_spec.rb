@@ -109,6 +109,39 @@ RSpec.describe Ammitto::Search::ResultSet do
     end
   end
 
+  # Cardinality is the whole contract for these three, so it is asserted
+  # directly rather than inferred from another example.
+  describe 'counting the set' do
+    let(:three) do
+      described_class.new(
+        [{ '@id' => "#{entity_iri}1", 'entityType' => 'person' },
+         { '@id' => "#{entity_iri}2", 'entityType' => 'person' },
+         { '@id' => "#{entity_iri}3", 'entityType' => 'organization' }]
+      )
+    end
+
+    it 'reports #size' do
+      expect(three.size).to eq(3)
+    end
+
+    it 'reports #length as the same number' do
+      expect(three.length).to eq(3)
+      expect(three.length).to eq(three.size)
+    end
+
+    it 'is not #empty? when it holds anything' do
+      expect(three.empty?).to be(false)
+    end
+
+    it 'is #empty? and zero-sized when it holds nothing' do
+      none = described_class.new([])
+
+      expect(none.empty?).to be(true)
+      expect(none.size).to eq(0)
+      expect(none.length).to eq(0)
+    end
+  end
+
   describe '#to_json_ld' do
     it 'round-trips the edge back onto the serialized entity' do
       set = result_set(

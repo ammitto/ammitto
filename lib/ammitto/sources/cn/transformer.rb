@@ -356,13 +356,20 @@ module Ammitto
 
           instruments.map do |instrument|
             # Use ID from source data if available
-            instrument_id = if instrument.id
-                              # Strip cn/ prefix if present since generate_legal_instrument_id adds it
-                              local_id = instrument.id.sub(%r{^cn/}, '')
-                              generate_legal_instrument_id(local_id)
+            # `if instrument.id` guards nil, not blank, and "" is truthy — so
+            # a record carrying `id: ""` skipped the fallback and raised
+            # MissingLocalIdError out of the sanitizer instead of naming the
+            # law. Treat a blank id as an absent one.
+            # The law is handed over raw. `sanitize_id` would turn a blank law
+            # into DEFAULT_ID, and a record with neither id nor law would then
+            # take a shared `.../legal_instrument/cn/unknown` instead of
+            # raising — the collapse iri_sanitizer.rb refuses by design.
+            # `generate_legal_instrument_id` sanitizes and raises on its own.
+            local_id = instrument.id.to_s.strip.sub(%r{^cn/}, '')
+            instrument_id = if local_id.empty?
+                              generate_legal_instrument_id(instrument.law)
                             else
-                              # Fallback to sanitize_id for backward compatibility
-                              generate_legal_instrument_id(sanitize_id(instrument.law))
+                              generate_legal_instrument_id(local_id)
                             end
             Ammitto::Ontology::ValueObjects::LegalCitation.new(
               legal_instrument_id: instrument_id,

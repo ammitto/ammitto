@@ -68,4 +68,49 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       expect(entry.regime.code).to eq('CN_EXPORT_CONTROL')
     end
   end
+
+  describe 'an instrument with a blank identifier' do
+    # `if instrument.id` guards nil, not blank, and "" is truthy, so a
+    # record carrying `id: ""` used to reach the sanitizer and raise.
+    def citation_for(id)
+      instrument = Ammitto::Sources::Cn::Instrument.new(id: id,
+                                                        law: 'Order 123')
+      transformer.send(:create_legal_citations, [instrument]).first
+    end
+
+    it 'falls back to the law rather than raising' do
+      expect(citation_for('').legal_instrument_id).to include('order-123')
+    end
+
+    it 'still falls back when the id is absent' do
+      expect(citation_for(nil).legal_instrument_id).to include('order-123')
+    end
+
+    it 'falls back when the id contains only whitespace' do
+      expect(citation_for('   ').legal_instrument_id).to include('order-123')
+    end
+
+    it 'falls back when the prefixed id has no local part' do
+      expect(citation_for('cn/   ').legal_instrument_id).to include('order-123')
+    end
+
+    it 'still uses a real id, with the cn/ prefix stripped' do
+      expect(citation_for(' cn/mofcom-2025-14 ').legal_instrument_id)
+        .to end_with('/cn/mofcom-2025-14')
+    end
+
+    # The law is the fallback, so a record with neither must still fail
+    # loudly. Routing the law through `sanitize_id` first would hand back
+    # DEFAULT_ID and collapse every such record onto one shared
+    # `.../legal_instrument/cn/unknown`, which is what iri_sanitizer.rb
+    # raises to prevent.
+    it 'raises rather than collapsing when neither the id nor the law is usable' do
+      %w[law_blank law_nil].zip(['', nil]).each do |_name, law|
+        instrument = Ammitto::Sources::Cn::Instrument.new(id: '', law: law)
+
+        expect { transformer.send(:create_legal_citations, [instrument]) }
+          .to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError)
+      end
+    end
+  end
 end

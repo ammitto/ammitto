@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative 'entity'
+require_relative 'entity_link'
+
 module Ammitto
   # AircraftEntity represents a sanctioned aircraft
   #

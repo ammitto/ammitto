@@ -3,6 +3,7 @@
 require 'lutaml/model'
 
 require_relative 'export_namespace'
+require_relative 'sanction_entity'
 
 module Ammitto
   module Sources

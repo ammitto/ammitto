@@ -2,6 +2,11 @@
 
 # RU source models (Lutaml::Model)
 require_relative 'sanctions_list'
+# `Ru::Announcement` lives here, not in sanctions_list.rb. Both files
+# defined that name until the announcement models landed, and whichever
+# loaded last won. Requiring it alongside keeps the constant meaning the
+# announcement file data-ru actually publishes.
+require_relative 'announcement'
 require_relative 'transformer'
 
 module Ammitto

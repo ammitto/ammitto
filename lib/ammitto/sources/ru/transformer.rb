@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../transformers/base_transformer'
+require_relative 'announcement_transformer'
 
 module Ammitto
   module Sources
@@ -56,11 +57,18 @@ module Ammitto
           end
         end
 
-        # Transform all entities from an announcement
+        # Transform an announcement and everyone it names.
+        #
+        # Delegated to AnnouncementTransformer, which is where the whole
+        # announcement path lives. The two paths share a source code and
+        # nothing else: this class reads one flat record at a time, that
+        # one reads a document and the parties inside it.
+        #
         # @param announcement [Ammitto::Sources::Ru::Announcement]
-        # @return [Array<Hash>] array of transformation results
+        # @return [Hash] entities, entries, group, official_announcement and
+        #   legal_citations
         def transform_announcement(announcement)
-          announcement.entities.map { |entity| transform(entity) }
+          AnnouncementTransformer.new.transform_announcement(announcement)
         end
 
         private

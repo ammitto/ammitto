@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 require_relative 'date_normalizer'
+require_relative 'designation'
 
 module Ammitto
   module Sources
@@ -46,5 +47,3 @@ module Ammitto
     end
   end
 end
-
-require_relative 'designation'

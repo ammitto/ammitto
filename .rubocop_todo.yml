@@ -184,7 +184,7 @@ Naming/PredicateMethod:
   Exclude:
     - 'lib/ammitto/client/cache.rb'
     - 'lib/ammitto/data/repository.rb'
-    - 'lib/ammitto/sources/au/sanctions_list.rb'
+    - 'lib/ammitto/sources/au/base_entity.rb'
 
 # Offense count: 4
 # Configuration parameters: NamePrefix, ForbiddenPrefixes, AllowedMethods, MethodDefinitionMacros, UseSorbetSigs.
@@ -197,7 +197,7 @@ Naming/PredicatePrefix:
     - 'spec/**/*'
     - 'lib/ammitto/ontology/entities/vessel_entity.rb'
     - 'lib/ammitto/raw_source_data.rb'
-    - 'lib/ammitto/sources/au/sanctions_list.rb'
+    - 'lib/ammitto/sources/au/sanction.rb'
     - 'lib/ammitto/sources/wb/transformer.rb'
 
 # Offense count: 4

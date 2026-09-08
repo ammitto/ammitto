@@ -3,6 +3,13 @@
 require 'lutaml/model'
 
 require_relative 'export_namespace'
+require_relative 'address'
+require_relative 'birthdate'
+require_relative 'citizenship'
+require_relative 'identification'
+require_relative 'name_alias'
+require_relative 'regulation'
+require_relative 'subject_type'
 
 module Ammitto
   module Sources

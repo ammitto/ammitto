@@ -1,80 +1,14 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'processed_address'
+require_relative 'simple_name_alias'
+require_relative 'simple_birthdate'
+require_relative 'simple_subject_type'
 
 module Ammitto
   module Sources
     module Eu
-      # Simple address for processed data
-      class ProcessedAddress < Lutaml::Model::Serializable
-        attribute :street, :string
-        attribute :city, :string
-        attribute :state, :string
-        attribute :country, :string
-        attribute :zip, :string
-
-        yaml do
-          map 'street', to: :street
-          map 'city', to: :city
-          map 'state', to: :state
-          map 'country', to: :country
-          map 'zip', to: :zip
-        end
-
-        def country_description
-          country
-        end
-
-        def country_iso2_code
-          nil
-        end
-
-        def region
-          state
-        end
-
-        def zip_code
-          zip
-        end
-      end
-
-      # Simple name alias for transformer compatibility
-      class SimpleNameAlias < Lutaml::Model::Serializable
-        attribute :whole_name, :string
-        attribute :first_name, :string
-        attribute :middle_name, :string
-        attribute :last_name, :string
-        attribute :gender, :string
-
-        yaml do
-          map 'whole_name', to: :whole_name
-        end
-      end
-
-      # Simple birthdate for transformer compatibility
-      class SimpleBirthdate < Lutaml::Model::Serializable
-        attribute :birthdate, :string
-        attribute :circa, :boolean
-        attribute :city, :string
-        attribute :place, :string
-        attribute :region, :string
-        attribute :country_description, :string
-        attribute :country_iso2_code, :string
-
-        yaml do
-          map 'birthdate', to: :birthdate
-        end
-      end
-
-      # Simple subject type for transformer compatibility
-      class SimpleSubjectType < Lutaml::Model::Serializable
-        attribute :code, :string
-
-        yaml do
-          map 'code', to: :code
-        end
-      end
-
       # Processed entity from EU processed YAML files
       #
       # This model matches the simplified YAML format produced by the

@@ -3,6 +3,7 @@
 require 'lutaml/model'
 
 require_relative 'export_namespace'
+require_relative 'regulation_summary'
 
 module Ammitto
   module Sources

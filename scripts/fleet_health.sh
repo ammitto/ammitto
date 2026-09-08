@@ -324,7 +324,15 @@ while IFS= read -r line <&3; do
         ack_reason="${ack_body%:*}"
         if [ -z "$ack_reason" ] || [ "$ack_reason" = "$ack_until" ]; then
           ack_bad="acknowledgement needs 'ack:<reason>:<YYYY-MM-DD>'"
-        elif [[ "$ack_reason" == *"no-schedule:"* ]]; then
+        elif [[ "$ack_reason" == *"no-schedule:"* ]] ||
+             [[ "$ack_reason" == *"ack:"* ]]; then
+          # BOTH designators are reserved inside a reason, not just the
+          # other one. The date is taken from the LAST colon, so
+          # "ack:first:2026-09-07 ack:second:2099-10-07" parsed as one
+          # acknowledgement running to 2099: a typo, or a careless edit,
+          # could silence a repository for decades. The no-schedule branch
+          # below already rejects both; this one rejected only its
+          # opposite.
           ack_bad="one qualifier per line: '$ack_spec' carries more than one"
         elif ! [[ "$ack_until" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
           ack_bad="acknowledgement review-by '$ack_until' is not YYYY-MM-DD"

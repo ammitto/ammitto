@@ -11,19 +11,11 @@ require 'tempfile'
 # are always loaded together" into a require graph, and a graph can have a
 # missing edge.
 #
-# This directory is the case where loading proves almost nothing. Of the
-# four edges out of `ProcessedEntity`, exactly ONE is resolved when the
-# file is read, `attribute :addresses, ProcessedAddress`. The other three
-# are named inside method bodies:
-#
-#   name_aliases  -> SimpleNameAlias      (processed_entity.rb)
-#   birthdates    -> SimpleBirthdate
-#   subject_type  -> SimpleSubjectType
-#
-# Ruby does not resolve those until the method runs, so dropping any of
-# those three requires leaves a file that loads perfectly and raises
-# NameError the first time a transformer touches it. The load-alone sweep
-# below cannot see that. The second group of examples is what does.
+# Every edge remaining in this directory is resolved when the file is read,
+# so the sweep below is sufficient. That was not true while
+# `processed_entity.rb` was here: three of its four edges were named inside
+# method bodies and needed examples that entered them. That file and its
+# four support classes are gone, having turned out to be unreachable.
 RSpec.describe 'Ammitto::Sources::Eu model files' do
   # Loading in-process would prove nothing: RSpec has already required the
   # whole tree by the time an example runs.
@@ -58,44 +50,13 @@ RSpec.describe 'Ammitto::Sources::Eu model files' do
   # Fails when a model is added without coverage rather than letting the
   # sweep silently shrink to whatever happens to be on disk.
   it 'covers every model in the directory' do
-    expect(files.length).to eq(16)
+    expect(files.length).to eq(11)
   end
 
   files.each do |name|
     it "loads ammitto/sources/eu/#{name} on its own" do
       ok, err = load_in_subprocess("ammitto/sources/eu/#{name}")
       expect(ok).to be(true), "loading #{name} alone failed:\n#{err}"
-    end
-  end
-
-  # The three run-time edges. Each expression must ENTER the method that
-  # names the constant, so the arguments are chosen to get past the guards
-  # rather than to be realistic:
-  #
-  #   name_aliases is `names&.map { ... } || []`, so a nil or empty
-  #   `names` returns [] without ever constructing SimpleNameAlias.
-  #   birthdates returns [] outright when `birthdate` is nil or empty.
-  #
-  # Each also asserts on the result. An example that merely called the
-  # method and ignored what came back would pass against a version that
-  # returned [] for the wrong reason, which is the failure mode the CN
-  # spec was rewritten to close.
-  {
-    'name_aliases names SimpleNameAlias' =>
-      'e = Ammitto::Sources::Eu::ProcessedEntity.new(names: ["ACME"]); ' \
-      'a = e.name_aliases; ' \
-      'raise "no alias built" unless a.length == 1 && a.first.whole_name == "ACME"',
-    'birthdates names SimpleBirthdate' =>
-      'e = Ammitto::Sources::Eu::ProcessedEntity.new(birthdate: "1970-01-01"); ' \
-      'b = e.birthdates; ' \
-      'raise "no birthdate built" unless b.length == 1 && b.first.birthdate == "1970-01-01"',
-    'subject_type names SimpleSubjectType' =>
-      'e = Ammitto::Sources::Eu::ProcessedEntity.new(entity_type: "person"); ' \
-      'raise "no subject type built" unless e.subject_type.code == "person"'
-  }.each do |what, call|
-    it "processed_entity: #{what}, loaded alone" do
-      ok, err = load_in_subprocess('ammitto/sources/eu/processed_entity', call)
-      expect(ok).to be(true), "processed_entity loaded but failed on use:\n#{err}"
     end
   end
 end

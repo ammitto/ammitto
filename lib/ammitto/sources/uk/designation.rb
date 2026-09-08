@@ -1,58 +1,16 @@
 # frozen_string_literal: true
 
-# Require dependent classes first
-require_relative 'name'
-require_relative 'non_latin_name'
-require_relative 'address'
-require_relative 'individual_details'
-require_relative 'sanctions_indicators'
+require 'lutaml/model'
 require_relative 'date_normalizer'
+require_relative 'names_wrapper'
+require_relative 'non_latin_names_wrapper'
+require_relative 'addresses_wrapper'
+require_relative 'sanctions_indicators'
+require_relative 'individual_details'
 
 module Ammitto
   module Sources
     module Uk
-      # Wrapper for Names collection
-      class NamesWrapper < Lutaml::Model::Serializable
-        attribute :items, Name, collection: true
-
-        xml do
-          root 'Names'
-          map_element 'Name', to: :items
-        end
-
-        key_value do
-          map 'names', to: :items
-        end
-      end
-
-      # Wrapper for NonLatinNames collection
-      class NonLatinNamesWrapper < Lutaml::Model::Serializable
-        attribute :items, NonLatinName, collection: true
-
-        xml do
-          root 'NonLatinNames'
-          map_element 'NonLatinName', to: :items
-        end
-
-        key_value do
-          map 'names', to: :items
-        end
-      end
-
-      # Wrapper for Addresses collection
-      class AddressesWrapper < Lutaml::Model::Serializable
-        attribute :items, Address, collection: true
-
-        xml do
-          root 'Addresses'
-          map_element 'Address', to: :items
-        end
-
-        key_value do
-          map 'addresses', to: :items
-        end
-      end
-
       # Individual sanction designation from UK OFSI
       #
       # Represents a single <Designation> element in the UK XML schema.

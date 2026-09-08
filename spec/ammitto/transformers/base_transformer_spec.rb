@@ -640,14 +640,113 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       end
     end
 
+    # Enumerating the spellings is what let three of them through: the
+    # example above named the two the author had in mind, and "c.1955",
+    # "circa1955" and "approximately1965" each yielded a year with circa
+    # false. This states the invariant instead, over every combination of
+    # marker and separator the two methods can see, so a spelling nobody
+    # thought of is covered by construction.
+    it 'never publishes a year while denying the marker' do
+      markers   = ['circa', 'approximately', 'c.', 'c', 'C.', 'CIRCA']
+      separator = ['', ' ', '  ']
+      subjects  = ['1955', '07 Jul 1966', 'Oct 1988', '00/00/1963']
+
+      markers.product(separator, subjects).each do |marker, gap, subject|
+        str = "#{marker}#{gap}#{subject}"
+        next if transformer.send(:extract_birth_year, str).nil?
+
+        expect(transformer.send(:circa_string?, str))
+          .to be(true), "#{str.inspect} yielded a year with circa false"
+      end
+    end
+
     it 'rejects plain dates and non-strings' do
       expect(transformer.send(:circa_string?, '03 Oct 1988')).to be false
       expect(transformer.send(:circa_string?, nil)).to be false
     end
 
-    it 'does not read a word starting with c as a circa marker' do
-      expect(transformer.send(:circa_string?, 'China 1955')).to be false
-      expect(transformer.send(:circa_string?, 'c1955')).to be false
+    # A word that merely starts like a marker is not one. All three
+    # spellings need the boundary, not just the bare "c": without it
+    # "circadian 1955" is an approximate 1955, and so is "c.China 1955".
+    it 'does not read a word starting like a marker as one' do
+      ['China 1955', 'Cali 1955', 'circadian 1955', 'c.China 1955',
+       'cOct 1988'].each do |value|
+        expect(transformer.send(:circa_string?, value))
+          .to be(false), "#{value.inspect} was read as approximate"
+      end
+    end
+
+    # The matrix above proves one direction only: a year implies the
+    # marker. This proves the other, that each spelling the gem means to
+    # support is still admitted, with the year it should carry. Without it
+    # a regex that matched nothing at all would satisfy the invariant.
+    # The two examples above both stop at the helpers. #create_birth_info
+    # reads the same value TWICE -- once through #parse_complete_date and
+    # once through #extract_birth_year -- and the marker rule reached only
+    # the second of them, so "c.Oct 7 1988" published an exact date while
+    # every helper-level example stayed green. The invariant belongs where
+    # the entity is built.
+    it 'never publishes anything while denying the marker' do
+      markers  = ['circa', 'approximately', 'c.', 'c', 'C.', 'circadian']
+      gaps     = ['', ' ', ': ']
+      subjects = ['1955', 'Oct 7 1988', '07 Jul 1966',
+                  'Between 1959 and 1965']
+
+      markers.product(gaps, subjects).each do |marker, gap, subject|
+        value = "#{marker}#{gap}#{subject}"
+        info = transformer.send(:create_birth_info, date: value,
+                                                    circa: transformer.send(:circa_string?, value))
+        # Every field the entity can carry, not just the two scalars: a
+        # span rides in the range bounds, and an earlier version of this
+        # example skipped when date and year were nil, so
+        # "Approximately: Between 1959 and 1965" published its bounds as
+        # exact while this passed.
+        published = [info.date, info.year,
+                     info.year_range_from, info.year_range_to].compact
+        next if published.empty?
+
+        expect(info.circa)
+          .to be(true), "#{value.inspect} published #{published.inspect} as exact"
+      end
+    end
+
+    # The colon spelling is the one DFAT writes, and YEAR_RANGE_PATTERNS has
+    # always accepted it as a span. Only the marker grammar did not, so the
+    # bounds went out with circa false.
+    it 'reads the colon spelling the range grammar already accepted' do
+      info = transformer.send(:create_birth_info,
+                              date: 'Approximately: Between 1959 and 1965',
+                              circa: transformer.send(
+                                :circa_string?, 'Approximately: Between 1959 and 1965'
+                              ))
+
+      expect(info.year_range_from).to eq(1959)
+      expect(info.year_range_to).to eq(1965)
+      expect(info.circa).to be true
+    end
+
+    it 'admits every supported spelling, with its year' do
+      {
+        'circa 1960' => 1960, 'circa1960' => 1960,
+        'c. 1955' => 1955, 'c.1955' => 1955,
+        'c 1955' => 1955, 'c1955' => 1955,
+        'approximately 1965' => 1965, 'approximately1965' => 1965,
+        'circa 07 Jul 1966' => 1966, 'circa Oct 1988' => 1988
+      }.each do |value, year|
+        expect(transformer.send(:extract_birth_year, value))
+          .to eq(year), "#{value.inspect} lost its year"
+        expect(transformer.send(:circa_string?, value))
+          .to be(true), "#{value.inspect} lost its marker"
+      end
+    end
+
+    # "c1955" used to be pinned here as NOT a marker, alongside "China
+    # 1955". The two are not alike: extract_birth_year stripped the "c"
+    # and returned 1955, so pinning the flag false pinned the exact
+    # disagreement this file is meant to catch. It is a marker now.
+    it 'reads a bare "c" glued to its year as a marker' do
+      expect(transformer.send(:circa_string?, 'c1955')).to be true
+      expect(transformer.send(:extract_birth_year, 'c1955')).to eq(1955)
     end
   end
 end

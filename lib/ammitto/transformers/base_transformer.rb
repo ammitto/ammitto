@@ -98,8 +98,14 @@ module Ammitto
       # and the EU states its bounds as XML attributes rather than text.
       # Such a value still yields no scalar year, via #multiple_years?,
       # so it is an unsupported input rather than a misread one.
+      # The `approximately` prefix carries the same boundary CIRCA_MARKER
+      # uses, and for the same reason: `\s*` alone admits
+      # "approximatelyBetween 1959 and 1965", which no source writes and
+      # which the marker grammar rejects. Two grammars reading the same
+      # prefix differently is the defect this file is being fixed for, so
+      # the second one is aligned rather than left as the exception.
       YEAR_RANGE_PATTERNS = [
-        /\A(?:approximately\s*:?\s*)?between\s+(\d{4})\s+and\s+(\d{4})\z/i,
+        /\A(?:approximately(?=[\s:])\s*:?\s*)?between\s+(\d{4})\s+and\s+(\d{4})\z/i,
         /\A(\d{4})\s+to\s+(\d{4})\z/i,
         /
           \A#{ENGLISH_MONTH_NAME}\s+(\d{4})\s+to\s+
@@ -129,6 +135,48 @@ module Ammitto
         (?<to>\d{1,2}\s+[[:alpha:]]{3,9}\s+\d{4})
         \z
       /ix
+
+      # The prefix a source writes to mark a date approximate, in the
+      # spellings OFAC and DFAT use.
+      #
+      # ONE constant, read by both #extract_birth_year and #circa_string?,
+      # because they are two halves of a single decision and a spelling
+      # that only one of them recognises publishes an approximate year as
+      # an exact one. They diverged: the stripper accepted the marker
+      # glued to its year, the detector demanded whitespace, so "c.1955"
+      # yielded year 1955 with circa left false.
+      #
+      # Every spelling must be followed by whitespace, a digit or a colon.
+      # The boundary is what separates the marker from a word that merely
+      # starts like one: without it "China 1955" is an approximate 1955
+      # (bare "c"), and so are "circadian 1955" and "c.China 1955".
+      #
+      # The colon is not decoration. YEAR_RANGE_PATTERNS[0] already accepts
+      # "Approximately: Between 1959 and 1965" as a span, so DFAT writes the
+      # marker that way and this file has always known it; the detector did
+      # not, and published that span with circa false. "approximately: 1955"
+      # was worse, yielding an exact 1955.
+      #
+      # A digit satisfies the boundary as well as a space, because
+      # refusing to strip "c1955" does not stop it yielding a year --
+      # Date._parse reads 1966 out of "c07 Jul 1966" regardless -- and the
+      # flag would be false again. No glued form occurs in any corpus (0 of
+      # 5827 distinct OFAC dateOfBirth values, 0 across all fourteen data
+      # repos, measured 2026-09-08), so the reading is chosen on which
+      # failure is worse: asserting a year the source hedged is worse than
+      # hedging one it asserted.
+      CIRCA_MARKER = /\A(?:circa|approximately|c\.?)(?=[\s:\d])\s*:?\s*/i
+
+      # A value that OPENS like a marker without satisfying that boundary.
+      # Such a value is not a spelling this gem reads, and reading it is
+      # not harmless: Date._parse finds 1988 in "c.Oct 1988" whatever the
+      # prefix means, and #circa_string? would then call that year exact,
+      # which is the disagreement CIRCA_MARKER exists to prevent. Declining
+      # the year costs nothing measurable -- no value in any of the
+      # fourteen corpora opens with "c" or "approximately" other than
+      # "circa " itself, 2026-09-08 -- and losing a year is the safer of
+      # the two failures.
+      MARKER_LIKE = /\A(?:circa|approximately|c)/i
 
       attr_reader :source_code, :list_type
 
@@ -371,7 +419,12 @@ module Ammitto
         return birth_info_for_date_range(date_bounds, *place) if date_bounds
         return birth_info_for_range(year_bounds, *place) if year_bounds
 
-        parsed_date = parse_complete_date(date)
+        # The range paths above deliberately see the RAW value: their own
+        # grammar carries the "approximately:" prefix, and stripping it
+        # first would turn "Approximately: Between 1959 and 1965" into a
+        # value that opens like a marker without being one, and lose the
+        # span. Only the point-date path needs the marker decision.
+        parsed_date = parse_complete_date(without_circa_marker(date))
 
         Ammitto::BirthInfo.new(
           date: parsed_date,
@@ -639,14 +692,37 @@ module Ammitto
       # @param value [Object] candidate date string
       # @return [Integer, nil]
       def extract_birth_year(value)
-        return nil unless value.is_a?(String)
+        str = without_circa_marker(value)
+        return nil unless str.is_a?(String)
 
-        str = value.strip.sub(/\A(?:circa|approximately|c\.?)\s*/i, '')
         return nil if date_span?(str) || multiple_years?(str)
         return str.to_i if /\A\d{4}\z/.match?(str)
 
         year = Date._parse(str)[:year]
         year&.positive? ? year : nil
+      end
+
+      # The value with an approximation marker removed, or nil when it opens
+      # like a marker without being one.
+      #
+      # ONE decision, because two readers consume this value and a rule
+      # applied to one of them is not a rule. #parse_complete_date hands the
+      # string to Date._parse, which ignores a prefix it does not understand:
+      # "c.Oct 7 1988" failed the marker boundary and was then published as
+      # an exact 1988-10-07 with circa false, which is precisely the
+      # disagreement CIRCA_MARKER exists to prevent.
+      #
+      # A Date passes through untouched; a non-String is not this method's
+      # business and its callers reject it themselves.
+      # @param value [Object]
+      # @return [String, Date, Object, nil]
+      def without_circa_marker(value)
+        return value unless value.is_a?(String)
+
+        str = value.strip
+        return str if str.sub!(CIRCA_MARKER, '')
+
+        MARKER_LIKE.match?(str) ? nil : str
       end
 
       # Whether a date string names more than one year — "1962 to 1964",
@@ -661,14 +737,12 @@ module Ammitto
 
       # Whether a source date string marks itself approximate
       # ("circa 1960", "c. 1955", "c 1955", "approximately 1965").
-      # The bare "c" form is recognized because extract_birth_year
-      # strips it and au's FlexibleDate parser reads it as circa; without
-      # it "c 1955" yielded a year with circa left false.
+      # Reads the same CIRCA_MARKER #extract_birth_year strips, so the
+      # year and the flag can never be drawn from different grammars.
       # @param value [Object] candidate date string
       # @return [Boolean]
       def circa_string?(value)
-        value.is_a?(String) &&
-          value.strip.match?(/\A(?:circa|approximately|c\.?)\s/i)
+        value.is_a?(String) && CIRCA_MARKER.match?(value.strip)
       end
 
       # Coerce a source-stated year to a positive Integer

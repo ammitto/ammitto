@@ -285,14 +285,44 @@ The `ammitto` gem exposes these subcommands (see `lib/ammitto/cli.rb` and
 | `ammitto search QUERY` | Search entities by name.
 | `ammitto get ID` | Fetch a single entity by ID.
 | `ammitto sources` | List available sources.
-| `ammitto stats` | Show entity counts.
 | `ammitto status` | Cache and data status.
-| `ammitto clone` / `pull` | Manage the local `data` checkout.
+| `ammitto source COUNTRY SUBCOMMAND` | Fetch from one country's sources.
+| `ammitto validate SUBCOMMAND` | Validate data files against the schemas.
+| `ammitto version` | Show the gem version.
+| `ammitto data SUBCOMMAND` | Operate on the local `data` checkout (below).
 |===
 
-The `--scan` flag (on `fetch`, `process`, `harmonize`) auto-detects every
-`data-*` directory under a parent path, so the entire pipeline can run
-without enumerating sources explicitly.
+The `data` subcommand group owns the local checkout of the central `data`
+repository, and its commands are reached through it rather than at the top
+level:
+
+[cols="2,4"]
+|===
+| Command | Purpose
+| `ammitto data clone` | Clone the `data` repository to local storage.
+| `ammitto data pull` | Pull the latest updates from the remote.
+| `ammitto data stats` | Show entity counts.
+| `ammitto data status` | Show the local checkout's status.
+| `ammitto data query` | Query entities from the local checkout.
+| `ammitto data get ID` | Get one entity by ID from the local checkout.
+| `ammitto data sources` | List sources present in the local checkout.
+|===
+
+The `--scan` flag auto-detects every `data-*` directory under a parent path,
+so a harmonize run does not have to enumerate its sources. It is declared on
+`harmonize` alone (`lib/ammitto/cli.rb:180`). Every top-level command also
+takes `--verbose` and `--cache-dir`, registered once for that class at
+`lib/ammitto/cli.rb:102`. On top of those, `fetch` adds `--all`, `--dry-run`,
+`--format`, `--output-dir` and `--allow-shrink`, and `process` adds
+`--force`. Neither adds `--scan`. The nearest equivalent is `fetch --all`,
+which enumerates the sources that command can reach rather than scanning
+directories.
+
+The `data` subcommands are a separate Thor class and do not inherit that
+registration, so `--verbose` and `--cache-dir` are not available on them.
+Their own options are `--force` and `--data-repository` on `data clone`, and
+`--source`, `--type`, `--country`, `--name`, `--limit` and `--offset` on
+`data query`. The rest take none.
 
 == CI/CD
 

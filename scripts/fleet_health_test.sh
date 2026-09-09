@@ -431,6 +431,45 @@ for bad in 'ack:no date here' 'ack:bad date:07-09-2026' 'ack:not real:2026-02-31
   fi
 done
 
+# The two doubled-qualifier cases get their own blocks rather than a row
+# in the loop above, because each needs a repo the doubled line would
+# actually silence, and they do not agree on which repo that is. The
+# parser is what decides whether a repository is watched, so proving it
+# here matters more than the shipped-file validator's static check.
+echo "== acknowledgement: a doubled ack pages instead of running to the later date =="
+# On origin/main this exits 0 and reads ACKNOWLEDGED: the review-by comes
+# from the LAST colon, so the second qualifier's 2099 wins and the repo
+# goes quiet for decades. Measured both ways before this assertion was
+# written.
+repos_dblack="$TMP/repos_dblack.txt"
+printf 'data-badack ack:first:2098-09-07 ack:second:2099-10-07\n' > "$repos_dblack"
+rc=$(run_health "$repos_dblack" "$TMP/report_dblack.md" \
+  FLEET_HEALTH_NOW_EPOCH="$NOW_BEFORE")
+[ "$rc" -eq 1 ] && pass "a doubled ack pages" \
+  || fail "doubled ack exited $rc"
+expect_status data-badack UNHEALTHY "$TMP/report_dblack.md"
+expect_reason data-badack "one qualifier per line" "$TMP/report_dblack.md"
+
+echo "== acknowledgement: a doubled no-schedule pages on a repo it would silence =="
+# This one needs its own fixture. data-badack has a live schedule, so it
+# pages under EVERY no-schedule spelling, the single valid one included:
+# asserting the doubled pair against it passed on unmodified main and
+# proved nothing at all. data-dblnosched has no schedule-event run on
+# record, so without the guard the second designator is swallowed into
+# the reason, the line reads as one valid designation, and the repo goes
+# BY-DESIGN and silent — which is the suppression the guard exists to
+# refuse.
+workflow_fixture data-dblnosched active
+printf '{"workflow_runs":[]}' > "$FIX/data-dblnosched__schedule_runs.json"
+printf '{"workflow_runs":[]}' > "$FIX/data-dblnosched__completed_runs.json"
+repos_dblnos="$TMP/repos_dblnos.txt"
+printf 'data-dblnosched no-schedule:first no-schedule:second\n' > "$repos_dblnos"
+rc=$(run_health "$repos_dblnos" "$TMP/report_dblnos.md")
+[ "$rc" -eq 1 ] && pass "a doubled no-schedule pages" \
+  || fail "doubled no-schedule exited $rc"
+expect_status data-dblnosched UNHEALTHY "$TMP/report_dblnos.md"
+expect_reason data-dblnosched "one qualifier per line" "$TMP/report_dblnos.md"
+
 echo "== queries: only scheduled runs may reach the streak =="
 # The fixture layer bypasses URL building entirely, so this drives the
 # real query builder through a stubbed gh. The stub answers scheduled
@@ -667,15 +706,24 @@ grep -q 'status=completed&per_page=13' "$TMP/paths012.txt" \
 # A padded threshold must be indistinguishable from its plain spelling —
 # same exit code, same verdict — not merely "does not crash", since the
 # fleet's own unhealthy exit code is easy to mistake for survival.
+# Both runs share one pinned clock. The report header is
+# `date -ud @$NOW_EPOCH` where fleet_health.sh builds `$report`, and
+# NOW_EPOCH defaults to now, so two runs either side of a minute boundary
+# produced different headers and this assertion failed for a reason that
+# has nothing to do with the streak spelling. It is a rare flake when the
+# suite is run by hand and an intolerable one now that CI gates on it.
+frozen="$(date -u +%s)"
 for pair in 008:8 09:9 0100:100; do
   zeroed=${pair%:*}; plain=${pair#*:}
   rc_z=0; rc_p=0
   FLEET_HEALTH_STREAK="$zeroed" FLEET_HEALTH_FIXTURES="$FIX" \
     FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    FLEET_HEALTH_NOW_EPOCH="$frozen" \
     "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_z.md" \
     > /dev/null 2>&1 || rc_z=$?
   FLEET_HEALTH_STREAK="$plain" FLEET_HEALTH_FIXTURES="$FIX" \
     FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
+    FLEET_HEALTH_NOW_EPOCH="$frozen" \
     "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_p.md" \
     > /dev/null 2>&1 || rc_p=$?
   if [ "$rc_z" = "$rc_p" ] && diff -q "$TMP/report_z.md" "$TMP/report_p.md" \
@@ -894,27 +942,77 @@ PATH="$TMP/bin:$PATH" GH_LOG="$TMP/log9" GH_ISSUES_JSON="$TMP/issues_none.json" 
 [ "$rc" -eq 78 ] && pass "guard refuses (exit 78)" || fail "guard exit was $rc"
 [ -s "$TMP/log9" ] && fail "guard still called gh" || pass "guard called no gh"
 
-echo "== shipped repos file parses, and data-ru is acknowledged =="
+echo "== shipped repos file parses, and data-ru is listed =="
 if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
-  ack_line="$(grep -E '^data-ru[[:space:]]' "$SCRIPT_DIR/fleet_repos.txt" || true)"
-  case "$ack_line" in
-    *"ack:parked for maintainer ruling on ru revival:2026-09-07")
-      pass "data-ru ships acknowledged until 2026-09-07" ;;
-    *)
-      fail "data-ru acknowledgement missing or altered: ${ack_line:-no line}" ;;
+  # Is data-ru still listed? That is the whole question here.
+  #
+  # An earlier version pinned the literal `ack:parked for maintainer ruling
+  # on ru revival:2026-09-07`. That armed a trap: the acknowledgement exists
+  # to force a ruling by a date, and once the date passed, both ways of
+  # acting on the ruling -- renewing the date or dropping the line because ru
+  # came back -- failed this test. The self-test gates every later step in
+  # fleet-health.yml, so the monitor would have stopped watching all fifteen
+  # repositories on the day someone did the right thing.
+  #
+  # Replacing the literal with a grammar was the same mistake in a longer
+  # form: a grammar here is a THIRD parser of this file, and it disagreed
+  # with the runtime's `${line%%#*}` and `read -r repo ack_spec` in
+  # fleet_health.sh. `data-ru # revived` and
+  # `data-ru` with trailing spaces both failed a test the monitor itself
+  # accepts, which is the trap again, one notch along.
+  #
+  # So: normalise the line exactly as the runtime normalises it, and assert
+  # only presence. Well-formedness is already the generic check below,
+  # applied to every line by one grammar; acknowledgement behaviour is
+  # proved end to end by the fixture tests against three frozen clocks.
+  ru_listed=0
+  while IFS= read -r line; do
+    line="${line%%#*}"
+    read -r repo _rest <<<"$line" || true
+    [ "${repo:-}" = data-ru ] && ru_listed=$((ru_listed + 1))
+  done < "$SCRIPT_DIR/fleet_repos.txt"
+  case "$ru_listed" in
+    1) pass "data-ru is listed, in whatever state the ruling leaves it" ;;
+    0) fail "data-ru line missing from fleet_repos.txt" ;;
+    *) fail "data-ru is listed $ru_listed times; the runtime would poll it twice" ;;
   esac
   # Every non-comment line is either a bare repo or a well-formed ack.
+  # `no-schedule:.*[^[:space:]]`, not `no-schedule:.+`: the runtime splits
+  # fields with `read`, which strips trailing whitespace, so a reason of
+  # nothing but spaces reaches it empty and is rejected. `.+` counted those
+  # spaces as a reason and passed a line the monitor pages on.
+  line_re='^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.*[^[:space:]]))?[[:space:]]*$'
   bad_lines="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -vE '^[[:space:]]*$' |
-    grep -vE '^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' \
+    grep -vE "$line_re" \
     || true)"
   # A line may carry at most one qualifier; "no-schedule:x ack:y:DATE"
   # would otherwise read as a no-schedule whose reason contains an ack.
-  doubled_re='(ack:.*no-schedule:|no-schedule:.*ack:)'
+  # Repeats of the SAME qualifier count too: the runtime rejects
+  # "no-schedule:first no-schedule:second" -- both designators are
+  # reserved substrings anywhere in a reason, not merely prefixes --
+  # and a check that caught only the mixed pair let that one through.
+  doubled_re='(ack:.*no-schedule:|no-schedule:.*ack:|ack:.*ack:|no-schedule:.*no-schedule:)'
   doubled="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -E "$doubled_re" || true)"
   [ -z "$doubled" ] && pass "no shipped line carries two qualifiers" \
     || fail "lines with two qualifiers: $doubled"
+
+  # A date the regex accepts is not necessarily a date. The runtime settles
+  # it with `date -ud` in its own `ack:` branch and pages on a failure, so
+  # a shipped `ack:...:2026-02-31` would page while passing this file's own
+  # validation. Ask the same question the runtime asks.
+  unreal=""
+  while IFS= read -r line; do
+    line="${line%%#*}"
+    read -r repo ack_spec <<<"$line" || true
+    case "${ack_spec:-}" in
+      ack:*) d="${ack_spec##*:}"
+             date -ud "$d" +%s >/dev/null 2>&1 || unreal="$unreal $repo:$d" ;;
+    esac
+  done < "$SCRIPT_DIR/fleet_repos.txt"
+  [ -z "$unreal" ] && pass "every shipped review-by date is a real date" \
+    || fail "review-by dates that are not real dates:$unreal"
 
   # The two checks above are one contract, and it has to match the
   # runtime parser: `ack:` and `no-schedule:` are reserved substrings
@@ -924,9 +1022,10 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # doubled check catches it.
   for probe in \
     'data-x ack:contains no-schedule: prose:2026-09-07' \
-    'data-x no-schedule:contains ack:bar:2026-09-07'; do
-    if printf '%s\n' "$probe" |
-       grep -qvE '^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.+))?[[:space:]]*$' ||
+    'data-x no-schedule:contains ack:bar:2026-09-07' \
+    'data-x no-schedule:first no-schedule:second' \
+    'data-x ack:first:2026-09-07 ack:second:2026-10-07'; do
+    if printf '%s\n' "$probe" | grep -qvE "$line_re" ||
        printf '%s\n' "$probe" | grep -qE "$doubled_re"; then
       pass "validator rejects a doubled qualifier: ${probe#data-x }"
     else

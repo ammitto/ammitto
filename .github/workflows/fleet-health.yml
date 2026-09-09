@@ -71,8 +71,9 @@ jobs:
         # the issue state machine against a stubbed gh). A monitor whose
         # parser silently broke would report "healthy" forever — the
         # exact failure mode this workflow exists to kill — so the live
-        # check only runs after the logic proves itself. Costs <1s and
-        # no API calls.
+        # check only runs after the logic proves itself. Costs runner
+        # seconds and no API calls; the figure that used to sit here said
+        # "<1s", which was wrong on every machine it was measured on.
         run: scripts/fleet_health_test.sh
 
       - name: Check fleet health

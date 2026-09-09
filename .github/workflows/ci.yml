@@ -55,3 +55,13 @@ jobs:
 
       - name: Run Rubocop
         run: bundle exec rubocop --parallel
+
+      # The fleet monitor's own self-test. It already runs in
+      # fleet-health.yml on schedule, dispatch and push to main, but on no
+      # pull request, so a PR editing the monitor got no verification until
+      # it had already landed.
+      #
+      # It stubs `gh` and makes no API call, so it costs runner seconds
+      # rather than API budget.
+      - name: Self-test the fleet health monitor
+        run: scripts/fleet_health_test.sh

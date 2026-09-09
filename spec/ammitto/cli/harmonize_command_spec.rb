@@ -17,6 +17,25 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
     FileUtils.rm_rf(sources_dir)
   end
 
+  # Shared by the three per-source contexts near the end of this file, each
+  # of which names its source exactly once in its own subject. A per-context
+  # copy of this method named it a second time, and the three copies differed
+  # only in that symbol.
+  #
+  # `fetch(0)` rather than `first`: the constructor does not reject an empty
+  # source list, the guard for that is in #run (harmonize_command.rb:71) and
+  # these examples call #transform_data directly. `first` would hand
+  # transform_data a nil source and return { entity: nil, entry: nil }, which
+  # fails somewhere later and harder. `fetch(0)` raises here instead.
+  #
+  # Index 0 is the right element because those three subjects each pass a
+  # single-element array. That is not general: `normalize_sources` expands the
+  # list under --scan and --all, and an explicit multi-source array stays
+  # multi-source.
+  def harmonize(record)
+    command.send(:transform_data, command.sources.fetch(0), record)
+  end
+
   # Create a file (plus its parent directories) under sources_dir
   def write_file(*segments)
     path = File.join(sources_dir, *segments)
@@ -923,10 +942,6 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
   context 'with a tr record' do
     subject(:command) { described_class.new({}, [:tr]) }
 
-    def harmonize(record)
-      command.send(:transform_data, :tr, record)
-    end
-
     let(:numbered) do
       { 'name' => 'YUN HO-JIN',
         'entity_type' => 'person',
@@ -997,10 +1012,6 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
   context 'with a ch record' do
     subject(:command) { described_class.new({}, [:ch]) }
 
-    def harmonize(record)
-      command.send(:transform_data, :ch, record)
-    end
-
     def name_parts
       [{ 'order' => 1, 'name_part_type' => 'family-name',
          'value' => 'Khalilipour' },
@@ -1062,10 +1073,6 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
   # the top level and one with them under sanction_details.
   context 'with a jp announcement file' do
     subject(:command) { described_class.new({}, [:jp]) }
-
-    def harmonize(record)
-      command.send(:transform_data, :jp, record)
-    end
 
     def header
       { 'title' => [{ 'en' => 'Belarus Export Prohibition' }],

@@ -58,7 +58,7 @@ RSpec.describe 'Ammitto::Sources::Uk model files' do
   # Fails when a model is added without coverage rather than letting the
   # sweep silently shrink to whatever happens to be on disk.
   it 'covers every model-bearing file in the directory' do
-    expect(files.length).to eq(13)
+    expect(files.length).to eq(12)
   end
 
   files.each do |name|

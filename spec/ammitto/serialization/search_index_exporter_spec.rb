@@ -154,7 +154,13 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:birthYear]).to eq('1984')
     end
 
-    it 'still prefers the earliest record that states one' do
+    # Used to pin '1984' as the winner and silently drop 1990 — the
+    # earliest-first record was treated as the whole truth. Two sources
+    # naming different years is not one source being right and one
+    # being wrong; birthYearCandidates below publishes both instead of
+    # picking a winner, and the scalar is withheld because it can no
+    # longer stand for the entity's birth year alone.
+    it 'reports both years as candidates instead of picking one' do
       entity = {
         '@id' => 'https://www.ammitto.org/entity/un/two-records',
         'entityType' => 'person',
@@ -168,7 +174,9 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       exporter.add(entity, 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
                            'status' => 'active')
 
-      expect(exporter.entities.first[:birthYear]).to eq('1984')
+      row = exporter.entities.first
+      expect(row[:birthYearCandidates]).to eq(%w[1984 1990])
+      expect(row).not_to have_key(:birthYear)
     end
 
     # birthYear answers "born in this exact year". A span names no such
@@ -290,6 +298,60 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
 
         expect(row[:birthYearFrom]).to eq('1953')
         expect(row).not_to have_key(:birthYearTo)
+      end
+    end
+
+    # birthYearCandidates answers "the source could not settle on one
+    # year"; birthYear keeps answering "the source stated exactly one".
+    # au-101 states six distinct years for the same person; publishing
+    # any single one of them as birthYear would assert a precision the
+    # source never had.
+    context 'with several distinct candidate birth years' do
+      def row_for_years(birth_infos)
+        exporter.add({
+                       '@id' => 'https://www.ammitto.org/entity/au/candidates',
+                       'entityType' => 'person',
+                       'names' => [{ 'fullName' => 'Test' }],
+                       'birthInfo' => birth_infos
+                     },
+                     { 'authority' => { '@id' => 'https://www.ammitto.org/authority/au' },
+                       'status' => 'active' })
+        exporter.entities.first
+      end
+
+      it 'lists distinct years sorted ascending and omits birthYear' do
+        row = row_for_years([
+                              { 'year' => 1968 }, { 'year' => 1963 }, { 'year' => 1966 },
+                              { 'year' => 1965 }, { 'year' => 1964 }, { 'year' => 1967 }
+                            ])
+
+        expect(row[:birthYearCandidates]).to eq(%w[1963 1964 1965 1966 1967 1968])
+        expect(row).not_to have_key(:birthYear)
+      end
+
+      # Two records naming the SAME year are one candidate, not two —
+      # repetition across sources is not disagreement, and this must
+      # still take the single-candidate path (birthYear present, no
+      # candidates array), same as a lone record would.
+      it 'collapses repeated records naming the same year to a single candidate' do
+        row = row_for_years([{ 'year' => 1963 }, { 'date' => '1963-05-01' }])
+
+        expect(row[:birthYear]).to eq('1963')
+        expect(row).not_to have_key(:birthYearCandidates)
+      end
+
+      # eu309236 carries a birth record whose 'date' is 1982-04-19 and
+      # whose stray 'year' field is 1402 (an upstream calendar
+      # artifact). The candidate list must read the date the same way
+      # #extract_birth_year does — never the year field when a date is
+      # present — or this record would contribute a wrong, undated year.
+      it 'reads the year from the date, not a conflicting year field' do
+        row = row_for_years([
+                              { 'date' => '1982-04-19', 'year' => 1402 },
+                              { 'year' => 1990 }
+                            ])
+
+        expect(row[:birthYearCandidates]).to eq(%w[1982 1990])
       end
     end
 

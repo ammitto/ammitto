@@ -187,6 +187,16 @@ module Ammitto
               # BirthInfo full structure
               'birthDate' => { '@id' => 'schema:birthDate', '@type' => 'xsd:date' },
               'birthYear' => { '@id' => 'birthYear', '@type' => 'xsd:gYear' },
+              # The search index's list of distinct source-stated years,
+              # emitted instead of 'birthYear' when a source names more
+              # than one. Same element type as 'birthYear' above, listed
+              # the way 'entryIds' and 'sanctionGroupIds' list their
+              # typed elements below.
+              'birthYearCandidates' => {
+                '@id' => 'birthYearCandidates',
+                '@type' => 'xsd:gYear',
+                '@container' => '@set'
+              },
               # The serializer emits a BirthInfo node's single stated
               # year as 'year'; the 'birthYear' term above describes the
               # flat entity-level key and never described this one, so

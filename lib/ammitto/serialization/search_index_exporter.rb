@@ -128,6 +128,8 @@ module Ammitto
       # @param regime_code [String, nil] regime code
       # @return [Hash] search row
       def build_row(entity_id, entity, entry, regime_code)
+        candidates = extract_birth_year_candidates(entity)
+
         {
           id: entity_id,
           ref: extract_ref(entity_id),
@@ -142,9 +144,14 @@ module Ammitto
           authority: string_presence(extract_authority_code(entry)),
           listType: string_presence(extract_list_type(entry)),
           status: string_presence(entry['status']),
-          birthYear: string_presence(extract_birth_year(entity)),
+          # A single candidate publishes as birthYear, same as always. More
+          # than one means no source-stated year is entitled to stand alone
+          # as fact, so the scalar is withheld in favour of the full list
+          # (#extract_birth_year_candidates) rather than kept alongside it.
+          birthYear: candidates.size > 1 ? nil : string_presence(extract_birth_year(entity)),
           birthYearFrom: extract_birth_bound(entity, BIRTH_YEAR_FROM_KEYS),
           birthYearTo: extract_birth_bound(entity, BIRTH_YEAR_TO_KEYS),
+          birthYearCandidates: candidates.size > 1 ? candidates : nil,
           imo: scalar_presence(extract_imo(entity))
         }.compact
       end
@@ -547,6 +554,27 @@ module Ammitto
         return extract_year_from_date(entity['birth_date']) if entity['birth_date']
 
         nil
+      end
+
+      # Distinct years across EVERY qualifying birth record, not just the
+      # one #extract_birth_year settles on. The predicate mirrors that
+      # method's exactly (`date || year`, never year-first) so a record
+      # like eu309236's — date "1982-04-19" alongside a stray year 1402 —
+      # contributes 1982 here the same way it does there. A source that
+      # names several distinct years for one person is a source that
+      # names none of them alone; the caller in #build_row decides
+      # whether the count still supports a bare birthYear.
+      # @param entity [Hash] entity data
+      # @return [Array<String>] distinct years, sorted ascending
+      def extract_birth_year_candidates(entity)
+        entity_type = entity['entityType'] || entity['entity_type']
+        return [] unless entity_type == 'person'
+
+        birth_info_records(entity)
+          .select { |record| record['date'] || record['year'] }
+          .filter_map { |record| extract_year_from_date(record['date'] || record['year']) }
+          .uniq
+          .sort
       end
 
       # Extract year from date (handles both String and Date objects)

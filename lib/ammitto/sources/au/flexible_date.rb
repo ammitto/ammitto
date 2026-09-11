@@ -15,11 +15,30 @@ module Ammitto
         # without the "Approximately:" prefix. Anchored at both ends, so
         # only a value that is wholly a span is read as one.
         #
-        # The "Approximately" prefix is captured rather than discarded:
-        # it is what makes the span circa, and a span is not approximate
-        # by itself. "Between 1959 and 1965" states its bounds exactly.
+        # The marker is captured rather than discarded: it is what makes
+        # the span circa, and a span is not approximate by itself.
+        # "Between 1959 and 1965" states its bounds exactly.
+        #
+        # "Circa" is admitted alongside "Approximately" because the two
+        # mean the same thing and only one of them was listed. A span this
+        # grammar declines does not fail closed: #parse falls through to
+        # the month/year branch, which reads "between 1960" and keeps 1960
+        # as THE birth year. That is the exact failure the early return
+        # below exists to prevent, and it was open for one spelling.
+        #
+        # The marker carries no separator requirement, for that same
+        # reason. Requiring one would have declined
+        # "approximatelyBetween 1959 and 1965". The previous
+        # implementation read that spelling as a span; both ways were
+        # measured before the requirement was dropped.
+        #
+        # The fall-through is a defect in its own right: real records
+        # publish their first year because of it today. It is written up,
+        # with a dated count, in
+        # .codex-context/finding-au-multi-year-cell-picks-one-2026-09-08.md
+        # rather than fixed here, because it changes published output.
         YEAR_RANGE = /
-          \A(?:(approximately)\s*:?\s*)?
+          \A(?:(approximately|circa)\s*:?\s*)?
           between\s+(\d{4})\s+and\s+(\d{4})\z
         /xi
 
@@ -148,12 +167,63 @@ module Ammitto
           idx ? idx + 1 : 0
         end
 
+        # Convert to a Date, or return nil when the parse never resolved one.
+        #
+        # A missing month is the disqualifier, not the precision label. The
+        # earlier guard read `precision == 'year' && !month`, which let
+        # every other label through with `month || 1` behind it: "circa
+        # 1957" keeps precision 'circa' because the circa marker outranks
+        # the missing month in #demote_unresolved_month, so it fell through
+        # and returned 1 January 1957 -- a day and a month DFAT never
+        # stated, on a value whose own label says it is approximate.
+        # "Circa between 1960 and 1962" landed there too, though by a
+        # different route than it looks: not the year-only fallback but the
+        # month/year branch, which reads "between 1960", and parse_month
+        # returns 0 for "between" so demote_unresolved_month clears the
+        # month while leaving precision 'circa'. YEAR_RANGE admits that
+        # spelling now, so the value is a span and never reaches here.
+        #
+        # A day is still defaulted. A month-precision value legitimately
+        # maps to the first of its month, and the AU transformer requires
+        # day, month and year itself before it uses this at all
+        # (#complete_date_of), so the harmonized output was never exposed
+        # to either default.
+        #
+        # `month.to_i.positive?` rather than a presence check, because 0 is
+        # this parser's own sentinel for "the word was not a month"
+        # (#parse_month), and #demote_unresolved_month tests for exactly
+        # that. #parse clears it, so a 0 arrives only on an instance built
+        # directly or deserialized from an older artifact -- and it already
+        # returned nil, by raising Date::Error into the rescue below.
+        # Asking the question outright says what the guard means and stops
+        # a known-invalid value being handled as an exception.
+        #
+        # The DAY guard is the same rule one argument along, and it is not
+        # redundant with `day || 1`. 0 is truthy in Ruby, so `day || 1`
+        # yields 0 for a zero day, `Date.new(year, month, 0)` raises, and
+        # the rescue below turns that into nil. Right answer, wrong route:
+        # this method would be correct only by exception, which is what the
+        # month guard above exists to stop. `"0 May 1957"` parses to day 0
+        # and reaches it, and so does an instance deserialized with `day: 0`.
+        #
+        # Zero means the day was READ and is not a day, which is different
+        # from absent. Absent is `day || 1`, a month-precision value landing
+        # on the first of its month, which the source does support. Corrupt
+        # is not, so it stays nil rather than being rounded into a date the
+        # source never stated.
+        #
+        # Worth knowing before editing this: it is `month || 1` that
+        # invented 1 January, not the missing guard. Deleting the guard line
+        # leaves every example green, because `month.to_i` turns a missing
+        # month into 0 and `Date.new(year, 0, 1)` raises Date::Error into the
+        # rescue. The guard is here to state the rule, so the method does not
+        # depend on an exception to be correct.
         def to_date
-          return nil unless year
-          return nil if precision == 'year' && !month
+          return nil unless year && month.to_i.positive?
+          return nil if day && !day.to_i.positive?
 
           begin
-            Date.new(year, month || 1, day || 1)
+            Date.new(year, month.to_i, day || 1)
           rescue StandardError
             nil
           end

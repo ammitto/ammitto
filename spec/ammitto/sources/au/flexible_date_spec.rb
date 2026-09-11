@@ -233,6 +233,54 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(described_class.parse('5 May 1957').precision).to eq('full')
       expect(described_class.parse('5 Foo 1957').precision).to eq('year')
     end
+
+    # DFAT's own record for this value also carries the same birth date
+    # twice over in Gregorian form (19/04/1982, 18/04/1982); 1402 is that
+    # date's Hijri year. The year-only fallback used to take 1402 as a
+    # Gregorian year and publish it as THE birth year. Refusing it is
+    # free here: the record already states the date in a calendar this
+    # parser understands.
+    it 'refuses a Hijri year rather than read it as Gregorian' do
+      date = described_class.parse(' 24/06/1402')
+
+      expect(date.year).to be_nil
+      expect(date.precision).to eq('unknown')
+    end
+
+    # DFAT dropped the separator between month and year; the year-only
+    # fallback used to read the first four digits of what remained --
+    # "0619" out of "061962" -- and publish 619 as a birth year. Nothing
+    # in that string was ever a year, so nothing should be published.
+    it 'refuses a year read out of a run with a missing separator' do
+      date = described_class.parse('10/061962')
+
+      expect(date.year).to be_nil
+      expect(date.precision).to eq('unknown')
+    end
+
+    # The plausibility floor exists to catch the two cases above, not to
+    # start second-guessing every old date. This corpus's earliest
+    # genuine birth year is in the 1920s; a value well before the floor
+    # was raised for must still come through.
+    it 'keeps a genuinely early year that is not implausible' do
+      date = described_class.parse('1923')
+
+      expect(date.year).to eq(1923)
+      expect(date.precision).to eq('year')
+    end
+
+    # U+00A0 is not ASCII whitespace, so strip alone leaves it in place,
+    # and Ruby's \s does not match it either -- left untranslated it would
+    # break the separator this regex relies on and silently downgrade a
+    # full date to a bare year.
+    it 'reads a non-breaking space as a separator, not a blocker' do
+      date = described_class.parse('5 May 1957')
+
+      expect(date.year).to eq(1957)
+      expect(date.month).to eq(5)
+      expect(date.day).to eq(5)
+      expect(date.precision).to eq('full')
+    end
   end
 
   describe '#to_date' do

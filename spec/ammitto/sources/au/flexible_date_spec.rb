@@ -34,6 +34,86 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(date.precision).to eq('circa')
     end
 
+    # DFAT publishes most of its dates numerically. Every one of these
+    # shapes reached the year-only fallback before, so the day and the
+    # month the source did state were thrown away.
+    it 'parses an ISO date "1983-08-01"' do
+      date = described_class.parse('1983-08-01')
+      expect(date.year).to eq(1983)
+      expect(date.month).to eq(8)
+      expect(date.day).to eq(1)
+      expect(date.precision).to eq('full')
+    end
+
+    # Day-first, not month-first: across the corpus the second component
+    # never exceeds 12 while the first reaches 31. Reading this as
+    # September, not the 18th month, is the whole point of the example.
+    it 'reads a slash date day-first, as DFAT writes it' do
+      date = described_class.parse('18/09/1963')
+      expect(date.year).to eq(1963)
+      expect(date.month).to eq(9)
+      expect(date.day).to eq(18)
+      expect(date.precision).to eq('full')
+    end
+
+    it 'parses an unpadded slash date "6/04/1961"' do
+      date = described_class.parse('6/04/1961')
+      expect([date.year, date.month, date.day]).to eq([1961, 4, 6])
+    end
+
+    it 'parses a numeric month and year "08/1977"' do
+      date = described_class.parse('08/1977')
+      expect(date.year).to eq(1977)
+      expect(date.month).to eq(8)
+      expect(date.day).to be_nil
+      expect(date.precision).to eq('month')
+    end
+
+    # Refused, not clamped. A shape that cannot be a date keeps the
+    # behaviour it already had rather than gaining a month DFAT never
+    # stated.
+    it 'refuses a numeric shape that is not a real date' do
+      expect(described_class.parse('31/02/1970').month).to be_nil
+      expect(described_class.parse('31/02/1970').precision).to eq('year')
+      expect(described_class.parse('1983-13-01').month).to be_nil
+      expect(described_class.parse('1983-13-01').precision).to eq('year')
+    end
+
+    # The month-year shape has no Date.valid_date? to lean on, so its
+    # range check is the only thing between "13/1977" and a record
+    # asserting a thirteenth month at month precision. A zero is the same
+    # trap the rest of this file already had to close once.
+    it 'refuses a month-and-year whose month is not a month' do
+      %w[13/1977 00/1977 0/1977 99/1977].each do |value|
+        date = described_class.parse(value)
+        expect(date.month).to be_nil
+        expect(date.year).to eq(1977)
+        expect(date.precision).to eq('year')
+      end
+    end
+
+    # Anchored on purpose. A cell holding two dates states neither as THE
+    # birth date, and reading the first one would publish a claim the
+    # source did not make.
+    it 'leaves a cell holding more than one numeric date to the fallback' do
+      date = described_class.parse('19/12/1962 30/12/1965')
+      expect(date.month).to be_nil
+      expect(date.precision).to eq('year')
+
+      annotated = described_class.parse('a) 30/04/1963 b) 1960')
+      expect(annotated.month).to be_nil
+      expect(annotated.precision).to eq('year')
+    end
+
+    # circa outranks the shape: the marker is the source's own hedge and
+    # a precise-looking numeric date does not withdraw it.
+    it 'keeps circa precision on a hedged numeric date' do
+      date = described_class.parse('circa 1983-08-01')
+      expect(date.circa).to be true
+      expect(date.precision).to eq('circa')
+      expect([date.year, date.month, date.day]).to eq([1983, 8, 1])
+    end
+
     it 'returns nil for empty string' do
       expect(described_class.parse('')).to be_nil
     end

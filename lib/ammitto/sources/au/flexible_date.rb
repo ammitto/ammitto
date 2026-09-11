@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'date'
 require 'lutaml/model'
 
 module Ammitto
@@ -61,6 +62,22 @@ module Ammitto
         # raw_value.
         attribute :precision, :string
 
+        # DFAT states a great many dates numerically, in shapes no
+        # alphabetic-month pattern below can see: ISO 1983-08-01 and
+        # day-first 18/09/1963, plus a monthless 08/1977. All three fell
+        # through to the year-only fallback, which threw the day and the
+        # month away and published a bare year the source had not stated.
+        #
+        # Day-first is measured, not assumed: across the slash values in
+        # the corpus the second component never exceeds 12 while the first
+        # reaches 31, so the ordering is DFAT's own. Transformer
+        # #parse_control_date reads m/d/y, but that is the control-date
+        # column of a different feed and these patterns are deliberately
+        # not shared with it.
+        ISO_DATE = /\A(\d{4})-(\d{1,2})-(\d{1,2})\z/
+        SLASH_DATE = %r{\A(\d{1,2})/(\d{1,2})/(\d{4})\z}
+        SLASH_MONTH_YEAR = %r{\A(\d{1,2})/(\d{4})\z}
+
         def self.parse(date_str)
           return nil if date_str.nil? || date_str.empty?
 
@@ -84,6 +101,11 @@ module Ammitto
             flexible.precision = 'circa'
             cleaned = cleaned.sub(/^circa\s*|^c\.\s*|^c\s*/, '')
           end
+
+          # Numeric shapes resolve completely or not at all, so they
+          # return here rather than falling into demote_unresolved_month.
+          numeric = parse_numeric(flexible, cleaned)
+          return numeric if numeric
 
           # Try full date: "5 May 1957" or "May 5, 1957".
           #
@@ -146,6 +168,46 @@ module Ammitto
           flexible.year_range_from = match[2].to_i
           flexible.year_range_to = match[3].to_i
           flexible.precision = 'range'
+          flexible
+        end
+
+        # Record a wholly numeric date, or nil when the value is not one.
+        #
+        # Every pattern is anchored, so a cell holding more than one date
+        # ("19/12/1962 30/12/1965") or an annotated one ("a) 30/04/1963 b)
+        # 1960") is left to the fallback below rather than half-read: the
+        # first date in such a cell is not the record's birth date.
+        #
+        # A shape that matches but cannot be a real date -- month 13, day
+        # 32 -- is refused rather than clamped, and falls through to the
+        # year-only fallback, which is what it already did.
+        # @param flexible [FlexibleDate] the parse being filled in
+        # @param cleaned [String] the stripped, downcased cell value
+        # @return [FlexibleDate, nil] the finished parse, or nil
+        def self.parse_numeric(flexible, cleaned)
+          if (match = ISO_DATE.match(cleaned))
+            year, month, day = match.captures.map(&:to_i)
+          elsif (match = SLASH_DATE.match(cleaned))
+            day, month, year = match.captures.map(&:to_i)
+          elsif (match = SLASH_MONTH_YEAR.match(cleaned))
+            return nil unless (1..12).cover?(match[1].to_i)
+
+            flexible.month = match[1].to_i
+            flexible.year = match[2].to_i
+            flexible.precision = 'month' unless flexible.circa
+            return flexible
+          else
+            return nil
+          end
+
+          return nil unless Date.valid_date?(year, month, day)
+
+          flexible.year = year
+          flexible.month = month
+          flexible.day = day
+          # circa outranks the shape: "circa 1983-08-01" is still a hedge,
+          # and the marker is the source's own.
+          flexible.precision = 'full' unless flexible.circa
           flexible
         end
 

@@ -3,6 +3,8 @@
 require 'date'
 require 'lutaml/model'
 
+require_relative '../../utils/circa_marker'
+
 module Ammitto
   module Sources
     module Au
@@ -11,6 +13,14 @@ module Ammitto
       # is in lib/ammitto/sources/au.rb.
       # ISO 8601 date with support for partial/imprecise dates
       class FlexibleDate < Lutaml::Model::Serializable
+        # The approximation-marker grammar, included for its constants.
+        # Shared with Transformers::BaseTransformer rather than restated
+        # here: two grammars reading the same prefix differently is the
+        # defect that constant was extracted to end, and this parser was
+        # the second half of it. The reasoning behind each boundary is
+        # recorded at Ammitto::Utils::CircaMarker.
+        include Ammitto::Utils::CircaMarker
+
         # DFAT states a span of birth years in one shape:
         # "Approximately: Between 1959 and 1965", and the same shape
         # without the "Approximately:" prefix. Anchored at both ends, so
@@ -96,11 +106,15 @@ module Ammitto
           range = parse_year_range(flexible, cleaned)
           return range if range
 
-          if cleaned.start_with?('circa', 'c.', 'c')
-            flexible.circa = true
-            flexible.precision = 'circa'
-            cleaned = cleaned.sub(/^circa\s*|^c\.\s*|^c\s*/, '')
-          end
+          # One grammar decides the flag and strips the prefix, so a
+          # spelling that is stripped is always flagged. The previous
+          # test -- start_with?('circa', 'c.', 'c') -- listed
+          # "approximately" nowhere, and that is the only marker DFAT
+          # writes on a scalar year, so every approximate AU birth year
+          # was published as an exact one. Its bare "c" had no boundary
+          # either, which made "China 1955" approximate.
+          cleaned = strip_circa_marker(flexible, cleaned)
+          return flexible if cleaned.nil?
 
           # Numeric shapes resolve completely or not at all, so they
           # return here rather than falling into demote_unresolved_month.
@@ -209,6 +223,36 @@ module Ammitto
           # and the marker is the source's own.
           flexible.precision = 'full' unless flexible.circa
           flexible
+        end
+
+        # Record and strip the approximation marker, or decline the value
+        # outright when it opens like a marker without satisfying the
+        # boundary.
+        #
+        # Declining costs a year, and that is the cheaper of the two
+        # failures: the branches above would otherwise read "oct 1988"
+        # out of "c.Oct 1988" and assert an exact October date for a
+        # value whose own prefix hedges it. MARKER_LIKE is carried for
+        # that shape alone. Tightening the boundary without it would have
+        # left this parser worse than the one it replaced, which flagged
+        # that spelling circa only because it had no boundary at all.
+        #
+        # 'unknown' rather than a fall-through, because a declined value
+        # resolved nothing and demote_unresolved_month is never reached.
+        # @param flexible [FlexibleDate] the parse being filled in
+        # @param cleaned [String] the stripped, downcased cell value
+        # @return [String, nil] the value without its marker, or nil
+        def self.strip_circa_marker(flexible, cleaned)
+          if CIRCA_MARKER.match?(cleaned)
+            flexible.circa = true
+            flexible.precision = 'circa'
+            return cleaned.sub(CIRCA_MARKER, '')
+          end
+
+          return cleaned unless MARKER_LIKE.match?(cleaned)
+
+          flexible.precision = 'unknown'
+          nil
         end
 
         # @param flexible [FlexibleDate] the parse being finalised

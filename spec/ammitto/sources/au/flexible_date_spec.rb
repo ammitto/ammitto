@@ -233,6 +233,96 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(described_class.parse('5 May 1957').precision).to eq('full')
       expect(described_class.parse('5 Foo 1957').precision).to eq('year')
     end
+
+    # 2026-09-14 design change: this parser transcribes what DFAT wrote
+    # and does not adjudicate which calendar a year belongs to. DFAT's
+    # own record for this value also carries the same birth date twice
+    # over in Gregorian form (19/04/1982, 18/04/1982) elsewhere — 1402
+    # is that date's Hijri year, landed in a Gregorian-dated field — but
+    # this parser does not know that, and is not meant to: it reads a
+    # well-formed slash date and publishes it, the same as any other.
+    # Downstream, multiple source-stated years for one entity are
+    # published as candidates rather than resolved to one; an
+    # implausible-looking year the source genuinely wrote joins that set
+    # like any other, rather than being silently discarded here.
+    it 'publishes a well-formed slash date whatever calendar its year implies' do
+      date = described_class.parse(' 24/06/1402')
+
+      expect(date.year).to eq(1402)
+      expect(date.month).to eq(6)
+      expect(date.day).to eq(24)
+      expect(date.precision).to eq('full')
+    end
+
+    it 'publishes an implausible-looking year reached via the alphabetic full-date path' do
+      date = described_class.parse('5 May 1402')
+
+      expect(date.year).to eq(1402)
+      expect(date.month).to eq(5)
+      expect(date.day).to eq(5)
+      expect(date.precision).to eq('full')
+    end
+
+    it 'publishes an implausible-looking year reached via the alphabetic month/year path' do
+      date = described_class.parse('May 1402')
+
+      expect(date.year).to eq(1402)
+      expect(date.precision).to eq('month')
+    end
+
+    it 'publishes an implausible-looking stated span' do
+      date = described_class.parse('Between 1402 and 1403')
+
+      expect(date.year_range_from).to eq(1402)
+      expect(date.year_range_to).to eq(1403)
+    end
+
+    # DFAT dropped the separator between month and year; the year-only
+    # fallback would otherwise read the first four digits of what
+    # remained — "0619" out of "061962" — as though DFAT had written a
+    # bare year. This is NOT the implausible-year case above: that digit
+    # run was never a year in ANY calendar, it is this parser's own
+    # pattern set failing to recognise a shape it should have. Refusing
+    # it is a parsing-correctness fix, not a plausibility judgment —
+    # #GLUED_MONTH_YEAR names the shape precisely rather than filtering
+    # on the resulting number.
+    it 'refuses a year read out of a run with a missing separator' do
+      date = described_class.parse('10/061962')
+
+      expect(date.year).to be_nil
+      expect(date.precision).to eq('unknown')
+    end
+
+    # The glued-separator guard is narrower than "contains a slash": an
+    # invalid numeric date (no 31 February) still has two slashes and a
+    # clean trailing year, and that year is real — it must still surface
+    # through the fallback the same as any other bare year.
+    it 'still reads the trailing year out of an invalid two-slash numeric date' do
+      date = described_class.parse('31/02/1970')
+
+      expect(date.year).to eq(1970)
+      expect(date.month).to be_nil
+    end
+
+    it 'keeps a genuinely early stated span' do
+      date = described_class.parse('Between 1923 and 1925')
+
+      expect(date.year_range_from).to eq(1923)
+      expect(date.year_range_to).to eq(1925)
+    end
+
+    # U+00A0 is not ASCII whitespace, so strip alone leaves it in place,
+    # and Ruby's \s does not match it either -- left untranslated it would
+    # break the separator this regex relies on and silently downgrade a
+    # full date to a bare year.
+    it 'reads a non-breaking space as a separator, not a blocker' do
+      date = described_class.parse('5 May 1957')
+
+      expect(date.year).to eq(1957)
+      expect(date.month).to eq(5)
+      expect(date.day).to eq(5)
+      expect(date.precision).to eq('full')
+    end
   end
 
   describe '#to_date' do

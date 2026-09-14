@@ -12,6 +12,27 @@ module Ammitto
       # CSV maps onto these objects and what the regimes and effects mean,
       # is in lib/ammitto/sources/au.rb.
       # ISO 8601 date with support for partial/imprecise dates
+      #
+      # This parser transcribes what DFAT wrote; it does not judge whether
+      # the result is a plausible birth year. A cell shaped like a slash
+      # date, a full alphabetic date, or a stated span is published as
+      # read, whatever the resulting year -- including a year DFAT
+      # apparently wrote in a different calendar system, such as a Hijri
+      # year landing in a Gregorian date field ("24/06/1402"). The gem
+      # does not convert or adjudicate calendars; downstream, multiple
+      # source-stated years for one entity are published as candidates
+      # rather than resolved to one (see SearchIndexExporter), and an
+      # implausible-looking year the source genuinely wrote is no
+      # different in kind from any other candidate the source states.
+      #
+      # An earlier revision of this parser refused any year below 1800
+      # outright, on every path -- including the two paths above. That
+      # was withdrawn 2026-09-14: a plausibility floor is a value
+      # judgment this parser was never meant to make, and it collapsed a
+      # distinct failure into the same fix as a genuine transcription bug
+      # (see GLUED_MONTH_YEAR below, which is the one shape this parser
+      # still refuses -- not for being an implausible year, but for never
+      # having been a year at all).
       class FlexibleDate < Lutaml::Model::Serializable
         # The approximation-marker grammar, included for its constants.
         # Shared with Transformers::BaseTransformer rather than restated
@@ -88,6 +109,26 @@ module Ammitto
         SLASH_DATE = %r{\A(\d{1,2})/(\d{1,2})/(\d{4})\z}
         SLASH_MONTH_YEAR = %r{\A(\d{1,2})/(\d{4})\z}
 
+        # DFAT drops the separator between month and year in some cells
+        # ("10/061962": day 10, month 06, year 1962, glued into one run) —
+        # a shape none of the three patterns above recognise, since none
+        # of them expects a 5+ digit run after a single slash. Left
+        # unguarded, the bare year-only fallback below reads the first
+        # four of those six digits ("0619") as though DFAT had written a
+        # bare year -- which it never did; that digit run was never a
+        # year, in any calendar, it is an artifact of OUR pattern set
+        # missing a separator that should have been there.
+        #
+        # This is deliberately narrower than "contains a slash": a
+        # genuine numeric date with an invalid day/month
+        # ("31/02/1970" -- there is no 31 February) has TWO slashes and a
+        # clean trailing 4-digit year, and its year is real -- the year
+        # only fallback is exactly how that one is meant to be read, and
+        # must keep working. The defect this guards is specifically ONE
+        # slash followed by 5 or more digits, where a real year can never
+        # legitimately be found this way.
+        GLUED_MONTH_YEAR = %r{\A\d{1,2}/\d{5,}\z}
+
         def self.parse(date_str)
           return nil if date_str.nil? || date_str.empty?
 
@@ -96,7 +137,13 @@ module Ammitto
           # Handle various date formats
           # "5 May 1957", "April 1957", "1957", "circa 1957"
 
-          cleaned = date_str.strip.downcase
+          # DFAT's CSV carries a non-breaking space (U+00A0) around some
+          # date cells. strip does not remove it -- it is not ASCII
+          # whitespace -- and \s below does not match it either, so left
+          # alone it would silently break the separator between a day,
+          # month or year in any value where it lands mid-string. tr folds
+          # it to an ordinary space before anything else runs.
+          cleaned = date_str.tr("\u00A0", ' ').strip.downcase
 
           # A span is recognised before anything else and returns at
           # once. The year-only fallback below would otherwise seize the
@@ -116,8 +163,12 @@ module Ammitto
           cleaned = strip_circa_marker(flexible, cleaned)
           return flexible if cleaned.nil?
 
-          # Numeric shapes resolve completely or not at all, so they
-          # return here rather than falling into demote_unresolved_month.
+          # Numeric shapes resolve their month or resolve nothing, so
+          # they skip demote_unresolved_month too. A well-formed slash
+          # date is published as-read, whatever calendar its year turns
+          # out to belong to -- this parser transcribes what DFAT wrote,
+          # it does not adjudicate which calendar system produced it.
+          # See the class-level note on why that is deliberate.
           numeric = parse_numeric(flexible, cleaned)
           return numeric if numeric
 
@@ -140,7 +191,7 @@ module Ammitto
             flexible.year = match[2].to_i
             flexible.precision = 'month' unless flexible.circa
             flexible.day = nil
-          elsif (match = cleaned.match(/(\d{4})/))
+          elsif !GLUED_MONTH_YEAR.match?(cleaned) && (match = cleaned.match(/(\d{4})/))
             # Year only: "1957"
             flexible.year = match[1].to_i
             flexible.precision = 'year' unless flexible.circa

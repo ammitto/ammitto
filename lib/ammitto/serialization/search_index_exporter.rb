@@ -47,6 +47,9 @@ module Ammitto
       # never about them.
       BIRTH_YEAR_ROW_KEYS = %i[birthYears birthYearKind birthCirca].freeze
 
+      # A published year, wherever it comes from, is exactly four digits.
+      FOUR_DIGIT_YEAR = /\A\d{4}\z/
+
       # Authority names for facet display
       AUTHORITY_NAMES = {
         'un' => 'United Nations',
@@ -528,13 +531,19 @@ module Ammitto
       end
 
       # @param entity [Hash] entity data
-      # @return [Hash, nil] a span or same-year-collapsed exact result
+      # @return [Hash, nil] a span or same-year-collapsed exact result —
+      #   nil when the record #birth_info_with_range found carries the
+      #   range KEYS but neither value validates as a year, so the
+      #   caller falls through to #extract_birth_year_candidates instead
+      #   of publishing a malformed bound and losing a real year with it
       def extract_birth_year_span(entity)
         record = birth_info_with_range(entity)
         return nil unless record
 
-        from = BIRTH_YEAR_FROM_KEYS.filter_map { |key| scalar_presence(record[key]) }.first
-        to = BIRTH_YEAR_TO_KEYS.filter_map { |key| scalar_presence(record[key]) }.first
+        from = valid_year_bound(BIRTH_YEAR_FROM_KEYS.filter_map { |key| record[key] }.first)
+        to = valid_year_bound(BIRTH_YEAR_TO_KEYS.filter_map { |key| record[key] }.first)
+        return nil unless from || to
+
         circa = record['circa'] == true
 
         return { kind: 'exact', years: [from], circa: circa } if from && to && from == to
@@ -633,7 +642,20 @@ module Ammitto
             date.to_s[0, 4] if date.to_s.length >= 4
           end
 
-        year if year&.match?(/\A\d{4}\z/)
+        year if year&.match?(FOUR_DIGIT_YEAR)
+      end
+
+      # A stated span's bound, validated the same way a candidate year
+      # is. Codex review finding (2026-09-14, round 2): the span path
+      # used to accept whatever #scalar_presence let through, so a
+      # malformed bound ("bad") both published as a "year" AND, by
+      # winning precedence over the candidates path, suppressed a
+      # perfectly good year another record in the SAME entity stated.
+      # @param value [Object] candidate bound value
+      # @return [String, nil]
+      def valid_year_bound(value)
+        candidate = scalar_presence(value)
+        candidate if candidate&.match?(FOUR_DIGIT_YEAR)
       end
 
       # Extract IMO number from entity (vessels)

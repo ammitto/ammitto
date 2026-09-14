@@ -265,6 +265,17 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
         exporter.entities.first
       end
 
+      # Codex review finding (round 2, 2026-09-14): a malformed span bound
+      # used to both publish as a "year" AND, by winning precedence, bury
+      # a perfectly good year another record stated.
+      it 'falls through to a valid candidate when the span record is malformed' do
+        row = row_for_all([{ 'year' => 1963 },
+                           { 'yearRangeFrom' => 'bad', 'yearRangeTo' => 'bad' }])
+
+        expect(row[:birthYears]).to eq(['1963'])
+        expect(row[:birthYearKind]).to eq('exact')
+      end
+
       it 'finds a span that is not the first record' do
         row = row_for_all([{ 'year' => 1964 },
                            { 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 }])

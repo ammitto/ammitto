@@ -12,6 +12,27 @@ module Ammitto
       # CSV maps onto these objects and what the regimes and effects mean,
       # is in lib/ammitto/sources/au.rb.
       # ISO 8601 date with support for partial/imprecise dates
+      #
+      # This parser transcribes what DFAT wrote; it does not judge whether
+      # the result is a plausible birth year. A cell shaped like a slash
+      # date, a full alphabetic date, or a stated span is published as
+      # read, whatever the resulting year -- including a year DFAT
+      # apparently wrote in a different calendar system, such as a Hijri
+      # year landing in a Gregorian date field ("24/06/1402"). The gem
+      # does not convert or adjudicate calendars; downstream, multiple
+      # source-stated years for one entity are published as candidates
+      # rather than resolved to one (see SearchIndexExporter), and an
+      # implausible-looking year the source genuinely wrote is no
+      # different in kind from any other candidate the source states.
+      #
+      # An earlier revision of this parser refused any year below 1800
+      # outright, on every path -- including the two paths above. That
+      # was withdrawn 2026-09-14: a plausibility floor is a value
+      # judgment this parser was never meant to make, and it collapsed a
+      # distinct failure into the same fix as a genuine transcription bug
+      # (see GLUED_MONTH_YEAR below, which is the one shape this parser
+      # still refuses -- not for being an implausible year, but for never
+      # having been a year at all).
       class FlexibleDate < Lutaml::Model::Serializable
         # The approximation-marker grammar, included for its constants.
         # Shared with Transformers::BaseTransformer rather than restated
@@ -53,23 +74,6 @@ module Ammitto
           between\s+(\d{4})\s+and\s+(\d{4})\z
         /xi
 
-        # DFAT states one date of birth as a Hijri year ("24/06/1402") for
-        # a record that already carries the same birth date twice over in
-        # Gregorian form, and elsewhere drops a separator ("10/061962")
-        # until the year-only fallback below reads four digits out of the
-        # middle of a run that was never a year at all. Both land on a
-        # year no living, currently-sanctioned person could hold.
-        #
-        # Converting the Hijri spelling was considered and rejected: one
-        # record is too thin a basis for a calendar-conversion feature,
-        # and a wrong conversion would publish a birth date the source
-        # never stated -- worse than publishing none, especially here,
-        # where refusing costs nothing because the Gregorian date is
-        # already on file. The same refusal also disposes of the
-        # glued-digit case for free, without needing to recognise that
-        # shape specifically.
-        MIN_PLAUSIBLE_YEAR = 1800
-
         attribute :raw_value, :string    # Original value from CSV
         attribute :year, :integer
         attribute :month, :integer
@@ -104,6 +108,26 @@ module Ammitto
         ISO_DATE = /\A(\d{4})-(\d{1,2})-(\d{1,2})\z/
         SLASH_DATE = %r{\A(\d{1,2})/(\d{1,2})/(\d{4})\z}
         SLASH_MONTH_YEAR = %r{\A(\d{1,2})/(\d{4})\z}
+
+        # DFAT drops the separator between month and year in some cells
+        # ("10/061962": day 10, month 06, year 1962, glued into one run) —
+        # a shape none of the three patterns above recognise, since none
+        # of them expects a 5+ digit run after a single slash. Left
+        # unguarded, the bare year-only fallback below reads the first
+        # four of those six digits ("0619") as though DFAT had written a
+        # bare year -- which it never did; that digit run was never a
+        # year, in any calendar, it is an artifact of OUR pattern set
+        # missing a separator that should have been there.
+        #
+        # This is deliberately narrower than "contains a slash": a
+        # genuine numeric date with an invalid day/month
+        # ("31/02/1970" -- there is no 31 February) has TWO slashes and a
+        # clean trailing 4-digit year, and its year is real -- the year
+        # only fallback is exactly how that one is meant to be read, and
+        # must keep working. The defect this guards is specifically ONE
+        # slash followed by 5 or more digits, where a real year can never
+        # legitimately be found this way.
+        GLUED_MONTH_YEAR = %r{\A\d{1,2}/\d{5,}\z}
 
         def self.parse(date_str)
           return nil if date_str.nil? || date_str.empty?
@@ -140,17 +164,13 @@ module Ammitto
           return flexible if cleaned.nil?
 
           # Numeric shapes resolve their month or resolve nothing, so
-          # they skip demote_unresolved_month. They do NOT skip the
-          # plausibility floor: "24/06/1402" is a well-formed slash date
-          # and parse_numeric reads it as a full one, so without this the
-          # early return publishes a Hijri year as a Gregorian date --
-          # which is worse than the bare 1402 the fallback used to give,
-          # because it carries a day and a month too.
+          # they skip demote_unresolved_month too. A well-formed slash
+          # date is published as-read, whatever calendar its year turns
+          # out to belong to -- this parser transcribes what DFAT wrote,
+          # it does not adjudicate which calendar system produced it.
+          # See the class-level note on why that is deliberate.
           numeric = parse_numeric(flexible, cleaned)
-          if numeric
-            demote_implausible_year(numeric)
-            return numeric
-          end
+          return numeric if numeric
 
           # Try full date: "5 May 1957" or "May 5, 1957".
           #
@@ -171,7 +191,7 @@ module Ammitto
             flexible.year = match[2].to_i
             flexible.precision = 'month' unless flexible.circa
             flexible.day = nil
-          elsif (match = cleaned.match(/(\d{4})/))
+          elsif !GLUED_MONTH_YEAR.match?(cleaned) && (match = cleaned.match(/(\d{4})/))
             # Year only: "1957"
             flexible.year = match[1].to_i
             flexible.precision = 'year' unless flexible.circa
@@ -181,7 +201,6 @@ module Ammitto
           # branch above stored that unchecked. A record then asserted month 0
           # at full precision -- a claim the source never made.
           demote_unresolved_month(flexible)
-          demote_implausible_year(flexible)
 
           flexible
         end
@@ -214,12 +233,6 @@ module Ammitto
           flexible.year_range_from = match[2].to_i
           flexible.year_range_to = match[3].to_i
           flexible.precision = 'range'
-          # This path returns immediately, before the scalar floor at the
-          # bottom of #parse ever runs -- so a Hijri-year span such as
-          # "Between 1402 and 1403" reached #demote_implausible_year for
-          # neither bound, and shipped a range even the scalar path would
-          # have refused as a bare year. Codex review finding, 2026-09-14.
-          demote_implausible_range(flexible)
           flexible
         end
 
@@ -303,52 +316,6 @@ module Ammitto
           return if flexible.circa
 
           flexible.precision = flexible.year ? 'year' : 'unknown'
-        end
-
-        # Refuse a year below MIN_PLAUSIBLE_YEAR rather than publish it.
-        # 1800 is not fitted to the two years this guard was written for
-        # (1402, 619); it is chosen with room either side of them. The
-        # earliest genuine birth year in this source sits in the 1920s, so
-        # 1800 gives that over a century of headroom before it would ever
-        # refuse a real one. On the low side, a glued day-plus-year run
-        # like "10/061962" always assembles a two-digit month with the
-        # leading digits of a 19xx or 20xx year, which tops out at 1219 --
-        # comfortably under 1800 whatever the specific digits are -- so
-        # this refuses that entire shape of defect, not just this one
-        # instance of it.
-        #
-        # Mirrors demote_unresolved_month: circa is left as-is because the
-        # source's own marker still describes the value, even though the
-        # year under it turned out to be unusable.
-        # @param flexible [FlexibleDate] the parse being finalised
-        # @return [void]
-        def self.demote_implausible_year(flexible)
-          return unless flexible.year && flexible.year < MIN_PLAUSIBLE_YEAR
-
-          flexible.year = nil
-          flexible.month = nil
-          flexible.day = nil
-          return if flexible.circa
-
-          flexible.precision = 'unknown'
-        end
-
-        # The range counterpart to #demote_implausible_year. A span whose
-        # regex matched both bounds always carries both together (YEAR_RANGE
-        # requires two captures), so one implausible bound invalidates the
-        # whole span rather than leaving a dangling other bound.
-        # @param flexible [FlexibleDate] the parse being finalised
-        # @return [void]
-        def self.demote_implausible_range(flexible)
-          from = flexible.year_range_from
-          to = flexible.year_range_to
-          return unless (from && from < MIN_PLAUSIBLE_YEAR) || (to && to < MIN_PLAUSIBLE_YEAR)
-
-          flexible.year_range_from = nil
-          flexible.year_range_to = nil
-          return if flexible.circa
-
-          flexible.precision = 'unknown'
         end
 
         def self.parse_month(month_str)

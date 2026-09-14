@@ -234,23 +234,58 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(described_class.parse('5 Foo 1957').precision).to eq('year')
     end
 
-    # DFAT's own record for this value also carries the same birth date
-    # twice over in Gregorian form (19/04/1982, 18/04/1982); 1402 is that
-    # date's Hijri year. The year-only fallback used to take 1402 as a
-    # Gregorian year and publish it as THE birth year. Refusing it is
-    # free here: the record already states the date in a calendar this
-    # parser understands.
-    it 'refuses a Hijri year rather than read it as Gregorian' do
-      date = described_class.parse(' 24/06/1402')
+    # 2026-09-14 design change: this parser transcribes what DFAT wrote
+    # and does not adjudicate which calendar a year belongs to. DFAT's
+    # own record for this value also carries the same birth date twice
+    # over in Gregorian form (19/04/1982, 18/04/1982) elsewhere — 1402
+    # is that date's Hijri year, landed in a Gregorian-dated field — but
+    # this parser does not know that, and is not meant to: it reads a
+    # well-formed slash date and publishes it, the same as any other.
+    # Downstream, multiple source-stated years for one entity are
+    # published as candidates rather than resolved to one; an
+    # implausible-looking year the source genuinely wrote joins that set
+    # like any other, rather than being silently discarded here.
+    it 'publishes a well-formed slash date whatever calendar its year implies' do
+      date = described_class.parse(' 24/06/1402')
 
-      expect(date.year).to be_nil
-      expect(date.precision).to eq('unknown')
+      expect(date.year).to eq(1402)
+      expect(date.month).to eq(6)
+      expect(date.day).to eq(24)
+      expect(date.precision).to eq('full')
+    end
+
+    it 'publishes an implausible-looking year reached via the alphabetic full-date path' do
+      date = described_class.parse('5 May 1402')
+
+      expect(date.year).to eq(1402)
+      expect(date.month).to eq(5)
+      expect(date.day).to eq(5)
+      expect(date.precision).to eq('full')
+    end
+
+    it 'publishes an implausible-looking year reached via the alphabetic month/year path' do
+      date = described_class.parse('May 1402')
+
+      expect(date.year).to eq(1402)
+      expect(date.precision).to eq('month')
+    end
+
+    it 'publishes an implausible-looking stated span' do
+      date = described_class.parse('Between 1402 and 1403')
+
+      expect(date.year_range_from).to eq(1402)
+      expect(date.year_range_to).to eq(1403)
     end
 
     # DFAT dropped the separator between month and year; the year-only
-    # fallback used to read the first four digits of what remained --
-    # "0619" out of "061962" -- and publish 619 as a birth year. Nothing
-    # in that string was ever a year, so nothing should be published.
+    # fallback would otherwise read the first four digits of what
+    # remained — "0619" out of "061962" — as though DFAT had written a
+    # bare year. This is NOT the implausible-year case above: that digit
+    # run was never a year in ANY calendar, it is this parser's own
+    # pattern set failing to recognise a shape it should have. Refusing
+    # it is a parsing-correctness fix, not a plausibility judgment —
+    # #GLUED_MONTH_YEAR names the shape precisely rather than filtering
+    # on the resulting number.
     it 'refuses a year read out of a run with a missing separator' do
       date = described_class.parse('10/061962')
 
@@ -258,45 +293,15 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(date.precision).to eq('unknown')
     end
 
-    # The plausibility floor exists to catch the two cases above, not to
-    # start second-guessing every old date. This corpus's earliest
-    # genuine birth year is in the 1920s; a value well before the floor
-    # was raised for must still come through.
-    it 'keeps a genuinely early year that is not implausible' do
-      date = described_class.parse('1923')
+    # The glued-separator guard is narrower than "contains a slash": an
+    # invalid numeric date (no 31 February) still has two slashes and a
+    # clean trailing year, and that year is real — it must still surface
+    # through the fallback the same as any other bare year.
+    it 'still reads the trailing year out of an invalid two-slash numeric date' do
+      date = described_class.parse('31/02/1970')
 
-      expect(date.year).to eq(1923)
-      expect(date.precision).to eq('year')
-    end
-
-    # #parse_year_range returns immediately, before the scalar floor at
-    # the bottom of #parse ever runs -- so a Hijri-year span reached the
-    # guard for neither bound and published a range the scalar path would
-    # have refused as a bare year. Codex review finding, 2026-09-14.
-    it 'refuses a stated span whose bounds are not plausible years' do
-      date = described_class.parse('Between 1402 and 1403')
-
-      expect(date.year_range_from).to be_nil
-      expect(date.year_range_to).to be_nil
-      expect(date.precision).to eq('unknown')
-    end
-
-    it 'refuses the whole span when only one bound is implausible' do
-      date = described_class.parse('Between 1402 and 1958')
-
-      expect(date.year_range_from).to be_nil
-      expect(date.year_range_to).to be_nil
-    end
-
-    # Mirrors #demote_implausible_year's own convention: circa describes
-    # the source's hedge on the value, which survives even when the year
-    # under it turns out to be unusable. Codex review coverage note,
-    # 2026-09-14.
-    it 'keeps circa true on a refused span the source flagged approximate' do
-      date = described_class.parse('Approximately: Between 1402 and 1403')
-
-      expect(date.year_range_from).to be_nil
-      expect(date.circa).to be true
+      expect(date.year).to eq(1970)
+      expect(date.month).to be_nil
     end
 
     it 'keeps a genuinely early stated span' do
@@ -304,29 +309,6 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
 
       expect(date.year_range_from).to eq(1923)
       expect(date.year_range_to).to eq(1925)
-    end
-
-    # The alphabetic full-date path shares #demote_implausible_year with
-    # the numeric and fallback paths via one call at the bottom of #parse,
-    # but no example previously drove an implausible year through this
-    # SPECIFIC shape -- so a mutant that scoped the shared call away from
-    # this path (e.g. `unless flexible.month`) left the suite green while
-    # "5 May 1402" still came out as a full Hijri-dated Gregorian date.
-    # Codex review finding, 2026-09-14.
-    it 'refuses an implausible year reached via the alphabetic full-date path' do
-      date = described_class.parse('5 May 1402')
-
-      expect(date.year).to be_nil
-      expect(date.month).to be_nil
-      expect(date.day).to be_nil
-      expect(date.precision).to eq('unknown')
-    end
-
-    it 'refuses an implausible year reached via the alphabetic month/year path' do
-      date = described_class.parse('May 1402')
-
-      expect(date.year).to be_nil
-      expect(date.precision).to eq('unknown')
     end
 
     # U+00A0 is not ASCII whitespace, so strip alone leaves it in place,

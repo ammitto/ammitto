@@ -212,13 +212,8 @@ Naming/VariableNumber:
 Security/Open:
   Exclude:
     - 'lib/ammitto/extractors/au_extractor.rb'
-    - 'lib/ammitto/extractors/base_extractor.rb'
-    - 'lib/ammitto/extractors/ch_extractor.rb'
-    - 'lib/ammitto/extractors/eu_extractor.rb'
     - 'lib/ammitto/extractors/eu_vessels_extractor.rb'
     - 'lib/ammitto/extractors/tr_extractor.rb'
-    - 'lib/ammitto/extractors/us_extractor.rb'
-    - 'lib/ammitto/extractors/wb_extractor.rb'
 
 # Offense count: 24
 # Configuration parameters: AllowedConstants.

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'base_extractor'
+require_relative 'http_client'
 require_relative 'registry'
 
 module Ammitto
@@ -63,11 +64,9 @@ module Ammitto
       # @return [String] raw XML content
       # @raise [Ammitto::NetworkError] when the list cannot be downloaded
       def fetch
-        require 'open-uri'
-
         report("Downloading SDN list from #{SDN_URL}...")
 
-        URI.open(SDN_URL, 'User-Agent' => USER_AGENT).read
+        HttpClient.get(SDN_URL, headers: { 'User-Agent' => USER_AGENT })
       rescue StandardError => e
         # Refuses rather than falling back. The ZIP export used to sit here
         # as a second attempt and could never have produced records; see the

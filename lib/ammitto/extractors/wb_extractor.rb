@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'base_extractor'
+require_relative 'http_client'
 require_relative 'registry'
 
 module Ammitto
@@ -49,7 +50,6 @@ module Ammitto
       # Fetch raw data from World Bank JSON API
       # @return [String] raw JSON content
       def fetch
-        require 'open-uri'
         require 'json'
 
         headers = {
@@ -59,7 +59,7 @@ module Ammitto
         }
 
         puts "[#{code}] Downloading from #{json_api_endpoint}" if verbose?
-        URI.open(json_api_endpoint, headers).read
+        HttpClient.get(json_api_endpoint, headers: headers)
 
         # Return the raw JSON content - the fetch_command expects a string
       rescue StandardError => e
@@ -70,7 +70,6 @@ module Ammitto
       # Fetch from HTML page by finding embedded JSON
       # @return [String] raw JSON content
       def fetch_from_html
-        require 'open-uri'
         require 'nokogiri'
 
         headers = {
@@ -79,7 +78,7 @@ module Ammitto
         }
 
         puts "[#{code}] Downloading HTML from #{api_endpoint}" if verbose?
-        html_content = URI.open(api_endpoint, headers).read
+        html_content = HttpClient.get(api_endpoint, headers: headers)
 
         # Parse HTML to find embedded JSON
         doc = Nokogiri::HTML(html_content)

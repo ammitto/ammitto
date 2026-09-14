@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'tempfile'
 
 # Every model file must stand up on its own.
 #
@@ -24,20 +23,7 @@ require 'tempfile'
 # does, this file needs the CN treatment: an example that CALLS the method,
 # because Ruby does not resolve a constant in a method body until it runs.
 RSpec.describe 'Ammitto::Sources::Ch model files' do
-  # Loading in-process would prove nothing: RSpec has already required the
-  # whole tree by the time an example runs. Keeping stderr matters — a
-  # missing require fails with a NameError naming the constant, and
-  # discarding it leaves the failure as a bare "expected true, got false".
-  def load_in_subprocess(path)
-    lib = File.expand_path('../../../../lib', __dir__)
-    err = Tempfile.new('isolated_load')
-    ok = system(RbConfig.ruby, '-I', lib, '-e', "require '#{path}'",
-                out: File::NULL, err: err.path)
-    [ok, File.read(err.path)]
-  ensure
-    err&.close
-    err&.unlink
-  end
+  include IsolatedLoadHelper
 
   # The Lutaml model files only. `source.rb` and `transformer.rb` inherit
   # from BaseSource and BaseTransformer, which the top-level `ammitto`

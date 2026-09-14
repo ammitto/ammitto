@@ -6,6 +6,7 @@ module Ammitto
   end
 end
 
+require_relative 'utils/circa_marker'
 require_relative 'utils/presence'
 require_relative 'utils/iri_sanitizer'
 require_relative 'utils/list_types_registry'

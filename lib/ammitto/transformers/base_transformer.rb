@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../utils/circa_marker'
 require_relative '../utils/iri_sanitizer'
 require_relative '../utils/list_types_registry'
 
@@ -136,47 +137,11 @@ module Ammitto
         \z
       /ix
 
-      # The prefix a source writes to mark a date approximate, in the
-      # spellings OFAC and DFAT use.
-      #
-      # ONE constant, read by both #extract_birth_year and #circa_string?,
-      # because they are two halves of a single decision and a spelling
-      # that only one of them recognises publishes an approximate year as
-      # an exact one. They diverged: the stripper accepted the marker
-      # glued to its year, the detector demanded whitespace, so "c.1955"
-      # yielded year 1955 with circa left false.
-      #
-      # Every spelling must be followed by whitespace, a digit or a colon.
-      # The boundary is what separates the marker from a word that merely
-      # starts like one: without it "China 1955" is an approximate 1955
-      # (bare "c"), and so are "circadian 1955" and "c.China 1955".
-      #
-      # The colon is not decoration. YEAR_RANGE_PATTERNS[0] already accepts
-      # "Approximately: Between 1959 and 1965" as a span, so DFAT writes the
-      # marker that way and this file has always known it; the detector did
-      # not, and published that span with circa false. "approximately: 1955"
-      # was worse, yielding an exact 1955.
-      #
-      # A digit satisfies the boundary as well as a space, because
-      # refusing to strip "c1955" does not stop it yielding a year --
-      # Date._parse reads 1966 out of "c07 Jul 1966" regardless -- and the
-      # flag would be false again. No glued form occurs in any corpus (0 of
-      # 5827 distinct OFAC dateOfBirth values, 0 across all fourteen data
-      # repos, measured 2026-09-08), so the reading is chosen on which
-      # failure is worse: asserting a year the source hedged is worse than
-      # hedging one it asserted.
-      CIRCA_MARKER = /\A(?:circa|approximately|c\.?)(?=[\s:\d])\s*:?\s*/i
-
-      # A value that OPENS like a marker without satisfying that boundary.
-      # Such a value is not a spelling this gem reads, and reading it is
-      # not harmless: Date._parse finds 1988 in "c.Oct 1988" whatever the
-      # prefix means, and #circa_string? would then call that year exact,
-      # which is the disagreement CIRCA_MARKER exists to prevent. Declining
-      # the year costs nothing measurable -- no value in any of the
-      # fourteen corpora opens with "c" or "approximately" other than
-      # "circa " itself, 2026-09-08 -- and losing a year is the safer of
-      # the two failures.
-      MARKER_LIKE = /\A(?:circa|approximately|c)/i
+      # The approximation-marker grammar, included for its constants.
+      # It lives in Ammitto::Utils::CircaMarker because FlexibleDate reads
+      # the same prefixes and a source model cannot depend on this layer;
+      # the reasoning behind each boundary is recorded there.
+      include Ammitto::Utils::CircaMarker
 
       attr_reader :source_code, :list_type
 

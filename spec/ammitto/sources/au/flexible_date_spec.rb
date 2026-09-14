@@ -114,6 +114,30 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect([date.year, date.month, date.day]).to eq([1983, 8, 1])
     end
 
+    # DFAT's own spelling for a scalar approximate year. The old test was
+    # start_with?('circa', 'c.', 'c'), which never listed "approximately",
+    # so this exact value published as an exact 1968.
+    it 'parses "Approximately 1968" as circa, not exact' do
+      date = described_class.parse('Approximately 1968')
+      expect(date.year).to eq(1968)
+      expect(date.circa).to be true
+      expect(date.precision).to eq('circa')
+    end
+
+    # A bare "c" needs the same boundary the other spellings do. Without
+    # it, the old start_with?('circa', 'c.', 'c') test read "China 1955"
+    # as an approximate 1955. CIRCA_MARKER's lookahead stops the match;
+    # MARKER_LIKE then declines the value outright rather than let the
+    # word/year branch below read "china" as a failed month and publish
+    # 1955 anyway.
+    it 'does not read a word starting like a marker as one' do
+      date = described_class.parse('China 1955')
+
+      expect(date.year).to be_nil
+      expect(date.circa).not_to be(true)
+      expect(date.precision).to eq('unknown')
+    end
+
     it 'returns nil for empty string' do
       expect(described_class.parse('')).to be_nil
     end
@@ -149,6 +173,23 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
         .to be true
     end
 
+    # parse_year_range runs before strip_circa_marker and returns early.
+    # Reversing that order would let the marker stripper eat
+    # "approximately: " first, leaving "between 1959 and 1965" for
+    # YEAR_RANGE, which would still match -- but circa would then come
+    # from the scalar branch and never run, since parse_year_range
+    # already returned. The span shape stays exactly what it was before
+    # this change: precision 'range', both bounds, no scalar year.
+    it 'keeps the span shape unchanged by the shared marker grammar' do
+      date = described_class.parse('Approximately: Between 1959 and 1965')
+
+      expect(date.precision).to eq('range')
+      expect(date.circa).to be true
+      expect(date.year_range_from).to eq(1959)
+      expect(date.year_range_to).to eq(1965)
+      expect(date.year).to be_nil
+    end
+
     # Circa follows the source's own marker. A span is not approximate
     # by itself: "Between 1959 and 1965" states its bounds exactly.
     it 'leaves a span without the marker un-circa' do
@@ -177,8 +218,11 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(restored.year).to be_nil
     end
 
+    # "Approximately 1958" used to stand in here, before it carried a
+    # marker of its own: CIRCA_MARKER now claims it first, so this test
+    # keeps a word+year value the marker grammar does not recognise.
     it 'drops a month that did not resolve rather than storing zero' do
-      date = described_class.parse('Approximately 1958')
+      date = described_class.parse('Foo 1958')
 
       expect(date.month).to be_nil
       expect(date.year).to eq(1958)
@@ -307,6 +351,30 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
     it 'still defaults the day of a month-precision value' do
       expect(described_class.parse('May 1957').to_date)
         .to eq(Date.new(1957, 5, 1))
+    end
+  end
+
+  # This is the point of the change, not a side effect of it: the AU
+  # parser used to read its own start_with?('circa', 'c.', 'c') list
+  # while Transformers::BaseTransformer read a differently-shaped
+  # CIRCA_MARKER, and the two disagreed on "approximately" -- FlexibleDate
+  # missed it entirely. Pinning both constants to the SAME object, rather
+  # than to two regexes that happen to match the same strings today,
+  # is what stops that gap reopening the next time either grammar grows
+  # a spelling.
+  describe 'the shared marker grammar' do
+    it 'reads CIRCA_MARKER from the one module both layers include' do
+      expect(described_class::CIRCA_MARKER)
+        .to equal(Ammitto::Utils::CircaMarker::CIRCA_MARKER)
+      expect(described_class::CIRCA_MARKER)
+        .to equal(Ammitto::Transformers::BaseTransformer::CIRCA_MARKER)
+    end
+
+    it 'reads MARKER_LIKE from the one module both layers include' do
+      expect(described_class::MARKER_LIKE)
+        .to equal(Ammitto::Utils::CircaMarker::MARKER_LIKE)
+      expect(described_class::MARKER_LIKE)
+        .to equal(Ammitto::Transformers::BaseTransformer::MARKER_LIKE)
     end
   end
 end

@@ -288,6 +288,17 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(date.year_range_to).to be_nil
     end
 
+    # Mirrors #demote_implausible_year's own convention: circa describes
+    # the source's hedge on the value, which survives even when the year
+    # under it turns out to be unusable. Codex review coverage note,
+    # 2026-09-14.
+    it 'keeps circa true on a refused span the source flagged approximate' do
+      date = described_class.parse('Approximately: Between 1402 and 1403')
+
+      expect(date.year_range_from).to be_nil
+      expect(date.circa).to be true
+    end
+
     it 'keeps a genuinely early stated span' do
       date = described_class.parse('Between 1923 and 1925')
 

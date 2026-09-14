@@ -298,7 +298,7 @@ total=0
 
 # The loop reads the repos file on FD 3 so gh/curl inside the loop can
 # never swallow the remaining lines from stdin.
-while IFS= read -r line <&3; do
+while IFS= read -r line <&3 || [ -n "$line" ]; do
   line="${line%%#*}"
   # First field is the repo, the rest (if any) is the acknowledgement.
   read -r repo ack_spec <<<"$line" || true

@@ -966,7 +966,7 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # applied to every line by one grammar; acknowledgement behaviour is
   # proved end to end by the fixture tests against three frozen clocks.
   ru_listed=0
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     line="${line%%#*}"
     read -r repo _rest <<<"$line" || true
     [ "${repo:-}" = data-ru ] && ru_listed=$((ru_listed + 1))
@@ -1003,7 +1003,7 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # a shipped `ack:...:2026-02-31` would page while passing this file's own
   # validation. Ask the same question the runtime asks.
   unreal=""
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     line="${line%%#*}"
     read -r repo ack_spec <<<"$line" || true
     case "${ack_spec:-}" in
@@ -1037,6 +1037,21 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
 else
   fail "fleet_repos.txt missing"
 fi
+
+echo "== a repos file with no trailing newline must not drop its last repo =="
+# `while read; do ... done` exits WITHOUT running the loop body for a
+# final line that has no trailing newline: `read` returns nonzero for it,
+# and a bare `while read` treats that the same as "no more input". Both
+# repos here are healthy, so a passing run with both rows present is the
+# only way to tell the last one was not silently skipped.
+healthy_fixture data-newline-a
+healthy_fixture data-newline-b
+repos_no_trailing_newline="$TMP/repos_no_trailing_newline.txt"
+printf 'data-newline-a\ndata-newline-b' > "$repos_no_trailing_newline"
+report_no_trailing_newline="$TMP/report_no_trailing_newline.md"
+run_health "$repos_no_trailing_newline" "$report_no_trailing_newline" > /dev/null
+expect_status data-newline-a OK "$report_no_trailing_newline"
+expect_status data-newline-b OK "$report_no_trailing_newline"
 
 echo
 if [ "$failures" -eq 0 ]; then

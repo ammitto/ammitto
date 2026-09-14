@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'tempfile'
 
 # Every model file must stand up on its own.
 #
@@ -28,22 +27,7 @@ require 'tempfile'
 # happily and raises only when `Sanction#effects` is called. The second
 # group of examples is what closes both.
 RSpec.describe 'Ammitto::Sources::Au model files' do
-  # Loading in-process would prove nothing: RSpec has already required the
-  # whole tree by the time an example runs.
-  # Returns [ok, stderr]. Keeping stderr matters: a missing require fails
-  # with a NameError naming the constant, and discarding it leaves the
-  # failure message as a bare "expected true, got false".
-  def load_in_subprocess(path, and_then = nil)
-    lib = File.expand_path('../../../../lib', __dir__)
-    script = and_then ? "require '#{path}'; #{and_then}" : "require '#{path}'"
-    err = Tempfile.new('isolated_load')
-    ok = system(RbConfig.ruby, '-I', lib, '-e', script,
-                out: File::NULL, err: err.path)
-    [ok, File.read(err.path)]
-  ensure
-    err&.close
-    err&.unlink
-  end
+  include IsolatedLoadHelper
 
   # Named exclusions rather than a grep for a superclass. Three of these
   # models subclass `BaseEntity` rather than Lutaml directly, and five are

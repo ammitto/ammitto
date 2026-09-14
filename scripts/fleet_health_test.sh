@@ -981,7 +981,14 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # fields with `read`, which strips trailing whitespace, so a reason of
   # nothing but spaces reaches it empty and is rejected. `.+` counted those
   # spaces as a reason and passed a line the monitor pages on.
-  line_re='^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.*[^[:space:]]))?[[:space:]]*$'
+  # The lead is an explicit space or tab: those are the only characters
+  # bash's `read` strips from the front of a line (its default IFS).
+  # [[:space:]] also matches CR/VT/FF, and [[:blank:]] also matches other
+  # Unicode blanks in a UTF-8 locale. A line opening with any of those would
+  # pass this validator while reaching the runtime with that character stuck
+  # to $repo.
+  lead=$' \t'
+  line_re='^['"$lead"']*[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.*[^[:space:]]))?[[:space:]]*$'
   bad_lines="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -vE '^[[:space:]]*$' |
     grep -vE "$line_re" \
@@ -1034,6 +1041,41 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   done
   [ -z "$bad_lines" ] && pass "every repos-file line is well formed" \
     || fail "malformed repos-file lines: $bad_lines"
+
+  # The runtime parses a line with `read -r repo ack_spec <<<"$line"`,
+  # which strips leading whitespace, so an indented line works fine at
+  # runtime. `line_re` must accept the same lines the runtime accepts, or
+  # a maintainer who indents a line gets a red self-test against a
+  # monitor that would have worked.
+  for indented in \
+    '  data-x' \
+    $'\tdata-x ack:parked pending ruling:2098-09-07' \
+    '  data-x no-schedule:archived'; do
+    read -r runtime_repo _ <<<"$indented"
+    if printf '%s\n' "$indented" | grep -qE "$line_re" &&
+       [ "$runtime_repo" = "data-x" ]; then
+      pass "validator accepts an indented line the runtime parses the same way: ${indented#$'\t'}"
+    else
+      fail "validator and runtime disagree on an indented line: $indented"
+    fi
+  done
+
+  # The other direction: a line whose first character `read` does not strip
+  # must be rejected, in a UTF-8 locale too.
+  for lead_name in CR VT FF U+3000 U+2003; do
+    case "$lead_name" in
+      CR)     lead_char=$'\r' ;;
+      VT)     lead_char=$'\v' ;;
+      FF)     lead_char=$'\f' ;;
+      U+3000) lead_char=$'\xe3\x80\x80' ;;
+      U+2003) lead_char=$'\xe2\x80\x83' ;;
+    esac
+    if printf '%s\n' "${lead_char}data-x" | LC_ALL=C.UTF-8 grep -qE "$line_re"; then
+      fail "validator accepted a line opening with $lead_name, which read does not strip"
+    else
+      pass "validator rejects a line opening with $lead_name"
+    fi
+  done
 else
   fail "fleet_repos.txt missing"
 fi

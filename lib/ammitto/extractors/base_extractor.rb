@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'http_client'
+
 module Ammitto
   module Extractors
     # Base extractor provides common interface for all source extractors
@@ -163,13 +165,12 @@ module Ammitto
       #   way every other call site in this class does
       # @return [String] path to the downloaded file
       def download_binary_to_temp_file(url, prefix:, ext:, headers: {})
-        require 'open-uri'
         require 'tempfile'
 
         @temp_file = Tempfile.new([prefix, ext])
         begin
           @temp_file.binmode
-          URI.open(url, headers) { |remote| @temp_file.write(remote.read) }
+          @temp_file.write(HttpClient.get(url, headers: headers))
           @temp_file.close
         rescue StandardError
           begin
@@ -188,15 +189,13 @@ module Ammitto
       # @param headers [Hash] optional HTTP headers
       # @return [String] raw XML content
       def download_xml(url, headers = {})
-        require 'open-uri'
-
         default_headers = {
           'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept' => 'application/xml, text/xml, */*'
         }
 
         puts "[#{code}] Downloading from #{url}" if verbose?
-        URI.open(url, default_headers.merge(headers)).read
+        HttpClient.get(url, headers: default_headers.merge(headers))
       end
 
       # Download JSON from URL
@@ -204,7 +203,6 @@ module Ammitto
       # @param headers [Hash] optional HTTP headers
       # @return [Hash] parsed JSON
       def download_json(url, headers = {})
-        require 'open-uri'
         require 'json'
 
         default_headers = {
@@ -213,7 +211,7 @@ module Ammitto
         }
 
         puts "[#{code}] Downloading from #{url}" if verbose?
-        content = URI.open(url, default_headers.merge(headers)).read
+        content = HttpClient.get(url, headers: default_headers.merge(headers))
         JSON.parse(content)
       end
     end

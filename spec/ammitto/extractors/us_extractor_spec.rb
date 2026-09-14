@@ -18,13 +18,14 @@ RSpec.describe Ammitto::Extractors::UsExtractor do
   # it is gone. One endpoint, and a refusal when it cannot be read.
   subject(:extractor) { described_class.new }
 
+  let(:client) { Ammitto::Extractors::HttpClient }
   let(:agent) { { 'User-Agent' => described_class::USER_AGENT } }
 
   describe '#fetch' do
     it 'returns the list the source published' do
-      allow(URI).to receive(:open)
-        .with(described_class::SDN_URL, agent)
-        .and_return(StringIO.new('<sdnList/>'))
+      allow(client).to receive(:get)
+        .with(described_class::SDN_URL, headers: agent)
+        .and_return('<sdnList/>')
 
       expect(extractor.fetch).to eq('<sdnList/>')
     end
@@ -32,18 +33,18 @@ RSpec.describe Ammitto::Extractors::UsExtractor do
     # treasury.gov serves 403 to the default Ruby agent, so the header is
     # part of the request rather than decoration.
     it 'sends the user agent the source requires' do
-      allow(URI).to receive(:open).and_return(StringIO.new('<sdnList/>'))
+      allow(client).to receive(:get).and_return('<sdnList/>')
 
       extractor.fetch
 
-      expect(URI).to have_received(:open).with(described_class::SDN_URL, agent)
+      expect(client).to have_received(:get).with(described_class::SDN_URL, headers: agent)
     end
 
     # BaseExtractor#verbose? also honours AMMITTO_VERBOSE. Reading the bare
     # `verbose` accessor instead left this source silent for an operator who
     # had set the env var and got progress from every other extractor.
     it 'honours AMMITTO_VERBOSE, not just the accessor' do
-      allow(URI).to receive(:open).and_return(StringIO.new('<sdnList/>'))
+      allow(client).to receive(:get).and_return('<sdnList/>')
       original = ENV.fetch('AMMITTO_VERBOSE', nil)
       ENV['AMMITTO_VERBOSE'] = 'true'
 
@@ -54,7 +55,7 @@ RSpec.describe Ammitto::Extractors::UsExtractor do
 
     context 'when the download fails' do
       before do
-        allow(URI).to receive(:open).and_raise(SocketError, 'host unreachable')
+        allow(client).to receive(:get).and_raise(SocketError, 'host unreachable')
       end
 
       it 'refuses, naming the cause and the endpoint' do
@@ -66,7 +67,7 @@ RSpec.describe Ammitto::Extractors::UsExtractor do
       it 'does not reach for a second endpoint' do
         expect { extractor.fetch }.to raise_error(Ammitto::NetworkError)
 
-        expect(URI).to have_received(:open).once
+        expect(client).to have_received(:get).once
       end
 
       # An unguarded progress line would raise IOError on a closed $stdout,
@@ -95,7 +96,7 @@ RSpec.describe Ammitto::Extractors::UsExtractor do
         def message = raise(NoMethodError, 'message formatter broke')
       end
       def broken.to_s = raise(NoMethodError, 'class name broke')
-      allow(URI).to receive(:open).and_raise(broken)
+      allow(client).to receive(:get).and_raise(broken)
 
       expect { extractor.fetch }.to raise_error(
         Ammitto::NetworkError, /unknown error/

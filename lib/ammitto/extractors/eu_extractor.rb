@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'base_extractor'
+require_relative 'http_client'
 require_relative 'registry'
 require 'mechanize'
 
@@ -98,8 +99,6 @@ module Ammitto
       # Fetch raw data from EU using token
       # @return [String] raw XML content
       def fetch
-        require 'open-uri'
-
         puts "[#{code}] Fetching token..." if verbose
         token = fetch_token
 
@@ -112,7 +111,7 @@ module Ammitto
           'Accept' => 'application/xml, text/xml, */*'
         }
 
-        URI.open(url, headers).read
+        HttpClient.get(url, headers: headers)
       end
 
       # Fetch and parse as Nokogiri document (for extract_entities)

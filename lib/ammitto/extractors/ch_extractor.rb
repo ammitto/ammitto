@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'base_extractor'
+require_relative 'http_client'
 require_relative 'registry'
 
 module Ammitto
@@ -41,8 +42,6 @@ module Ammitto
           return File.read(local_file)
         end
 
-        require 'open-uri'
-
         # No explicit Accept-Encoding: setting it disables Net::HTTP's
         # automatic gzip inflation and would hand gzip bytes to the XML parser
         headers = {
@@ -58,13 +57,12 @@ module Ammitto
         begin
           timeout_seconds = 600 # 10 minutes
 
-          URI.open(
+          HttpClient.get(
             api_endpoint,
-            headers.merge(
-              read_timeout: timeout_seconds,
-              open_timeout: 120
-            )
-          ).read
+            headers: headers,
+            read_timeout: timeout_seconds,
+            open_timeout: 120
+          )
         rescue Net::ReadTimeout, Net::OpenTimeout, EOFError, Errno::ECONNRESET => e
           retry_count += 1
           raise unless retry_count <= max_retries

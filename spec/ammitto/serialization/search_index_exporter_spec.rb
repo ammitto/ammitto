@@ -114,7 +114,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:country]).to eq('KP')
     end
 
-    it 'extracts birth year for persons' do
+    it 'extracts a single birth year for persons as an exact year' do
       entity = {
         '@id' => 'https://www.ammitto.org/entity/un/test',
         'entityType' => 'person',
@@ -129,7 +129,10 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
 
       exporter.add(entity, entry)
 
-      expect(exporter.entities.first[:birthYear]).to eq('1984')
+      row = exporter.entities.first
+      expect(row[:birthYears]).to eq(['1984'])
+      expect(row[:birthYearKind]).to eq('exact')
+      expect(row).not_to have_key(:birthCirca)
     end
 
     # An entity can carry one birth record per contributing source, and
@@ -151,30 +154,12 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       exporter.add(entity, 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
                            'status' => 'active')
 
-      expect(exporter.entities.first[:birthYear]).to eq('1984')
+      expect(exporter.entities.first[:birthYears]).to eq(['1984'])
     end
 
-    it 'still prefers the earliest record that states one' do
-      entity = {
-        '@id' => 'https://www.ammitto.org/entity/un/two-records',
-        'entityType' => 'person',
-        'names' => [{ 'fullName' => 'Test' }],
-        'birthInfo' => [
-          { 'year' => 1984 },
-          { 'date' => '1990-01-08' }
-        ]
-      }
-
-      exporter.add(entity, 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
-                           'status' => 'active')
-
-      expect(exporter.entities.first[:birthYear]).to eq('1984')
-    end
-
-    # birthYear answers "born in this exact year". A span names no such
-    # year, so it gets its own columns and birthYear stays absent — a
-    # lower bound written there would let a record that never claimed a
-    # year answer an exact-year query.
+    # birthYears is always an array; birthYearKind names the shape. A
+    # span never coexists with a bare exact-year answer the way the old
+    # birthYear/birthYearFrom/birthYearTo triple let it.
     context 'with a stated span of birth years' do
       def row_for(birth_info)
         exporter.add({
@@ -188,35 +173,48 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
         exporter.entities.first
       end
 
-      it 'exports the bounds and omits birthYear entirely' do
+      it 'exports both bounds as a span' do
         row = row_for({ 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 })
 
-        expect(row[:birthYearFrom]).to eq('1953')
-        expect(row[:birthYearTo]).to eq('1958')
-        expect(row).not_to have_key(:birthYear)
+        expect(row[:birthYears]).to eq(%w[1953 1958])
+        expect(row[:birthYearKind]).to eq('span')
       end
 
-      it 'exports only the bound that exists, leaving the span open' do
+      # Position carries direction: an upper-only bound must not collapse
+      # to the same shape an equivalent lower-only bound would — that
+      # would make "1980 or later" indistinguishable from "1980 or
+      # earlier".
+      it 'keeps an upper-only bound at index 1, not shifted to index 0' do
         row = row_for({ 'yearRangeTo' => 1980 })
 
-        expect(row[:birthYearTo]).to eq('1980')
-        expect(row).not_to have_key(:birthYearFrom)
-        expect(row).not_to have_key(:birthYear)
+        expect(row[:birthYears]).to eq([nil, '1980'])
+        expect(row[:birthYearKind]).to eq('span')
+      end
+
+      it 'keeps a lower-only bound at index 0' do
+        row = row_for({ 'yearRangeFrom' => 1953 })
+
+        expect(row[:birthYears]).to eq(['1953', nil])
+        expect(row[:birthYearKind]).to eq('span')
       end
 
       it 'reads the snake_case spelling too' do
         row = row_for({ 'year_range_from' => 1959, 'year_range_to' => 1965 })
 
-        expect(row[:birthYearFrom]).to eq('1959')
-        expect(row[:birthYearTo]).to eq('1965')
+        expect(row[:birthYears]).to eq(%w[1959 1965])
+        expect(row[:birthYearKind]).to eq('span')
+      end
+
+      it 'marks a span circa when the source hedged it' do
+        row = row_for({ 'yearRangeFrom' => 1959, 'yearRangeTo' => 1965, 'circa' => true })
+
+        expect(row[:birthCirca]).to eq(true)
       end
 
       # A full-date span reaches this exporter only after the real
       # transformer derives its year bounds and the real serializer
       # names them, so this example crosses both boundaries rather than
-      # hand-writing the hash they produce. Feeding a year-range hash
-      # straight in would prove the indexer reads year bounds — which
-      # was never in doubt — not that a date span supplies them.
+      # hand-writing the hash they produce.
       it 'exports year bounds derived from a serialized date span' do
         transformer = Ammitto::Transformers::BaseTransformer.new(:us)
         birth = transformer.send(:create_birth_info,
@@ -226,22 +224,17 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
 
         row = row_for(birth_node)
 
-        expect(row[:birthYearFrom]).to eq('1962')
-        expect(row[:birthYearTo]).to eq('1963')
-        expect(row).not_to have_key(:birthYear)
+        expect(row[:birthYears]).to eq(%w[1962 1963])
+        expect(row[:birthYearKind]).to eq('span')
       end
 
-      # The same crossing for the OTHER span shape. A same-year span is
-      # the only one that answers an exact-year query AND a range query,
-      # so it is the only one where all five fields must appear at once
-      # — and the example above, being cross-year, asserts birthYear is
-      # ABSENT. Without this one a regression that dropped the scalar
-      # year anywhere along the crossing would leave the suite green and
-      # make every "born in 1962" search miss a person OFAC pinned to
-      # 1962 twice over. Both date bounds are asserted on the node the
-      # row is built from, so the finer precision is shown to survive
-      # into the artifact rather than being reduced to its years.
-      it 'exports birthYear and both bounds for a same-year date span' do
+      # A same-year span collapses to an exact year rather than
+      # publishing a duplicate one-element "span" — this is the only
+      # scenario where the span path yields kind "exact". Without this,
+      # a regression that stopped collapsing it would leave the suite
+      # green and make every "born in 1962" search miss a person OFAC
+      # pinned to 1962 twice over.
+      it 'collapses a same-year date span to an exact year' do
         transformer = Ammitto::Transformers::BaseTransformer.new(:us)
         birth = transformer.send(:create_birth_info,
                                  date: '01 Jan 1962 to 31 Dec 1962')
@@ -252,9 +245,8 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
 
         expect(birth_node['dateRangeFrom']).to eq(Date.new(1962, 1, 1))
         expect(birth_node['dateRangeTo']).to eq(Date.new(1962, 12, 31))
-        expect(row[:birthYear]).to eq('1962')
-        expect(row[:birthYearFrom]).to eq('1962')
-        expect(row[:birthYearTo]).to eq('1962')
+        expect(row[:birthYears]).to eq(['1962'])
+        expect(row[:birthYearKind]).to eq('exact')
       end
     end
 
@@ -277,8 +269,8 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
         row = row_for_all([{ 'year' => 1964 },
                            { 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 }])
 
-        expect(row[:birthYearFrom]).to eq('1953')
-        expect(row[:birthYearTo]).to eq('1958')
+        expect(row[:birthYears]).to eq(%w[1953 1958])
+        expect(row[:birthYearKind]).to eq('span')
       end
 
       # Both bounds must come from ONE record. Taking a lower bound from
@@ -288,25 +280,136 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
         row = row_for_all([{ 'yearRangeFrom' => 1953 },
                            { 'yearRangeFrom' => 1970, 'yearRangeTo' => 1975 }])
 
-        expect(row[:birthYearFrom]).to eq('1953')
-        expect(row).not_to have_key(:birthYearTo)
+        expect(row[:birthYears]).to eq(['1953', nil])
+      end
+
+      it 'publishes every distinct year as candidates when there is no span' do
+        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1968 }, { 'date' => '1965-05-01' }])
+
+        expect(row[:birthYears]).to eq(%w[1963 1965 1968])
+        expect(row[:birthYearKind]).to eq('candidates')
+      end
+
+      it 'deduplicates repeated years down to one candidate' do
+        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1963 }])
+
+        expect(row[:birthYears]).to eq(['1963'])
+        expect(row[:birthYearKind]).to eq('exact')
+      end
+
+      it 'marks candidates circa when any contributing record hedged its year' do
+        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1968, 'circa' => true }])
+
+        expect(row[:birthCirca]).to eq(true)
+      end
+
+      # Codex review finding 2 (2026-09-14): a record whose own date/year
+      # never resolved to a valid year must not still contribute ITS circa
+      # flag to years OTHER records published.
+      it 'does not let a record contribute circa without contributing a year' do
+        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1968 },
+                           { 'date' => 'not-a-date', 'circa' => true }])
+
+        expect(row[:birthYears]).to eq(%w[1963 1968])
+        expect(row).not_to have_key(:birthCirca)
+      end
+
+      # Codex review finding 3 (2026-09-14): candidate extraction now
+      # reuses #extract_year_from_date on every record, not only the
+      # single-record path #build_row used to run through
+      # #string_presence — so malformed and wrong-typed values must be
+      # rejected THERE or they reach the published index.
+      it 'rejects a wrong-typed or malformed year rather than publishing its #to_s' do
+        row = row_for_all([{ 'year' => 1963 }, { 'year' => true }])
+
+        expect(row[:birthYears]).to eq(['1963'])
+        expect(row[:birthYearKind]).to eq('exact')
+      end
+
+      it 'rejects a blank date string rather than publishing four spaces as a year' do
+        row = row_for_all([{ 'date' => '    ' }])
+
+        expect(row).not_to have_key(:birthYears)
+      end
+
+      it 'rejects a Hash value rather than publishing its #to_s fragment' do
+        row = row_for_all([{ 'year' => 1963 }, { 'date' => { 'bad' => 'shape' } }])
+
+        expect(row[:birthYears]).to eq(['1963'])
       end
     end
 
-    it 'still exports birthYear for a stated single year, with no bounds' do
+    # Codex review finding 4 (2026-09-14): the three birth-year keys
+    # describe one set of years and must move as a unit through
+    # #merge_row, or a later pair's circa flag can attach itself to the
+    # first-seen pair's different years.
+    it 'never attaches a later pair\'s circa flag to the first-seen years' do
       exporter.add({
-                     '@id' => 'https://www.ammitto.org/entity/eu/y',
+                     '@id' => 'https://www.ammitto.org/entity/eu/merge-circa',
                      'entityType' => 'person',
                      'names' => [{ 'fullName' => 'Test' }],
-                     'birthInfo' => [{ 'year' => 1964 }]
+                     'birthInfo' => [{ 'year' => 1963 }]
+                   },
+                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                     'status' => 'active' })
+      exporter.add({
+                     '@id' => 'https://www.ammitto.org/entity/eu/merge-circa',
+                     'entityType' => 'person',
+                     'names' => [{ 'fullName' => 'Test' }],
+                     'birthInfo' => [{ 'year' => 1968, 'circa' => true }]
                    },
                    { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
                      'status' => 'active' })
 
       row = exporter.entities.first
-      expect(row[:birthYear]).to eq('1964')
-      expect(row).not_to have_key(:birthYearFrom)
-      expect(row).not_to have_key(:birthYearTo)
+      expect(row[:birthYears]).to eq(['1963'])
+      expect(row).not_to have_key(:birthCirca)
+    end
+
+    it 'still exports an exact year for a stated single year, with no other keys' do
+      exporter.add({
+                     '@id' => 'https://www.ammitto.org/entity/eu/y',
+                     'entityType' => 'person',
+                     'names' => [{ 'fullName' => 'Test' }],
+                     'birthInfo' => [{ 'year' => 1964, 'circa' => true }]
+                   },
+                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                     'status' => 'active' })
+
+      row = exporter.entities.first
+      expect(row[:birthYears]).to eq(['1964'])
+      expect(row[:birthYearKind]).to eq('exact')
+      expect(row[:birthCirca]).to eq(true)
+    end
+
+    it 'omits all three birth-year keys when nothing is known' do
+      exporter.add({
+                     '@id' => 'https://www.ammitto.org/entity/eu/none',
+                     'entityType' => 'person',
+                     'names' => [{ 'fullName' => 'Test' }]
+                   },
+                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                     'status' => 'active' })
+
+      row = exporter.entities.first
+      expect(row).not_to have_key(:birthYears)
+      expect(row).not_to have_key(:birthYearKind)
+      expect(row).not_to have_key(:birthCirca)
+    end
+
+    it 'still reads the legacy flat birthDate field when there are no birthInfo records' do
+      exporter.add({
+                     '@id' => 'https://www.ammitto.org/entity/eu/flat',
+                     'entityType' => 'person',
+                     'names' => [{ 'fullName' => 'Test' }],
+                     'birthDate' => '1970-03-04'
+                   },
+                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+                     'status' => 'active' })
+
+      row = exporter.entities.first
+      expect(row[:birthYears]).to eq(['1970'])
+      expect(row[:birthYearKind]).to eq('exact')
     end
 
     it 'extracts IMO for vessels' do

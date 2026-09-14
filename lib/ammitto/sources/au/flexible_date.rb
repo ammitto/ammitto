@@ -214,6 +214,12 @@ module Ammitto
           flexible.year_range_from = match[2].to_i
           flexible.year_range_to = match[3].to_i
           flexible.precision = 'range'
+          # This path returns immediately, before the scalar floor at the
+          # bottom of #parse ever runs -- so a Hijri-year span such as
+          # "Between 1402 and 1403" reached #demote_implausible_year for
+          # neither bound, and shipped a range even the scalar path would
+          # have refused as a bare year. Codex review finding, 2026-09-14.
+          demote_implausible_range(flexible)
           flexible
         end
 
@@ -322,6 +328,24 @@ module Ammitto
           flexible.year = nil
           flexible.month = nil
           flexible.day = nil
+          return if flexible.circa
+
+          flexible.precision = 'unknown'
+        end
+
+        # The range counterpart to #demote_implausible_year. A span whose
+        # regex matched both bounds always carries both together (YEAR_RANGE
+        # requires two captures), so one implausible bound invalidates the
+        # whole span rather than leaving a dangling other bound.
+        # @param flexible [FlexibleDate] the parse being finalised
+        # @return [void]
+        def self.demote_implausible_range(flexible)
+          from = flexible.year_range_from
+          to = flexible.year_range_to
+          return unless (from && from < MIN_PLAUSIBLE_YEAR) || (to && to < MIN_PLAUSIBLE_YEAR)
+
+          flexible.year_range_from = nil
+          flexible.year_range_to = nil
           return if flexible.circa
 
           flexible.precision = 'unknown'

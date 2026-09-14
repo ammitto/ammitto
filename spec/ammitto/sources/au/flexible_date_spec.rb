@@ -269,6 +269,55 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(date.precision).to eq('year')
     end
 
+    # #parse_year_range returns immediately, before the scalar floor at
+    # the bottom of #parse ever runs -- so a Hijri-year span reached the
+    # guard for neither bound and published a range the scalar path would
+    # have refused as a bare year. Codex review finding, 2026-09-14.
+    it 'refuses a stated span whose bounds are not plausible years' do
+      date = described_class.parse('Between 1402 and 1403')
+
+      expect(date.year_range_from).to be_nil
+      expect(date.year_range_to).to be_nil
+      expect(date.precision).to eq('unknown')
+    end
+
+    it 'refuses the whole span when only one bound is implausible' do
+      date = described_class.parse('Between 1402 and 1958')
+
+      expect(date.year_range_from).to be_nil
+      expect(date.year_range_to).to be_nil
+    end
+
+    it 'keeps a genuinely early stated span' do
+      date = described_class.parse('Between 1923 and 1925')
+
+      expect(date.year_range_from).to eq(1923)
+      expect(date.year_range_to).to eq(1925)
+    end
+
+    # The alphabetic full-date path shares #demote_implausible_year with
+    # the numeric and fallback paths via one call at the bottom of #parse,
+    # but no example previously drove an implausible year through this
+    # SPECIFIC shape -- so a mutant that scoped the shared call away from
+    # this path (e.g. `unless flexible.month`) left the suite green while
+    # "5 May 1402" still came out as a full Hijri-dated Gregorian date.
+    # Codex review finding, 2026-09-14.
+    it 'refuses an implausible year reached via the alphabetic full-date path' do
+      date = described_class.parse('5 May 1402')
+
+      expect(date.year).to be_nil
+      expect(date.month).to be_nil
+      expect(date.day).to be_nil
+      expect(date.precision).to eq('unknown')
+    end
+
+    it 'refuses an implausible year reached via the alphabetic month/year path' do
+      date = described_class.parse('May 1402')
+
+      expect(date.year).to be_nil
+      expect(date.precision).to eq('unknown')
+    end
+
     # U+00A0 is not ASCII whitespace, so strip alone leaves it in place,
     # and Ruby's \s does not match it either -- left untranslated it would
     # break the separator this regex relies on and silently downgrade a

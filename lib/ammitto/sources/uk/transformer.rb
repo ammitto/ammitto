@@ -201,11 +201,15 @@ module Ammitto
 
             birth_location = details.birth_details&.primary_location
 
+            birth_date = analyze_birth_date(
+              dob_str,
+              parser: method(:parse_uk_date)
+            )
+
             # A partial DOB ("00/00/1975", "1975-00-00") keeps its year;
             # only a fully stated day-month-year becomes a date
             birth_infos << create_birth_info(
-              date: parse_uk_date(dob_str),
-              year: extract_birth_year(dob_str),
+              **birth_date,
               city: birth_location&.town_of_birth,
               country: birth_location&.country_of_birth
             )

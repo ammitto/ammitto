@@ -55,7 +55,10 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     exporter.export
     FileUtils.mkdir_p(File.join(output_dir, 'sources'))
     File.write(File.join(output_dir, 'sources', 'eu.jsonld'), '{}')
-    File.write(File.join(output_dir, 'search-index.json'), '[]')
+    search_dir = File.join(output_dir, 'search-index')
+    FileUtils.mkdir_p(search_dir)
+    File.write(File.join(search_dir, 'manifest.json'), '{}')
+    File.write(File.join(search_dir, 'eu.json'), '{}')
     exporter.export_manifest
   end
 
@@ -86,6 +89,13 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     sources = named('sources')
 
     expect(sources['members']).to include('eu.jsonld')
+  end
+
+  it 'lists the sharded search-index collection' do
+    search_index = named('search-index')
+
+    expect(search_index).not_to be_nil
+    expect(search_index['members']).to include('eu.json', 'manifest.json')
   end
 
   # node/ has no files of its own: only node/entity and node/entry, each

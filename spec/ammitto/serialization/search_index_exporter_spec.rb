@@ -571,7 +571,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       exporter.add(entity.merge('names' => [{ 'fullName' => 0 }]), entry)
       exporter.export(output_dir)
 
-      data = JSON.parse(File.read(File.join(output_dir, 'search-index.json')))
+      data = JSON.parse(File.read(File.join(output_dir, 'search-index', 'cn.json')))
       expect(data['entities'].first['names']).to eq([])
     end
 
@@ -680,7 +680,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       exporter.add(entity, entry)
       exporter.export(output_dir)
 
-      data = JSON.parse(File.read(File.join(output_dir, 'search-index.json')))
+      data = JSON.parse(File.read(File.join(output_dir, 'search-index', 'cn.json')))
       expect(data['metadata']['totalEntities']).to eq(1)
       expect(data['entities'].length).to eq(1)
 
@@ -711,15 +711,80 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       end
     end
 
-    it 'creates search-index.json' do
+    it 'creates authority shards and a manifest' do
       exporter.export(output_dir)
 
-      index_file = File.join(output_dir, 'search-index.json')
-      expect(File.exist?(index_file)).to be true
+      shard_file = File.join(output_dir, 'search-index', 'un.json')
+      manifest_file = File.join(output_dir, 'search-index', 'manifest.json')
 
-      data = JSON.parse(File.read(index_file))
-      expect(data['metadata']['totalEntities']).to eq(3)
-      expect(data['entities'].length).to eq(3)
+      expect(File.exist?(shard_file)).to be true
+      expect(File.exist?(manifest_file)).to be true
+      expect(File.exist?(File.join(output_dir, 'search-index.json'))).to be false
+
+      shard = JSON.parse(File.read(shard_file))
+      expect(shard['metadata']['totalEntities']).to eq(3)
+      expect(shard['metadata']['sources']).to eq(1)
+      expect(shard['entities'].length).to eq(3)
+
+      manifest = JSON.parse(File.read(manifest_file))
+      expect(manifest['metadata']['totalEntities']).to eq(3)
+      expect(manifest['metadata']['sources']).to eq(1)
+      expect(manifest['shards']).to eq(
+        [{ 'code' => 'un', 'file' => 'un.json', 'count' => 3 }]
+      )
+    end
+
+    it 'partitions rows by authority with shard-scoped metadata' do
+      exporter.add(
+        {
+          '@id' => 'https://www.ammitto.org/entity/eu/extra',
+          'entityType' => 'person',
+          'names' => [{ 'fullName' => 'EU Entity' }]
+        },
+        {
+          'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+          'status' => 'active'
+        }
+      )
+
+      exporter.export(output_dir)
+
+      un = JSON.parse(File.read(File.join(output_dir, 'search-index', 'un.json')))
+      eu = JSON.parse(File.read(File.join(output_dir, 'search-index', 'eu.json')))
+
+      expect(un['metadata']).to include('totalEntities' => 3, 'sources' => 1)
+      expect(eu['metadata']).to include('totalEntities' => 1, 'sources' => 1)
+      expect(un['entities'].map { |row| row['authority'] }).to all(eq('un'))
+      expect(eu['entities'].map { |row| row['authority'] }).to all(eq('eu'))
+
+      manifest = JSON.parse(
+        File.read(File.join(output_dir, 'search-index', 'manifest.json'))
+      )
+      expect(manifest['metadata']).to include('totalEntities' => 4, 'sources' => 2)
+      expect(manifest['shards']).to contain_exactly(
+        { 'code' => 'eu', 'file' => 'eu.json', 'count' => 1 },
+        { 'code' => 'un', 'file' => 'un.json', 'count' => 3 }
+      )
+    end
+
+    it 'preserves rows without an authority in an unknown shard' do
+      orphan = described_class.new
+      orphan.add(
+        {
+          '@id' => 'https://www.ammitto.org/entity/unknown/1',
+          'entityType' => 'person',
+          'names' => [{ 'fullName' => 'Unknown Entity' }]
+        },
+        { 'status' => 'active' }
+      )
+
+      orphan.export(output_dir)
+
+      shard = JSON.parse(
+        File.read(File.join(output_dir, 'search-index', 'unknown.json'))
+      )
+      expect(shard['metadata']).to include('totalEntities' => 1, 'sources' => 0)
+      expect(shard['entities'].length).to eq(1)
     end
 
     it 'creates facets directory' do

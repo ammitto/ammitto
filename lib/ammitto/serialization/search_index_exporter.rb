@@ -698,24 +698,89 @@ module Ammitto
         end
       end
 
-      # Export search index to file
+      # Export source-sharded search indexes.
       # @param output_dir [String] output directory
       def export_search_index(output_dir)
         rows = entities
-        data = {
+        generated = Time.now.utc.iso8601
+        search_index_dir = File.join(output_dir, 'search-index')
+        FileUtils.mkdir_p(search_index_dir)
+
+        # Group the already-finalized rows once, then serialize each group.
+        # Do not build a monolithic payload and split it afterward.
+        rows_by_source = rows.group_by { |row| row[:authority] }
+        shards = rows_by_source.map do |authority, source_rows|
+          code = authority || 'unknown'
+
+          File.write(
+            File.join(search_index_dir, "#{code}.json"),
+            JSON.generate(
+              search_index_data(
+                source_rows,
+                generated,
+                authority ? 1 : 0
+              )
+            )
+          )
+
+          {
+            code: code,
+            file: "#{code}.json",
+            count: source_rows.length
+          }
+        end
+
+        export_search_index_manifest(
+          search_index_dir,
+          generated: generated,
+          total_entities: rows.length,
+          source_count: rows_by_source.keys.compact.length,
+          shards: shards
+        )
+
+        puts "Exported search index: #{rows.length} entities across " \
+             "#{shards.length} shards to #{search_index_dir}"
+      end
+
+      # Build one shard's payload using the existing search-index shape.
+      # @param rows [Array<Hash>] rows belonging to one authority
+      # @param generated [String] shared export timestamp
+      # @param source_count [Integer] number of authorities represented
+      # @return [Hash]
+      def search_index_data(rows, generated, source_count)
+        {
           metadata: {
-            generated: Time.now.utc.iso8601,
+            generated: generated,
             totalEntities: rows.length,
-            sources: rows.map { |r| r[:authority] }.compact.uniq.length
+            sources: source_count
           },
           entities: rows
         }
+      end
 
-        output_path = File.join(output_dir, 'search-index.json')
-        FileUtils.mkdir_p(File.dirname(output_path))
-        File.write(output_path, JSON.generate(data))
+      # Write the manifest used to discover the shard files.
+      # `file` is relative to the search-index directory.
+      # @param dir [String] search-index directory
+      # @param generated [String] shared export timestamp
+      # @param total_entities [Integer] total deduplicated rows
+      # @param source_count [Integer] number of non-empty authority groups
+      # @param shards [Array<Hash>] shard descriptors
+      # @return [void]
+      def export_search_index_manifest(dir, generated:, total_entities:,
+                                       source_count:, shards:)
+        manifest = {
+          metadata: {
+            generated: generated,
+            totalEntities: total_entities,
+            sources: source_count
+          },
+          shards: shards.sort_by { |shard| shard[:code] }
+        }
 
-        puts "Exported search index: #{rows.length} entities to #{output_path}"
+        File.write(
+          File.join(dir, 'manifest.json'),
+          JSON.generate(manifest)
+        )
       end
 
       # Export facet files

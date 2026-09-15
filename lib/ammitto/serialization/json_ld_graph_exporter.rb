@@ -478,7 +478,7 @@ module Ammitto
       def published?(dir)
         return true if File.exist?(File.join(dir, 'index.jsonld'))
 
-        files = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+        files = Dir.glob(File.join(dir, '*.{jsonld,json,ttl}'))
                    .reject { |f| File.basename(f).start_with?('index.') }
         return true if files.any?
 
@@ -509,7 +509,7 @@ module Ammitto
           dir = File.join(@output_dir, name)
           next unless Dir.exist?(dir)
 
-          members = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+          members = Dir.glob(File.join(dir, '*.{jsonld,json,ttl}'))
                        .map { |f| File.basename(f) }
                        .reject { |f| f.start_with?('index.') }
                        .sort

@@ -3,6 +3,7 @@
 require 'tmpdir'
 require 'fileutils'
 require 'json'
+require 'rdf/turtle'
 require 'ammitto/cli'
 require 'ammitto/cli/harmonize_command'
 
@@ -78,6 +79,35 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(stats['total_entities']).to eq(2)
   end
 
+  it 'exports valid per-source Turtle with exactly the JSON-LD records' do
+    write_eu_fixture(@workdir)
+    options = { sources_dir: @workdir, output_dir: File.join(@workdir, 'api', 'v1'), combine: true }
+    Ammitto::Cmd::HarmonizeCommand.new(options, ['eu']).run
+
+    api = File.join(@workdir, 'api', 'v1')
+    jsonld_path = File.join(api, 'sources', 'eu.jsonld')
+    ttl_path = File.join(api, 'sources', 'eu.ttl')
+
+    aggregate = JSON.parse(File.read(jsonld_path))
+    jsonld_ids = aggregate.fetch('@graph').map { |node| node.fetch('@id') }.sort
+
+    expect(File.exist?(ttl_path)).to be(true)
+
+    turtle_ids = RDF::Turtle::Reader
+                 .new(File.read(ttl_path))
+                 .each_statement
+                 .filter_map { |statement| statement.subject.to_s if statement.subject.is_a?(RDF::URI) }
+                 .uniq
+                 .sort
+
+    expect(turtle_ids).to eq(jsonld_ids)
+    expect(turtle_ids.length).to eq(aggregate.fetch('@graph').length)
+
+    source_prefixes = File.readlines(ttl_path).grep(/\A@prefix /)
+    all_prefixes = File.readlines(File.join(api, 'all.ttl')).grep(/\A@prefix /)
+    expect(source_prefixes).to eq(all_prefixes)
+  end
+
   # A span has to survive every hop the website depends on: the fetch
   # YAML, the entity node, the search index, and the context artifact
   # that types the two new keys. Checking the models alone would prove
@@ -99,7 +129,7 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(named).to include('search-index.json', 'stats.json', 'sources')
     expect(named['search-index.json']['bytes'])
       .to eq(File.size(File.join(api, 'search-index.json')))
-    expect(named['sources']['members']).to include('eu.jsonld')
+    expect(named['sources']['members']).to include('eu.jsonld', 'eu.ttl')
     # One artefact from each of the two exporters that run after the
     # graph exporter, because "late enough" is two orderings, not one.
     # Asserting only the search index leaves a catalogue written

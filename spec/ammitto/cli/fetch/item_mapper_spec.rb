@@ -18,8 +18,8 @@ require 'ammitto/cli/fetch_command'
 # the same record would land in a different file each harvest. No such file
 # exists in any data repository, so it never fired — a trap rather than a
 # behaviour.
-RSpec.describe Ammitto::Cmd::FetchCommand do
-  subject(:command) { described_class.new({}, ['ca']) }
+RSpec.describe Ammitto::Cmd::Fetch::ItemMapper do
+  subject(:command) { Ammitto::Cmd::FetchCommand.new({}, ['ca']) }
 
   # A stand-in that answers the attribute readers a branch asks for and
   # nothing else. Not OpenStruct: RuboCop's Style/OpenStructUse rejects it,

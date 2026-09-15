@@ -36,6 +36,10 @@ module Ammitto
       # Default log level
       LOG_LEVEL = 'info'
 
+      # Parse-failure visibility policy
+      PARSE_FAILURE_MODE = :warn
+      PARSE_FAILURE_MODES = %i[raise warn silent].freeze
+
       # Default sources to process
       DEFAULT_SOURCES = %i[eu un us wb].freeze
 

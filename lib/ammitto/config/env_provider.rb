@@ -29,6 +29,7 @@ module Ammitto
         cache_dir: 'CACHE_DIR',
         api_base_url: 'API_BASE_URL',
         log_level: 'LOG_LEVEL',
+        parse_failure_mode: 'PARSE_FAILURE_MODE',
         sources: 'SOURCES',
         output_format: 'OUTPUT_FORMAT',
         connection_timeout: 'CONNECTION_TIMEOUT',
@@ -95,6 +96,8 @@ module Ammitto
             value.to_i
           when :verbose
             value.downcase == 'true'
+          when :parse_failure_mode
+            value.strip.downcase.to_sym
           else
             value
           end

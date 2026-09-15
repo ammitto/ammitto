@@ -64,7 +64,7 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(person['names'].first).to have_key('isPrimary')
 
     # Search index carries real names (the production regression of 2026)
-    index = JSON.parse(File.read(File.join(api, 'search-index.json')))
+    index = JSON.parse(File.read(File.join(api, 'search-index', 'eu.json')))
     expect(index['entities'].length).to eq(2)
     expect(index['entities'].flat_map { |e| e['names'] }).to include('John Doe')
     expect(index['entities'].map { |e| e['primaryName'] }).to include('John Doe')
@@ -96,9 +96,9 @@ RSpec.describe 'harmonize pipeline (integration)' do
     manifest = JSON.parse(File.read(File.join(api, 'index.jsonld')))
     named = manifest.fetch('entries').to_h { |e| [e['name'], e] }
 
-    expect(named).to include('search-index.json', 'stats.json', 'sources')
-    expect(named['search-index.json']['bytes'])
-      .to eq(File.size(File.join(api, 'search-index.json')))
+    expect(named).to include('search-index', 'stats.json', 'sources')
+    expect(named['search-index']['members'])
+      .to include('eu.json', 'manifest.json')
     expect(named['sources']['members']).to include('eu.jsonld')
     # One artefact from each of the two exporters that run after the
     # graph exporter, because "late enough" is two orderings, not one.
@@ -156,7 +156,7 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(open_birth['yearRangeTo']).to eq(1980)
     expect(open_birth).not_to have_key('yearRangeFrom')
 
-    index = JSON.parse(File.read(File.join(api, 'search-index.json')))
+    index = JSON.parse(File.read(File.join(api, 'search-index', 'eu.json')))
     row = index['entities'].find { |e| e['ref'] == 'eu/eu1865' }
     expect(row['birthYears']).to eq(%w[1953 1958])
     expect(row['birthYearKind']).to eq('span')

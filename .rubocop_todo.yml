@@ -208,13 +208,6 @@ Naming/VariableNumber:
   Exclude:
     - 'lib/ammitto/sources/nz/individual.rb'
 
-# Offense count: 13
-Security/Open:
-  Exclude:
-    - 'lib/ammitto/extractors/au_extractor.rb'
-    - 'lib/ammitto/extractors/eu_vessels_extractor.rb'
-    - 'lib/ammitto/extractors/tr_extractor.rb'
-
 # Offense count: 24
 # Configuration parameters: AllowedConstants.
 Style/Documentation:

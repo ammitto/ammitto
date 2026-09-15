@@ -123,6 +123,7 @@ Metrics/ClassLength:
   Exclude:
     - 'lib/ammitto/cli/fetch_command.rb'
     - 'lib/ammitto/cli/harmonize_command.rb'
+    - 'lib/ammitto/transformers/base_transformer.rb'
     - 'lib/ammitto/exporter/json_ld_export.rb'
     - 'lib/ammitto/serialization/json_ld_graph_exporter.rb'
     - 'lib/ammitto/serialization/json_ld_serializer.rb'

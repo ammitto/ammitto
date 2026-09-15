@@ -66,6 +66,8 @@ module Ammitto
         private
 
         def transform_person(source_entity)
+          birth_date = analyze_birth_date(source_entity.date_of_birth)
+
           entity = Ammitto::PersonEntity.new(
             id: generate_entity_id(create_reference(source_entity)),
             entity_type: 'person',
@@ -73,7 +75,7 @@ module Ammitto
             # A year-only DOB string keeps its year; only a complete
             # day-month-year becomes BirthInfo#date
             birth_info: [create_birth_info(
-              date: source_entity.date_of_birth,
+              **birth_date,
               country: source_entity.nationality
             )].compact,
             nationalities: [source_entity.nationality].compact,

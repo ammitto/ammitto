@@ -710,6 +710,25 @@ module Ammitto
         value.is_a?(String) && CIRCA_MARKER.match?(value.strip)
       end
 
+      # Analyze a source birth-date value before its precision is discarded.
+      #
+      # Complete values become Date objects. Partial dates and ranges retain
+      # the original string so create_birth_info can apply its existing
+      # year/range handling. The marker decision always reads the raw value.
+      #
+      # @param value [String, Date, nil] raw source birth-date value
+      # @param parser [#call] source-specific complete-date parser
+      # @return [Hash] date value, source-stated year, and circa state
+      def analyze_birth_date(value, parser: method(:parse_complete_date))
+        normalized = without_circa_marker(value)
+
+        {
+          date: parser.call(normalized) || value,
+          year: extract_birth_year(value),
+          circa: circa_string?(value)
+        }
+      end
+
       # Coerce a source-stated year to a positive Integer
       # @param value [Integer, String, nil]
       # @return [Integer, nil]

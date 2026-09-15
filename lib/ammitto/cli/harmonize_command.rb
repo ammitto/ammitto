@@ -8,6 +8,7 @@ require_relative '../serialization/json_ld_graph_exporter'
 require_relative '../serialization/search_index_exporter'
 require_relative '../serialization/ontology_exporter'
 require_relative '../serialization/json_ld_serializer'
+require_relative '../serialization/turtle_exporter'
 
 module Ammitto
   module Cmd
@@ -400,7 +401,8 @@ module Ammitto
         end
       end
 
-      # Write the per-source JSON-LD aggregate (sources/<code>.jsonld)
+      # Write the per-source JSON-LD and Turtle aggregates
+      # (sources/<code>.jsonld and sources/<code>.ttl)
       # @param source [Symbol] source code
       # @param graph [Array<Hash>] entity and entry hashes
       # @return [void]
@@ -418,7 +420,14 @@ module Ammitto
           '@context' => Schema::Context.context_url,
           '@graph' => deduped
         }
-        File.write(File.join(sources_dir, "#{source}.jsonld"), JSON.pretty_generate(document))
+        jsonld_path = File.join(sources_dir, "#{source}.jsonld")
+        ttl_path = File.join(sources_dir, "#{source}.ttl")
+
+        File.write(jsonld_path, JSON.pretty_generate(document))
+        Serialization::TurtleExporter.export(
+          jsonld_path: jsonld_path,
+          output_path: ttl_path
+        )
       end
 
       # Harmonize a single source

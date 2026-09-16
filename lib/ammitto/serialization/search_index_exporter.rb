@@ -704,13 +704,21 @@ module Ammitto
         rows = entities
         generated = Time.now.utc.iso8601
         search_index_dir = File.join(output_dir, 'search-index')
+
+        # A reused output directory must not carry stale output forward:
+        # a pre-sharding monolithic search-index.json, or a shard file for
+        # an authority that produced rows on a previous run but not this
+        # one. Wiping the shard directory before writing is simpler and
+        # safer than diffing old contents against the new shard set.
+        FileUtils.rm_f(File.join(output_dir, 'search-index.json'))
+        FileUtils.rm_rf(search_index_dir)
         FileUtils.mkdir_p(search_index_dir)
 
         # Group the already-finalized rows once, then serialize each group.
         # Do not build a monolithic payload and split it afterward.
         rows_by_source = rows.group_by { |row| row[:authority] }
         shards = rows_by_source.map do |authority, source_rows|
-          code = authority || 'unknown'
+          code = shard_code(authority)
 
           File.write(
             File.join(search_index_dir, "#{code}.json"),
@@ -740,6 +748,21 @@ module Ammitto
 
         puts "Exported search index: #{rows.length} entities across " \
              "#{shards.length} shards to #{search_index_dir}"
+      end
+
+      # Turn an authority into the path component its shard file is named
+      # after. The authority value now reaches a filename (it previously
+      # only fed in-memory facet counts), so anything outside a strict
+      # allowlist falls back to 'unknown' rather than being interpolated
+      # as-is: an authority carrying '/', '..', or a null byte must never
+      # let a shard escape the search-index directory.
+      # @param authority [String, nil] raw (already-downcased) authority
+      # @return [String] a safe shard filename stem
+      def shard_code(authority)
+        return 'unknown' unless authority.is_a?(String)
+        return 'unknown' unless authority.match?(/\A[a-z0-9_-]+\z/)
+
+        authority
       end
 
       # Build one shard's payload using the existing search-index shape.

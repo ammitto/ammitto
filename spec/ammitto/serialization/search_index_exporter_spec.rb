@@ -787,6 +787,48 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(shard['entities'].length).to eq(1)
     end
 
+    it 'removes a pre-sharding monolithic search-index.json from a reused output dir' do
+      leftover = File.join(output_dir, 'search-index.json')
+      File.write(leftover, '{"entities":[]}')
+
+      exporter.export(output_dir)
+
+      expect(File.exist?(leftover)).to be false
+    end
+
+    it 'drops a shard left over from an authority no longer present in a rerun' do
+      search_index_dir = File.join(output_dir, 'search-index')
+      FileUtils.mkdir_p(search_index_dir)
+      stale_shard = File.join(search_index_dir, 'stale.json')
+      File.write(stale_shard, '{"entities":[]}')
+
+      exporter.export(output_dir)
+
+      expect(File.exist?(stale_shard)).to be false
+      expect(File.exist?(File.join(search_index_dir, 'un.json'))).to be true
+    end
+
+    it 'falls back to the unknown shard for an authority with a path-traversal character' do
+      exporter = described_class.new
+      exporter.add(
+        {
+          '@id' => 'https://www.ammitto.org/entity/evil/1',
+          'entityType' => 'person',
+          'names' => [{ 'fullName' => 'Evil Entity' }]
+        },
+        { 'authority' => '../../etc/passwd', 'status' => 'active' }
+      )
+
+      exporter.export(output_dir)
+
+      escaped_path = File.join(output_dir, '..', '..', 'etc', 'passwd.json')
+      expect(File.exist?(escaped_path)).to be false
+      shard = JSON.parse(
+        File.read(File.join(output_dir, 'search-index', 'unknown.json'))
+      )
+      expect(shard['entities'].length).to eq(1)
+    end
+
     it 'creates facets directory' do
       exporter.export(output_dir)
 

@@ -31,7 +31,7 @@ module Ammitto
   autoload :ListType, "#{__dir__}/list_type"
   autoload :TemporalPeriod, "#{__dir__}/temporal_period"
   autoload :StatusChange, "#{__dir__}/status_change"
-  autoload :NoticeReference, "#{__dir__}/status_change" # Same file as StatusChange
+  autoload :NoticeReference, "#{__dir__}/notice_reference"
   autoload :LegalInstrument, "#{__dir__}/legal_instrument"
   autoload :OfficialAnnouncement, "#{__dir__}/official_announcement"
   autoload :RawSourceData, "#{__dir__}/raw_source_data"

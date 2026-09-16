@@ -82,18 +82,38 @@ Same rule as `03`. The dispatcher text moves; `au/flexible_date.rb`
 does not, and the moved path keeps calling it. These two are LIVE in
 published output today and belong to that file, not to this move.
 
-- **A hedged year publishes as exact.** `au/flexible_date.rb:63` reads
+- **A hedged year publishes as exact — RESOLVED 2026-09-16.** ~~`au/flexible_date.rb:63` reads
   its scalar marker with `start_with?('circa', 'c.', 'c')`, which does
   not include `approximately`, so `"Approximately 1968"` is published
   with `circa` unset. 19 AU records across 14 spellings.
-  `finding-au-approximately-scalar-not-circa-2026-09-08.md`.
-- **A two-date cell publishes its first date.** A range-shape the
-  grammar declines falls through to the scalar branch rather than
-  failing closed, so `"1980.1981"` publishes 1980.
-  `finding-au-multi-year-cell-picks-one-2026-09-08.md`.
+  `finding-au-approximately-scalar-not-circa-2026-09-08.md`.~~ Three
+  commits on `origin/main` — `91b0743`, `7b8aba6`, `d220c31` (2026-09-11
+  through 2026-09-14) — replaced the `start_with?` test with a shared
+  `Ammitto::Utils::CircaMarker::CIRCA_MARKER` regex, read by both
+  `flexible_date.rb` and the transformer's own stripper, so the two
+  layers can no longer disagree on a spelling. Verified against
+  `origin/main`, current HEAD: `flexible_date.rb` requires
+  `utils/circa_marker` and calls `strip_circa_marker`, which matches
+  `CIRCA_MARKER` (`\A(?:circa|approximately|c\.?)(?=[\s:\d])\s*:?\s*/i`) —
+  `approximately` is now in the grammar.
+- **A two-date cell publishes its first date — STILL LIVE, re-verified
+  2026-09-16.** A range-shape the grammar declines falls through to the
+  scalar branch rather than failing closed, so `"1980.1981"` publishes
+  1980. `finding-au-multi-year-cell-picks-one-2026-09-08.md`. The three
+  commits above touched the same file but not this path: `YEAR_RANGE`
+  still only recognises the `between X and Y` shape, the fallback
+  comment at `flexible_date.rb` still names this finding by file
+  verbatim, and running
+  `Ammitto::Sources::Au::FlexibleDate.parse("1980.1981")` against current
+  `origin/main` returns `year: 1980, precision: "year"` — unchanged. A
+  handover claim that PR #111's `extract_birth_year_candidates` rework
+  fixed this was checked and is wrong: that method lives in
+  `search_index_exporter.rb`, a downstream serialization step that reads
+  the year `FlexibleDate` already produced — it does not touch the
+  parse this finding is about.
 
-Both predate this board and are out of scope here, because fixing either
-changes published output and needs its own corpus proof. Name them in
+The second predates this board and is out of scope here, because fixing
+it changes published output and needs its own corpus proof. Name it in
 the PR body so the move is not read as a review of the code it moves.
 
 ## Where

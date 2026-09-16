@@ -6,19 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 1
-Gemspec/RequiredRubyVersion:
-  Exclude:
-    - 'ammitto.gemspec'
-
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle, IndentationWidth.
-# SupportedStyles: with_first_argument, with_fixed_indentation
-Layout/ArgumentAlignment:
-  Exclude:
-    - 'scripts/verify_round_trip.rb'
-
 # Offense count: 5
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: AllowMultipleStyles, EnforcedHashRocketStyle, EnforcedColonStyle, EnforcedLastArgumentHashStyle.
@@ -27,27 +14,8 @@ Layout/ArgumentAlignment:
 # SupportedLastArgumentHashStyles: always_inspect, always_ignore, ignore_implicit, ignore_explicit
 Layout/HashAlignment:
   Exclude:
-    - 'lib/ammitto/extractors/au_extractor.rb'
     - 'scripts/convert_to_knowledge_graph.rb'
     - 'scripts/parse_ru_sanctions_list.rb'
-
-# Offense count: 5
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle, IndentationWidth.
-# SupportedStyles: aligned, indented, indented_relative_to_receiver
-Layout/MultilineMethodCallIndentation:
-  Exclude:
-    - 'lib/ammitto/cmd/china_command.rb'
-
-# Offense count: 6
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowInHeredoc.
-Layout/TrailingWhitespace:
-  Exclude:
-    - 'lib/ammitto/extractors/au_extractor.rb'
-    - 'scripts/convert_to_knowledge_graph.rb'
-    - 'scripts/parse_ru_sanctions_list.rb'
-    - 'scripts/verify_round_trip.rb'
 
 # Offense count: 1
 Lint/BinaryOperatorWithIdenticalOperands:
@@ -60,42 +28,6 @@ Lint/DuplicateBranch:
   Enabled: false
 
 # Offense count: 1
-# This cop supports unsafe autocorrection (--autocorrect-all).
-Lint/DuplicateRequire:
-  Exclude:
-    - 'lib/ammitto.rb'
-
-# Offense count: 1
-Lint/DuplicateRescueException:
-  Exclude:
-    - 'lib/ammitto/extractors/us_extractor.rb'
-
-# Offense count: 1
-# Configuration parameters: AllowComments, AllowEmptyLambdas.
-Lint/EmptyBlock:
-  Exclude:
-    - 'lib/ammitto/sources/uk/processed_entity.rb'
-
-# Offense count: 1
-# Configuration parameters: AllowComments.
-Lint/EmptyWhen:
-  Exclude:
-    - 'lib/ammitto/sources/nz/transformer.rb'
-
-# Offense count: 3
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowUnusedKeywordArguments, IgnoreEmptyMethods, IgnoreNotImplementedMethods, NotImplementedExceptions.
-# NotImplementedExceptions: NotImplementedError
-Lint/UnusedMethodArgument:
-  Exclude:
-    - 'lib/ammitto/cmd/china_command.rb'
-
-# Offense count: 1
-Lint/UselessConstantScoping:
-  Exclude:
-    - 'lib/ammitto/sources/cn/transformer.rb'
-
-# Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: CheckForMethodsWithNoSideEffects.
 Lint/Void:
@@ -106,16 +38,6 @@ Lint/Void:
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes.
 Metrics/AbcSize:
   Max: 152
-
-# Offense count: 2
-# Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
-# AllowedMethods: refine
-Metrics/BlockLength:
-  Exclude:
-    - 'spec/**/*.rb'
-    - 'docs/**/*.rb'
-    - 'scripts/import_neo4j_full.rb'
-    - 'scripts/parse_ru_sanctions_list.rb'
 
 # Offense count: 14
 # Configuration parameters: CountComments, Max, CountAsOne.
@@ -194,26 +116,10 @@ Naming/PredicateMethod:
 # MethodDefinitionMacros: define_method, define_singleton_method
 Naming/PredicatePrefix:
   Exclude:
-    - 'spec/**/*'
     - 'lib/ammitto/ontology/entities/vessel_entity.rb'
     - 'lib/ammitto/raw_source_data.rb'
     - 'lib/ammitto/sources/au/sanction.rb'
     - 'lib/ammitto/sources/wb/transformer.rb'
-
-# Offense count: 4
-# Configuration parameters: EnforcedStyle, CheckMethodNames, CheckSymbols, AllowedIdentifiers, AllowedPatterns.
-# SupportedStyles: snake_case, normalcase, non_integer
-# AllowedIdentifiers: TLS1_1, TLS1_2, capture3, iso8601, rfc1123_date, rfc822, rfc2822, rfc3339, x86_64
-Naming/VariableNumber:
-  Exclude:
-    - 'lib/ammitto/sources/nz/individual.rb'
-
-# Offense count: 13
-Security/Open:
-  Exclude:
-    - 'lib/ammitto/extractors/au_extractor.rb'
-    - 'lib/ammitto/extractors/eu_vessels_extractor.rb'
-    - 'lib/ammitto/extractors/tr_extractor.rb'
 
 # Offense count: 24
 # Configuration parameters: AllowedConstants.
@@ -226,12 +132,6 @@ Style/Documentation:
 # SupportedStyles: annotated, template, unannotated
 Style/FormatStringToken:
   EnforcedStyle: unannotated
-
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-Style/IfUnlessModifier:
-  Exclude:
-    - 'lib/ammitto/cmd/china_command.rb'
 
 # Offense count: 8
 Style/MixinUsage:
@@ -250,28 +150,13 @@ Style/MultilineBlockChain:
   Exclude:
     - 'lib/ammitto/serialization/search_index_exporter.rb'
 
-# Offense count: 6
-# This cop supports safe autocorrection (--autocorrect).
-Style/MultilineIfModifier:
-  Exclude:
-    - 'lib/ammitto/extractors/au_extractor.rb'
-    - 'scripts/convert_to_knowledge_graph.rb'
-    - 'scripts/parse_ru_sanctions_list.rb'
-    - 'scripts/verify_round_trip.rb'
-
-# Offense count: 1
+# Offense count: 5
 # This cop supports unsafe autocorrection (--autocorrect-all).
 # Configuration parameters: EnforcedStyle, AllowedMethods, AllowedPatterns.
 # SupportedStyles: predicate, comparison
 Style/NumericPredicate:
   Exclude:
     - 'spec/**/*'
-    - 'lib/ammitto/cmd/china_command.rb'
-
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-Style/RedundantParentheses:
-  Exclude:
     - 'lib/ammitto/cmd/china_command.rb'
 
 # Offense count: 4
@@ -281,26 +166,6 @@ Style/SafeNavigationChainLength:
     - 'lib/ammitto/data/china/mfa/mfa.rb'
     - 'lib/ammitto/data/china/mofcom/mofcom.rb'
     - 'lib/ammitto/sanction_entry.rb'
-
-# Offense count: 11
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle, ConsistentQuotesInMultiline.
-# SupportedStyles: single_quotes, double_quotes
-Style/StringLiterals:
-  Exclude:
-    - 'lib/ammitto/cli/fetch_command.rb'
-    - 'lib/ammitto/cli/source_command.rb'
-    - 'lib/ammitto/cmd/china_command.rb'
-    - 'lib/ammitto/data/china/validator.rb'
-    - 'scripts/aggregate_to_site.rb'
-
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle, AllowSafeAssignment.
-# SupportedStyles: require_parentheses, require_no_parentheses, require_parentheses_when_complex
-Style/TernaryParentheses:
-  Exclude:
-    - 'lib/ammitto/data/japan/meti/entity.rb'
 
 # Offense count: 31
 # This cop supports safe autocorrection (--autocorrect).

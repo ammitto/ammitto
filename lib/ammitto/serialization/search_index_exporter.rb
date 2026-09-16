@@ -46,7 +46,9 @@ module Ammitto
       BIRTH_YEAR_ROW_KEYS = %i[birthYears].freeze
 
       # A published year, wherever it comes from, is exactly four digits.
-      FOUR_DIGIT_YEAR = /\A\d{4}\z/
+      # Shared with BirthYear::Value#normalized_year rather than
+      # re-declared, so the two validations can never drift apart.
+      FOUR_DIGIT_YEAR = BirthYear::Value::YEAR_PATTERN
 
       # Authority names for facet display
       AUTHORITY_NAMES = {

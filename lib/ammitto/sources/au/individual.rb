@@ -45,9 +45,7 @@ module Ammitto
           if dob_str && !dob_str.empty?
             dob_str.split(',').map(&:strip).each do |date_str|
               Array(FlexibleDate.parse(date_str)).each do |date|
-                next if dates_of_birth.any? { |existing| same_flexible_date?(existing, date) }
-
-                dates_of_birth << date
+                dates_of_birth << date unless dates_of_birth.include?(date)
               end
             end
           end
@@ -90,16 +88,6 @@ module Ammitto
           )
           entity.merge_row(row)
           entity
-        end
-
-        private
-
-        def same_flexible_date?(left, right)
-          %i[
-            raw_value year month day circa year_range_from year_range_to precision
-          ].all? do |attribute|
-            left.public_send(attribute) == right.public_send(attribute)
-          end
         end
       end
     end

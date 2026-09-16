@@ -103,6 +103,18 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(turtle_ids).to eq(jsonld_ids)
     expect(turtle_ids.length).to eq(aggregate.fetch('@graph').length)
 
+    # Subject-set equality alone would pass even if every predicate and
+    # object were wrong or missing. Read the actual statements for the
+    # person entity and check the name literal and type triple survived
+    # the JSON-LD to Turtle conversion, not just the node's IRI.
+    person_iri = 'https://www.ammitto.org/entity/eu/eu55'
+    statements = RDF::Turtle::Reader.new(File.read(ttl_path)).each_statement.to_a
+    person_statements = statements.select { |s| s.subject.to_s == person_iri }
+
+    expect(person_statements.map(&:predicate).map(&:to_s))
+      .to include('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'https://www.ammitto.org/ontology/entityType')
+    expect(person_statements.map(&:object).map(&:to_s)).to include('person')
+
     source_prefixes = File.readlines(ttl_path).grep(/\A@prefix /)
     all_prefixes = File.readlines(File.join(api, 'all.ttl')).grep(/\A@prefix /)
     expect(source_prefixes).to eq(all_prefixes)

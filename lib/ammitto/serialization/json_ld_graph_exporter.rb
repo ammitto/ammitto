@@ -46,6 +46,10 @@ module Ammitto
       # Hex digest chars appended when clamping an oversized slug
       CLAMP_DIGEST_CHARS = 12
 
+      # Extensions a consumer can fetch directly: the JSON-LD aggregate,
+      # its raw JSON form, and the Turtle sibling written alongside it.
+      PUBLISHABLE_FILE_GLOB = '*.{jsonld,json,ttl}'
+
       # snake_case citation keys accepted from data repos and older caches
       CITATION_KEY_ALIASES = {
         'legal_instrument_id' => 'legalInstrumentId',
@@ -478,7 +482,7 @@ module Ammitto
       def published?(dir)
         return true if File.exist?(File.join(dir, 'index.jsonld'))
 
-        files = Dir.glob(File.join(dir, '*.{jsonld,json,ttl}'))
+        files = Dir.glob(File.join(dir, PUBLISHABLE_FILE_GLOB))
                    .reject { |f| File.basename(f).start_with?('index.') }
         return true if files.any?
 
@@ -509,7 +513,7 @@ module Ammitto
           dir = File.join(@output_dir, name)
           next unless Dir.exist?(dir)
 
-          members = Dir.glob(File.join(dir, '*.{jsonld,json,ttl}'))
+          members = Dir.glob(File.join(dir, PUBLISHABLE_FILE_GLOB))
                        .map { |f| File.basename(f) }
                        .reject { |f| f.start_with?('index.') }
                        .sort

@@ -107,6 +107,18 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(dates.map(&:circa)).to eq([true, false])
     end
 
+    # CIRCA_MARKER used to be matched only against the very start of the
+    # segment before a year token. DFAT's own list-marker shape ("a) ...
+    # b) ...", already exercised elsewhere in this file without circa)
+    # puts a label ahead of the marker, so the anchored match missed it
+    # and 1968 lost its circa flag entirely.
+    it 'finds circa behind a list-marker label, not just at the segment start' do
+      dates = described_class.parse('a) Approximately 1968 b) 28/08/1965')
+
+      expect(dates.map(&:year)).to eq([1968, 1965])
+      expect(dates.map(&:circa)).to eq([true, false])
+    end
+
     it 'keeps a recognised year range as one parsed range' do
       date = described_class.parse('Approximately: Between 1959 and 1965')
 

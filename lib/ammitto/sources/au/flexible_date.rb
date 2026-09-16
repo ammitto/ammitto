@@ -231,6 +231,18 @@ module Ammitto
           parsed.year_range_from || parsed.year_range_to
         end
 
+        # CIRCA_MARKER is anchored at \A because its other callers strip
+        # the marker off the very start of a string they already know
+        # opens with it. Detection here is different: the marker has to
+        # be found anywhere in the segment between the previous year
+        # token and this one, because DFAT's own list-marker shape
+        # ("a) Approximately 1968 b) 28/08/1965") puts a label ahead of
+        # it. Anchoring the search at the segment's start, even after
+        # lstrip, missed that label and lost the marker.
+        CIRCA_MARKER_ANYWHERE = Regexp.new(
+          CIRCA_MARKER.source.sub(/\A\\A/, ''), CIRCA_MARKER.options
+        )
+
         # Emit one year-only FlexibleDate per distinct source-stated year.
         # A circa marker is attached to the year token it prefixes, rather
         # than being copied to every later token in the same cell.
@@ -245,7 +257,7 @@ module Ammitto
           year_tokens(date_str).each do |year, start|
             segment = cleaned[previous_end...start]
             candidates[year] = candidates.fetch(year, false) ||
-                               CIRCA_MARKER.match?(segment.lstrip)
+                               CIRCA_MARKER_ANYWHERE.match?(segment)
             previous_end = start + year.length
           end
 

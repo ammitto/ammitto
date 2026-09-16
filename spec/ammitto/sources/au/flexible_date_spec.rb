@@ -100,6 +100,17 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       expect(dates.map(&:precision)).to eq(%w[year year])
     end
 
+    # A period-separated cell ("1980.1981") matches no recognised pattern
+    # and used to fall through to the scalar year-only fallback, which
+    # greedily grabs the first 4-digit run and silently drops the rest.
+    it 'emits one candidate per distinct year in a period-separated cell' do
+      dates = described_class.parse('1980.1981')
+
+      expect(dates).to be_an(Array)
+      expect(dates.map(&:year)).to eq([1980, 1981])
+      expect(dates.map(&:precision)).to eq(%w[year year])
+    end
+
     it 'keeps circa attached to the candidate it prefixes' do
       dates = described_class.parse("Approximately 1968\n\n28/08/1965")
 

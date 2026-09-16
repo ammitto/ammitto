@@ -65,7 +65,7 @@ module Ammitto
 
         download_binary_to_temp_file(
           api_endpoint, prefix: 'au_sanctions', ext: '.xlsx',
-          headers: { 'User-Agent' => 'Mozilla/5.0' }
+                        headers: { 'User-Agent' => 'Mozilla/5.0' }
         )
       end
 

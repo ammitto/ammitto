@@ -19,8 +19,8 @@ module Ammitto
         attribute :address, :string
         attribute :place_of_birth, :string
         attribute :citizenship, :string
-        attribute :citizenship_2, :string
-        attribute :citizenship_3, :string
+        attribute :citizenship2, :string
+        attribute :citizenship3, :string
         attribute :passport_number, :string
         attribute :sanction_status, :string
         attribute :date_of_sanction, :date
@@ -46,8 +46,8 @@ module Ammitto
           map 'address', to: :address
           map 'place_of_birth', to: :place_of_birth
           map 'citizenship', to: :citizenship
-          map 'citizenship_2', to: :citizenship_2
-          map 'citizenship_3', to: :citizenship_3
+          map 'citizenship_2', to: :citizenship2
+          map 'citizenship_3', to: :citizenship3
           map 'passport_number', to: :passport_number
           map 'sanction_status', to: :sanction_status
           map 'date_of_sanction', to: :date_of_sanction
@@ -78,8 +78,8 @@ module Ammitto
           individual.address = data['address']
           individual.place_of_birth = data['place_of_birth']
           individual.citizenship = data['citizenship']
-          individual.citizenship_2 = data['citizenship_2']
-          individual.citizenship_3 = data['citizenship_3']
+          individual.citizenship2 = data['citizenship_2']
+          individual.citizenship3 = data['citizenship_3']
           individual.passport_number = data['passport_number']
           individual.sanction_status = data['sanction_status']
           individual.date_of_sanction = parse_date(data['date_of_sanction'])
@@ -133,8 +133,8 @@ module Ammitto
             'address' => address,
             'place_of_birth' => place_of_birth,
             'citizenship' => citizenship,
-            'citizenship_2' => citizenship_2,
-            'citizenship_3' => citizenship_3,
+            'citizenship_2' => citizenship2,
+            'citizenship_3' => citizenship3,
             'passport_number' => passport_number,
             'sanction_status' => sanction_status,
             'date_of_sanction' => date_of_sanction&.iso8601,

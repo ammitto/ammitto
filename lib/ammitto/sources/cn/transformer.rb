@@ -68,6 +68,12 @@ module Ammitto
           }
         }.freeze
 
+        # Language configuration map - single source of truth
+        LANG_MAP = {
+          'zh' => { key: 'zh-Hans', script: 'Hani', is_primary: true },
+          'en' => { key: 'en', script: 'Latn', is_primary: false }
+        }.freeze
+
         def initialize
           super(:cn)
         end
@@ -288,12 +294,6 @@ module Ammitto
             )
           end.compact
         end
-
-        # Language configuration map - single source of truth
-        LANG_MAP = {
-          'zh' => { key: 'zh-Hans', script: 'Hani', is_primary: true },
-          'en' => { key: 'en', script: 'Latn', is_primary: false }
-        }.freeze
 
         def transform_effects(measures)
           return [create_effect(effect_type: 'sectoral_sanction', scope: 'full')] if measures.nil? || measures.empty?

@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
   # >= 0.8.29: floor is the first release after lutaml/lutaml-model#781,
   # which fixed 0.8.18-0.8.25 hard-depending on yeptris (no Windows
   # platform gem, broke every Windows install of this gem in that range).
-  spec.add_dependency 'lutaml-model', '~> 0.8', '>= 0.8.29'
+  spec.add_dependency 'lutaml-model', '~> 0.8.29'
   spec.add_dependency 'mechanize', '~> 2.12'
   spec.add_dependency 'moxml', '~> 0.1', '>= 0.1.25'
   spec.add_dependency 'multi_json', '~> 1.15'

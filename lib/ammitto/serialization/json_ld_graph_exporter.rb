@@ -457,7 +457,6 @@ module Ammitto
         [
           ['all.jsonld', 'application/ld+json', 'Every node in one graph'],
           ['all.ttl', 'text/turtle', 'The same graph as Turtle'],
-          ['search-index.json', 'application/json', 'Flattened records for search'],
           ['stats.json', 'application/json', 'Entity and entry counts per source'],
           ['context.jsonld', 'application/ld+json', 'JSON-LD context for every node']
         ].filter_map do |name, media_type, description|
@@ -495,6 +494,7 @@ module Ammitto
       def manifest_collections
         [
           ['sources', 'One aggregate per source'],
+          ['search-index', 'Authority-sharded records for search'],
           ['facets', 'Value lists for filtering'],
           ['ontology', 'Classes, properties and hierarchy'],
           ['node', 'Individual entity and entry nodes'],

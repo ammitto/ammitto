@@ -76,13 +76,25 @@ def aggregate
       puts "    Entities: #{entity_count}, Entries: #{entry_count}"
     end
 
-    # Read search index
-    search_file = api_dir / 'search-index.json'
-    if search_file.exist?
-      search_data = JSON.parse(File.read(search_file))
-      entries = search_data['entities'] || []
+    # Read the search index. #119 replaced the monolithic search-index.json
+    # with per-authority shards under search-index/ plus a manifest.json;
+    # combine every shard rather than looking for the old single file, and
+    # raise instead of silently writing empty output when a source's api
+    # directory exists but has no sharded search index to read.
+    search_index_dir = api_dir / 'search-index'
+    if search_index_dir.exist?
+      shard_files = search_index_dir.glob('*.json').reject do |file|
+        file.basename.to_s == 'manifest.json'
+      end
+      entries = shard_files.flat_map do |shard_file|
+        JSON.parse(File.read(shard_file))['entities'] || []
+      end
       all_search_entries.concat(entries)
-      puts "    Search entries: #{entries.length}"
+      puts "    Search entries: #{entries.length} (#{shard_files.length} shards)"
+    else
+      raise "Missing sharded search index at #{search_index_dir} for " \
+            "#{dir_name}: expected search-index/*.json shards, not the " \
+            'pre-#119 monolithic search-index.json'
     end
 
     # Copy all.jsonld to sources directory

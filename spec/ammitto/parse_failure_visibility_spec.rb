@@ -14,6 +14,11 @@ RSpec.describe Ammitto::ParseFailureVisibility do
   after do
     Ammitto::Logger.logger = nil
     ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
+    # 'rejects an invalid mode' leaves the global configuration on :bogus;
+    # left unreset, that mode leaks into any later spec anywhere in the
+    # suite that exercises ParseFailureVisibility.report through a source
+    # parser, since #mode reads Ammitto.configuration directly.
+    Ammitto.reset_configuration!
   end
 
   it 'defaults to warn' do

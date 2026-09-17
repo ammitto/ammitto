@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../parse_failure_visibility'
 
 module Ammitto
   module Sources
@@ -24,13 +25,22 @@ module Ammitto
         end
 
         # Parse date value
+        #
+        # An application date the EU writes that Date.parse cannot read
+        # is currently discarded outright, with no trace of what was
+        # actually stated — reported here rather than silently dropped.
+        # @param value [Object, nil] the raw application-date value
+        # @return [Date, nil]
         def self.parse_date(value)
           return nil if value.nil?
           return value if value.is_a?(Date)
 
           begin
             Date.parse(value.to_s)
-          rescue ArgumentError
+          rescue ArgumentError => e
+            Ammitto::ParseFailureVisibility.report(
+              source: :eu_vessels, field: :date_of_application, value: value, error: e
+            )
             nil
           end
         end

@@ -7,9 +7,16 @@
 module HarvestFixtures
   # A record the UK filename rule can name, and nothing more.
   #
-  # `filename_for_item(:uk, item)` reads `unique_id`, so that is the only
-  # thing these need to carry. `to_yaml` comes free from Struct.
-  UkRecord = Struct.new(:unique_id)
+  # `filename_for_item(:uk, item)` calls `#identifier`, the same contract
+  # every real source item class now implements (see
+  # lib/ammitto/sources/uk/designation.rb), so this fixture implements it
+  # too rather than the raw `unique_id` field ItemMapper used to read
+  # directly. `to_yaml` comes free from Struct.
+  UkRecord = Struct.new(:unique_id) do
+    def identifier
+      unique_id
+    end
+  end
 
   # @param count [Integer] how many records to build
   # @return [Array<UkRecord>] records with distinct identifiers

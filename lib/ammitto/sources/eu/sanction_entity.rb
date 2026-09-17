@@ -10,6 +10,7 @@ require_relative 'identification'
 require_relative 'name_alias'
 require_relative 'regulation'
 require_relative 'subject_type'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -113,6 +114,12 @@ module Ammitto
 
         def primary_birthdate
           birthdates.first
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(eu_reference_number)
         end
       end
     end

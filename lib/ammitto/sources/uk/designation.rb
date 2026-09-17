@@ -7,6 +7,7 @@ require_relative 'non_latin_names_wrapper'
 require_relative 'addresses_wrapper'
 require_relative 'sanctions_indicators'
 require_relative 'individual_details'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -140,6 +141,12 @@ module Ammitto
         # @return [String, nil]
         def date_designated
           normalize_date(@date_designated)
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(unique_id)
         end
       end
     end

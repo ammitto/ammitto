@@ -42,6 +42,12 @@ module Ammitto
         def total_count
           all_individuals.count + all_entities.count
         end
+
+        # Every fetched record this source carries.
+        # @return [Array]
+        def items
+          all_individuals + all_entities
+        end
       end
     end
   end

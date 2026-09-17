@@ -163,13 +163,19 @@ module Ammitto
         # Get all vessels
         # @return [Array<Vessel>]
         def all_vessels
-          vessels
+          vessels || []
         end
 
         # Get count of vessels
         # @return [Integer]
         def count
           vessels.length
+        end
+
+        # Every fetched record this source carries.
+        # @return [Array<Vessel>]
+        def items
+          all_vessels
         end
       end
     end

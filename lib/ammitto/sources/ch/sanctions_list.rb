@@ -37,7 +37,7 @@ module Ammitto
         # Get all identities for YAML output
         # @return [Array<Target>]
         def all_identities
-          targets
+          targets || []
         end
 
         # Get all individuals
@@ -50,6 +50,12 @@ module Ammitto
         # @return [Array<Target>]
         def entities
           targets.select(&:entity)
+        end
+
+        # Every fetched record this source carries.
+        # @return [Array<Target>]
+        def items
+          all_identities
         end
       end
     end

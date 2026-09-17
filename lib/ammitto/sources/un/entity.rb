@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -68,6 +69,12 @@ module Ammitto
         # Helper methods
         def primary_name
           first_name
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(reference_number)
         end
       end
     end

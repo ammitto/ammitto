@@ -99,9 +99,10 @@ Style/ArrayIntersect:
 # complexity.
 #
 # birth_info.rb is the birth-date/year-range parsing cluster split out of
-# BaseTransformer (to bring that class back under Metrics/ClassLength); its
-# length is the documented rationale behind each parsing decision, not
-# unmanaged complexity.
+# BaseTransformer for a clearer responsibility boundary, not because
+# BaseTransformer was over Metrics/ClassLength; its length is the
+# documented rationale behind each parsing decision, not unmanaged
+# complexity.
 Metrics/ModuleLength:
   Exclude:
     - 'lib/ammitto/ontology/types.rb'

@@ -172,7 +172,7 @@ module Ammitto
       #   the value runs backwards
       # @raise [InvalidYearRangeError] when a year bound is not a year,
       #   or a closed year span runs backwards
-      # @return [BirthInfo] the birth info
+      # @return [::Ammitto::BirthInfo] the birth info
       def create_birth_info(date: nil, circa: false, city: nil, region: nil, country: nil,
                             country_iso_code: nil, year: nil,
                             year_range_from: nil, year_range_to: nil)
@@ -212,7 +212,7 @@ module Ammitto
       # interval lies inside it, so retaining that scalar reads out a
       # fact the source stated twice rather than inventing a day.
       # @param bounds [Array<Date, nil>] validated [from, to]
-      # @return [BirthInfo] the birth info
+      # @return [::Ammitto::BirthInfo] the birth info
       def birth_info_for_date_range(bounds, circa, city, region, country, country_iso_code)
         lower, upper = bounds
         exact_year = lower.year if lower && upper && lower.year == upper.year
@@ -235,7 +235,7 @@ module Ammitto
       # A span of years suppresses both scalars: date and year are the
       # source's single-value claims, and a span makes neither.
       # @param bounds [Array<Integer, nil>] validated [from, to]
-      # @return [BirthInfo] the birth info
+      # @return [::Ammitto::BirthInfo] the birth info
       def birth_info_for_range(bounds, circa, city, region, country, country_iso_code)
         Ammitto::BirthInfo.new(
           date: nil,

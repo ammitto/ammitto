@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../transformers/base_transformer'
+require_relative '../../parse_failure_visibility'
 
 module Ammitto
   module Sources
@@ -197,9 +198,26 @@ module Ammitto
           Ammitto::OfficialAnnouncement.new(
             title: "Announcement #{source_entity.announcement_number}",
             url: source_entity.source_url,
-            publish_date: parse_date(source_entity.announcement_date),
+            publish_date: parse_announcement_date(source_entity.announcement_date),
             language: 'ru'
           )
+        end
+
+        # An announcement date Russia writes that Date.parse cannot read
+        # was previously discarded silently through the shared
+        # base_transformer#parse_date, with no trace of what was
+        # actually stated — reported here instead.
+        # @param value [String, nil]
+        # @return [Date, nil]
+        def parse_announcement_date(value)
+          return nil if value.nil? || value.to_s.strip.empty?
+
+          Date.parse(value.to_s)
+        rescue Date::Error => e
+          Ammitto::ParseFailureVisibility.report(
+            source: :ru, field: :announcement_date, value: value, error: e
+          )
+          nil
         end
 
         def build_remarks(source_entity)

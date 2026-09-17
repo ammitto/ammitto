@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # BaseTransformer is loaded by transformers/registry.rb
+require_relative '../../parse_failure_visibility'
 
 module Ammitto
   module Sources
@@ -159,9 +160,29 @@ module Ammitto
         # @return [TemporalPeriod]
         def create_period(source)
           Ammitto::TemporalPeriod.new(
-            listed_date: parse_date(source.listed_date),
+            listed_date: parse_listed_date(source.listed_date),
             is_indefinite: true
           )
+        end
+
+        # A listing date Turkey writes that Date.parse cannot read was
+        # previously discarded silently through the shared
+        # base_transformer#parse_date, with no trace of what was
+        # actually stated — reported here instead. Distinct from the
+        # record-level identity refusals in SanctionsList/IntegrityError:
+        # those stop a row from minting an IRI at all, this only loses
+        # one field on a row that is otherwise published.
+        # @param value [String, nil]
+        # @return [Date, nil]
+        def parse_listed_date(value)
+          return nil if value.nil? || value.to_s.strip.empty?
+
+          Date.parse(value.to_s)
+        rescue Date::Error => e
+          Ammitto::ParseFailureVisibility.report(
+            source: :tr, field: :listed_date, value: value, error: e
+          )
+          nil
         end
       end
     end

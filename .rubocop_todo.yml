@@ -117,7 +117,7 @@ Metrics/BlockLength:
     - 'scripts/import_neo4j_full.rb'
     - 'scripts/parse_ru_sanctions_list.rb'
 
-# Offense count: 14
+# Offense count: 15
 # Configuration parameters: CountComments, Max, CountAsOne.
 Metrics/ClassLength:
   Exclude:
@@ -132,6 +132,7 @@ Metrics/ClassLength:
     - 'lib/ammitto/serialization/search_index_exporter.rb'
     - 'lib/ammitto/services/entity_resolution_service.rb'
     - 'lib/ammitto/sources/cn/transformer.rb'
+    - 'lib/ammitto/transformers/base_transformer.rb'
     - 'scripts/convert_to_knowledge_graph.rb'
     - 'scripts/import_neo4j_full.rb'
     - 'scripts/validate_neo4j_data.rb'

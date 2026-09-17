@@ -97,9 +97,16 @@ Style/ArrayIntersect:
 # Centralized ontology vocabulary and normalization module: its length
 # tracks the sanctions-domain vocabulary (schema-driven), not code
 # complexity.
+#
+# birth_info.rb is the birth-date/year-range parsing cluster split out of
+# BaseTransformer for a clearer responsibility boundary, not because
+# BaseTransformer was over Metrics/ClassLength; its length is the
+# documented rationale behind each parsing decision, not unmanaged
+# complexity.
 Metrics/ModuleLength:
   Exclude:
     - 'lib/ammitto/ontology/types.rb'
+    - 'lib/ammitto/transformers/birth_info.rb'
 
 Lint/ConstantDefinitionInBlock:
   Exclude:

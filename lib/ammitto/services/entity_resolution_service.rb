@@ -2,7 +2,10 @@
 
 require_relative '../ontology/entities/harmonized_entity'
 require_relative '../ontology/value_objects/harmonized_name'
-require_relative '../ontology/value_objects/harmonized_attributes'
+require_relative '../ontology/value_objects/harmonized_birth_info'
+require_relative '../ontology/value_objects/harmonized_nationality'
+require_relative '../ontology/value_objects/harmonized_address'
+require_relative '../ontology/value_objects/harmonized_identification'
 require_relative '../ontology/value_objects/source_provenance'
 require_relative '../ontology/types'
 

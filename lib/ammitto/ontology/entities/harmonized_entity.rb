@@ -5,7 +5,10 @@ require_relative '../types'
 require_relative '../value_objects/name_variant'
 require_relative '../value_objects/source_provenance'
 require_relative '../value_objects/harmonized_name'
-require_relative '../value_objects/harmonized_attributes'
+require_relative '../value_objects/harmonized_birth_info'
+require_relative '../value_objects/harmonized_nationality'
+require_relative '../value_objects/harmonized_address'
+require_relative '../value_objects/harmonized_identification'
 
 module Ammitto
   module Ontology

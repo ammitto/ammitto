@@ -40,12 +40,13 @@ module Ammitto
         def merge_row(row)
           super
 
-          # Parse dates of birth (comma-separated, can have multiple)
+          # Parse dates of birth (comma-separated, with multi-year cells)
           dob_str = row['Date of Birth']
           if dob_str && !dob_str.empty?
             dob_str.split(',').map(&:strip).each do |date_str|
-              date = FlexibleDate.parse(date_str)
-              dates_of_birth << date if date && dates_of_birth.none? { |d| d.raw_value == date.raw_value }
+              Array(FlexibleDate.parse(date_str)).each do |date|
+                dates_of_birth << date unless dates_of_birth.include?(date)
+              end
             end
           end
 

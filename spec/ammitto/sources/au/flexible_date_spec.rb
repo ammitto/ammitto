@@ -92,17 +92,50 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
       end
     end
 
-    # Anchored on purpose. A cell holding two dates states neither as THE
-    # birth date, and reading the first one would publish a claim the
-    # source did not make.
-    it 'leaves a cell holding more than one numeric date to the fallback' do
-      date = described_class.parse('19/12/1962 30/12/1965')
-      expect(date.month).to be_nil
-      expect(date.precision).to eq('year')
+    it 'emits one candidate per distinct year in a multi-year cell' do
+      dates = described_class.parse('19/12/1962 30/12/1965')
 
-      annotated = described_class.parse('a) 30/04/1963 b) 1960')
-      expect(annotated.month).to be_nil
-      expect(annotated.precision).to eq('year')
+      expect(dates).to be_an(Array)
+      expect(dates.map(&:year)).to eq([1962, 1965])
+      expect(dates.map(&:precision)).to eq(%w[year year])
+    end
+
+    # A period-separated cell ("1980.1981") matches no recognised pattern
+    # and used to fall through to the scalar year-only fallback, which
+    # greedily grabs the first 4-digit run and silently drops the rest.
+    it 'emits one candidate per distinct year in a period-separated cell' do
+      dates = described_class.parse('1980.1981')
+
+      expect(dates).to be_an(Array)
+      expect(dates.map(&:year)).to eq([1980, 1981])
+      expect(dates.map(&:precision)).to eq(%w[year year])
+    end
+
+    it 'keeps circa attached to the candidate it prefixes' do
+      dates = described_class.parse("Approximately 1968\n\n28/08/1965")
+
+      expect(dates.map(&:year)).to eq([1968, 1965])
+      expect(dates.map(&:circa)).to eq([true, false])
+    end
+
+    # CIRCA_MARKER used to be matched only against the very start of the
+    # segment before a year token. DFAT's own list-marker shape ("a) ...
+    # b) ...", already exercised elsewhere in this file without circa)
+    # puts a label ahead of the marker, so the anchored match missed it
+    # and 1968 lost its circa flag entirely.
+    it 'finds circa behind a list-marker label, not just at the segment start' do
+      dates = described_class.parse('a) Approximately 1968 b) 28/08/1965')
+
+      expect(dates.map(&:year)).to eq([1968, 1965])
+      expect(dates.map(&:circa)).to eq([true, false])
+    end
+
+    it 'keeps a recognised year range as one parsed range' do
+      date = described_class.parse('Approximately: Between 1959 and 1965')
+
+      expect(date).to be_a(described_class)
+      expect(date.year_range_from).to eq(1959)
+      expect(date.year_range_to).to eq(1965)
     end
 
     # circa outranks the shape: the marker is the source's own hedge and

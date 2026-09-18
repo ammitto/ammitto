@@ -3,6 +3,7 @@
 require 'lutaml/model'
 require_relative '../scalar_field'
 require_relative 'name_variant'
+require_relative '../../parse_failure_visibility'
 
 module Ammitto
   module Sources
@@ -98,13 +99,22 @@ module Ammitto
         end
 
         # Parse date value
+        #
+        # A designation date the list writes that Date.parse cannot read
+        # is currently discarded outright, with no trace of what was
+        # actually stated — reported here rather than silently dropped.
+        # @param value [Object, nil] the raw designation-date value
+        # @return [Date, nil]
         def self.parse_date(value)
           return nil if value.nil?
           return value if value.is_a?(Date)
 
           begin
             Date.parse(value.to_s)
-          rescue ArgumentError
+          rescue ArgumentError => e
+            Ammitto::ParseFailureVisibility.report(
+              source: :un_vessels, field: :designation_date, value: value, error: e
+            )
             nil
           end
         end

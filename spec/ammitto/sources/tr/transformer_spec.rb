@@ -2,6 +2,7 @@
 
 require 'ammitto'
 require 'ammitto/sources/tr'
+require 'stringio'
 
 # The fetch fix alone would keep both designees on disk and still lose one
 # in the graph: harmonize reads each YAML file back and mints its IRIs
@@ -317,6 +318,63 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
         transformer.transform(source(name: 'TAMAS COMPANY',
                                      reference_number: '١٢٣'))
       end.to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError)
+    end
+  end
+
+  # listed_date was discarded silently to nil before this change, through
+  # the shared base_transformer#parse_date; the published value must not
+  # change in any mode. Distinct from the IntegrityError refusals above:
+  # those stop a record from minting an IRI at all, this only loses one
+  # field on a row that is otherwise published.
+  describe 'parse failure visibility for listed_date' do
+    let(:io) { StringIO.new }
+    let(:record) { source(name: 'TAMAS COMPANY', reference_number: '999', listed_date: 'not-a-date') }
+
+    before do
+      Ammitto.reset_configuration!
+      Ammitto::Logger.logger = Logger.new(io)
+    end
+
+    after do
+      Ammitto::Logger.logger = nil
+      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
+    end
+
+    it 'warns and counts, publishing nil exactly as before' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+      result = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        result = transform(record)
+      end
+
+      expect(result[:entry].period.listed_date).to be_nil
+      expect(io.string).to include('Parse failure in tr.listed_date')
+      expect(run.count(:tr)).to eq(1)
+    end
+
+    it 'stays silent but still counts in silent mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :silent }
+      run = Ammitto::ParseFailureVisibility::Run.new
+      result = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        result = transform(record)
+      end
+
+      expect(result[:entry].period.listed_date).to be_nil
+      expect(io.string).to be_empty
+      expect(run.count(:tr)).to eq(1)
+    end
+
+    it 'raises Ammitto::ParseFailureError in raise mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :raise }
+
+      expect { transformer.send(:parse_listed_date, 'not-a-date') }
+        .to raise_error(Ammitto::ParseFailureError) { |e|
+          expect(e.source).to eq(:tr)
+          expect(e.field).to eq(:listed_date)
+        }
     end
   end
 end

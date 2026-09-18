@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'ammitto/sources/au'
+require 'stringio'
 
 RSpec.describe Ammitto::Sources::Au::FlexibleDate do
   describe '.parse' do
@@ -465,6 +466,83 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
         .to equal(Ammitto::Utils::CircaMarker::MARKER_LIKE)
       expect(described_class::MARKER_LIKE)
         .to equal(Ammitto::Transformers::BaseTransformer::MARKER_LIKE)
+    end
+  end
+
+  # A cell that resolves nothing at all (precision 'unknown') is reported
+  # to Ammitto::ParseFailureVisibility from two separate branches of
+  # #parse — the marker-boundary decline and the exhausted fallback — and
+  # both must publish exactly the same FlexibleDate they always have: the
+  # visibility hook is additive, never a second opinion on the result.
+  describe 'parse failure visibility' do
+    let(:io) { StringIO.new }
+
+    before do
+      Ammitto.reset_configuration!
+      Ammitto::Logger.logger = Logger.new(io)
+    end
+
+    after do
+      Ammitto::Logger.logger = nil
+      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
+    end
+
+    it 'warns and counts without changing the published FlexibleDate' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+      date = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        date = described_class.parse('China 1955')
+      end
+
+      expect(date.year).to be_nil
+      expect(date.precision).to eq('unknown')
+      expect(io.string).to include('Parse failure in au.date_of_birth')
+      expect(run.count(:au)).to eq(1)
+    end
+
+    it 'stays silent but still counts in silent mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :silent }
+      run = Ammitto::ParseFailureVisibility::Run.new
+      date = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        date = described_class.parse('China 1955')
+      end
+
+      expect(date.precision).to eq('unknown')
+      expect(io.string).to be_empty
+      expect(run.count(:au)).to eq(1)
+    end
+
+    it 'raises Ammitto::ParseFailureError in raise mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :raise }
+
+      expect { described_class.parse('China 1955') }
+        .to raise_error(Ammitto::ParseFailureError) { |e|
+          expect(e.source).to eq(:au)
+          expect(e.field).to eq(:date_of_birth)
+        }
+    end
+
+    it 'reports from the exhausted-fallback branch too, not only the marker-boundary one' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        described_class.parse('nonsense text')
+      end
+
+      expect(run.count(:au)).to eq(1)
+    end
+
+    it 'does not report a value that resolved a year' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        described_class.parse('1957')
+      end
+
+      expect(run.count(:au)).to eq(0)
     end
   end
 end

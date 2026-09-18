@@ -4,6 +4,7 @@ require 'date'
 require 'lutaml/model'
 
 require_relative '../../utils/circa_marker'
+require_relative '../../parse_failure_visibility'
 
 module Ammitto
   module Sources
@@ -161,7 +162,16 @@ module Ammitto
           # was published as an exact one. Its bare "c" had no boundary
           # either, which made "China 1955" approximate.
           cleaned = strip_circa_marker(flexible, cleaned)
-          return flexible if cleaned.nil?
+          if cleaned.nil?
+            # A value that opens like a marker without satisfying its
+            # boundary resolves nothing (precision 'unknown', set by
+            # strip_circa_marker) and was published with no trace of the
+            # discard until now.
+            Ammitto::ParseFailureVisibility.report(
+              source: :au, field: :date_of_birth, value: date_str
+            )
+            return flexible
+          end
 
           # Numeric shapes resolve their month or resolve nothing, so
           # they skip demote_unresolved_month too. A well-formed slash
@@ -201,6 +211,17 @@ module Ammitto
           # branch above stored that unchecked. A record then asserted month 0
           # at full precision -- a claim the source never made.
           demote_unresolved_month(flexible)
+
+          # The remaining route to 'unknown': every numeric and
+          # alphabetic pattern above declined the cell and the fallback
+          # never matched, so nothing resolved at all (e.g. a single
+          # comma-separated fragment). Same discard, different code path
+          # from the marker-boundary case above.
+          if flexible.precision == 'unknown'
+            Ammitto::ParseFailureVisibility.report(
+              source: :au, field: :date_of_birth, value: date_str
+            )
+          end
 
           flexible
         end

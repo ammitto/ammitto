@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'stringio'
 
 RSpec.describe Ammitto::Sources::Ru::Transformer do
   let(:transformer) { described_class.new }
@@ -52,6 +53,69 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
       expect(birth.date).to eq(Date.new(1975, 2, 1))
       expect(birth.year).to eq(1975)
       expect(birth.circa).to be(false)
+    end
+  end
+
+  # announcement_date was discarded silently to nil before this change,
+  # through the shared base_transformer#parse_date; the published value
+  # must not change in any mode.
+  describe 'parse failure visibility for announcement_date' do
+    let(:io) { StringIO.new }
+    let(:entity) do
+      Ammitto::Sources::Ru::SanctionedEntity.new(
+        english_name: 'Test Org',
+        entity_type: 'organization',
+        list_type: 'stop_list',
+        source_url: 'https://mid.ru/example',
+        announcement_date: 'not-a-date'
+      )
+    end
+
+    before do
+      Ammitto.reset_configuration!
+      Ammitto::Logger.logger = Logger.new(io)
+    end
+
+    after do
+      Ammitto::Logger.logger = nil
+      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
+    end
+
+    it 'warns and counts, publishing nil exactly as before' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+      result = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        result = transformer.transform(entity)
+      end
+
+      expect(result[:entry].announcement.publish_date).to be_nil
+      expect(io.string).to include('Parse failure in ru.announcement_date')
+      expect(run.count(:ru)).to eq(1)
+    end
+
+    it 'stays silent but still counts in silent mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :silent }
+      run = Ammitto::ParseFailureVisibility::Run.new
+      result = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        result = transformer.transform(entity)
+      end
+
+      expect(result[:entry].announcement.publish_date).to be_nil
+      expect(io.string).to be_empty
+      expect(run.count(:ru)).to eq(1)
+    end
+
+    it 'raises Ammitto::ParseFailureError in raise mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :raise }
+
+      expect { transformer.send(:parse_announcement_date, 'not-a-date') }
+        .to raise_error(Ammitto::ParseFailureError) { |e|
+          expect(e.source).to eq(:ru)
+          expect(e.field).to eq(:announcement_date)
+        }
     end
   end
 end

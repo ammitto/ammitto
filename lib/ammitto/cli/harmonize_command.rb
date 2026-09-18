@@ -129,8 +129,15 @@ module Ammitto
         # reused command instance must not inherit an earlier run's links
         @entry_ids_by_entity = nil
 
-        results = @sources.map do |source|
-          harmonize_source(source)
+        parse_run = ParseFailureVisibility::Run.new
+        results = ParseFailureVisibility.with_run(parse_run) do
+          @sources.map do |source|
+            harmonize_source(source)
+          end
+        end
+
+        results.each do |result|
+          result[:parse_failures] = parse_run.count(result[:code])
         end
 
         # Export all collected nodes to files
@@ -463,6 +470,10 @@ module Ammitto
           added = ingest_results(result, source, source_graph, errors, File.basename(file))
           entities_count += added
           entries_count += added
+        rescue ParseFailureError => e
+          error_msg = "#{File.basename(file)}: #{e.message}"
+          puts "[#{source}] Parse failure: #{error_msg}" if options[:verbose]
+          errors << error_msg
         rescue StandardError => e
           error_msg = "#{File.basename(file)}: #{e.message}"
           puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
@@ -1467,6 +1478,11 @@ module Ammitto
              "#{failed.length} failed, #{exempted.length} exempted"
         print_graph_totals
 
+        puts 'Parse failures by source:'
+        results.each do |result|
+          puts "  #{result[:code]}: #{result.fetch(:parse_failures, 0)}"
+        end
+
         print_source_problems('Failed sources:', failed, :gate_failures)
         print_source_problems('Exempted sources (--allow-empty):', exempted,
                               :exempted_failures)
@@ -1571,6 +1587,7 @@ module Ammitto
           'status' => result[:status].to_s,
           'entities' => result[:entities],
           'entries' => result[:entries],
+          'parse_failures' => result.fetch(:parse_failures, 0),
           'error' => result[:error],
           'gate_failures' => result[:gate_failures] || [],
           'exempted_failures' => result[:exempted_failures] || [],

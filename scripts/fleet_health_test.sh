@@ -981,7 +981,13 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   # fields with `read`, which strips trailing whitespace, so a reason of
   # nothing but spaces reaches it empty and is rejected. `.+` counted those
   # spaces as a reason and passed a line the monitor pages on.
-  line_re='^[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.*[^[:space:]]))?[[:space:]]*$'
+  # Only [[:blank:]] (space, tab) at the front: that is exactly what bash's
+  # `read` strips via its default IFS. [[:space:]] also matches CR/VT/FF,
+  # which `read` does NOT strip -- a line opening with one of those would
+  # then pass this validator while still reaching the runtime with a
+  # stray control character stuck to $repo. Codex review finding,
+  # 2026-09-14.
+  line_re='^[[:blank:]]*[A-Za-z0-9._-]+([[:space:]]+(ack:[^:]+([^:]|:)*:[0-9]{4}-[0-9]{2}-[0-9]{2}|no-schedule:.*[^[:space:]]))?[[:space:]]*$'
   bad_lines="$(sed 's/#.*//' "$SCRIPT_DIR/fleet_repos.txt" |
     grep -vE '^[[:space:]]*$' |
     grep -vE "$line_re" \
@@ -1034,6 +1040,22 @@ if [ -f "$SCRIPT_DIR/fleet_repos.txt" ]; then
   done
   [ -z "$bad_lines" ] && pass "every repos-file line is well formed" \
     || fail "malformed repos-file lines: $bad_lines"
+
+  # The runtime parses a line with `read -r repo ack_spec <<<"$line"`,
+  # which strips leading whitespace, so an indented line works fine at
+  # runtime. `line_re` must accept the same lines the runtime accepts, or
+  # a maintainer who indents a line gets a red self-test against a
+  # monitor that would have worked.
+  for indented in \
+    '  data-x' \
+    '	data-x ack:parked pending ruling:2098-09-07' \
+    '  data-x no-schedule:archived'; do
+    if printf '%s\n' "$indented" | grep -qE "$line_re"; then
+      pass "validator accepts an indented line: ${indented#$'\t'}"
+    else
+      fail "validator rejected an indented line the runtime accepts: $indented"
+    fi
+  done
 else
   fail "fleet_repos.txt missing"
 fi

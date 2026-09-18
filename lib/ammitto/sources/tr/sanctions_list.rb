@@ -507,6 +507,12 @@ module Ammitto
         def count
           entities.size
         end
+
+        # Every fetched record this source carries.
+        # @return [Array<SanctionedEntity>]
+        def items
+          entities || []
+        end
       end
     end
   end

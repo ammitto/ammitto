@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 require_relative '../../utils/iri_sanitizer'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -362,6 +363,19 @@ module Ammitto
           return id if holder.nil? || sanitized_name == holder[:slug]
 
           fallback_name
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        #
+        # +local_id+ already folds the name fallback in for a blank or
+        # reserved "Sıra No" (see the comment above it); the second
+        # candidate here only fires the rarer case that method's own
+        # `malformed?` guard returns nil for outright, not a blank one.
+        #
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(local_id) ||
+            Ammitto::Utils::Presence.presence(name)
         end
 
         # The name at the fidelity the IRI slug throws away.

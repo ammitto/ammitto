@@ -53,6 +53,12 @@ module Ammitto
         def firms_to_json
           { 'ZPROCSUPP' => firms.map(&:to_json) }
         end
+
+        # Every fetched record this source carries.
+        # @return [Array<SanctionedFirm>]
+        def items
+          firms || []
+        end
       end
     end
   end

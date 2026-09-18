@@ -3,6 +3,7 @@
 require 'lutaml/model'
 require_relative 'name'
 require_relative 'sanction'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -51,6 +52,24 @@ module Ammitto
           return if names.any? { |n| n.text == name.text }
 
           names << name
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        #
+        # The old `identifier_candidates` case tried +reference+ then
+        # +id+ for every AU item — but no class in this hierarchy has
+        # ever defined +id+ (Lutaml::Model::Serializable does not add
+        # one, and neither does this class or any of its three
+        # subclasses), so that second candidate raised NoMethodError on
+        # any real Individual, Organization, or Vessel whose +reference+
+        # was itself blank, rather than falling through to it. This is
+        # the same shape of bug the nz Ship fallback had: a candidate
+        # named for a method the item does not actually have. +id+ is
+        # simply dropped here rather than reproduced.
+        #
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(reference)
         end
 
         def merge_row(row)

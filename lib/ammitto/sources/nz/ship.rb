@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -86,6 +87,23 @@ module Ammitto
         # Get reference number (alias for unique_identifier)
         def reference_number
           unique_identifier
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        #
+        # +reference_number+ is defined above as an alias of
+        # +unique_identifier+, so the two candidates always agree here —
+        # unlike the old `identifier_candidates` shape, where the second
+        # candidate could name a method a class simply never defined
+        # (see the au fix in base_entity.rb for a case where it did).
+        # Kept as two candidates anyway, matching Individual and Entity,
+        # so all three NZ classes answer identically to a blank
+        # +unique_identifier+.
+        #
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(unique_identifier) ||
+            Ammitto::Utils::Presence.presence(reference_number)
         end
 
         # Convert to hash for YAML serialization

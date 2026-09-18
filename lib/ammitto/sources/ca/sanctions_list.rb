@@ -36,6 +36,12 @@ module Ammitto
         def entities
           records.reject(&:individual?)
         end
+
+        # Every fetched record this source carries.
+        # @return [Array<Record>]
+        def items
+          records || []
+        end
       end
     end
   end

@@ -363,6 +363,35 @@ RSpec.describe Ammitto::Sources::Tr::SanctionedEntity do
     end
   end
 
+  # Moved from spec/ammitto/cli/fetch/item_mapper_spec.rb along with the
+  # candidate-priority logic itself: ItemMapper now just calls
+  # `item.identifier`, so the fallback behaviour belongs on the class that
+  # implements it.
+  describe '#identifier' do
+    it 'is local_id when local_id resolves to something' do
+      record = build(name: 'TAMAS COMPANY', reference_number: '42')
+
+      expect(record.identifier).to eq('42')
+    end
+
+    # local_id already falls back to the name for a blank or reserved
+    # reference; this is the rarer case local_id cannot absorb on its
+    # own — a malformed (not merely blank) reference, which local_id
+    # refuses outright rather than falling through for.
+    it 'falls back to name when local_id is nil for a reason other than blank' do
+      record = build(name: 'TAMAS COMPANY', reference_number: [1])
+
+      expect(record.local_id).to be_nil
+      expect(record.identifier).to eq('TAMAS COMPANY')
+    end
+
+    it 'is nil when neither local_id nor name can produce anything' do
+      record = build(name: nil, reference_number: nil)
+
+      expect(record.identifier).to be_nil
+    end
+  end
+
   describe '.reference_segment' do
     it 'is the address a published reference lands on' do
       expect(described_class.reference_segment('187')).to eq('187')

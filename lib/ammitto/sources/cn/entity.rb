@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 require_relative 'measure'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -73,6 +74,13 @@ module Ammitto
         def list_type_code
           key = sanction_list.to_s.strip.delete_prefix('cn/')
           LIST_TYPE_CODES.fetch(key, 'unknown')
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(english_name) ||
+            Ammitto::Utils::Presence.presence(chinese_name)
         end
       end
     end

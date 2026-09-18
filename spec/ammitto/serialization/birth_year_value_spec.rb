@@ -3,6 +3,8 @@
 require 'json'
 require 'spec_helper'
 require 'ammitto/serialization/birth_year_value'
+require 'ammitto/serialization/birth_year_year'
+require 'ammitto/serialization/birth_year_date_range'
 
 RSpec.describe Ammitto::Serialization::BirthYear do
   describe Ammitto::Serialization::BirthYear::Year do

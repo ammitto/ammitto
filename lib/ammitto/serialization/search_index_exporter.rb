@@ -5,6 +5,8 @@ require 'json'
 require 'time'
 require_relative '../utils/presence'
 require_relative 'birth_year_value'
+require_relative 'birth_year_year'
+require_relative 'birth_year_date_range'
 
 module Ammitto
   module Serialization
@@ -43,8 +45,6 @@ module Ammitto
       # polymorphic values, so it must not be merged element-by-element with
       # a later duplicate entity pair. This preserves first-seen precedence
       # and prevents a later pair's circa state from annotating earlier values.
-      BIRTH_YEAR_ROW_KEYS = %i[birthYears].freeze
-
       # A published year, wherever it comes from, is exactly four digits.
       # Shared with BirthYear::Value#normalized_year rather than
       # re-declared, so the two validations can never drift apart.
@@ -221,7 +221,7 @@ module Ammitto
         birth_years_settled = existing.key?(:birthYears)
 
         incoming.each do |key, value|
-          next if BIRTH_YEAR_ROW_KEYS.include?(key) && birth_years_settled
+          next if key == :birthYears && birth_years_settled
 
           existing[key] = value unless existing.key?(key)
         end

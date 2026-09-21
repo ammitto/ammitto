@@ -129,7 +129,32 @@ module Ammitto
         # legitimately be found this way.
         GLUED_MONTH_YEAR = %r{\A\d{1,2}/\d{5,}\z}
 
+        # CIRCA_MARKER is anchored at \A because its other callers strip
+        # the marker off the very start of a string they already know
+        # opens with it. Detection here is different: the marker has to
+        # be found anywhere in the segment between the previous year
+        # token and this one, because DFAT's own list-marker shape
+        # ("a) Approximately 1968 b) 28/08/1965") puts a label ahead of
+        # it. Anchoring the search at the segment's start, even after
+        # lstrip, missed that label and lost the marker.
+        CIRCA_MARKER_ANYWHERE = Regexp.new(
+          CIRCA_MARKER.source.sub(/\A\\A/, ''), CIRCA_MARKER.options
+        )
+
+        # Parse one date, or emit one FlexibleDate per distinct year when a
+        # single DFAT cell names several candidate years. Recognised year
+        # ranges remain one range object.
+        #
+        # @param date_str [String, nil]
+        # @return [FlexibleDate, Array<FlexibleDate>, nil]
         def self.parse(date_str)
+          parsed = parse_single(date_str)
+          return parsed unless parsed && multi_year_cell?(date_str) && !year_range?(parsed)
+
+          parse_year_candidates(date_str)
+        end
+
+        def self.parse_single(date_str)
           return nil if date_str.nil? || date_str.empty?
 
           flexible = new(raw_value: date_str, precision: 'full')
@@ -203,6 +228,60 @@ module Ammitto
           demote_unresolved_month(flexible)
 
           flexible
+        end
+
+        # Whether the cell names more than one distinct four-digit year.
+        # @param date_str [String]
+        # @return [Boolean]
+        def self.multi_year_cell?(date_str)
+          year_tokens(date_str).map(&:first).uniq.size > 1
+        end
+
+        # @param parsed [FlexibleDate]
+        # @return [Boolean]
+        def self.year_range?(parsed)
+          parsed.year_range_from || parsed.year_range_to
+        end
+
+        # Emit one year-only FlexibleDate per distinct source-stated year.
+        # A circa marker is attached to the year token it prefixes, rather
+        # than being copied to every later token in the same cell.
+        #
+        # @param date_str [String]
+        # @return [Array<FlexibleDate>]
+        def self.parse_year_candidates(date_str)
+          cleaned = date_str.tr(' ', ' ').strip.downcase
+          candidates = {}
+          previous_end = 0
+
+          year_tokens(date_str).each do |year, start|
+            segment = cleaned[previous_end...start]
+            candidates[year] = candidates.fetch(year, false) ||
+                               CIRCA_MARKER_ANYWHERE.match?(segment)
+            previous_end = start + year.length
+          end
+
+          candidates.map do |year, circa|
+            new(
+              raw_value: date_str,
+              year: year.to_i,
+              circa: circa,
+              precision: circa ? 'circa' : 'year'
+            )
+          end
+        end
+
+        # @param value [String]
+        # @return [Array<Array<String, Integer>>] year and byte offset
+        def self.year_tokens(value)
+          cleaned = value.tr(' ', ' ').strip.downcase
+          tokens = []
+
+          cleaned.scan(/\b\d{4}\b/) do
+            tokens << [Regexp.last_match[0], Regexp.last_match.begin(0)]
+          end
+
+          tokens
         end
 
         # Reduce a parse that never resolved its month to the precision it

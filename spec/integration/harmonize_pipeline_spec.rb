@@ -200,9 +200,16 @@ RSpec.describe 'harmonize pipeline (integration)' do
 
     index = JSON.parse(File.read(File.join(api, 'search-index', 'eu.json')))
     row = index['entities'].find { |e| e['ref'] == 'eu/eu1865' }
-    expect(row['birthYears']).to eq(%w[1953 1958])
-    expect(row['birthYearKind']).to eq('span')
-    expect(row['birthCirca']).to be true
+    expect(row['birthYears']).to eq([
+                                      {
+                                        'type' => 'date_range',
+                                        'from' => '1953',
+                                        'to' => '1958',
+                                        'circa' => true
+                                      }
+                                    ])
+    expect(row).not_to have_key('birthYearKind')
+    expect(row).not_to have_key('birthCirca')
 
     # The context artifact the website loads must type the new keys, or
     # a consumer expanding the graph gets untyped strings

@@ -55,6 +55,12 @@ module Ammitto
         def aircraft
           entries.select { |e| e.entity_type == 'aircraft' }
         end
+
+        # Every fetched record this source carries.
+        # @return [Array<SdnEntry>]
+        def items
+          entries || []
+        end
       end
     end
   end

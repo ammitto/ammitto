@@ -3,6 +3,7 @@
 require 'lutaml/model'
 require_relative '../scalar_field'
 require_relative 'name_variant'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -136,6 +137,16 @@ module Ammitto
         # Get reference number (alias for unique_identifier)
         def reference_number
           unique_identifier
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        #
+        # local_id, not unique_identifier: see the comment on +local_id+
+        # for why the constant "IMO-" ref must never be minted.
+        #
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(local_id)
         end
 
         # Convert to hash for YAML serialization

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -43,6 +44,13 @@ module Ammitto
         # Get reference number (alias for unique_identifier)
         def reference_number
           unique_identifier
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(imo_number) ||
+            Ammitto::Utils::Presence.presence(unique_identifier)
         end
 
         # Convert to hash for YAML serialization

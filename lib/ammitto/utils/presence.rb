@@ -28,6 +28,12 @@ module Ammitto
       def present?(value)
         !blank?(value)
       end
+
+      # @param value [Object]
+      # @return [Object, nil] nil for a blank value, the value otherwise
+      def presence(value)
+        blank?(value) ? nil : value
+      end
     end
   end
 end

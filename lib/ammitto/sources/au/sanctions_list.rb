@@ -138,7 +138,13 @@ module Ammitto
         end
 
         def all_entities
-          individuals + organizations + vessels
+          (individuals || []) + (organizations || []) + (vessels || [])
+        end
+
+        # Every fetched record this source carries.
+        # @return [Array]
+        def items
+          all_entities
         end
 
         def count

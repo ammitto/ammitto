@@ -43,6 +43,12 @@ module Ammitto
         def date_generated
           normalize_date(@date_generated)
         end
+
+        # Every fetched record this source carries.
+        # @return [Array<Designation>]
+        def items
+          designations || []
+        end
       end
     end
   end

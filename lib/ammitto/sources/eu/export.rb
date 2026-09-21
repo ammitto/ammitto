@@ -33,6 +33,12 @@ module Ammitto
           map 'global_file_id', to: :global_file_id
           map 'sanction_entities', to: :sanction_entities
         end
+
+        # Every fetched record this source carries.
+        # @return [Array<SanctionEntity>]
+        def items
+          sanction_entities || []
+        end
       end
     end
   end

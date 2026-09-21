@@ -127,6 +127,22 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
       end
     end
 
+    it 'turns a multi-year source cell into multiple BirthInfo records' do
+      individual = Ammitto::Sources::Au::Individual.new(
+        reference: 'multi-year',
+        dates_of_birth: [],
+        places_of_birth: []
+      )
+      individual.merge_row(
+        'Date of Birth' => 'a) 4/04/1964 b) 1966'
+      )
+
+      births = transformer.send(:transform_birth_info, individual)
+
+      expect(births.map(&:year)).to eq([1964, 1966])
+      expect(births.map(&:circa)).to eq([false, false])
+    end
+
     # DFAT states a span of years in one shape, and it is the only
     # multi-year date-of-birth value in the corpus (record au-8824).
     # The transformer used to publish 1959 as THE birth year.

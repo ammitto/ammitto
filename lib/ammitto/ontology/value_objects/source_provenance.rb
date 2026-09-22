@@ -31,7 +31,7 @@ module Ammitto
 
         # When this data was contributed
         # @return [DateTime, nil]
-        attribute :contributed_at, :datetime
+        attribute :contributed_at, :date_time
 
         # JSON mapping
         json do

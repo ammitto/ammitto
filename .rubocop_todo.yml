@@ -6,17 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowMultipleStyles, EnforcedHashRocketStyle, EnforcedColonStyle, EnforcedLastArgumentHashStyle.
-# SupportedHashRocketStyles: key, separator, table
-# SupportedColonStyles: key, separator, table
-# SupportedLastArgumentHashStyles: always_inspect, always_ignore, ignore_implicit, ignore_explicit
-Layout/HashAlignment:
-  Exclude:
-    - 'scripts/convert_to_knowledge_graph.rb'
-    - 'scripts/parse_ru_sanctions_list.rb'
-
 # Offense count: 1
 Lint/BinaryOperatorWithIdenticalOperands:
   Exclude:
@@ -148,15 +137,6 @@ Style/MixinUsage:
 Style/MultilineBlockChain:
   Exclude:
     - 'lib/ammitto/serialization/search_index_exporter.rb'
-
-# Offense count: 5
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: EnforcedStyle, AllowedMethods, AllowedPatterns.
-# SupportedStyles: predicate, comparison
-Style/NumericPredicate:
-  Exclude:
-    - 'spec/**/*'
-    - 'lib/ammitto/cmd/china_command.rb'
 
 # Offense count: 4
 # Configuration parameters: Max.

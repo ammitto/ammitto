@@ -3,6 +3,18 @@
 # Core dependencies
 require 'lutaml/model'
 
+# Force the standard (Psych/JSON-stdlib-backed) adapters before anything
+# else in this process touches lutaml-model YAML or JSON (de)serialization.
+#
+# `yeptris` is an unavoidable transitive dependency here (via `canon`,
+# itself a hard lutaml-model dependency), and lutaml-model auto-selects it
+# for both `:yaml` and `:json` whenever it's present. On Linux its native
+# extension fails to load and falls back to a pure-FFI path with a real
+# heap-corruption bug. `set_adapter_type` eagerly caches its result, so it
+# wins over the auto-detection regardless of load order.
+Lutaml::Model::AdapterResolver.set_adapter_type(:yaml, :standard)
+Lutaml::Model::AdapterResolver.set_adapter_type(:json, :standard)
+
 # Configure Lutaml::Model to use Nokogiri for XML parsing
 require 'moxml'
 Moxml::Adapter.load(:nokogiri)

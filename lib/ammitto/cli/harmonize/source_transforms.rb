@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../../errors/base_error'
 require_relative 'multi_shape_source_transforms'
 
 module Ammitto
@@ -9,7 +10,7 @@ module Ammitto
       # announcement-format guard and its marker constants, plus the
       # transform_<source> methods for fixed-shape sources (UK, EU, UN, US,
       # WB, CA, and UN_VESSELS). The shape-branching sources (AU, CH, CN, NZ,
-      # and JP), plus the fixed-shape RU, TR, and EU_VESSELS transforms, live
+      # JP, and RU), plus the fixed-shape TR and EU_VESSELS transforms, live
       # in MultiShapeSourceTransforms instead, split out purely to keep both
       # modules under the Metrics/ModuleLength budget. #transform_data still
       # dispatches every source, from either module, through this one table.
@@ -28,7 +29,7 @@ module Ammitto
 
         # Raised when announcement-format YAML reaches a legacy per-entity
         # source path that cannot parse it safely.
-        class AnnouncementFormatError < StandardError; end
+        class AnnouncementFormatError < Ammitto::Error; end
 
         # Top-level YAML keys that mark the announcement format.
         ANNOUNCEMENT_FORMAT_KEYS = %w[announcement sanction_details

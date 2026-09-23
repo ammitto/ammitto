@@ -11,6 +11,23 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
     end
   end
 
+  # Ammitto 1.0.0 returned one result per entity for a flat announcement;
+  # the announcement-file contract must not replace that for released
+  # callers.
+  describe '#transform_announcement with a flat ListAnnouncement' do
+    it 'returns one entity/entry pair per entity, as in 1.0.0' do
+      flat = Ammitto::Sources::Ru::ListAnnouncement.from_parsed_data(
+        number: '1', list_type: 'stop_list',
+        entities: [{ russian_name: 'Иванов', english_name: 'Ivanov' }]
+      )
+
+      results = transformer.transform_announcement(flat)
+
+      expect(results.map(&:keys)).to eq([%i[entity entry]])
+      expect(results.first[:entity]).to be_a(Ammitto::PersonEntity)
+    end
+  end
+
   describe '#authority' do
     it 'returns RU authority' do
       auth = transformer.send(:authority)

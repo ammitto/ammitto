@@ -101,6 +101,42 @@ RSpec.describe Ammitto::Cmd::Harmonize::SourceTransforms do
     end
   end
 
+  # data-ru stores announcement files, not per-entity records. Before the
+  # announcement path refused a file with no `sanction_details`, such a file
+  # fell through to Ru::SanctionedEntity and was published as one nameless
+  # organisation, actively entry-banned: a sanction nobody published.
+  context 'with a ru announcement file' do
+    include RuAnnouncementFixtures
+
+    let(:source_code) { :ru }
+    let(:document) { YAML.safe_load(ru_announcement_yaml) }
+    let(:exporter) do
+      instance_double(Ammitto::Serialization::JsonLdGraphExporter,
+                      add_group: nil)
+    end
+
+    before { command.instance_variable_set(:@exporter, exporter) }
+
+    describe '#transform_data' do
+      it 'returns one result per party the announcement names' do
+        names = harmonize(document).map { |r| r[:entity]['names'].first['fullName'] }
+
+        expect(names).to eq(['Peter Rey Aguilar', document.dig('sanction_details', 'entities', 1, 'name', 'en')])
+      end
+
+      it 'refuses with an Ammitto::Error, so `rescue Ammitto::Error` sees it' do
+        expect { harmonize(document.except('sanction_details')) }
+          .to raise_error(Ammitto::Error)
+      end
+
+      it 'refuses an announcement with no sanction_details' do
+        expect { harmonize(document.except('sanction_details')) }
+          .to raise_error(described_class::AnnouncementFormatError,
+                          /no sanction_details/)
+      end
+    end
+  end
+
   # Enters at Cmd::HarmonizeCommand#transform_data, so the assertions cover the
   # transformer-registry lookup and the :tr routing branch as well as the
   # transformation and its JSON-LD serialization. Input is the parsed shape of a

@@ -1,62 +1,66 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
-require_relative 'sanctioned_entity'
+require_relative 'announcement_block'
+require_relative 'sanction_details'
+require_relative 'list_announcement'
 
 module Ammitto
   module Sources
     module Ru
-      # For how Russia publishes, the three list types and usage examples,
-      # see lib/ammitto/sources/ru.rb.
-      # Announcement containing sanctioned entities
+      # One official announcement from MID, and everyone it names.
+      #
+      # This is the document data-ru actually stores, one file per
+      # announcement with the sanctioned parties inside it. The flat
+      # `{ russian_name:, english_name: }` shape is ListAnnouncement's, and
+      # no data-ru file uses it.
+      #
+      # @example Loading one
+      #   announcement = Ammitto::Sources::Ru::Announcement.from_yaml(
+      #     File.read('sources/announcements/20220413-1.yml')
+      #   )
+      #   announcement.entities.first.english_name # => "Peter Rey Aguilar"
+      #
       class Announcement < Lutaml::Model::Serializable
-        attribute :number, :string
-        attribute :date, :string
-        attribute :title, :string
-        attribute :issuing_authority, :string # MID, CBR, Government
-        attribute :list_type, :string
-        attribute :reason, :string
-        attribute :measures, :string, collection: true
-        attribute :effective_date, :string
-        attribute :source_url, :string
-        attribute :entities, SanctionedEntity, collection: true
+        attribute :announcement, AnnouncementBlock
+        attribute :sanction_details, SanctionDetails
 
+        key_value do
+          map 'announcement', to: :announcement
+          map 'sanction_details', to: :sanction_details
+        end
+
+        # @return [Array<Entity>] the parties named, or none
+        def entities
+          sanction_details&.entities || []
+        end
+
+        # @return [Array<Instrument>] the instruments cited, or none
+        def instruments
+          sanction_details&.instruments || []
+        end
+
+        # @return [String, nil] the announcement's own identifier
+        def document_id
+          announcement&.document_id
+        end
+
+        # @return [String, nil]
+        def publish_date
+          announcement&.publish_date
+        end
+
+        # Ammitto 1.0.0 published this method on this class name, building
+        # the flat `{ russian_name:, english_name: }` model. That model is
+        # ListAnnouncement now; delegating keeps released callers working.
+        # @deprecated Use ListAnnouncement.from_parsed_data
+        # @param data [Hash] parsed announcement data
+        # @return [ListAnnouncement]
         def self.from_parsed_data(data)
-          announcement = new(
-            number: data[:number],
-            date: data[:date],
-            title: data[:title],
-            issuing_authority: data[:issuing_authority],
-            list_type: data[:list_type],
-            reason: data[:reason],
-            measures: data[:measures] || [],
-            effective_date: data[:effective_date],
-            source_url: data[:source_url],
-            entities: []
-          )
-
-          (data[:entities] || []).each do |entity_data|
-            announcement.entities << SanctionedEntity.new(
-              russian_name: entity_data[:russian_name],
-              english_name: entity_data[:english_name],
-              entity_type: entity_data[:entity_type] || 'person',
-              list_type: announcement.list_type,
-              announcement_number: announcement.number,
-              announcement_date: announcement.date,
-              effective_date: announcement.effective_date,
-              reason: announcement.reason,
-              measures: announcement.measures,
-              source_url: announcement.source_url,
-              date_of_birth: entity_data[:date_of_birth],
-              nationality: entity_data[:nationality],
-              title: entity_data[:title],
-              affiliation: entity_data[:affiliation],
-              country: entity_data[:country],
-              industry: entity_data[:industry]
-            )
-          end
-
-          announcement
+          warn 'Ammitto::Sources::Ru::Announcement.from_parsed_data is ' \
+               'deprecated; use ListAnnouncement.from_parsed_data',
+               uplevel: 1
+          ListAnnouncement.from_parsed_data(data)
         end
       end
     end

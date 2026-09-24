@@ -165,10 +165,9 @@ module Ammitto
           )
         end
 
-        # A listing date Turkey writes that Date.parse cannot read was
-        # previously discarded silently through the shared
-        # base_transformer#parse_date, with no trace of what was
-        # actually stated — reported here instead. Distinct from the
+        # A listing date Turkey writes that Date.parse cannot read
+        # publishes as nil, so it is reported to keep a trace of what was
+        # actually stated. Distinct from the
         # record-level identity refusals in SanctionsList/IntegrityError:
         # those stop a row from minting an IRI at all, this only loses
         # one field on a row that is otherwise published.

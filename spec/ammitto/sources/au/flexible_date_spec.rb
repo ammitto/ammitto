@@ -2,7 +2,6 @@
 
 require 'spec_helper'
 require 'ammitto/sources/au'
-require 'stringio'
 
 RSpec.describe Ammitto::Sources::Au::FlexibleDate do
   describe '.parse' do
@@ -504,21 +503,11 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
 
   # A cell that resolves nothing at all (precision 'unknown') is reported
   # to Ammitto::ParseFailureVisibility from two separate branches of
-  # #parse — the marker-boundary decline and the exhausted fallback — and
+  # #parse, the marker-boundary decline and the exhausted fallback, and
   # both must publish exactly the same FlexibleDate they always have: the
   # visibility hook is additive, never a second opinion on the result.
   describe 'parse failure visibility' do
-    let(:io) { StringIO.new }
-
-    before do
-      Ammitto.reset_configuration!
-      Ammitto::Logger.logger = Logger.new(io)
-    end
-
-    after do
-      Ammitto::Logger.logger = nil
-      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
-    end
+    include_context 'with parse failure log capture'
 
     it 'warns and counts without changing the published FlexibleDate' do
       run = Ammitto::ParseFailureVisibility::Run.new

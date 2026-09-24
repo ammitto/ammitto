@@ -28,8 +28,8 @@ module Ammitto
         # Parse date value
         #
         # An application date the EU writes that Date.parse cannot read
-        # is currently discarded outright, with no trace of what was
-        # actually stated — reported here rather than silently dropped.
+        # publishes as nil, so it is reported to keep a trace of what the
+        # list actually stated.
         # @param value [Object, nil] the raw application-date value
         # @return [Date, nil]
         def self.parse_date(value)

@@ -2,7 +2,6 @@
 
 require 'spec_helper'
 require 'ammitto/sources/nz/ship'
-require 'stringio'
 
 RSpec.describe Ammitto::Sources::Nz::Ship do
   describe '.from_row_data' do
@@ -16,19 +15,9 @@ RSpec.describe Ammitto::Sources::Nz::Ship do
   # Same discard-then-vanish shape as Individual, on the vessel side of
   # the register.
   describe 'parse failure visibility' do
-    let(:io) { StringIO.new }
+    include_context 'with parse failure log capture'
 
-    before do
-      Ammitto.reset_configuration!
-      Ammitto::Logger.logger = Logger.new(io)
-    end
-
-    after do
-      Ammitto::Logger.logger = nil
-      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
-    end
-
-    it 'warns and counts, publishing nil exactly as before' do
+    it 'warns and counts, still publishing nil' do
       run = Ammitto::ParseFailureVisibility::Run.new
       ship = nil
 

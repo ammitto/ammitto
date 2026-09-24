@@ -2,7 +2,6 @@
 
 require 'spec_helper'
 require 'ammitto/sources/un_vessels/vessel'
-require 'stringio'
 
 RSpec.describe Ammitto::Sources::UnVessels::Vessel do
   describe '.parse_date' do
@@ -11,22 +10,12 @@ RSpec.describe Ammitto::Sources::UnVessels::Vessel do
     end
   end
 
-  # designation_date discarded silently to nil before this change; the
-  # published value must not change in any mode.
+  # An unreadable designation_date publishes as nil in every mode;
+  # visibility only adds the report.
   describe 'parse failure visibility' do
-    let(:io) { StringIO.new }
+    include_context 'with parse failure log capture'
 
-    before do
-      Ammitto.reset_configuration!
-      Ammitto::Logger.logger = Logger.new(io)
-    end
-
-    after do
-      Ammitto::Logger.logger = nil
-      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
-    end
-
-    it 'warns and counts, publishing nil exactly as before' do
+    it 'warns and counts, still publishing nil' do
       run = Ammitto::ParseFailureVisibility::Run.new
       result = nil
 

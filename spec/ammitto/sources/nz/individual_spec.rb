@@ -2,7 +2,6 @@
 
 require 'spec_helper'
 require 'ammitto/sources/nz/individual'
-require 'stringio'
 
 RSpec.describe Ammitto::Sources::Nz::Individual do
   describe '.from_row_data' do
@@ -13,23 +12,12 @@ RSpec.describe Ammitto::Sources::Nz::Individual do
     end
   end
 
-  # An unparseable date currently vanishes into nil with no trace of what
-  # the register actually said. Visibility is additive: the published
-  # value (nil, same as before) must not change in any mode.
+  # An unreadable date publishes as nil in every mode; visibility only
+  # adds the report of what the register actually said.
   describe 'parse failure visibility' do
-    let(:io) { StringIO.new }
+    include_context 'with parse failure log capture'
 
-    before do
-      Ammitto.reset_configuration!
-      Ammitto::Logger.logger = Logger.new(io)
-    end
-
-    after do
-      Ammitto::Logger.logger = nil
-      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
-    end
-
-    it 'warns and counts, publishing nil exactly as before' do
+    it 'warns and counts, still publishing nil' do
       run = Ammitto::ParseFailureVisibility::Run.new
       individual = nil
 

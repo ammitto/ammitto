@@ -76,9 +76,9 @@ module Ammitto
 
         # Parse date value
         #
-        # A value NZ writes that Date.parse cannot read is currently
-        # discarded outright, with no trace of what the register actually
-        # said — reported here rather than silently dropped.
+        # A value NZ writes that Date.parse cannot read publishes as nil,
+        # so it is reported to keep a trace of what the register actually
+        # said.
         # @param value [Object, nil] the raw cell value
         # @param field [Symbol] the attribute the value was destined for
         # @return [Date, nil]

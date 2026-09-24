@@ -1,25 +1,9 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'stringio'
 
 RSpec.describe Ammitto::ParseFailureVisibility do
-  let(:io) { StringIO.new }
-
-  before do
-    Ammitto.reset_configuration!
-    Ammitto::Logger.logger = Logger.new(io)
-  end
-
-  after do
-    Ammitto::Logger.logger = nil
-    ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
-    # 'rejects an invalid mode' leaves the global configuration on :bogus;
-    # left unreset, that mode leaks into any later spec anywhere in the
-    # suite that exercises ParseFailureVisibility.report through a source
-    # parser, since #mode reads Ammitto.configuration directly.
-    Ammitto.reset_configuration!
-  end
+  include_context 'with parse failure log capture'
 
   it 'defaults to warn' do
     run = described_class::Run.new

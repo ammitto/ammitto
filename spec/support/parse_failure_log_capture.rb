@@ -4,8 +4,10 @@ require 'logger'
 require 'stringio'
 
 # Parse failure specs assert on the WARN line a report writes and on the
-# per-run count, and must not leak a configured mode or logger into the
-# examples that run after them.
+# per-run count. The configuration is reset afterwards as well as before
+# because ParseFailureVisibility.mode reads Ammitto.configuration directly,
+# so a mode an example sets (including an invalid one) would otherwise
+# leak into every later spec that reports through a source parser.
 RSpec.shared_context 'with parse failure log capture' do
   let(:io) { StringIO.new }
 

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'stringio'
 
 RSpec.describe Ammitto::Sources::Wb::Transformer do
   let(:transformer) { described_class.new }
@@ -20,11 +19,11 @@ RSpec.describe Ammitto::Sources::Wb::Transformer do
     end
   end
 
-  # debar_from_date/debar_to_date were discarded silently to nil before
-  # this change, through the shared base_transformer#parse_date; the
-  # published value must not change in any mode.
+  # An unreadable debar_from_date or debar_to_date publishes as nil in
+  # every mode; visibility only adds the report.
   describe 'parse failure visibility for debarment dates' do
-    let(:io) { StringIO.new }
+    include_context 'with parse failure log capture'
+
     let(:firm) do
       Ammitto::Sources::Wb::SanctionedFirm.new(
         supp_id: 1,
@@ -35,17 +34,7 @@ RSpec.describe Ammitto::Sources::Wb::Transformer do
       )
     end
 
-    before do
-      Ammitto.reset_configuration!
-      Ammitto::Logger.logger = Logger.new(io)
-    end
-
-    after do
-      Ammitto::Logger.logger = nil
-      ENV.delete('AMMITTO_PARSE_FAILURE_MODE')
-    end
-
-    it 'warns and counts once, publishing nil exactly as before' do
+    it 'warns and counts once, still publishing nil' do
       run = Ammitto::ParseFailureVisibility::Run.new
       result = nil
 

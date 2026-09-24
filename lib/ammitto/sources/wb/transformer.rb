@@ -204,10 +204,9 @@ module Ammitto
         # Parse WB date format
         # WB uses YYYY-MM-DD format
         #
-        # A debarment start/end date World Bank writes that Date.parse
-        # cannot read was previously discarded silently through the
-        # shared base_transformer#parse_date, with no trace of what was
-        # actually stated — reported here instead.
+        # A debarment start or end date World Bank writes that Date.parse
+        # cannot read publishes as nil, so it is reported to keep a trace
+        # of what was actually stated.
         # @param date_str [String, nil]
         # @param field [Symbol] which firm field the value came from
         # @return [Date, nil]

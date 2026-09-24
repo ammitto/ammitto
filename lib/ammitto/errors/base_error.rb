@@ -165,7 +165,7 @@ module Ammitto
 
       # original_error is documented as an exception, but a caller passing a
       # bare String (a common shorthand for "here's why") must not crash the
-      # error report itself — #message on a String returns the string, so
+      # error report itself: #message on a String returns the string, so
       # only #class distinguishes the exception case from the plain-text one.
       detail = if original_error.is_a?(Exception)
                  "#{original_error.class}: #{original_error.message}"

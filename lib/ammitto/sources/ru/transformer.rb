@@ -206,9 +206,8 @@ module Ammitto
         end
 
         # An announcement date Russia writes that Date.parse cannot read
-        # was previously discarded silently through the shared
-        # base_transformer#parse_date, with no trace of what was
-        # actually stated — reported here instead.
+        # publishes as nil, so it is reported to keep a trace of what was
+        # actually stated.
         # @param value [String, nil]
         # @return [Date, nil]
         def parse_announcement_date(value)

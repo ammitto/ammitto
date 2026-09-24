@@ -190,8 +190,8 @@ module Ammitto
           if cleaned.nil?
             # A value that opens like a marker without satisfying its
             # boundary resolves nothing (precision 'unknown', set by
-            # strip_circa_marker) and was published with no trace of the
-            # discard until now.
+            # strip_circa_marker), so it is reported to keep a trace of
+            # what the cell said.
             Ammitto::ParseFailureVisibility.report(
               source: :au, field: :date_of_birth, value: date_str
             )

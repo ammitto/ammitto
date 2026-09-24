@@ -6,4 +6,11 @@ $LOAD_PATH.unshift(lib_path) unless $LOAD_PATH.include?(lib_path)
 
 require 'ammitto/cli'
 
+# Thor reports a failed command on unbuffered $stderr, while $stdout is
+# block-buffered when it is not a terminal; in a CI log that merges the two,
+# the failure line would otherwise land above the output that explains it.
+# Set here rather than in the library so a program that only requires
+# ammitto keeps its own $stdout buffering.
+$stdout.sync = true
+
 Ammitto::CLI.start(ARGV)

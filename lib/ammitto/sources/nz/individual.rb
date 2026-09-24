@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../parse_failure_visibility'
 require_relative '../../utils/presence'
 
 module Ammitto
@@ -73,7 +74,7 @@ module Ammitto
           individual.first_name = data['first_name']
           individual.middle_names = data['middle_name_s']
           individual.last_name = data['last_name']
-          individual.dob = parse_date(data['dob'])
+          individual.dob = parse_date(data['dob'], field: :dob)
           individual.title = data['title']
           individual.alias_alternate_spellings = data['alias_alternate_spellings']
           individual.address = data['address']
@@ -83,8 +84,9 @@ module Ammitto
           individual.citizenship3 = data['citizenship_3']
           individual.passport_number = data['passport_number']
           individual.sanction_status = data['sanction_status']
-          individual.date_of_sanction = parse_date(data['date_of_sanction'])
-          individual.date_of_additional_sanction = parse_date(data['date_of_additional_sanction'])
+          individual.date_of_sanction = parse_date(data['date_of_sanction'], field: :date_of_sanction)
+          individual.date_of_additional_sanction =
+            parse_date(data['date_of_additional_sanction'], field: :date_of_additional_sanction)
           individual.travel_ban = data['travel_ban']
           individual.asset_freeze = data['asset_freeze']
           individual.aircraft_ban = data['aircraft_ban']
@@ -97,13 +99,23 @@ module Ammitto
         end
 
         # Parse date value
-        def self.parse_date(value)
+        #
+        # A value NZ writes that Date.parse cannot read publishes as nil,
+        # so it is reported to keep a trace of what the register actually
+        # said.
+        # @param value [Object, nil] the raw cell value
+        # @param field [Symbol] the attribute the value was destined for
+        # @return [Date, nil]
+        def self.parse_date(value, field:)
           return nil if value.nil?
           return value if value.is_a?(Date)
 
           begin
             Date.parse(value.to_s)
-          rescue ArgumentError
+          rescue ArgumentError => e
+            Ammitto::ParseFailureVisibility.report(
+              source: :nz, field: field, value: value, error: e
+            )
             nil
           end
         end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../transformers/base_transformer'
+require_relative '../../parse_failure_visibility'
 
 module Ammitto
   module Sources
@@ -100,8 +101,9 @@ module Ammitto
             regime: create_regime(code: 'DEBARMENT', name: 'World Bank Debarment'),
             effects: create_debarment_effects(firm),
             period: create_period(
-              effective_date: parse_wb_date(firm.debar_from_date),
-              expiry_date: parse_wb_date(firm.debar_to_date)
+              source: :wb,
+              effective_date: parse_wb_date(firm.debar_from_date, field: :debar_from_date),
+              expiry_date: parse_wb_date(firm.debar_to_date, field: :debar_to_date)
             ),
             status: determine_status(firm),
             reference_number: firm.supp_id.to_s,
@@ -179,7 +181,8 @@ module Ammitto
         # @param firm [Ammitto::Sources::Wb::SanctionedFirm]
         # @return [String]
         def determine_status(firm)
-          return 'expired' if firm.debar_to_date && parse_wb_date(firm.debar_to_date) && parse_wb_date(firm.debar_to_date) < Date.today
+          debar_to = firm.debar_to_date && parse_wb_date(firm.debar_to_date, field: :debar_to_date)
+          return 'expired' if debar_to && debar_to < Date.today
 
           # Check eligibility status
           case firm.supp_elig_stat&.upcase
@@ -200,12 +203,22 @@ module Ammitto
 
         # Parse WB date format
         # WB uses YYYY-MM-DD format
+        #
+        # A debarment start or end date World Bank writes that Date.parse
+        # cannot read publishes as nil, so it is reported to keep a trace
+        # of what was actually stated.
         # @param date_str [String, nil]
+        # @param field [Symbol] which firm field the value came from
         # @return [Date, nil]
-        def parse_wb_date(date_str)
+        def parse_wb_date(date_str, field:)
           return nil if date_str.nil? || date_str.empty?
 
-          parse_date(date_str)
+          Date.parse(date_str)
+        rescue Date::Error => e
+          Ammitto::ParseFailureVisibility.report(
+            source: :wb, field: field, value: date_str, error: e
+          )
+          nil
         end
       end
     end

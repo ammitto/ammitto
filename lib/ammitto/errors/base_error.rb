@@ -153,6 +153,36 @@ module Ammitto
     end
   end
 
+  # Raised for an individual source-value parse failure.
+  class ParseFailureError < ParseError
+    attr_reader :source, :field, :value, :original_error
+
+    def initialize(source:, field:, value:, original_error: nil)
+      @source = source.to_sym
+      @field = field.to_sym
+      @value = value
+      @original_error = original_error
+
+      # original_error is documented as an exception, but a caller passing a
+      # bare String (a common shorthand for "here's why") must not crash the
+      # error report itself: #message on a String returns the string, so
+      # only #class distinguishes the exception case from the plain-text one.
+      detail = if original_error.is_a?(Exception)
+                 "#{original_error.class}: #{original_error.message}"
+               elsif original_error
+                 original_error.to_s
+               else
+                 'unrecognised value'
+               end
+
+      super(
+        "Parse failure in #{@source}.#{@field}: #{value.inspect} (#{detail})",
+        format: :value,
+        content: value.to_s
+      )
+    end
+  end
+
   # Error raised for serialization failures
   #
   # @example

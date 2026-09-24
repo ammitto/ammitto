@@ -54,6 +54,7 @@ module Ammitto
           sources_dir: resolve(:sources_dir),
           api_base_url: resolve(:api_base_url),
           log_level: resolve(:log_level),
+          parse_failure_mode: resolve(:parse_failure_mode),
           sources: resolve(:sources),
           output_format: resolve(:output_format),
           connection_timeout: resolve(:connection_timeout),
@@ -79,6 +80,7 @@ module Ammitto
         when :sources_dir then Defaults::SOURCES_DIR
         when :api_base_url then Defaults::API_BASE_URL
         when :log_level then Defaults::LOG_LEVEL
+        when :parse_failure_mode then Defaults::PARSE_FAILURE_MODE
         when :sources then Defaults::DEFAULT_SOURCES
         when :output_format then Defaults::DEFAULT_OUTPUT_FORMAT
         when :connection_timeout then Defaults::CONNECTION_TIMEOUT

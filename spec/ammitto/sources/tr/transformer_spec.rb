@@ -319,4 +319,51 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       end.to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError)
     end
   end
+
+  # An unreadable listed_date publishes as nil in every mode; visibility
+  # only adds the report. Distinct from the IntegrityError refusals above:
+  # those stop a record from minting an IRI at all, this only loses one
+  # field on a row that is otherwise published.
+  describe 'parse failure visibility for listed_date' do
+    include_context 'with parse failure log capture'
+
+    let(:record) { source(name: 'TAMAS COMPANY', reference_number: '999', listed_date: 'not-a-date') }
+
+    it 'warns and counts, still publishing nil' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+      result = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        result = transform(record)
+      end
+
+      expect(result[:entry].period.listed_date).to be_nil
+      expect(io.string).to include('Parse failure in tr.listed_date')
+      expect(run.count(:tr)).to eq(1)
+    end
+
+    it 'stays silent but still counts in silent mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :silent }
+      run = Ammitto::ParseFailureVisibility::Run.new
+      result = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        result = transform(record)
+      end
+
+      expect(result[:entry].period.listed_date).to be_nil
+      expect(io.string).to be_empty
+      expect(run.count(:tr)).to eq(1)
+    end
+
+    it 'raises Ammitto::ParseFailureError in raise mode' do
+      Ammitto.configure { |config| config.parse_failure_mode = :raise }
+
+      expect { transformer.send(:parse_listed_date, 'not-a-date') }
+        .to raise_error(Ammitto::ParseFailureError) { |e|
+          expect(e.source).to eq(:tr)
+          expect(e.field).to eq(:listed_date)
+        }
+    end
+  end
 end

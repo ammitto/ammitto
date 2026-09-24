@@ -3,6 +3,7 @@
 require_relative 'birth_info'
 require_relative '../utils/iri_sanitizer'
 require_relative '../utils/list_types_registry'
+require_relative '../parse_failure_visibility'
 
 module Ammitto
   module Transformers
@@ -155,16 +156,24 @@ module Ammitto
       end
 
       # Parse a date string safely
+      #
+      # A value the source states but Date.parse cannot read still
+      # publishes as nil, so without a report the stated value would leave
+      # no trace. Reporting needs both source: and field: so a failure is
+      # always attributable; an absent value is not a failure.
       # @param date_str [String, Date, nil] the date string or Date object
+      # @param source [Symbol, nil] source code the failure is counted under
+      # @param field [Symbol, nil] field name the failure is reported as
       # @return [Date, nil] parsed date or nil
-      def parse_date(date_str)
+      def parse_date(date_str, source: nil, field: nil)
         return nil if date_str.nil?
         return date_str if date_str.is_a?(Date)
         return nil if date_str.to_s.empty?
 
         begin
           Date.parse(date_str.to_s)
-        rescue Date::Error
+        rescue Date::Error => e
+          ParseFailureVisibility.report(source: source, field: field, value: date_str, error: e) if source && field
           nil
         end
       end
@@ -223,17 +232,30 @@ module Ammitto
       end
 
       # Create a TemporalPeriod
+      #
+      # source: is required so every date this parses is attributable when
+      # it fails. Callers that pass one raw value as both listed_date and
+      # effective_date get it parsed once, so one bad cell counts as one
+      # failure rather than two.
+      # @param source [Symbol] source code parse failures are counted under
       # @param listed_date [String, Date, nil] listing date
       # @param effective_date [String, Date, nil] effective date
       # @param expiry_date [String, Date, nil] expiry date
       # @param last_updated [String, nil] last update timestamp
       # @return [TemporalPeriod] the period
-      def create_period(listed_date: nil, effective_date: nil, expiry_date: nil,
+      def create_period(source:, listed_date: nil, effective_date: nil, expiry_date: nil,
                         last_updated: nil)
+        listed = parse_date(listed_date, source: source, field: :listed_date)
+        effective = if !effective_date.nil? && effective_date == listed_date
+                      listed
+                    else
+                      parse_date(effective_date, source: source, field: :effective_date)
+                    end
+
         Ammitto::TemporalPeriod.new(
-          listed_date: listed_date.is_a?(Date) ? listed_date : parse_date(listed_date),
-          effective_date: effective_date.is_a?(Date) ? effective_date : parse_date(effective_date),
-          expiry_date: expiry_date.is_a?(Date) ? expiry_date : parse_date(expiry_date),
+          listed_date: listed,
+          effective_date: effective,
+          expiry_date: parse_date(expiry_date, source: source, field: :expiry_date),
           is_indefinite: expiry_date.nil?,
           last_updated: last_updated
         )

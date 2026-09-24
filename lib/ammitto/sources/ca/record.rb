@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -96,6 +97,13 @@ module Ammitto
         def generate_id
           parts = [country, schedule, item].compact
           parts.join('-').gsub(/[^a-zA-Z0-9-]/, '-').gsub(/-+/, '-')
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(generate_id) ||
+            Ammitto::Utils::Presence.presence(item)
         end
 
         # Convert to hash for YAML serialization

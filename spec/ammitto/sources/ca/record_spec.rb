@@ -111,6 +111,31 @@ RSpec.describe Ammitto::Sources::Ca::Record do
     end
   end
 
+  # Moved from spec/ammitto/cli/fetch/item_mapper_spec.rb along with the
+  # candidate-priority logic itself: ItemMapper now just calls
+  # `item.identifier`, so the fallback behaviour belongs on the class that
+  # implements it.
+  describe '#identifier' do
+    it 'prefers generate_id when it is present' do
+      record = described_class.new(country: 'Iran', schedule: '1', item: '17')
+
+      expect(record.identifier).to eq(record.generate_id)
+    end
+
+    it 'falls through to item when generate_id is blank' do
+      record = described_class.new(item: 'Iran-9')
+
+      expect(record.identifier).to eq('Iran-9')
+    end
+
+    it 'is nil when neither candidate carries anything usable' do
+      record = described_class.new
+      allow(record).to receive(:generate_id).and_return('')
+
+      expect(record.identifier).to be_nil
+    end
+  end
+
   describe 'YAML round trip' do
     # `fetch ca` writes each record with this mapping and `harmonize`
     # reads it back, so a name dropped here is a name the pipeline can

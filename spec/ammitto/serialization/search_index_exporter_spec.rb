@@ -114,313 +114,175 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:country]).to eq('KP')
     end
 
-    it 'extracts a single birth year for persons as an exact year' do
-      entity = {
-        '@id' => 'https://www.ammitto.org/entity/un/test',
-        'entityType' => 'person',
-        'names' => [{ 'fullName' => 'Test' }],
-        'birthInfo' => [{ 'date' => '1984-01-08' }]
-      }
+    describe 'birth-year value objects' do
+      def year_value(value, circa: false)
+        Ammitto::Serialization::BirthYear::Year.new(value, circa: circa)
+      end
 
-      entry = {
-        'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
-        'status' => 'active'
-      }
+      def range_value(from: nil, to: nil, circa: false)
+        Ammitto::Serialization::BirthYear::DateRange.new(
+          from: from,
+          to: to,
+          circa: circa
+        )
+      end
 
-      exporter.add(entity, entry)
-
-      row = exporter.entities.first
-      expect(row[:birthYears]).to eq(['1984'])
-      expect(row[:birthYearKind]).to eq('exact')
-      expect(row).not_to have_key(:birthCirca)
-    end
-
-    # An entity can carry one birth record per contributing source, and
-    # the one holding the exact date is not reliably first. Reading only
-    # `birthInfo.first` dropped a stated year whenever a location-only or
-    # empty record preceded it — while the span path already scanned the
-    # whole list, so a range was found where a more precise year was not.
-    it 'finds an exact year in a birth record that is not the first' do
-      entity = {
-        '@id' => 'https://www.ammitto.org/entity/un/later-record',
-        'entityType' => 'person',
-        'names' => [{ 'fullName' => 'Test' }],
-        'birthInfo' => [
-          { 'city' => 'Pyongyang' },
-          { 'date' => '1984-01-08' }
-        ]
-      }
-
-      exporter.add(entity, 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' },
-                           'status' => 'active')
-
-      expect(exporter.entities.first[:birthYears]).to eq(['1984'])
-    end
-
-    # birthYears is always an array; birthYearKind names the shape. A
-    # span never coexists with a bare exact-year answer the way the old
-    # birthYear/birthYearFrom/birthYearTo triple let it.
-    context 'with a stated span of birth years' do
-      def row_for(birth_info)
-        exporter.add({
-                       '@id' => 'https://www.ammitto.org/entity/eu/test',
-                       'entityType' => 'person',
-                       'names' => [{ 'fullName' => 'Test' }],
-                       'birthInfo' => [birth_info]
-                     },
-                     { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                       'status' => 'active' })
+      def row_for(birth_infos)
+        exporter.add(
+          {
+            '@id' => 'https://www.ammitto.org/entity/eu/birth',
+            'entityType' => 'person',
+            'names' => [{ 'fullName' => 'Test' }],
+            'birthInfo' => birth_infos
+          },
+          { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+            'status' => 'active' }
+        )
         exporter.entities.first
       end
 
-      it 'exports both bounds as a span' do
-        row = row_for({ 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 })
+      it 'exports one exact Year object' do
+        row = row_for([{ 'date' => '1984-01-08' }])
 
-        expect(row[:birthYears]).to eq(%w[1953 1958])
-        expect(row[:birthYearKind]).to eq('span')
-      end
-
-      # Position carries direction: an upper-only bound must not collapse
-      # to the same shape an equivalent lower-only bound would — that
-      # would make "1980 or later" indistinguishable from "1980 or
-      # earlier".
-      it 'keeps an upper-only bound at index 1, not shifted to index 0' do
-        row = row_for({ 'yearRangeTo' => 1980 })
-
-        expect(row[:birthYears]).to eq([nil, '1980'])
-        expect(row[:birthYearKind]).to eq('span')
-      end
-
-      it 'keeps a lower-only bound at index 0' do
-        row = row_for({ 'yearRangeFrom' => 1953 })
-
-        expect(row[:birthYears]).to eq(['1953', nil])
-        expect(row[:birthYearKind]).to eq('span')
-      end
-
-      it 'reads the snake_case spelling too' do
-        row = row_for({ 'year_range_from' => 1959, 'year_range_to' => 1965 })
-
-        expect(row[:birthYears]).to eq(%w[1959 1965])
-        expect(row[:birthYearKind]).to eq('span')
-      end
-
-      it 'marks a span circa when the source hedged it' do
-        row = row_for({ 'yearRangeFrom' => 1959, 'yearRangeTo' => 1965, 'circa' => true })
-
-        expect(row[:birthCirca]).to eq(true)
-      end
-
-      # A full-date span reaches this exporter only after the real
-      # transformer derives its year bounds and the real serializer
-      # names them, so this example crosses both boundaries rather than
-      # hand-writing the hash they produce.
-      it 'exports year bounds derived from a serialized date span' do
-        transformer = Ammitto::Transformers::BaseTransformer.new(:us)
-        birth = transformer.send(:create_birth_info,
-                                 date: '28 Feb 1962 to 28 Feb 1963')
-        birth_node = Ammitto::Serialization::JsonLdSerializer
-                     .new.send(:serialize_birth_info, birth)
-
-        row = row_for(birth_node)
-
-        expect(row[:birthYears]).to eq(%w[1962 1963])
-        expect(row[:birthYearKind]).to eq('span')
-      end
-
-      # A same-year span collapses to an exact year rather than
-      # publishing a duplicate one-element "span" — this is the only
-      # scenario where the span path yields kind "exact". Without this,
-      # a regression that stopped collapsing it would leave the suite
-      # green and make every "born in 1962" search miss a person OFAC
-      # pinned to 1962 twice over.
-      it 'collapses a same-year date span to an exact year' do
-        transformer = Ammitto::Transformers::BaseTransformer.new(:us)
-        birth = transformer.send(:create_birth_info,
-                                 date: '01 Jan 1962 to 31 Dec 1962')
-        birth_node = Ammitto::Serialization::JsonLdSerializer
-                     .new.send(:serialize_birth_info, birth)
-
-        row = row_for(birth_node)
-
-        expect(birth_node['dateRangeFrom']).to eq(Date.new(1962, 1, 1))
-        expect(birth_node['dateRangeTo']).to eq(Date.new(1962, 12, 31))
-        expect(row[:birthYears]).to eq(['1962'])
-        expect(row[:birthYearKind]).to eq('exact')
-      end
-    end
-
-    # An entity can carry several birth records, and the span is not
-    # always the first one. Reading only the first dropped it silently.
-    context 'with several birth records' do
-      def row_for_all(birth_infos)
-        exporter.add({
-                       '@id' => 'https://www.ammitto.org/entity/eu/multi',
-                       'entityType' => 'person',
-                       'names' => [{ 'fullName' => 'Test' }],
-                       'birthInfo' => birth_infos
-                     },
-                     { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                       'status' => 'active' })
-        exporter.entities.first
-      end
-
-      # Codex review finding (round 2, 2026-09-14): a malformed span bound
-      # used to both publish as a "year" AND, by winning precedence, bury
-      # a perfectly good year another record stated.
-      it 'falls through to a valid candidate when the span record is malformed' do
-        row = row_for_all([{ 'year' => 1963 },
-                           { 'yearRangeFrom' => 'bad', 'yearRangeTo' => 'bad' }])
-
-        expect(row[:birthYears]).to eq(['1963'])
-        expect(row[:birthYearKind]).to eq('exact')
-      end
-
-      it 'finds a span that is not the first record' do
-        row = row_for_all([{ 'year' => 1964 },
-                           { 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 }])
-
-        expect(row[:birthYears]).to eq(%w[1953 1958])
-        expect(row[:birthYearKind]).to eq('span')
-      end
-
-      # Both bounds must come from ONE record. Taking a lower bound from
-      # one and an upper from another would publish a span no source
-      # ever stated.
-      it 'takes both bounds from the same record' do
-        row = row_for_all([{ 'yearRangeFrom' => 1953 },
-                           { 'yearRangeFrom' => 1970, 'yearRangeTo' => 1975 }])
-
-        expect(row[:birthYears]).to eq(['1953', nil])
-      end
-
-      it 'publishes every distinct year as candidates when there is no span' do
-        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1968 }, { 'date' => '1965-05-01' }])
-
-        expect(row[:birthYears]).to eq(%w[1963 1965 1968])
-        expect(row[:birthYearKind]).to eq('candidates')
-      end
-
-      it 'deduplicates repeated years down to one candidate' do
-        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1963 }])
-
-        expect(row[:birthYears]).to eq(['1963'])
-        expect(row[:birthYearKind]).to eq('exact')
-      end
-
-      it 'marks candidates circa when any contributing record hedged its year' do
-        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1968, 'circa' => true }])
-
-        expect(row[:birthCirca]).to eq(true)
-      end
-
-      # Codex review finding 2 (2026-09-14): a record whose own date/year
-      # never resolved to a valid year must not still contribute ITS circa
-      # flag to years OTHER records published.
-      it 'does not let a record contribute circa without contributing a year' do
-        row = row_for_all([{ 'year' => 1963 }, { 'year' => 1968 },
-                           { 'date' => 'not-a-date', 'circa' => true }])
-
-        expect(row[:birthYears]).to eq(%w[1963 1968])
+        expect(row[:birthYears]).to eq([year_value('1984')])
+        expect(row).not_to have_key(:birthYearKind)
         expect(row).not_to have_key(:birthCirca)
       end
 
-      # Codex review finding 3 (2026-09-14): candidate extraction now
-      # reuses #extract_year_from_date on every record, not only the
-      # single-record path #build_row used to run through
-      # #string_presence — so malformed and wrong-typed values must be
-      # rejected THERE or they reach the published index.
-      it 'rejects a wrong-typed or malformed year rather than publishing its #to_s' do
-        row = row_for_all([{ 'year' => 1963 }, { 'year' => true }])
+      it 'finds a year after a location-only record' do
+        row = row_for([{ 'city' => 'Pyongyang' }, { 'date' => '1984-01-08' }])
 
-        expect(row[:birthYears]).to eq(['1963'])
-        expect(row[:birthYearKind]).to eq('exact')
+        expect(row[:birthYears]).to eq([year_value('1984')])
       end
 
-      it 'rejects a blank date string rather than publishing four spaces as a year' do
-        row = row_for_all([{ 'date' => '    ' }])
+      it 'exports a closed DateRange' do
+        row = row_for([{ 'yearRangeFrom' => 1953, 'yearRangeTo' => 1958 }])
+
+        expect(row[:birthYears]).to eq([range_value(from: 1953, to: 1958)])
+      end
+
+      it 'preserves a lower-only range direction' do
+        row = row_for([{ 'yearRangeFrom' => 1953 }])
+
+        expect(row[:birthYears]).to eq([range_value(from: 1953)])
+      end
+
+      it 'preserves an upper-only range direction' do
+        row = row_for([{ 'yearRangeTo' => 1980 }])
+
+        expect(row[:birthYears]).to eq([range_value(to: 1980)])
+      end
+
+      it 'preserves circa on a span object' do
+        row = row_for([
+                        { 'yearRangeFrom' => 1959, 'yearRangeTo' => 1965, 'circa' => true }
+                      ])
+
+        expect(row[:birthYears]).to eq(
+          [range_value(from: 1959, to: 1965, circa: true)]
+        )
+      end
+
+      it 'publishes every distinct candidate with its own circa flag' do
+        row = row_for([
+                        { 'year' => 1963 },
+                        { 'year' => 1968, 'circa' => true }
+                      ])
+
+        expect(row[:birthYears]).to eq([
+                                         year_value('1963'),
+                                         year_value('1968', circa: true)
+                                       ])
+      end
+
+      it 'deduplicates repeated years while retaining circa uncertainty' do
+        row = row_for([
+                        { 'year' => 1963 },
+                        { 'year' => 1963, 'circa' => true }
+                      ])
+
+        expect(row[:birthYears]).to eq([year_value('1963', circa: true)])
+      end
+
+      it 'ignores malformed records and unrelated circa flags' do
+        row = row_for([
+                        { 'year' => 1963 },
+                        { 'year' => 1968 },
+                        { 'date' => 'not-a-date', 'circa' => true }
+                      ])
+
+        expect(row[:birthYears]).to eq([
+                                         year_value('1963'),
+                                         year_value('1968')
+                                       ])
+      end
+
+      it 'keeps the first duplicate row birth array atomic' do
+        exporter.add(
+          {
+            '@id' => 'https://www.ammitto.org/entity/eu/atomic',
+            'entityType' => 'person',
+            'birthInfo' => [{ 'year' => 1963 }]
+          },
+          { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+            'status' => 'active' }
+        )
+        exporter.add(
+          {
+            '@id' => 'https://www.ammitto.org/entity/eu/atomic',
+            'entityType' => 'person',
+            'birthInfo' => [{ 'year' => 1968, 'circa' => true }]
+          },
+          { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+            'status' => 'active' }
+        )
+
+        expect(exporter.entities.first[:birthYears])
+          .to eq([year_value('1963')])
+      end
+
+      it 'uses the legacy flat birthDate only without birthInfo records' do
+        row = row_for([{ 'city' => 'Pyongyang' }])
+
+        expect(row).not_to have_key(:birthYears)
+
+        fallback = {
+          '@id' => 'https://www.ammitto.org/entity/eu/fallback',
+          'entityType' => 'person',
+          'birthDate' => '1970-03-04'
+        }
+        exporter.add(
+          fallback,
+          { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+            'status' => 'active' }
+        )
+
+        expect(exporter.entities.last[:birthYears]).to eq([year_value('1970')])
+      end
+
+      it 'omits birthYears when no birth information exists' do
+        row = row_for([])
 
         expect(row).not_to have_key(:birthYears)
       end
 
-      it 'rejects a Hash value rather than publishing its #to_s fragment' do
-        row = row_for_all([{ 'year' => 1963 }, { 'date' => { 'bad' => 'shape' } }])
+      it 'renders the same objects into the public JSON shape' do
+        row = row_for([{ 'year' => 1968, 'circa' => true }])
+        exporter.export(output_dir)
 
-        expect(row[:birthYears]).to eq(['1963'])
+        data = JSON.parse(File.read(File.join(output_dir, 'search-index', 'eu.json')))
+        exported = data['entities'].find { |entity| entity['id'] == row[:id] }
+
+        expect(exported['birthYears']).to eq([
+                                               {
+                                                 'type' => 'year',
+                                                 'value' => '1968',
+                                                 'circa' => true
+                                               }
+                                             ])
+        expect(exported).not_to have_key('birthYearKind')
+        expect(exported).not_to have_key('birthCirca')
       end
-    end
-
-    # Codex review finding 4 (2026-09-14): the three birth-year keys
-    # describe one set of years and must move as a unit through
-    # #merge_row, or a later pair's circa flag can attach itself to the
-    # first-seen pair's different years.
-    it 'never attaches a later pair\'s circa flag to the first-seen years' do
-      exporter.add({
-                     '@id' => 'https://www.ammitto.org/entity/eu/merge-circa',
-                     'entityType' => 'person',
-                     'names' => [{ 'fullName' => 'Test' }],
-                     'birthInfo' => [{ 'year' => 1963 }]
-                   },
-                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                     'status' => 'active' })
-      exporter.add({
-                     '@id' => 'https://www.ammitto.org/entity/eu/merge-circa',
-                     'entityType' => 'person',
-                     'names' => [{ 'fullName' => 'Test' }],
-                     'birthInfo' => [{ 'year' => 1968, 'circa' => true }]
-                   },
-                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                     'status' => 'active' })
-
-      row = exporter.entities.first
-      expect(row[:birthYears]).to eq(['1963'])
-      expect(row).not_to have_key(:birthCirca)
-    end
-
-    it 'still exports an exact year for a stated single year, with no other keys' do
-      exporter.add({
-                     '@id' => 'https://www.ammitto.org/entity/eu/y',
-                     'entityType' => 'person',
-                     'names' => [{ 'fullName' => 'Test' }],
-                     'birthInfo' => [{ 'year' => 1964, 'circa' => true }]
-                   },
-                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                     'status' => 'active' })
-
-      row = exporter.entities.first
-      expect(row[:birthYears]).to eq(['1964'])
-      expect(row[:birthYearKind]).to eq('exact')
-      expect(row[:birthCirca]).to eq(true)
-    end
-
-    it 'omits all three birth-year keys when nothing is known' do
-      exporter.add({
-                     '@id' => 'https://www.ammitto.org/entity/eu/none',
-                     'entityType' => 'person',
-                     'names' => [{ 'fullName' => 'Test' }]
-                   },
-                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                     'status' => 'active' })
-
-      row = exporter.entities.first
-      expect(row).not_to have_key(:birthYears)
-      expect(row).not_to have_key(:birthYearKind)
-      expect(row).not_to have_key(:birthCirca)
-    end
-
-    it 'still reads the legacy flat birthDate field when there are no birthInfo records' do
-      exporter.add({
-                     '@id' => 'https://www.ammitto.org/entity/eu/flat',
-                     'entityType' => 'person',
-                     'names' => [{ 'fullName' => 'Test' }],
-                     'birthDate' => '1970-03-04'
-                   },
-                   { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
-                     'status' => 'active' })
-
-      row = exporter.entities.first
-      expect(row[:birthYears]).to eq(['1970'])
-      expect(row[:birthYearKind]).to eq('exact')
     end
 
     it 'extracts IMO for vessels' do
@@ -571,7 +433,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       exporter.add(entity.merge('names' => [{ 'fullName' => 0 }]), entry)
       exporter.export(output_dir)
 
-      data = JSON.parse(File.read(File.join(output_dir, 'search-index.json')))
+      data = JSON.parse(File.read(File.join(output_dir, 'search-index', 'cn.json')))
       expect(data['entities'].first['names']).to eq([])
     end
 
@@ -680,7 +542,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       exporter.add(entity, entry)
       exporter.export(output_dir)
 
-      data = JSON.parse(File.read(File.join(output_dir, 'search-index.json')))
+      data = JSON.parse(File.read(File.join(output_dir, 'search-index', 'cn.json')))
       expect(data['metadata']['totalEntities']).to eq(1)
       expect(data['entities'].length).to eq(1)
 
@@ -711,15 +573,122 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       end
     end
 
-    it 'creates search-index.json' do
+    it 'creates authority shards and a manifest' do
       exporter.export(output_dir)
 
-      index_file = File.join(output_dir, 'search-index.json')
-      expect(File.exist?(index_file)).to be true
+      shard_file = File.join(output_dir, 'search-index', 'un.json')
+      manifest_file = File.join(output_dir, 'search-index', 'manifest.json')
 
-      data = JSON.parse(File.read(index_file))
-      expect(data['metadata']['totalEntities']).to eq(3)
-      expect(data['entities'].length).to eq(3)
+      expect(File.exist?(shard_file)).to be true
+      expect(File.exist?(manifest_file)).to be true
+      expect(File.exist?(File.join(output_dir, 'search-index.json'))).to be false
+
+      shard = JSON.parse(File.read(shard_file))
+      expect(shard['metadata']['totalEntities']).to eq(3)
+      expect(shard['metadata']['sources']).to eq(1)
+      expect(shard['entities'].length).to eq(3)
+
+      manifest = JSON.parse(File.read(manifest_file))
+      expect(manifest['metadata']['totalEntities']).to eq(3)
+      expect(manifest['metadata']['sources']).to eq(1)
+      expect(manifest['shards']).to eq(
+        [{ 'code' => 'un', 'file' => 'un.json', 'count' => 3 }]
+      )
+    end
+
+    it 'partitions rows by authority with shard-scoped metadata' do
+      exporter.add(
+        {
+          '@id' => 'https://www.ammitto.org/entity/eu/extra',
+          'entityType' => 'person',
+          'names' => [{ 'fullName' => 'EU Entity' }]
+        },
+        {
+          'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
+          'status' => 'active'
+        }
+      )
+
+      exporter.export(output_dir)
+
+      un = JSON.parse(File.read(File.join(output_dir, 'search-index', 'un.json')))
+      eu = JSON.parse(File.read(File.join(output_dir, 'search-index', 'eu.json')))
+
+      expect(un['metadata']).to include('totalEntities' => 3, 'sources' => 1)
+      expect(eu['metadata']).to include('totalEntities' => 1, 'sources' => 1)
+      expect(un['entities'].map { |row| row['authority'] }).to all(eq('un'))
+      expect(eu['entities'].map { |row| row['authority'] }).to all(eq('eu'))
+
+      manifest = JSON.parse(
+        File.read(File.join(output_dir, 'search-index', 'manifest.json'))
+      )
+      expect(manifest['metadata']).to include('totalEntities' => 4, 'sources' => 2)
+      expect(manifest['shards']).to contain_exactly(
+        { 'code' => 'eu', 'file' => 'eu.json', 'count' => 1 },
+        { 'code' => 'un', 'file' => 'un.json', 'count' => 3 }
+      )
+    end
+
+    it 'preserves rows without an authority in an unknown shard' do
+      orphan = described_class.new
+      orphan.add(
+        {
+          '@id' => 'https://www.ammitto.org/entity/unknown/1',
+          'entityType' => 'person',
+          'names' => [{ 'fullName' => 'Unknown Entity' }]
+        },
+        { 'status' => 'active' }
+      )
+
+      orphan.export(output_dir)
+
+      shard = JSON.parse(
+        File.read(File.join(output_dir, 'search-index', 'unknown.json'))
+      )
+      expect(shard['metadata']).to include('totalEntities' => 1, 'sources' => 0)
+      expect(shard['entities'].length).to eq(1)
+    end
+
+    it 'removes a pre-sharding monolithic search-index.json from a reused output dir' do
+      leftover = File.join(output_dir, 'search-index.json')
+      File.write(leftover, '{"entities":[]}')
+
+      exporter.export(output_dir)
+
+      expect(File.exist?(leftover)).to be false
+    end
+
+    it 'drops a shard left over from an authority no longer present in a rerun' do
+      search_index_dir = File.join(output_dir, 'search-index')
+      FileUtils.mkdir_p(search_index_dir)
+      stale_shard = File.join(search_index_dir, 'stale.json')
+      File.write(stale_shard, '{"entities":[]}')
+
+      exporter.export(output_dir)
+
+      expect(File.exist?(stale_shard)).to be false
+      expect(File.exist?(File.join(search_index_dir, 'un.json'))).to be true
+    end
+
+    it 'falls back to the unknown shard for an authority with a path-traversal character' do
+      exporter = described_class.new
+      exporter.add(
+        {
+          '@id' => 'https://www.ammitto.org/entity/evil/1',
+          'entityType' => 'person',
+          'names' => [{ 'fullName' => 'Evil Entity' }]
+        },
+        { 'authority' => '../../etc/passwd', 'status' => 'active' }
+      )
+
+      exporter.export(output_dir)
+
+      escaped_path = File.join(output_dir, '..', '..', 'etc', 'passwd.json')
+      expect(File.exist?(escaped_path)).to be false
+      shard = JSON.parse(
+        File.read(File.join(output_dir, 'search-index', 'unknown.json'))
+      )
+      expect(shard['entities'].length).to eq(1)
     end
 
     it 'creates facets directory' do

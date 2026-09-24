@@ -45,6 +45,23 @@ RSpec.describe Ammitto::Sources::Uk::Transformer do
       birth = birth_for('07/05/1963')
       expect(birth.date).to eq(Date.new(1963, 5, 7))
       expect(birth.year).to eq(1963)
+      expect(birth.circa).to be(false)
+    end
+
+    it 'preserves a supported circa marker on a complete DOB' do
+      birth = birth_for('c. 7 Oct 1988')
+
+      expect(birth.date).to eq(Date.new(1988, 10, 7))
+      expect(birth.year).to eq(1988)
+      expect(birth.circa).to be(true)
+    end
+
+    it 'does not publish marker-like c.Oct as an exact date' do
+      birth = birth_for('c.Oct 7 1988')
+
+      expect(birth.date).to be_nil
+      expect(birth.year).to be_nil
+      expect(birth.circa).to be(false)
     end
 
     it 'skips dd/mm placeholders entirely' do

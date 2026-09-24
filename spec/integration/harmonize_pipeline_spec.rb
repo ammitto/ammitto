@@ -3,6 +3,7 @@
 require 'tmpdir'
 require 'fileutils'
 require 'json'
+require 'rdf/turtle'
 require 'ammitto/cli'
 require 'ammitto/cli/harmonize_command'
 
@@ -64,7 +65,7 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(person['names'].first).to have_key('isPrimary')
 
     # Search index carries real names (the production regression of 2026)
-    index = JSON.parse(File.read(File.join(api, 'search-index.json')))
+    index = JSON.parse(File.read(File.join(api, 'search-index', 'eu.json')))
     expect(index['entities'].length).to eq(2)
     expect(index['entities'].flat_map { |e| e['names'] }).to include('John Doe')
     expect(index['entities'].map { |e| e['primaryName'] }).to include('John Doe')
@@ -76,6 +77,47 @@ RSpec.describe 'harmonize pipeline (integration)' do
     # Stats agree with the graph
     stats = JSON.parse(File.read(File.join(api, 'stats.json')))
     expect(stats['total_entities']).to eq(2)
+  end
+
+  it 'exports valid per-source Turtle with exactly the JSON-LD records' do
+    write_eu_fixture(@workdir)
+    options = { sources_dir: @workdir, output_dir: File.join(@workdir, 'api', 'v1'), combine: true }
+    Ammitto::Cmd::HarmonizeCommand.new(options, ['eu']).run
+
+    api = File.join(@workdir, 'api', 'v1')
+    jsonld_path = File.join(api, 'sources', 'eu.jsonld')
+    ttl_path = File.join(api, 'sources', 'eu.ttl')
+
+    aggregate = JSON.parse(File.read(jsonld_path))
+    jsonld_ids = aggregate.fetch('@graph').map { |node| node.fetch('@id') }.sort
+
+    expect(File.exist?(ttl_path)).to be(true)
+
+    turtle_ids = RDF::Turtle::Reader
+                 .new(File.read(ttl_path))
+                 .each_statement
+                 .filter_map { |statement| statement.subject.to_s if statement.subject.is_a?(RDF::URI) }
+                 .uniq
+                 .sort
+
+    expect(turtle_ids).to eq(jsonld_ids)
+    expect(turtle_ids.length).to eq(aggregate.fetch('@graph').length)
+
+    # Subject-set equality alone would pass even if every predicate and
+    # object were wrong or missing. Read the actual statements for the
+    # person entity and check the name literal and type triple survived
+    # the JSON-LD to Turtle conversion, not just the node's IRI.
+    person_iri = 'https://www.ammitto.org/entity/eu/eu55'
+    statements = RDF::Turtle::Reader.new(File.read(ttl_path)).each_statement.to_a
+    person_statements = statements.select { |s| s.subject.to_s == person_iri }
+
+    expect(person_statements.map(&:predicate).map(&:to_s))
+      .to include('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'https://www.ammitto.org/ontology/entityType')
+    expect(person_statements.map(&:object).map(&:to_s)).to include('person')
+
+    source_prefixes = File.readlines(ttl_path).grep(/\A@prefix /)
+    all_prefixes = File.readlines(File.join(api, 'all.ttl')).grep(/\A@prefix /)
+    expect(source_prefixes).to eq(all_prefixes)
   end
 
   # A span has to survive every hop the website depends on: the fetch
@@ -96,10 +138,10 @@ RSpec.describe 'harmonize pipeline (integration)' do
     manifest = JSON.parse(File.read(File.join(api, 'index.jsonld')))
     named = manifest.fetch('entries').to_h { |e| [e['name'], e] }
 
-    expect(named).to include('search-index.json', 'stats.json', 'sources')
-    expect(named['search-index.json']['bytes'])
-      .to eq(File.size(File.join(api, 'search-index.json')))
-    expect(named['sources']['members']).to include('eu.jsonld')
+    expect(named).to include('search-index', 'stats.json', 'sources')
+    expect(named['search-index']['members'])
+      .to include('eu.json', 'manifest.json')
+    expect(named['sources']['members']).to include('eu.jsonld', 'eu.ttl')
     # One artefact from each of the two exporters that run after the
     # graph exporter, because "late enough" is two orderings, not one.
     # Asserting only the search index leaves a catalogue written
@@ -156,11 +198,18 @@ RSpec.describe 'harmonize pipeline (integration)' do
     expect(open_birth['yearRangeTo']).to eq(1980)
     expect(open_birth).not_to have_key('yearRangeFrom')
 
-    index = JSON.parse(File.read(File.join(api, 'search-index.json')))
+    index = JSON.parse(File.read(File.join(api, 'search-index', 'eu.json')))
     row = index['entities'].find { |e| e['ref'] == 'eu/eu1865' }
-    expect(row['birthYears']).to eq(%w[1953 1958])
-    expect(row['birthYearKind']).to eq('span')
-    expect(row['birthCirca']).to be true
+    expect(row['birthYears']).to eq([
+                                      {
+                                        'type' => 'date_range',
+                                        'from' => '1953',
+                                        'to' => '1958',
+                                        'circa' => true
+                                      }
+                                    ])
+    expect(row).not_to have_key('birthYearKind')
+    expect(row).not_to have_key('birthCirca')
 
     # The context artifact the website loads must type the new keys, or
     # a consumer expanding the graph gets untyped strings

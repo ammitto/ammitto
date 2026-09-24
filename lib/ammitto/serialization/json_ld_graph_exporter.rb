@@ -46,6 +46,10 @@ module Ammitto
       # Hex digest chars appended when clamping an oversized slug
       CLAMP_DIGEST_CHARS = 12
 
+      # Extensions a consumer can fetch directly: the JSON-LD aggregate,
+      # its raw JSON form, and the Turtle sibling written alongside it.
+      PUBLISHABLE_FILE_GLOB = '*.{jsonld,json,ttl}'
+
       # snake_case citation keys accepted from data repos and older caches
       CITATION_KEY_ALIASES = {
         'legal_instrument_id' => 'legalInstrumentId',
@@ -457,7 +461,6 @@ module Ammitto
         [
           ['all.jsonld', 'application/ld+json', 'Every node in one graph'],
           ['all.ttl', 'text/turtle', 'The same graph as Turtle'],
-          ['search-index.json', 'application/json', 'Flattened records for search'],
           ['stats.json', 'application/json', 'Entity and entry counts per source'],
           ['context.jsonld', 'application/ld+json', 'JSON-LD context for every node']
         ].filter_map do |name, media_type, description|
@@ -479,7 +482,7 @@ module Ammitto
       def published?(dir)
         return true if File.exist?(File.join(dir, 'index.jsonld'))
 
-        files = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+        files = Dir.glob(File.join(dir, PUBLISHABLE_FILE_GLOB))
                    .reject { |f| File.basename(f).start_with?('index.') }
         return true if files.any?
 
@@ -495,6 +498,7 @@ module Ammitto
       def manifest_collections
         [
           ['sources', 'One aggregate per source'],
+          ['search-index', 'Authority-sharded records for search'],
           ['facets', 'Value lists for filtering'],
           ['ontology', 'Classes, properties and hierarchy'],
           ['node', 'Individual entity and entry nodes'],
@@ -509,7 +513,7 @@ module Ammitto
           dir = File.join(@output_dir, name)
           next unless Dir.exist?(dir)
 
-          members = Dir.glob(File.join(dir, '*.{jsonld,json}'))
+          members = Dir.glob(File.join(dir, PUBLISHABLE_FILE_GLOB))
                        .map { |f| File.basename(f) }
                        .reject { |f| f.start_with?('index.') }
                        .sort

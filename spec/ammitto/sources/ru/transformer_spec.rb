@@ -37,12 +37,22 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
       birth = birth_for('1975')
       expect(birth.year).to eq(1975)
       expect(birth.date).to be_nil
+      expect(birth.circa).to be(false)
+    end
+
+    it 'marks c.1955 as circa while keeping its year' do
+      birth = birth_for('c.1955')
+
+      expect(birth.year).to eq(1955)
+      expect(birth.date).to be_nil
+      expect(birth.circa).to be(true)
     end
 
     it 'resolves a complete DOB to a date plus year' do
       birth = birth_for('1975-02-01')
       expect(birth.date).to eq(Date.new(1975, 2, 1))
       expect(birth.year).to eq(1975)
+      expect(birth.circa).to be(false)
     end
   end
 

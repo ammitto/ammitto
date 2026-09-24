@@ -56,6 +56,12 @@ module Ammitto
           data
         end
 
+        # Every fetched record this source carries.
+        # @return [Array<Vessel>]
+        def items
+          vessels || []
+        end
+
         # Override to_yaml to serialize properly
         def to_yaml(*)
           {

@@ -3,6 +3,7 @@
 require 'lutaml/model'
 
 require_relative 'sdn_namespace'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -117,6 +118,12 @@ module Ammitto
 
         def places_of_birth
           place_of_birth_list&.items || []
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(uid)
         end
       end
     end

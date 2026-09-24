@@ -4,6 +4,9 @@ require 'fileutils'
 require 'json'
 require 'time'
 require_relative '../utils/presence'
+require_relative 'birth_year_value'
+require_relative 'birth_year_year'
+require_relative 'birth_year_date_range'
 
 module Ammitto
   module Serialization
@@ -38,17 +41,14 @@ module Ammitto
       BIRTH_YEAR_FROM_KEYS = %w[yearRangeFrom year_range_from].freeze
       BIRTH_YEAR_TO_KEYS = %w[yearRangeTo year_range_to].freeze
 
-      # birthYears/birthYearKind/birthCirca (#merge_row) describe one set
-      # of years and must move as a unit. birthCirca is absent whenever it
-      # is false (#birth_year_fields), so a generic per-key fill would
-      # treat an existing row's true-less pair as still having a gap and
-      # fill birthCirca in from a LATER pair's different years — flagging
-      # the first-seen years circa on the strength of a hedge that was
-      # never about them.
-      BIRTH_YEAR_ROW_KEYS = %i[birthYears birthYearKind birthCirca].freeze
-
+      # birthYears is one atomic source contribution. Its array contains
+      # polymorphic values, so it must not be merged element-by-element with
+      # a later duplicate entity pair. This preserves first-seen precedence
+      # and prevents a later pair's circa state from annotating earlier values.
       # A published year, wherever it comes from, is exactly four digits.
-      FOUR_DIGIT_YEAR = /\A\d{4}\z/
+      # Shared with BirthYear::Value#normalized_year rather than
+      # re-declared, so the two validations can never drift apart.
+      FOUR_DIGIT_YEAR = BirthYear::Value::YEAR_PATTERN
 
       # Authority names for facet display
       AUTHORITY_NAMES = {
@@ -159,21 +159,14 @@ module Ammitto
         }.compact
       end
 
-      # The three-field shape (#extract_birth_year_info) collapsed into
-      # the keys #build_row spreads into the row. Kept as its own method
-      # so the empty case ({}) reads as "contribute nothing" rather than
-      # three explicit nils threaded through the caller.
+      # Convert the entity's birth information into one typed value array.
       # @param entity [Hash] entity data
-      # @return [Hash] birthYears/birthYearKind/birthCirca, or empty
+      # @return [Hash] birthYears, or empty
       def birth_year_fields(entity)
-        info = extract_birth_year_info(entity)
-        return {} unless info
+        values = extract_birth_year_info(entity)
+        return {} unless values
 
-        {
-          birthYears: info[:years],
-          birthYearKind: info[:kind],
-          birthCirca: info[:circa] || nil
-        }
+        { birthYears: values.freeze }
       end
 
       # Only non-blank Strings become row scalars: blanks must not block
@@ -225,10 +218,10 @@ module Ammitto
         merged_names = (existing[:names] || []) | (incoming[:names] || [])
         existing[:names] = merged_names unless merged_names.empty?
 
-        birth_years_settled = BIRTH_YEAR_ROW_KEYS.any? { |key| existing.key?(key) }
+        birth_years_settled = existing.key?(:birthYears)
 
         incoming.each do |key, value|
-          next if BIRTH_YEAR_ROW_KEYS.include?(key) && birth_years_settled
+          next if key == :birthYears && birth_years_settled
 
           existing[key] = value unless existing.key?(key)
         end
@@ -499,27 +492,18 @@ module Ammitto
         nil
       end
 
-      # The one place the row's birth-year shape is decided. Replaces the
-      # four columns this exporter used to carry (birthYear, birthYearFrom,
-      # birthYearTo, and a rejected fourth for multi-candidate entities)
-      # with three that cover every scenario a source can state, so a new
-      # scenario is a new `kind` value rather than a new column — see the
-      # maintainer's ruling recorded in the PR this shipped in.
+      # The one place the row's birth-year shape is decided.
       #
-      # Precedence, checked in this order:
-      #   1. a stated span (#birth_info_with_range) — unless both bounds
-      #      land on the same year, in which case the span collapses to
-      #      an exact year rather than publishing a duplicate one-year
-      #      "span"; a stated span never coexists with an exact year the
-      #      way the old five-field shape let it.
-      #   2. distinct years across every record naming one — more than one
-      #      distinct year makes it "candidates" (no single one is
-      #      entitled to stand alone as fact), exactly one makes it
-      #      "exact".
-      #   3. the legacy top-level birthDate/birth_date fields, for an
-      #      entity with no birthInfo records at all.
+      # The result is one array of polymorphic values. A stated span becomes
+      # one DateRange; distinct source-stated years become Year objects.
+      #
+      # Precedence:
+      #   1. a stated span, unless both bounds are the same year;
+      #   2. every distinct year across the birth records;
+      #   3. legacy top-level birthDate/birth_date fields.
+      #
       # @param entity [Hash] entity data
-      # @return [Hash, nil] :kind, :years, :circa — or nil for no birth data
+      # @return [Array<BirthYear::Value>, nil]
       def extract_birth_year_info(entity)
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'person'
@@ -531,11 +515,7 @@ module Ammitto
       end
 
       # @param entity [Hash] entity data
-      # @return [Hash, nil] a span or same-year-collapsed exact result —
-      #   nil when the record #birth_info_with_range found carries the
-      #   range KEYS but neither value validates as a year, so the
-      #   caller falls through to #extract_birth_year_candidates instead
-      #   of publishing a malformed bound and losing a real year with it
+      # @return [Array<BirthYear::Value>, nil]
       def extract_birth_year_span(entity)
         record = birth_info_with_range(entity)
         return nil unless record
@@ -546,27 +526,24 @@ module Ammitto
 
         circa = record['circa'] == true
 
-        return { kind: 'exact', years: [from], circa: circa } if from && to && from == to
+        return [BirthYear::Year.new(from, circa: circa)] if from && to && from == to
 
-        # NOT .compact: position carries the bound's direction. An open
-        # span keeps its missing end as `nil` rather than shifting the one
-        # present bound down to index 0, which would make "1980 or later"
-        # and "1980 or earlier" the same array.
-        { kind: 'span', years: [from, to], circa: circa }
+        [
+          BirthYear::DateRange.new(
+            from: from,
+            to: to,
+            circa: circa
+          )
+        ]
       end
 
-      # Every birth record naming a date or year, not only the first or
-      # the span-bearing one: an entity can carry several, one per
-      # contributing source, and each one that names a year is a
-      # candidate whether or not the others agree with it.
+      # Each source record contributes its own circa state. Distinct years
+      # are represented by one Year object each; if duplicate records state
+      # the same year with different precision, circa is retained if any
+      # contributing record marked that year approximate.
       #
-      # Each record is resolved to its validated year ONCE and paired
-      # with its own circa flag, so a record that failed to yield a year
-      # (malformed date, blank, wrong type) cannot still contribute its
-      # circa flag to years it had no part in publishing.
       # @param entity [Hash] entity data
-      # @return [Hash, nil] "exact" (one distinct year) or "candidates"
-      #   (more than one) — nil when no record names a valid year
+      # @return [Array<BirthYear::Value>, nil]
       def extract_birth_year_candidates(entity)
         resolved = birth_info_records(entity).filter_map do |record|
           year = extract_year_from_date(record['date'] || record['year'])
@@ -574,25 +551,25 @@ module Ammitto
         end
         return nil if resolved.empty?
 
-        candidates = resolved.map(&:first).uniq.sort
-        if candidates.size == 1
-          circa = resolved.any? { |year, circa_flag| year == candidates.first && circa_flag }
-          return { kind: 'exact', years: candidates, circa: circa }
+        circa_by_year = resolved.each_with_object({}) do |(year, circa), result|
+          result[year] = result.fetch(year, false) || circa
         end
 
-        circa = resolved.any? { |_year, circa_flag| circa_flag }
-        { kind: 'candidates', years: candidates, circa: circa }
+        circa_by_year.keys.sort.map do |year|
+          BirthYear::Year.new(year, circa: circa_by_year.fetch(year))
+        end
       end
 
       # The legacy flat fields, read only when no birthInfo record named
       # anything at all. Neither field carries a circa flag.
       # @param entity [Hash] entity data
-      # @return [Hash, nil]
+      # @return [Array<BirthYear::Value>, nil]
       def extract_birth_year_fallback(entity)
-        year = extract_year_from_date(entity['birthDate']) || extract_year_from_date(entity['birth_date'])
+        year = extract_year_from_date(entity['birthDate']) ||
+               extract_year_from_date(entity['birth_date'])
         return nil unless year
 
-        { kind: 'exact', years: [year], circa: false }
+        [BirthYear::Year.new(year)]
       end
 
       # @param entity [Hash] entity data
@@ -698,24 +675,112 @@ module Ammitto
         end
       end
 
-      # Export search index to file
+      # Export source-sharded search indexes.
       # @param output_dir [String] output directory
       def export_search_index(output_dir)
         rows = entities
-        data = {
+        generated = Time.now.utc.iso8601
+        search_index_dir = File.join(output_dir, 'search-index')
+
+        # A reused output directory must not carry stale output forward:
+        # a pre-sharding monolithic search-index.json, or a shard file for
+        # an authority that produced rows on a previous run but not this
+        # one. Wiping the shard directory before writing is simpler and
+        # safer than diffing old contents against the new shard set.
+        FileUtils.rm_f(File.join(output_dir, 'search-index.json'))
+        FileUtils.rm_rf(search_index_dir)
+        FileUtils.mkdir_p(search_index_dir)
+
+        # Group the already-finalized rows once, then serialize each group.
+        # Do not build a monolithic payload and split it afterward.
+        rows_by_source = rows.group_by { |row| row[:authority] }
+        shards = rows_by_source.map do |authority, source_rows|
+          code = shard_code(authority)
+
+          File.write(
+            File.join(search_index_dir, "#{code}.json"),
+            JSON.generate(
+              search_index_data(
+                source_rows,
+                generated,
+                authority ? 1 : 0
+              )
+            )
+          )
+
+          {
+            code: code,
+            file: "#{code}.json",
+            count: source_rows.length
+          }
+        end
+
+        export_search_index_manifest(
+          search_index_dir,
+          generated: generated,
+          total_entities: rows.length,
+          source_count: rows_by_source.keys.compact.length,
+          shards: shards
+        )
+
+        puts "Exported search index: #{rows.length} entities across " \
+             "#{shards.length} shards to #{search_index_dir}"
+      end
+
+      # Turn an authority into the path component its shard file is named
+      # after. The authority value now reaches a filename (it previously
+      # only fed in-memory facet counts), so anything outside a strict
+      # allowlist falls back to 'unknown' rather than being interpolated
+      # as-is: an authority carrying '/', '..', or a null byte must never
+      # let a shard escape the search-index directory.
+      # @param authority [String, nil] raw (already-downcased) authority
+      # @return [String] a safe shard filename stem
+      def shard_code(authority)
+        return 'unknown' unless authority.is_a?(String)
+        return 'unknown' unless authority.match?(/\A[a-z0-9_-]+\z/)
+
+        authority
+      end
+
+      # Build one shard's payload using the existing search-index shape.
+      # @param rows [Array<Hash>] rows belonging to one authority
+      # @param generated [String] shared export timestamp
+      # @param source_count [Integer] number of authorities represented
+      # @return [Hash]
+      def search_index_data(rows, generated, source_count)
+        {
           metadata: {
-            generated: Time.now.utc.iso8601,
+            generated: generated,
             totalEntities: rows.length,
-            sources: rows.map { |r| r[:authority] }.compact.uniq.length
+            sources: source_count
           },
           entities: rows
         }
+      end
 
-        output_path = File.join(output_dir, 'search-index.json')
-        FileUtils.mkdir_p(File.dirname(output_path))
-        File.write(output_path, JSON.generate(data))
+      # Write the manifest used to discover the shard files.
+      # `file` is relative to the search-index directory.
+      # @param dir [String] search-index directory
+      # @param generated [String] shared export timestamp
+      # @param total_entities [Integer] total deduplicated rows
+      # @param source_count [Integer] number of non-empty authority groups
+      # @param shards [Array<Hash>] shard descriptors
+      # @return [void]
+      def export_search_index_manifest(dir, generated:, total_entities:,
+                                       source_count:, shards:)
+        manifest = {
+          metadata: {
+            generated: generated,
+            totalEntities: total_entities,
+            sources: source_count
+          },
+          shards: shards.sort_by { |shard| shard[:code] }
+        }
 
-        puts "Exported search index: #{rows.length} entities to #{output_path}"
+        File.write(
+          File.join(dir, 'manifest.json'),
+          JSON.generate(manifest)
+        )
       end
 
       # Export facet files

@@ -47,13 +47,19 @@ module Ammitto
         # Get all entities
         # @return [Array<Entity>]
         def all_entities
-          entities
+          entities || []
         end
 
         # Get count of entities
         # @return [Integer]
         def count
           entities.length
+        end
+
+        # Every fetched record this source carries.
+        # @return [Array<Entity>]
+        def items
+          all_entities
         end
       end
     end

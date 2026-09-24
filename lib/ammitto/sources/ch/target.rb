@@ -3,6 +3,7 @@
 require 'lutaml/model'
 require_relative 'entity'
 require_relative 'individual'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -44,6 +45,19 @@ module Ammitto
           return @entity_type if @entity_type && !@entity_type.empty?
 
           individual ? 'person' : 'organization'
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        #
+        # Not `full_name&.gsub(/\s+/, '-')` alone: safe navigation only
+        # skips a nil receiver, and a blank +full_name+ gsubs to "" — the
+        # same blank-string trap this refusal exists to close for the
+        # other candidate.
+        #
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(ssid) ||
+            Ammitto::Utils::Presence.presence(full_name&.gsub(/\s+/, '-'))
         end
       end
     end

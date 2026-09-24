@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'source_provenance'
 
 module Ammitto
   module Ontology

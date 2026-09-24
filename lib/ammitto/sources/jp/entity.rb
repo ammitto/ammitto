@@ -3,6 +3,7 @@
 require 'lutaml/model'
 
 require_relative '../scalar_field'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -68,6 +69,20 @@ module Ammitto
         # Get reference number (alias for unique_identifier)
         def reference_number
           unique_identifier
+        end
+
+        # The identifier ItemMapper names this record's file after.
+        #
+        # +id+ is the real Lutaml attribute this class defines; this
+        # method reads it directly, in whatever form the source
+        # supplied, before falling back to the sanitized `unique_identifier`
+        # form. No naming collision with the +id+ attribute: this method
+        # is `#identifier`, not `#id`.
+        #
+        # @return [String, nil]
+        def identifier
+          Ammitto::Utils::Presence.presence(id) ||
+            Ammitto::Utils::Presence.presence(unique_identifier)
         end
 
         # Convert to hash for YAML serialization

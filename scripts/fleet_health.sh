@@ -14,9 +14,11 @@
 #           misses: cron typo, renamed workflow file, archived repo.
 #   FAILING FLEET_HEALTH_STREAK (default 3) or more hard failures since
 #           the last success — see "The streak model" below.
-#   UNREADABLE any of the three API documents missing, empty, or not
-#           shaped like the API contract. Deliberately unhealthy: a repo
-#           we cannot read is not a repo we can call healthy.
+#   UNREADABLE the workflow document or the run listing missing, empty,
+#           not shaped like the API contract, out of order, or too short
+#           to judge (see "Where the runs come from"). Deliberately
+#           unhealthy: a repo we cannot read is not a repo we can call
+#           healthy.
 #
 # A run that commits nothing is HEALTHY: only run conclusions are read,
 # never commit deltas, so zero-delta days (data-au has them legitimately)
@@ -24,11 +26,50 @@
 #
 # Scheduled runs only
 # -------------------
-# Every run query filters event=schedule. The monitor watches the cron,
-# not the repo: a failing PR or a broken push run says nothing about
-# whether the daily fetch still works, and letting those into the streak
-# both raises false alarms (red PR run pages the fleet) and hides real
-# ones (a green push run would reset a streak of dead cron runs).
+# Every verdict counts event=schedule runs and nothing else. The monitor
+# watches the cron, not the repo: a failing PR or a broken push run says
+# nothing about whether the daily fetch still works, and letting those
+# into the streak both raises false alarms (red PR run pages the fleet)
+# and hides real ones (a green push run would reset a streak of dead
+# cron runs).
+#
+# Where the runs come from
+# ------------------------
+# From the workflow's UNFILTERED run listing, filtered here by event and
+# status, and never from the API's own event= and status= filters. The
+# filtered listings intermittently answer 200 with a partial result set:
+# runs, often the newest, simply absent and total_count lowered to match.
+# Probed on 2026-09-23, 8 of about 500 filtered requests came back that
+# way and none of about 600 unfiltered ones did. One pass read data-eu's
+# newest scheduled run as 2026-09-18 while it had run daily to 09-22 and
+# paged "117h ago" on a healthy repo; the same mechanism can clear a real
+# failure streak. Nothing in a single filtered page says it is partial,
+# so the filters are not used at all.
+#
+# Exactly ONE page of it is read: the newest 100 runs. One page has
+# reached back months on every fleet repo, since pushes and dispatches of
+# fetch.yml are rare, and no live pass has needed a second. Reading
+# further was tried and dropped: every hole found in review was in
+# stitching pages together (runs created, completed or deleted between
+# page reads, repeats, early stops), and none of it bought anything the
+# fleet uses. A repo whose history the one page cannot judge is
+# UNREADABLE, never judged from less.
+#
+# The page is held to what it promises, and a page that breaks a promise
+# makes the repo UNREADABLE:
+#   * well-formed, total_count a whole number, every run carrying the
+#     fields the verdict reads, no id twice;
+#   * complete in itself: min(100, total_count) runs, no fewer;
+#   * newest first, by created_at and then by id (higher is newer);
+#   * deep enough: when it holds fewer completed scheduled runs than the
+#     streak needs and total_count says older runs exist, the history is
+#     deeper than one page and is not judged.
+#
+# What this cannot catch: a partial answer that also lowers total_count
+# to match looks like a complete page. Nothing inside one answer can
+# reveal that. It was never seen in the probes above; a run_number gap
+# check would catch most of it, but a run deleted on purpose would then
+# leave its repo UNREADABLE for months, so it is not done.
 #
 # The streak model
 # ----------------
@@ -84,8 +125,9 @@
 #   FLEET_HEALTH_WORKFLOW       workflow file name (default fetch.yml)
 #   FLEET_HEALTH_MAX_AGE_HOURS  staleness limit (default 48)
 #   FLEET_HEALTH_STREAK         failure/inconclusive limit (default 3);
-#                               1-100, and the streak query asks for
-#                               enough runs to reach whatever is set
+#                               1-99, so the one page of 100 runs can
+#                               hold the streak and the success that
+#                               closes it
 #   FLEET_HEALTH_REPOS_FILE     repo list (default scripts/fleet_repos.txt)
 #   FLEET_HEALTH_FIXTURES       dir of fixture JSON; no network at all
 #   FLEET_HEALTH_NOW_EPOCH      freeze "now" for tests
@@ -93,7 +135,8 @@
 #                               60/h to 1000/h, on the gh path and the
 #                               curl path alike. The fleet is public, so
 #                               anonymous reads work (verified 2026-08-07)
-#                               but one 15-repo pass costs 45 of the 60.
+#                               and one 15-repo pass costs 30 of the 60
+#                               (two calls a repo).
 #
 # Needs bash, jq, GNU date, and gh or curl — all present on ubuntu runners.
 set -euo pipefail
@@ -125,13 +168,13 @@ done
 
 # A threshold the streak query cannot reach would report every repo
 # healthy forever — the silent "OK" this monitor exists to kill. It is
-# refused at startup rather than discovered in a quiet report. 100 is the
-# API's per_page ceiling, so a larger threshold cannot be judged from the
-# single page the streak query fetches.
+# refused at startup rather than discovered in a quiet report. The
+# ceiling is 99 because the streak needs one run more than the threshold
+# and the one page read holds 100.
 #
 # The value is re-emitted in base 10 because bash reads a leading zero as
 # octal in $((…)) but not in [ … -lt … ]: FLEET_HEALTH_STREAK=012 would
-# size the query as 10 while every comparison read it as 12, restoring the
+# size the read as 10 while every comparison read it as 12, restoring the
 # short page this check exists to prevent. 008 and 09 are not octal at all
 # and abort the script mid-run.
 # Called directly, never in $(…): a subshell's exit would only end the
@@ -165,29 +208,27 @@ check_whole_number() {
 # ever compared, never used in arithmetic) but because a non-numeric value
 # aborts the run mid-report instead of at startup. A ceiling of one year
 # keeps it from silently meaning "never stale".
-check_whole_number FLEET_HEALTH_STREAK "$STREAK_LIMIT" 1 100
+check_whole_number FLEET_HEALTH_STREAK "$STREAK_LIMIT" 1 99
 check_whole_number FLEET_HEALTH_MAX_AGE_HOURS "$MAX_AGE_HOURS" 1 8760
 STREAK_LIMIT=$((10#$STREAK_LIMIT))
 MAX_AGE_HOURS=$((10#$MAX_AGE_HOURS))
 
-# The streak window is every run before the most recent success, so a
-# page shorter than the threshold can never show a streak that long. Ask
-# for one more than the threshold — the extra run is the success that
-# closes the window — and never fewer than the 10 this has always used.
-COMPLETED_PER_PAGE=$((STREAK_LIMIT + 1))
-if [ "$COMPLETED_PER_PAGE" -lt 10 ]; then COMPLETED_PER_PAGE=10; fi
-# Recency is judged over a page rather than a single item, so one stale
-# entry cannot decide it. Five is enough: the newest of five is right
-# unless the endpoint is stale about all five, and a page this small
-# costs the same one request the one-item page did.
-SCHEDULE_PER_PAGE=5
-if [ "$COMPLETED_PER_PAGE" -gt 100 ]; then COMPLETED_PER_PAGE=100; fi
+# The streak window is every run before the most recent success, so
+# reading fewer completed scheduled runs than the threshold can never
+# show a streak that long. Read one more than the threshold — the extra
+# run is the success that closes the window — and never fewer than the
+# 10 this has always used.
+COMPLETED_NEEDED=$((STREAK_LIMIT + 1))
+if [ "$COMPLETED_NEEDED" -lt 10 ]; then COMPLETED_NEEDED=10; fi
+# One page of the listing, 100 runs (the API ceiling). See "Where the
+# runs come from".
+RUNS_PER_PAGE=100
 
-# Fetch one API document. kind: workflow | schedule_runs | completed_runs.
+# Fetch one API document. kind: workflow | runs.
 # Prints the JSON body, or nothing on any failure — the caller validates
 # the body and treats anything unexpected as UNREADABLE rather than
 # crashing, so one repo's outage cannot hide the other fourteen.
-api_get() {
+api_get() { # kind repo
   local kind="$1" repo="$2" path base token
   local -a auth
   if [ -n "$FIXTURES" ]; then
@@ -198,25 +239,10 @@ api_get() {
   case "$kind" in
     workflow)
       path="$base" ;;
-    # Recency: newest scheduled run of any status, so a run still in
-    # progress still counts as the cron having fired.
-    #
-    # Several are fetched and the newest is chosen by created_at rather
-    # than taking position zero of a one-item page. This endpoint has
-    # been observed serving a stale page: on 2026-08-18 it reported
-    # data-uk's last scheduled run as 2026-07-22 while that repository
-    # had in fact run and committed every morning, and the monitor paged
-    # on a healthy repo for it. The same query was seen returning three
-    # different answers inside two minutes on 2026-08-19. A false page
-    # trains everyone to ignore the channel, and the identical mechanism
-    # can hand back a recent run for a repository whose cron has died,
-    # which is the failure this monitor exists to prevent.
-    schedule_runs)
-      path="$base/runs?event=schedule&per_page=$SCHEDULE_PER_PAGE" ;;
-    # Streak: scheduled runs only. A red PR run must never page the
-    # fleet, and a green push run must never clear a real streak.
-    completed_runs)
-      path="$base/runs?event=schedule&status=completed&per_page=$COMPLETED_PER_PAGE" ;;
+    # The newest page of the workflow's runs, unfiltered: see "Where the
+    # runs come from" for why event= and status= are not passed.
+    runs)
+      path="$base/runs?per_page=$RUNS_PER_PAGE" ;;
     *)
       return 1 ;;
   esac
@@ -258,33 +284,87 @@ api_get() {
 # An empty body must be rejected before jq sees it: `jq -e` exits 0 on
 # empty input (verified with jq 1.6), so an unchecked empty response
 # would validate.
+#
+# The body must also be exactly one JSON document. jq reads a stream and
+# `jq -e` exits on the LAST result, so a malformed document followed by a
+# valid one would pass, and every later read would take fields from both.
+# Each check slurps the body (-s) and requires one root before judging it.
 doc_valid() { # kind json
   local kind="$1" json="$2"
   [ -n "${json//[[:space:]]/}" ] || return 1
   case "$kind" in
     workflow)
-      jq -e 'type == "object" and (.state | type == "string")
-             and (.state | length > 0)' >/dev/null 2>&1 <<<"$json" ;;
-    schedule_runs)
-      # Members must be objects with a usable created_at: a runs array
-      # holding null or a scalar would otherwise validate and read as
-      # "no scheduled run" -- which is the silent-death signal itself.
-      jq -e 'type == "object" and (.workflow_runs | type == "array")
+      jq -e -s 'length == 1 and (.[0]
+             | type == "object" and (.state | type == "string")
+             and (.state | length > 0))' >/dev/null 2>&1 <<<"$json" ;;
+    runs)
+      # Every field the verdict reads is required of every run: a run
+      # without an event could only be skipped, and a listing of those
+      # would read as "no scheduled run" -- the silent-death signal
+      # itself. A null member or a scalar is refused for the same reason.
+      # total_count must be a whole number below a billion: no real repo
+      # is near that, and past it jq prints exponent form, which nothing
+      # downstream should ever have to read.
+      # created_at must be the API's exact YYYY-MM-DDTHH:MM:SSZ: order is
+      # compared as a string, which is only sound for that fixed-width
+      # form. conclusion must be present, null or a string: an absent key
+      # is not "still running". No id twice: copies of one success would
+      # count as several and could close a streak.
+      jq -e -s 'length == 1 and (.[0]
+             | type == "object" and (.workflow_runs | type == "array")
+             and (.total_count | type == "number")
+             and (.total_count >= 0) and (.total_count < 1000000000)
+             and (.total_count == (.total_count | floor))
              and (.workflow_runs | all(type == "object"
+                   and (.id | type == "number")
                    and (.created_at | type == "string")
-                   and (.created_at | length > 0)
-                   and ((.conclusion == null) or (.conclusion | type == "string"))))' \
+                   and (.created_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"))
+                   and ((try (.created_at | fromdateiso8601) catch null) != null)
+                   and (.event | type == "string")
+                   and (.status | type == "string")
+                   and has("conclusion")
+                   and ((.conclusion == null) or (.conclusion | type == "string"))))
+             and ([.workflow_runs[].id] | length == (unique | length)))' \
         >/dev/null 2>&1 <<<"$json" ;;
     *)
-      # created_at is required here too, because the streak is ordered by
-      # it rather than by the position the API returned.
-      jq -e 'type == "object" and (.workflow_runs | type == "array")
-             and (.workflow_runs | all(type == "object"
-                   and (.created_at | type == "string")
-                   and (.created_at | length > 0)
-                   and ((.conclusion == null) or (.conclusion | type == "string"))))' \
-        >/dev/null 2>&1 <<<"$json" ;;
+      return 1 ;;
   esac
+}
+
+# Reads the one page of a repo's run listing and holds it to its
+# promises (see "Where the runs come from"). Sets runs_json to the page;
+# on a broken promise also sets runs_problem to why, and the repo is then
+# UNREADABLE. Every comparison stays inside jq, so no number from the API
+# reaches shell arithmetic.
+read_runs() { # repo
+  local repo="$1"
+  runs_json="$(api_get runs "$repo")"
+  runs_problem=""
+  if ! doc_valid runs "$runs_json"; then
+    runs_problem="run listing unreadable — no usable workflow_runs array, or a malformed total_count, run or timestamp"
+    return 0
+  fi
+  # The page goes in on stdin: 100 runs is over a megabyte, past the
+  # kernel's limit on a single argument.
+  if ! runs_problem="$(jq -r --argjson per_page "$RUNS_PER_PAGE" \
+        --argjson need "$COMPLETED_NEEDED" '
+      .workflow_runs as $runs
+      | ($runs | length) as $n
+      | ([.total_count, $per_page] | min) as $owed
+      | ([$runs[] | select(.event == "schedule" and .status == "completed")]
+         | length) as $done
+      | if $n != $owed then
+          "run listing page does not match its total_count — \($n) runs where total_count \(.total_count) promises \($owed)"
+        elif ([range(1; $n) | $runs[. - 1] as $a | $runs[.] as $b
+               | ($a.created_at > $b.created_at)
+                 or ($a.created_at == $b.created_at and $a.id > $b.id)]
+              | all | not) then
+          "run listing is not newest-first, so the newest run on it is not the newest run"
+        elif $done < $need and .total_count > $n then
+          "history deeper than one page; not judged — \($done) completed scheduled runs on the newest \($n) of \(.total_count), and the streak needs \($need)"
+        else "" end' <<<"$runs_json")"; then
+    runs_problem="run listing could not be checked"
+  fi
 }
 
 table_rows=""
@@ -369,10 +449,9 @@ while IFS= read -r line <&3 || [ -n "$line" ]; do
     esac
   fi
 
-  # --- read and validate the three documents ---------------------------
+  # --- read and validate the two documents -----------------------------
   workflow_json="$(api_get workflow "$repo")"
-  schedule_json="$(api_get schedule_runs "$repo")"
-  completed_json="$(api_get completed_runs "$repo")"
+  read_runs "$repo"
 
   reasons=()
   unreadable=0
@@ -380,14 +459,10 @@ while IFS= read -r line <&3 || [ -n "$line" ]; do
     reasons+=("workflow document unreadable — $WORKFLOW_FILE missing, or the API returned no usable body")
     unreadable=1
   }
-  doc_valid schedule_runs "$schedule_json" || {
-    reasons+=("schedule-runs document unreadable — no usable workflow_runs array")
+  if [ -n "$runs_problem" ]; then
+    reasons+=("$runs_problem")
     unreadable=1
-  }
-  doc_valid completed_runs "$completed_json" || {
-    reasons+=("completed-runs document unreadable — no usable workflow_runs array, so the failure streak is unknown")
-    unreadable=1
-  }
+  fi
 
   state="(unreadable)"
   last_sched=""
@@ -399,25 +474,27 @@ while IFS= read -r line <&3 || [ -n "$line" ]; do
 
   if [ "$unreadable" -eq 0 ]; then
     state="$(jq -r '.state' <<<"$workflow_json")"
-    newest_sched="$(jq -c '[.workflow_runs[]?
-          | select(.created_at != null)]
-          | sort_by(.created_at) | last // {}' <<<"$schedule_json")"
+    # The listing is proven newest-first, so the first scheduled run on
+    # it is the newest. Any status counts: a run still in progress is
+    # still the cron having fired.
+    newest_sched="$(jq -c 'first(.workflow_runs[]
+          | select(.event == "schedule")) // {}' <<<"$runs_json")"
     last_sched="$(jq -r '.created_at // empty' <<<"$newest_sched")"
     last_sched_conclusion="$(jq -r '.conclusion // empty' \
       <<<"$newest_sched")"
-    # Newest first, by created_at rather than by the order the API
-    # returned. `window` below takes everything before the first S as
-    # "since the last success", so a stale success ahead of newer
-    # failures clears a real streak, and stale failures ahead of a newer
-    # success invent one. Same reason the recency read was changed: this
-    # endpoint promises filters and paging, not an order.
-    seq="$(jq -r '[.workflow_runs[]? | {created_at, conclusion}]
-          | sort_by(.created_at) | reverse
+    # Newest first, as the listing is proven to be. `window` below takes
+    # everything before the first S as "since the last success", so an
+    # old success read ahead of newer failures would clear a real streak;
+    # the order check in read_runs is what rules that out.
+    seq="$(jq -r --argjson need "$COMPLETED_NEEDED" '
+          [.workflow_runs[]
+           | select(.event == "schedule" and .status == "completed")]
+          | .[:$need]
           | map(if .conclusion == "success" then "S"
                 elif .conclusion == "failure" or .conclusion == "timed_out"
                      or .conclusion == "startup_failure" then "F"
                 else "C" end)
-          | join("")' <<<"$completed_json")"
+          | join("")' <<<"$runs_json")"
 
     # `deleted` is the only state a no-schedule declaration excuses. The
     # disabled_* family — disabled_manually, disabled_inactivity,
@@ -456,10 +533,20 @@ while IFS= read -r line <&3 || [ -n "$line" ]; do
     elif [ -n "$last_sched" ]; then
       if run_epoch="$(date -ud "$last_sched" +%s 2>/dev/null)" &&
          [ "$run_epoch" -gt 0 ]; then
-        age_hours=$(( (NOW_EPOCH - run_epoch) / 3600 ))
+        # Judged in seconds, shown in hours. Whole hours round down, and a
+        # run 48h59m old would compare as 48 and pass a 48 hour limit.
+        age_seconds=$((NOW_EPOCH - run_epoch))
+        age_hours=$((age_seconds / 3600))
         age_display="${age_hours}h"
-        if [ "$age_hours" -gt "$MAX_AGE_HOURS" ]; then
-          reasons+=("last schedule run was ${age_hours}h ago (limit ${MAX_AGE_HOURS}h)")
+        if [ "$age_seconds" -gt "$((MAX_AGE_HOURS * 3600))" ]; then
+          # Minutes are enough to show the breach unless it is under a
+          # minute past the limit, where they would read as the limit
+          # itself; the seconds are added only then.
+          age_text="$(printf '%dh%02dm' "$age_hours" "$(( age_seconds % 3600 / 60 ))")"
+          if [ "$((age_seconds / 60))" -le "$((MAX_AGE_HOURS * 60))" ]; then
+            age_text="$age_text$(printf '%02ds' "$(( age_seconds % 60 ))")"
+          fi
+          reasons+=("last schedule run was $age_text ago (limit ${MAX_AGE_HOURS}h)")
         fi
       else
         reasons+=("unparseable schedule run timestamp: $last_sched")

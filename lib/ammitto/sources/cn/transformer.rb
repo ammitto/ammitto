@@ -104,6 +104,8 @@ module Ammitto
               announcement_title: title,
               entries: entries,
               entity_count: entities.size,
+              # Left unreported: the first entity's period already reported
+              # this same value, and one bad cell should count once.
               effective_date: parse_date(announcement.entities.first&.effective_date),
               effective_time: announcement.entities.first&.effective_time
             )
@@ -251,7 +253,9 @@ module Ammitto
             period: create_temporal_period(entity),
             status: 'active',
             reference_number: create_entity_reference(entity, announcement),
-            announcement: create_official_announcement(announcement.announcement),
+            # transform_announcement already built and reported this block;
+            # reporting it again per entry would count one bad cell many times.
+            announcement: create_official_announcement(announcement.announcement, report_failures: false),
             legal_citations: legal_citations,
             raw_source_data: create_raw_source_data(
               source_format: 'yaml',
@@ -330,20 +334,22 @@ module Ammitto
 
         def create_temporal_period(entity)
           Ammitto::TemporalPeriod.new(
-            effective_date: parse_date(entity.effective_date),
+            effective_date: parse_date(entity.effective_date, source: :cn, field: :effective_date),
             effective_time: entity.effective_time,
             is_indefinite: entity.effective_date.nil?
           )
         end
 
-        def create_official_announcement(announcement_block)
+        def create_official_announcement(announcement_block, report_failures: true)
           return nil unless announcement_block
+
+          report_as = report_failures ? { source: :cn, field: :publish_date } : {}
 
           Ammitto::OfficialAnnouncement.new(
             id: generate_announcement_id(sanitize_id(announcement_block.document_id || 'unknown')),
             title: extract_announcement_title(announcement_block),
             url: announcement_block.url,
-            publish_date: parse_date(announcement_block.publish_date),
+            publish_date: parse_date(announcement_block.publish_date, **report_as),
             publish_time: announcement_block.publish_time,
             document_id: announcement_block.document_id,
             document_type: announcement_block.type,
@@ -445,11 +451,12 @@ module Ammitto
             id: mod_id,
             target_type: 'announcement',
             target_announcement_id: modification.target_announcement_id,
-            target_announcement_date: parse_date(modification.target_announcement_date),
+            target_announcement_date: parse_date(modification.target_announcement_date,
+                                                 source: :cn, field: :target_announcement_date),
             action: modification.action,
-            effective_date: parse_date(modification.effective_date),
+            effective_date: parse_date(modification.effective_date, source: :cn, field: :effective_date),
             effective_time: modification.effective_time,
-            until_date: parse_date(modification.until_date),
+            until_date: parse_date(modification.until_date, source: :cn, field: :until_date),
             until_time: modification.until_time,
             duration_days: modification.duration_days,
             announcement_id: announcement_id,

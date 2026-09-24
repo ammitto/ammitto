@@ -177,4 +177,69 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       expect(usable).to start_with('mofcom-2026-01-')
     end
   end
+
+  describe 'parse failure visibility' do
+    include_context 'with parse failure log capture'
+
+    let(:run) { Ammitto::ParseFailureVisibility::Run.new }
+
+    def announcement_with(publish_date:, effective_dates:)
+      Ammitto::Sources::Cn::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'mofcom-2026-02', 'publish_date' => publish_date },
+        'sanction_details' => {
+          'entities' => effective_dates.each_with_index.map do |date, i|
+            { 'name' => { 'en' => "Corp #{i}" }, 'type' => 'organization',
+              'effective_date' => date, 'sanction_list' => 'cn/anti-sanction-list' }
+          end
+        }
+      )
+    end
+
+    def counting(&block)
+      Ammitto::ParseFailureVisibility.with_run(run, &block)
+    end
+
+    it 'counts an unreadable publish_date once however many entries carry it' do
+      result = counting do
+        transformer.transform_announcement(
+          announcement_with(publish_date: 'not-a-date', effective_dates: %w[2026-01-01 2026-01-01])
+        )
+      end
+
+      expect(result[:official_announcement].publish_date).to be_nil
+      expect(io.string.scan('Parse failure in cn.publish_date').size).to eq(1)
+      expect(run.count(:cn)).to eq(1)
+    end
+
+    it 'counts an unreadable effective_date once, not again for the group' do
+      result = counting do
+        transformer.transform_announcement(
+          announcement_with(publish_date: '2026-01-01', effective_dates: %w[not-a-date 2026-01-01])
+        )
+      end
+
+      expect(result[:entries].first.period.effective_date).to be_nil
+      expect(result[:group].effective_date).to be_nil
+      expect(io.string).to include('Parse failure in cn.effective_date')
+      expect(run.count(:cn)).to eq(1)
+    end
+
+    it 'reports each unreadable modification date under its own field name' do
+      modification = Ammitto::Sources::Cn::Modification.new(
+        target_announcement_id: 'mofcom-2025-01', target_announcement_date: 'bad-target',
+        effective_date: 'bad-effective', until_date: 'bad-until'
+      )
+
+      period_change = counting do
+        transformer.send(:create_sanction_period_modification, modification: modification, announcement_id: 'a')
+      end
+
+      expect([period_change.target_announcement_date, period_change.effective_date, period_change.until_date])
+        .to all(be_nil)
+      expect(io.string).to include('Parse failure in cn.target_announcement_date')
+        .and include('Parse failure in cn.effective_date')
+        .and include('Parse failure in cn.until_date')
+      expect(run.count(:cn)).to eq(3)
+    end
+  end
 end

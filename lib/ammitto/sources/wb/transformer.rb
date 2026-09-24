@@ -101,6 +101,7 @@ module Ammitto
             regime: create_regime(code: 'DEBARMENT', name: 'World Bank Debarment'),
             effects: create_debarment_effects(firm),
             period: create_period(
+              source: :wb,
               effective_date: parse_wb_date(firm.debar_from_date, field: :debar_from_date),
               expiry_date: parse_wb_date(firm.debar_to_date, field: :debar_to_date)
             ),

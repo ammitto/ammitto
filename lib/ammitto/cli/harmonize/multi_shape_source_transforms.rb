@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'jp_announcement_transform'
+require_relative 'ru_announcement_transform'
 
 module Ammitto
   module Cmd
@@ -8,14 +9,15 @@ module Ammitto
       # The transform_<source> methods whose source picks between record
       # shapes before delegating: a field combination (AU), a
       # target/identity wrapper (CH), an announcement/modification split
-      # (CN), a type field (NZ), or an announcement/flat-record split (JP).
-      # The fixed-shape RU, TR, and EU_VESSELS transforms are also here,
+      # (CN), a type field (NZ), or an announcement/flat-record split (JP
+      # and RU). The fixed-shape TR and EU_VESSELS transforms are also here,
       # placed alongside them purely to keep both modules under the
       # Metrics/ModuleLength budget. SourceTransforms's dispatch table
       # (#transform_data) still routes every source, this one included,
       # through one call.
       module MultiShapeSourceTransforms
         include JpAnnouncementTransform
+        include RuAnnouncementTransform
 
         private
 
@@ -138,10 +140,19 @@ module Ammitto
         end
 
         # Transform RU data
+        #
+        # data-ru stores one file per MID announcement with the parties it
+        # names inside, the shape data-cn uses. Any file carrying an
+        # `announcement` block takes the announcement path, which refuses
+        # one without `sanction_details`; the per-entity branch below stays
+        # because `Ru::SanctionedEntity` is still a public model.
         # @param transformer [Object] transformer instance
         # @param data [Hash] source data
-        # @return [Hash]
+        # @return [Hash, Array<Hash>] single result or array of results
         def transform_ru(transformer, data)
+          return transform_ru_announcement(transformer, data) if
+            data.key?('announcement')
+
           source = Ammitto::Sources::Ru::SanctionedEntity.from_hash(data)
           result = transformer.transform(source)
 

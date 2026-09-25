@@ -2,6 +2,10 @@
 
 # RU source models (Lutaml::Model)
 require_relative 'sanctions_list'
+# `Ru::Announcement` is the announcement-file model in announcement.rb,
+# which sanctions_list.rb does not load: SanctionsList collects the flat
+# ListAnnouncement instead.
+require_relative 'announcement'
 require_relative 'transformer'
 
 module Ammitto

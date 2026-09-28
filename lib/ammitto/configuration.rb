@@ -38,6 +38,9 @@ module Ammitto
     # @return [Logger] Custom logger instance
     attr_accessor :logger
 
+    # @return [Symbol] Parse-failure visibility mode (:raise, :warn, :silent)
+    attr_accessor :parse_failure_mode
+
     # @return [String] Directory for harmonized JSON-LD data repository
     attr_accessor :data_repository
 
@@ -77,6 +80,7 @@ module Ammitto
       @read_timeout = DEFAULT_READ_TIMEOUT
       @verbose = false
       @logger = nil
+      @parse_failure_mode = Config::Defaults::PARSE_FAILURE_MODE
       @data_repository = DEFAULT_DATA_REPOSITORY
       @sources_dir = DEFAULT_SOURCES_DIR
     end
@@ -101,6 +105,7 @@ module Ammitto
       @read_timeout = DEFAULT_READ_TIMEOUT
       @verbose = false
       @logger = nil
+      @parse_failure_mode = Config::Defaults::PARSE_FAILURE_MODE
       @data_repository = DEFAULT_DATA_REPOSITORY
       @sources_dir = DEFAULT_SOURCES_DIR
     end

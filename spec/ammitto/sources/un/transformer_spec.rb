@@ -49,4 +49,23 @@ RSpec.describe Ammitto::Sources::Un::Transformer do
       expect(birth.year).to eq(1978)
     end
   end
+
+  describe 'parse failure visibility' do
+    include_context 'with parse failure log capture'
+
+    it 'counts an unreadable listed_on once although it fills two period dates' do
+      run = Ammitto::ParseFailureVisibility::Run.new
+      entity = Ammitto::Sources::Un::Entity.new(reference_number: 'QDe.1', listed_on: 'not-a-date')
+      entry = nil
+
+      Ammitto::ParseFailureVisibility.with_run(run) do
+        entry = transformer.send(:create_entry_from_entity, entity)
+      end
+
+      expect(entry.period.listed_date).to be_nil
+      expect(entry.period.effective_date).to be_nil
+      expect(io.string).to include('Parse failure in un.listed_date')
+      expect(run.count(:un)).to eq(1)
+    end
+  end
 end

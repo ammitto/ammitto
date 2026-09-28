@@ -127,8 +127,12 @@ module Ammitto
             regime: transform_regime(entity.programme),
             legal_bases: transform_regulations(entity.regulations),
             effects: create_default_effects,
+            # legal_bases above already reports an unreadable publication_date
+            # for every regulation, so it is parsed here without reporting
+            # to keep one bad cell at one failure.
             period: create_period(
-              listed_date: regulation&.publication_date,
+              source: :eu,
+              listed_date: parse_date(regulation&.publication_date),
               effective_date: regulation&.entry_into_force_date
             ),
             status: 'active',
@@ -236,7 +240,7 @@ module Ammitto
               identifier: reg.number_title,
               title: reg.number_title,
               issuing_body: reg.organisation_type&.capitalize,
-              publish_date: parse_date(reg.publication_date),
+              publish_date: parse_date(reg.publication_date, source: :eu, field: :publication_date),
               url: reg.publication_url
             )
           end

@@ -186,7 +186,7 @@ module Ammitto
             return value if value.is_a?(Date)
 
             Date.parse(value.to_s)
-          rescue Date::Error
+          rescue ArgumentError
             nil
           end
 

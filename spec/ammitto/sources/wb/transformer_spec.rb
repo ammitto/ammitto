@@ -39,13 +39,14 @@ RSpec.describe Ammitto::Sources::Wb::Transformer do
 
     it_behaves_like 'a reported parse failure', source: :wb, field: :debar_from_date
 
-    it 'reports an unreadable debar_to_date once, not again for the status' do
+    it 'leaves is_indefinite unasserted for an unreadable debar_to_date and reports it once as expiry_date' do
       firm.debar_from_date = '2020-01-01'
       firm.debar_to_date = 'not-a-date'
       result = count_parse_failures { transformer.transform(firm) }
 
       expect(result[:entry].period.expiry_date).to be_nil
-      expect(io.string.scan('Parse failure in wb.debar_to_date').size).to eq(1)
+      expect(result[:entry].period.is_indefinite).to be_nil
+      expect(io.string.scan('Parse failure in wb.expiry_date').size).to eq(1)
       expect(run.count(:wb)).to eq(1)
     end
   end

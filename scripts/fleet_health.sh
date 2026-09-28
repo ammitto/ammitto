@@ -97,10 +97,10 @@
 # ----------------
 # A line in the repos file may carry an acknowledgement:
 #
-#   data-ru ack:parked for maintainer ruling on ru revival:2026-09-07
+#   <repo> ack:<reason>:<review-by YYYY-MM-DD>
 #
-# meaning "this one is known-broken, do not page me about it until
-# 2026-09-07". Acknowledged repos report ACKNOWLEDGED, are excluded from
+# meaning "this one is known-broken, do not page me about it until the
+# review-by date". Acknowledged repos report ACKNOWLEDGED, are excluded from
 # the unhealthy count and never reach the tracking issue. The date is a
 # deadline, not a mute button: from the day AFTER review-by the repo
 # reports EXPIRED-ACK and pages like any other failure — including when

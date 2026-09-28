@@ -177,4 +177,24 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       expect(usable).to start_with('mofcom-2026-01-')
     end
   end
+
+  # China publishes no expiry, so every period is open ended whether or
+  # not the entity carries an effective date.
+  describe 'the period of an entity' do
+    it 'is indefinite with or without an effective date' do
+      announcement = Ammitto::Sources::Cn::Announcement.from_hash(
+        'announcement' => { 'document_id' => 'mofcom-2026-02', 'publish_date' => '2026-01-01' },
+        'sanction_details' => {
+          'entities' => ['2026-01-01', nil].each_with_index.map do |date, i|
+            { 'name' => { 'en' => "Corp #{i}" }, 'type' => 'organization',
+              'effective_date' => date, 'sanction_list' => 'cn/anti-sanction-list' }
+          end
+        }
+      )
+
+      entries = transformer.transform_announcement(announcement)[:entries]
+
+      expect(entries.map { |entry| entry.period.is_indefinite }).to eq([true, true])
+    end
+  end
 end

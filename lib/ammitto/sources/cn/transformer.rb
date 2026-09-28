@@ -332,7 +332,7 @@ module Ammitto
           Ammitto::TemporalPeriod.new(
             effective_date: parse_date(entity.effective_date),
             effective_time: entity.effective_time,
-            is_indefinite: entity.effective_date.nil?
+            is_indefinite: true
           )
         end
 

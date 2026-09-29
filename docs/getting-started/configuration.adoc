@@ -95,7 +95,9 @@ end
 
 == Environment Variables
 
-Configuration can be overridden with environment variables:
+Environment variables override the defaults. They are read when the
+configuration is built, so a value set in `Ammitto.configure` (or a CLI
+flag such as `--cache-dir`) still wins over them:
 
 [cols="1,2"]
 |===

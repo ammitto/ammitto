@@ -6,8 +6,8 @@ require 'ammitto'
 # The default API host is a correctness constraint, not a preference.
 #
 # Nothing in the gem follows redirects. `Ammitto::BaseSource#download_to_cache`
-# calls `Faraday.get` directly and `Client::ApiClient` builds a Faraday
-# connection with an empty middleware stack, so a 3xx is simply not
+# downloads through `Client::ApiClient`'s connection, which has an empty
+# middleware stack, so a 3xx is simply not
 # `success?` and the fetch raises. The default used to be
 # `https://ammitto.org/api/v1`, which answers 301 to the www host, so
 # every client call failed: `Ammitto.search` logged "Failed to download
@@ -24,6 +24,8 @@ require 'ammitto'
 # logic forces. Whether the live host still answers 200 is not proved
 # here.
 RSpec.describe 'the API host the gem fetches from' do
+  include ApiClientConnectionStub
+
   let(:redirect) do
     instance_double(
       Faraday::Response,
@@ -46,7 +48,7 @@ RSpec.describe 'the API host the gem fetches from' do
     it 'fails on a redirect instead of following it' do
       # This is the path `Ammitto.search` takes. Left unpinned, the bug
       # returns as an empty result set rather than an error.
-      allow(Faraday).to receive(:get).and_return(redirect)
+      stub_api_client_get.and_return(redirect)
 
       Dir.mktmpdir do |dir|
         allow(Ammitto.configuration).to receive(:cache_dir).and_return(dir)

@@ -239,7 +239,7 @@ module Ammitto
       # Get cache directory
       # @return [String]
       def cache_dir
-        options[:cache_dir] || File.expand_path('~/.ammitto')
+        options[:cache_dir] || Ammitto.configuration.cache_dir
       end
     end
   end

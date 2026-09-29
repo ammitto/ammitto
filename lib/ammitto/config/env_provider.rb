@@ -9,6 +9,7 @@ module Ammitto
     #
     # Supported environment variables:
     #   AMMITTO_CACHE_DIR - Directory for caching data
+    #   AMMITTO_CACHE_TTL - Cache time-to-live in seconds
     #   AMMITTO_SOURCES_DIR - Parent directory containing data-* repos
     #     (AMMITTO_DATA_DIR is honored as an alias; the CI validation
     #     scripts use that name for the same directory)
@@ -27,6 +28,7 @@ module Ammitto
       # Map option names to ENV variable names
       ENV_MAPPING = {
         cache_dir: 'CACHE_DIR',
+        cache_ttl: 'CACHE_TTL',
         api_base_url: 'API_BASE_URL',
         log_level: 'LOG_LEVEL',
         parse_failure_mode: 'PARSE_FAILURE_MODE',
@@ -92,7 +94,7 @@ module Ammitto
           case key
           when :sources
             value.split(',').map(&:strip).map(&:to_sym)
-          when :connection_timeout, :read_timeout
+          when :connection_timeout, :read_timeout, :cache_ttl
             value.to_i
           when :verbose
             value.downcase == 'true'

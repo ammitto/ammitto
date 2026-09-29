@@ -68,7 +68,7 @@ anything can consume what the keys hold.
 ### Ruling 8, and why it reverses the first recommendation
 
 The first draft of this ruling recommended splitting `un_vessels` to
-match `tr`. That was backwards. `lib/ammitto/errors/base_error.rb` holds
+match `tr`. That was backwards. `lib/ammitto/error.rb` holds
 **nine exception classes in one file**, and of the NINE files under
 `lib/` containing exceptions, seven colocate them with implementation
 code rather than giving them a file of their own.
@@ -84,6 +84,12 @@ would demand path-to-constant agreement.
 So the rule is: **models and domain classes one per file, exceptions
 grouped.** An exception hierarchy is read as a hierarchy, and a file per
 one-line subclass hides the tree it exists to show.
+
+Revisited 2026-09-29: the grouped file was renamed from
+`errors/base_error.rb` to `lib/ammitto/error.rb`, matching the class it is
+named for, and the classes stay grouped. Whether to move to one file per
+exception class is open for a later discussion; until then this ruling
+stands.
 
 ## Why this matters
 

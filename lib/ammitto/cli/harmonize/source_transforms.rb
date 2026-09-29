@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../errors/base_error'
+require_relative '../../error'
 
 require_relative 'multi_shape_source_transforms'
 

@@ -66,7 +66,7 @@ step 2.
    - **Ancestry.** Each class's superclass and its included and
      prepended modules. A consumer rescuing `Ammitto::ParseError`
      depends on it still descending from `Ammitto::Error`
-     (`lib/ammitto/errors/base_error.rb`, classes `Error` and
+     (`lib/ammitto/error.rb`, classes `Error` and
      `ParseError`); a consumer
      duck-typing on a mixin depends on the mixin still being there.
      Neither is visible in a method list.
@@ -111,7 +111,7 @@ step 2.
      carry `allowed:` enumerations and `cli_short` aliases from
      `lib/ammitto/options/registry.rb`, so a change there is a CLI
      change even though `cli.rb` did not move.
-   - **Documented exceptions.** `lib/ammitto/errors/base_error.rb`
+   - **Documented exceptions.** `lib/ammitto/error.rb`
      defines nine classes (`Error`, `NetworkError`, `CacheError`,
      `ValidationError`, `SourceNotFoundError`, `ParseError`,
      `SerializationError`, `NotFoundError`, `ConfigurationError`) and
@@ -222,7 +222,7 @@ step 2.
 - `lib/ammitto/models.rb` — the 27 autoload registrations,
   including the `NoticeReference`/`StatusChange` two-name mapping at
   the `autoload :NoticeReference` declaration.
-- `lib/ammitto/errors/base_error.rb` — the nine error classes.
+- `lib/ammitto/error.rb` — the nine error classes.
 - `lib/ammitto/cli.rb` — `DataCLI`,
   `CLI`, the `--version`/`-v` alias, the injected shared options, the
   `data` subcommand mount.

@@ -2,7 +2,7 @@
 
 require 'digest'
 require 'yaml'
-require_relative '../../errors/base_error'
+require_relative '../../error'
 require_relative 'filename_collision_error'
 
 module Ammitto

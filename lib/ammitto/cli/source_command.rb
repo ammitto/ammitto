@@ -8,7 +8,7 @@ require 'yaml'
 # The Japan arm refuses through Ammitto::ParseError. Declared here so this
 # file stays independently loadable rather than relying on `ammitto.rb`
 # having been required first.
-require_relative '../errors/base_error'
+require_relative '../error'
 
 module Ammitto
   module Cmd

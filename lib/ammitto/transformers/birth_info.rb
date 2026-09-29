@@ -392,7 +392,7 @@ module Ammitto
         return nil unless parts[:year] && parts[:mon] && parts[:mday]
 
         Date.new(parts[:year], parts[:mon], parts[:mday])
-      rescue Date::Error
+      rescue ArgumentError
         nil
       end
 
@@ -469,6 +469,9 @@ module Ammitto
 
         year = Date._parse(str)[:year]
         year&.positive? ? year : nil
+      # Past 128 characters Date._parse raises instead of returning no year.
+      rescue ArgumentError
+        nil
       end
 
       # The value with an approximation marker removed, or nil when it opens

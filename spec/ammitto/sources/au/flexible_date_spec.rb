@@ -500,4 +500,32 @@ RSpec.describe Ammitto::Sources::Au::FlexibleDate do
         .to equal(Ammitto::Transformers::BaseTransformer::MARKER_LIKE)
     end
   end
+
+  # A cell that resolves nothing at all (precision 'unknown') is reported
+  # to Ammitto::ParseFailureVisibility from two separate branches of
+  # #parse, the marker-boundary decline and the exhausted fallback, and
+  # both must publish exactly the same FlexibleDate they always have: the
+  # visibility hook is additive, never a second opinion on the result.
+  describe 'parse failure visibility' do
+    include_context 'with parse failure log capture'
+
+    let(:parse_unreadable) { -> { described_class.parse('China 1955') } }
+    let(:raise_unreadable) { parse_unreadable }
+
+    it_behaves_like 'a reported parse failure', source: :au, field: :date_of_birth do
+      let(:published_matcher) { have_attributes(year: nil, precision: 'unknown') }
+    end
+
+    it 'reports from the exhausted-fallback branch too, not only the marker-boundary one' do
+      count_parse_failures { described_class.parse('nonsense text') }
+
+      expect(run.count(:au)).to eq(1)
+    end
+
+    it 'does not report a value that resolved a year' do
+      count_parse_failures { described_class.parse('1957') }
+
+      expect(run.count(:au)).to eq(0)
+    end
+  end
 end

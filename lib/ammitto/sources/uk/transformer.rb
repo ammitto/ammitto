@@ -127,6 +127,7 @@ module Ammitto
             regime: transform_regime(designation.regime_name),
             effects: transform_effects(designation.sanctions_imposed_indicators),
             period: create_period(
+              source: :uk,
               listed_date: designation.date_designated,
               effective_date: designation.date_designated,
               last_updated: designation.last_updated

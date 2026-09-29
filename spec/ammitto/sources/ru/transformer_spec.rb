@@ -54,4 +54,25 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
       expect(birth.circa).to be(false)
     end
   end
+
+  # An unreadable announcement_date publishes as nil in every mode;
+  # visibility only adds the report.
+  describe 'parse failure visibility for announcement_date' do
+    include_context 'with parse failure log capture'
+
+    let(:entity) do
+      Ammitto::Sources::Ru::SanctionedEntity.new(
+        english_name: 'Test Org',
+        entity_type: 'organization',
+        list_type: 'stop_list',
+        source_url: 'https://mid.ru/example',
+        announcement_date: 'not-a-date'
+      )
+    end
+
+    let(:parse_unreadable) { -> { transformer.transform(entity)[:entry].announcement.publish_date } }
+    let(:raise_unreadable) { -> { transformer.send(:parse_announcement_date, 'not-a-date') } }
+
+    it_behaves_like 'a reported parse failure', source: :ru, field: :announcement_date
+  end
 end

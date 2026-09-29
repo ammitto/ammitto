@@ -49,4 +49,14 @@ RSpec.describe Ammitto::Sources::Un::Transformer do
       expect(birth.year).to eq(1978)
     end
   end
+
+  describe 'parse failure visibility' do
+    include_context 'with parse failure log capture'
+
+    let(:entity) { Ammitto::Sources::Un::Entity.new(reference_number: 'QDe.1', listed_on: 'not-a-date') }
+    let(:entry_with_unreadable_date) { -> { transformer.send(:create_entry_from_entity, entity) } }
+
+    it_behaves_like 'a parse failure counted once across period dates',
+                    source: :un, field: :listed_date, register_field: :listed_on
+  end
 end

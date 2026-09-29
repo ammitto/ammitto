@@ -69,4 +69,14 @@ RSpec.describe Ammitto::Sources::Uk::Transformer do
       expect(transformer.send(:transform_birth_info, details)).to eq([])
     end
   end
+
+  describe 'parse failure visibility' do
+    include_context 'with parse failure log capture'
+
+    let(:designation) { Ammitto::Sources::Uk::Designation.new(unique_id: 'UK1', date_designated: 'not-a-date') }
+    let(:entry_with_unreadable_date) { -> { transformer.send(:create_entry, designation) } }
+
+    it_behaves_like 'a parse failure counted once across period dates',
+                    source: :uk, field: :listed_date, register_field: :date_designated
+  end
 end

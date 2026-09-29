@@ -319,4 +319,19 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
       end.to raise_error(Ammitto::Utils::IriSanitizer::MissingLocalIdError)
     end
   end
+
+  # An unreadable listed_date publishes as nil in every mode; visibility
+  # only adds the report. Distinct from the IntegrityError refusals above:
+  # those stop a record from minting an IRI at all, this only loses one
+  # field on a row that is otherwise published.
+  describe 'parse failure visibility for listed_date' do
+    include_context 'with parse failure log capture'
+
+    let(:record) { source(name: 'TAMAS COMPANY', reference_number: '999', listed_date: 'not-a-date') }
+
+    let(:parse_unreadable) { -> { transform(record)[:entry].period.listed_date } }
+    let(:raise_unreadable) { -> { transformer.send(:parse_listed_date, 'not-a-date') } }
+
+    it_behaves_like 'a reported parse failure', source: :tr, field: :listed_date
+  end
 end

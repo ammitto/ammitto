@@ -168,6 +168,7 @@ module Ammitto
             regime: transform_regime(regime_code),
             effects: create_default_effects,
             period: create_period(
+              source: :un,
               listed_date: listed_on,
               effective_date: listed_on,
               last_updated: last_updated

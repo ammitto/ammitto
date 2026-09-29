@@ -180,7 +180,7 @@ module Ammitto
             effects: transform_effects(sanction),
             status: 'active',
             reference_number: source.reference,
-            period: create_period(listed_date: parse_control_date(sanction&.control_date)),
+            period: create_period(source: :au, listed_date: parse_control_date(sanction&.control_date)),
             legal_bases: transform_legal_instrument(sanction&.instrument),
             raw_source_data: create_raw_source_data(
               source_format: 'csv',

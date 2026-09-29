@@ -15,6 +15,12 @@ RSpec.describe Ammitto::Transformers::BirthInfo do
       expect(info.year).to eq(1988)
     end
 
+    it 'drops a value longer than Date._parse accepts instead of raising' do
+      info = transformer.send(:create_birth_info, date: 'x' * 200)
+      expect(info&.date).to be_nil
+      expect(info&.year).to be_nil
+    end
+
     it 'keeps a bare year as year only, without inventing a date' do
       info = transformer.send(:create_birth_info, date: '1988')
       expect(info.date).to be_nil

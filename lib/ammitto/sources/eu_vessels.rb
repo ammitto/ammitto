@@ -8,8 +8,9 @@ require 'lutaml/model'
 # This module contains Lutaml::Model classes that map to the EU Designated
 # Vessels list hosted by the Danish Maritime Authority (DMA).
 #
-# The list contains vessels designated under Annex XLII of
-# Council Regulation (EU) 833/2014 (Russia sanctions).
+# The list carries vessels under Article 3s and Annex XLII of Council
+# Regulation (EU) 833/2014 (Russia) and under Council Regulation (EU)
+# 2017/1509 (DPRK); each row's "Subject to" cell says which (SubjectTo).
 #
 # IMPORTANT: Vessels can change names, so IMO number is the key identifier.
 #
@@ -37,9 +38,6 @@ module Ammitto
 
       # Country code (host country)
       COUNTRY_CODE = 'DK'
-
-      # Legal basis
-      REGULATION = 'Council Regulation (EU) 833/2014, Annex XLII'
     end
   end
 end

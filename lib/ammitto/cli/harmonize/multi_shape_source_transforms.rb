@@ -190,15 +190,15 @@ module Ammitto
         # Transform EU Vessels data
         # @param transformer [Object] transformer instance
         # @param data [Hash] source data
-        # @return [Hash]
+        # @return [Array<Hash>] one pair per designation
         def transform_eu_vessels(transformer, data)
           source = Ammitto::Sources::EuVessels::Vessel.from_hash(data)
-          result = transformer.transform(source)
-
-          {
-            entity: entity_to_hash(result[:entity]),
-            entry: entry_to_hash(result[:entry])
-          }
+          transformer.transform(source).map do |result|
+            {
+              entity: entity_to_hash(result[:entity]),
+              entry: entry_to_hash(result[:entry])
+            }
+          end
         end
 
         # Transform JP data

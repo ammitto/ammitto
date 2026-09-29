@@ -87,8 +87,9 @@ results = Ammitto.search("Kim Jong Un", sources: [:un, :us])
 # Search with pagination
 results = Ammitto.search("Putin", limit: 50, offset: 0)
 
-# A search that could not reach a source still returns what it could read,
-# so check before treating an empty result as a clean negative
+# A search that could not read a source, or was given a source code this gem
+# does not know, still returns what it could read, so check before treating
+# an empty result as a clean negative
 unless results.complete?
   warn "Incomplete: could not read #{results.skipped_sources.join(', ')}"
 end

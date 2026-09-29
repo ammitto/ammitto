@@ -55,12 +55,16 @@ module Ammitto
       # Execute the search
       # @return [Array<Hash>] matching results
       def execute
-        @skipped_sources = []
+        # Unknown codes are recorded before the blank-term return, so an
+        # empty query cannot report itself complete over a source it could
+        # never have read.
+        @skipped_sources = sources.reject { |code| Registry.registered?(code) }
+        @skipped_sources.each { |code| Logger.warn("Search skipping #{code}: no registered source") }
         return [] if term.empty?
 
         results = []
 
-        sources.each do |code|
+        (sources - @skipped_sources).each do |code|
           source = Registry.instance(code)
           unless source
             # The registry is mutable and #instance may return nil. A code
@@ -89,6 +93,10 @@ module Ammitto
           results.concat(matches)
         end
 
+        # Report in the order the caller asked, not in the order the
+        # failures were discovered.
+        @skipped_sources = sources & @skipped_sources
+
         # Apply pagination (offset applies with or without a limit;
         # past-the-end pages return [] rather than nil)
         results = results.drop(offset) if offset.positive?
@@ -100,12 +108,18 @@ module Ammitto
       private
 
       # Normalize sources parameter
+      #
+      # Unknown codes are kept rather than filtered: a caller who asks for a
+      # source this gem does not have must see it in #skipped_sources, not
+      # an empty result that reads as a clean negative. #execute records
+      # them.
+      #
       # @param sources [Array<Symbol>, Symbol, nil] the sources
       # @return [Array<Symbol>] normalized sources
       def normalize_sources(sources)
         return Registry.codes if sources.nil?
 
-        Array(sources).map(&:to_sym).select { |s| Registry.registered?(s) }
+        Array(sources).map(&:to_sym).uniq
       end
     end
   end

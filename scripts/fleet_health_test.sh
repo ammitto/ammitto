@@ -28,23 +28,63 @@ workflow_fixture() { # repo state
   printf '{"path":".github/workflows/fetch.yml","state":"%s"}' "$2" \
     > "$FIX/$1__workflow.json"
 }
+# The script reads one run listing per repo, the workflow's unfiltered
+# runs. The helpers below keep two parts of it per repo, the newest
+# scheduled run (schedule_fixture) and the completed history
+# (completed_fixture), and every write rebuilds the listing the way the
+# API serves it: newest first, every run with an id, a run_number, an
+# event and a status, and a total_count.
+PARTS="$TMP/parts"
+mkdir -p "$PARTS"
+write_runs() { # repo
+  # schedule_fixture's run and completed_fixture's first run are the same
+  # run in these fixtures (completed_fixture starts at its timestamp), so
+  # the scheduled one is folded into a completed run with its timestamp;
+  # that is the only folding. Completed runs sharing a timestamp are all
+  # kept. Ties are tested with hand-written pages in the listing cases.
+  # Ids follow listing position, so a tie reads newest by id.
+  { cat "$PARTS/$1.done" 2>/dev/null || echo '[]'
+    cat "$PARTS/$1.sched" 2>/dev/null || echo '[]'; } | jq -c -s '
+    .[0] as $done
+    | ($done + [.[1][] | select(.created_at as $t
+                                | [$done[].created_at] | index($t) | not)])
+    | sort_by(.created_at) | reverse
+    | length as $n
+    | {total_count: $n,
+       workflow_runs: [to_entries[] | .value
+         + {id: (100000 + $n - .key), run_number: ($n - .key),
+            event: "schedule"}]}' > "$FIX/$1__runs.json"
+}
 schedule_fixture() { # repo age conclusion
-  printf '{"workflow_runs":[{"created_at":"%s","conclusion":"%s"}]}' \
-    "$(iso "$2")" "$3" > "$FIX/$1__schedule_runs.json"
+  printf '[{"created_at":"%s","status":"completed","conclusion":"%s"}]' \
+    "$(iso "$2")" "$3" > "$PARTS/$1.sched"
+  write_runs "$1"
+}
+no_runs_fixture() { # repo — a workflow that has never run
+  echo '[]' > "$PARTS/$1.sched"
+  echo '[]' > "$PARTS/$1.done"
+  write_runs "$1"
 }
 completed_fixture() { # repo conclusion... (newest first, as the caller reads)
-  local repo="$1" runs="" c i=0
+  local repo="$1" runs="" c i=0 newest base
   shift
-  # Timestamps descend with position, so a fixture written newest-first
-  # still reads newest-first once the script orders by created_at. The
-  # real endpoint always carries created_at; a fixture without one would
-  # be testing a document the API does not produce.
+  # Timestamps descend with position. They start at the newest scheduled
+  # run when there is one: completed runs are scheduled runs, and one
+  # newer than the newest scheduled run is a listing the API cannot
+  # produce.
+  newest="$(jq -r 'max_by(.created_at).created_at // empty' \
+    "$PARTS/$repo.sched" 2>/dev/null || true)"
+  if [ -n "$newest" ]; then
+    base="$(date -ud "$newest" +%s)"
+  else
+    base=$(( $(date -u +%s) - 3600 ))
+  fi
   for c in "$@"; do
-    runs="$runs{\"created_at\":\"$(iso "$((i + 1)) hours ago")\",\"conclusion\":\"$c\"},"
+    runs="$runs{\"created_at\":\"$(iso "@$((base - i * 3600))")\",\"status\":\"completed\",\"conclusion\":\"$c\"},"
     i=$((i + 1))
   done
-  printf '{"workflow_runs":[%s]}' "${runs%,}" \
-    > "$FIX/${repo}__completed_runs.json"
+  printf '[%s]' "${runs%,}" > "$PARTS/$repo.done"
+  write_runs "$repo"
 }
 healthy_fixture() { # repo — alive, recent, three clean runs
   workflow_fixture "$1" active
@@ -56,9 +96,9 @@ healthy_fixture() { # repo — alive, recent, three clean runs
 # These anchor the last run five hours before the frozen instant instead.
 healthy_fixture_at() { # repo frozen-now-epoch
   workflow_fixture "$1" active
-  printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' \
+  printf '[{"created_at":"%s","status":"completed","conclusion":"success"}]' \
     "$(date -ud "@$(( $2 - 18000 ))" '+%Y-%m-%dT%H:%M:%SZ')" \
-    > "$FIX/$1__schedule_runs.json"
+    > "$PARTS/$1.sched"
   completed_fixture "$1" success success success
 }
 
@@ -122,45 +162,56 @@ completed_fixture data-mixed failure cancelled failure cancelled success
 
 # Case 5 — each API document must validate on its own. Every repo below
 # is perfectly healthy except for ONE unusable document. Before the
-# monitor validated all three, an unreadable runs document produced an
+# monitor validated them all, an unreadable runs document produced an
 # empty sequence, a zero streak and a confident "OK".
 healthy_fixture data-badwf
 printf '{"message":"Not Found","documentation_url":"https://docs.github.com"}' \
   > "$FIX/data-badwf__workflow.json"
 
 healthy_fixture data-badsched
-printf '{"message":"Server Error"}' > "$FIX/data-badsched__schedule_runs.json"
+printf '{"message":"Server Error"}' > "$FIX/data-badsched__runs.json"
 
 healthy_fixture data-badcompleted
 printf '{"message":"Not Found","documentation_url":"https://docs.github.com"}' \
-  > "$FIX/data-badcompleted__completed_runs.json"
+  > "$FIX/data-badcompleted__runs.json"
 
 healthy_fixture data-truncated
-printf '{"workflow_runs":[{"conclu' > "$FIX/data-truncated__completed_runs.json"
+printf '{"total_count":3,"workflow_runs":[{"conclu' > "$FIX/data-truncated__runs.json"
 
 # A runs array whose MEMBERS are unusable: validating only the array type
 # let {"workflow_runs":[null]} read as "no scheduled run" -- indistinguishable
 # from the silent death this monitor exists to catch.
 healthy_fixture data-nullmember
-printf '{"workflow_runs":[null]}' > "$FIX/data-nullmember__schedule_runs.json"
+printf '{"total_count":1,"workflow_runs":[null]}' > "$FIX/data-nullmember__runs.json"
 
 healthy_fixture data-scalarmember
-printf '{"workflow_runs":["oops"]}' > "$FIX/data-scalarmember__completed_runs.json"
+printf '{"total_count":1,"workflow_runs":["oops"]}' > "$FIX/data-scalarmember__runs.json"
 
 healthy_fixture data-blankdate
-printf '{"workflow_runs":[{"created_at":"","conclusion":"success"}]}' \
-  > "$FIX/data-blankdate__schedule_runs.json"
+printf '{"total_count":1,"workflow_runs":[{"id":1,"created_at":"","event":"schedule","status":"completed","conclusion":"success"}]}' \
+  > "$FIX/data-blankdate__runs.json"
 
 # An empty body is the trap that looks safest: `jq -e` exits 0 on empty
 # input, so an unguarded validator would wave this through as healthy.
 healthy_fixture data-empty
-: > "$FIX/data-empty__completed_runs.json"
+: > "$FIX/data-empty__runs.json"
+
+# Two JSON documents in one body. `jq -e` judges a stream by its last
+# result, so a malformed document ahead of a valid one must still make
+# the body unusable, for either document.
+healthy_fixture data-twodocs
+{ printf '[1,2]\n'; cat "$FIX/data-twodocs__runs.json"; } > "$TMP/twodocs.json"
+mv "$TMP/twodocs.json" "$FIX/data-twodocs__runs.json"
+healthy_fixture data-twowf
+{ printf '"x"\n'; cat "$FIX/data-twowf__workflow.json"; } > "$TMP/twowf.json"
+mv "$TMP/twowf.json" "$FIX/data-twowf__workflow.json"
 
 repos_all="$TMP/repos_all.txt"
 printf '%s\n' data-dead data-stale data-failing data-quiet data-two-fails \
   data-cancelled data-mixed data-ghost data-badwf data-badsched \
   data-badcompleted data-truncated data-empty \
-  data-nullmember data-scalarmember data-blankdate > "$repos_all"
+  data-nullmember data-scalarmember data-blankdate data-twodocs \
+  data-twowf > "$repos_all"
 repos_healthy="$TMP/repos_healthy.txt"
 printf '%s\n' data-quiet data-two-fails > "$repos_healthy"
 
@@ -196,7 +247,7 @@ expect_reason() { # repo substring [report]
 expect_status data-dead UNHEALTHY
 expect_reason data-dead "disabled_inactively"
 expect_status data-stale UNHEALTHY
-expect_reason data-stale "72h ago (limit 48h)"
+expect_reason data-stale "72h00m ago (limit 48h)"
 expect_status data-failing UNHEALTHY
 expect_reason data-failing "3 hard failures since the last success"
 expect_status data-quiet OK
@@ -213,23 +264,228 @@ echo "== detection: every API document validates independently =="
 expect_status data-badwf UNREADABLE
 expect_reason data-badwf "workflow document unreadable"
 expect_status data-badsched UNREADABLE
-expect_reason data-badsched "schedule-runs document unreadable"
+expect_reason data-badsched "run listing unreadable"
 expect_status data-badcompleted UNREADABLE
-expect_reason data-badcompleted "completed-runs document unreadable"
+expect_reason data-badcompleted "run listing unreadable"
 expect_status data-nullmember UNREADABLE
-expect_reason data-nullmember "schedule-runs document unreadable"
+expect_reason data-nullmember "run listing unreadable"
 expect_status data-scalarmember UNREADABLE
-expect_reason data-scalarmember "completed-runs document unreadable"
+expect_reason data-scalarmember "run listing unreadable"
 expect_status data-blankdate UNREADABLE
-expect_reason data-blankdate "schedule-runs document unreadable"
+expect_reason data-blankdate "run listing unreadable"
 expect_status data-truncated UNREADABLE
 expect_status data-empty UNREADABLE
-for r in data-badwf data-badsched data-badcompleted data-truncated data-empty; do
+expect_status data-twodocs UNREADABLE
+expect_reason data-twodocs "run listing unreadable"
+expect_status data-twowf UNREADABLE
+expect_reason data-twowf "workflow document unreadable"
+for r in data-badwf data-badsched data-badcompleted data-truncated data-empty \
+         data-twodocs data-twowf; do
   if grep -E "^\| $r \| OK " "$TMP/report.md" > /dev/null; then
     fail "$r reported OK with an unusable document"
   fi
 done
 pass "no repo with an unusable document reported OK"
+
+echo "== listing: one page, judged only when it keeps its promises =="
+# The runs come from one page of the workflow's unfiltered listing,
+# because the API's event= filter answered with partial pages
+# (2026-09-23: data-eu's newest scheduled run read as 09-18 while it ran
+# daily to 09-22, paged as "117h ago"). The page is held to what it
+# promises instead; each case below breaks one promise and must be
+# UNREADABLE, never judged.
+# runs_array: id-of-newest count event conclusion newest-epoch step
+runs_array() {
+  jq -n -c --argjson id "$1" --argjson n "$2" --arg ev "$3" --arg c "$4" \
+    --argjson t "$5" --argjson step "$6" '
+    [range(0; $n) | {id: ($id - .), run_number: ($id - .),
+      created_at: (($t - . * $step) | todate), event: $ev,
+      status: "completed", conclusion: $c}]'
+}
+listing_page() { # file total-count array...
+  local file="$1" total="$2"
+  shift 2
+  printf '%s\n' "$@" | jq -c -s --argjson total "$total" \
+    '{total_count: $total, workflow_runs: add}' > "$file"
+}
+now_s=$(date -u +%s)
+
+# A short page: total_count 100 promises a full page and 99 arrive. The
+# missing run is the newest, a failure; judged as served the streak
+# reads FFSSSSSSSS, OK, with the newest failure never seen.
+workflow_fixture data-shortpage active
+listing_page "$FIX/data-shortpage__runs.json" 100 \
+  "$(runs_array 99 2 schedule failure $((now_s - 7200)) 3600)" \
+  "$(runs_array 97 97 schedule success $((now_s - 3 * 3600)) 3600)"
+
+# The extreme of the same: an empty page whose total_count says a run
+# exists. Judged as served it is a repo with no scheduled run on record.
+workflow_fixture data-emptylist active
+listing_page "$FIX/data-emptylist__runs.json" 1 '[]'
+
+# History deeper than one page: 98 push runs crowd the page, the cron's
+# own runs sit behind them, and total_count says there are 300 runs.
+# Two scheduled failures are all the page shows of the streak.
+workflow_fixture data-crowded active
+listing_page "$FIX/data-crowded__runs.json" 300 \
+  "$(runs_array 3000 98 push success $((now_s - 60)) 60)" \
+  "$(runs_array 2902 2 schedule failure $((now_s - 7200)) 3600)"
+
+# Not a fault: a history shorter than the streak's ten runs, whole on
+# the page (total_count agrees), is judged as it stands.
+workflow_fixture data-young active
+listing_page "$FIX/data-young__runs.json" 3 \
+  "$(runs_array 3 3 schedule success $((now_s - 7200)) 86400)"
+
+# Duplicate ids: ten copies of one successful run would otherwise fill
+# the streak's window and read as ten successes.
+workflow_fixture data-dupids active
+listing_page "$FIX/data-dupids__runs.json" 12 \
+  "$(runs_array 12 2 schedule failure $((now_s - 3600)) 3600)" \
+  "$(jq -c '[range(10)] | map({id: 10, run_number: 10,
+      created_at: ("'"$(iso "@$((now_s - 3 * 3600))")"'"), event: "schedule",
+      status: "completed", conclusion: "success"})' <<<'null')"
+
+# total_count must be a whole number, not negative, below a billion (jq
+# prints larger ones in exponent form, which aborts shell arithmetic),
+# and must agree with the page; a fraction would also crash arithmetic.
+bad_totals=()
+for bad in -1 2.5 '"12"' 1 1e20; do
+  case "$bad" in
+    -1) name=data-totalneg ;;
+    1e20) name=data-totalhuge ;;
+    *) name="data-total$(printf '%s' "$bad" | tr -dc '0-9')" ;;
+  esac
+  workflow_fixture "$name" active
+  runs_array 12 3 schedule success $((now_s - 3600)) 3600 |
+    jq -c --argjson t "$bad" '{total_count: $t, workflow_runs: .}' \
+    > "$FIX/${name}__runs.json"
+  bad_totals+=("$name")
+done
+
+# A run without a conclusion key, and one whose timestamp is not the
+# API's fixed form (string order would misplace it).
+workflow_fixture data-noconclusion active
+runs_array 3 3 schedule success $((now_s - 3600)) 3600 |
+  jq -c '.[1] |= del(.conclusion) | {total_count: 3, workflow_runs: .}' \
+  > "$FIX/data-noconclusion__runs.json"
+workflow_fixture data-baddate active
+runs_array 3 3 schedule success $((now_s - 3600)) 3600 |
+  jq -c '.[1].created_at = "2026-09-23 10:00:00" | {total_count: 3, workflow_runs: .}' \
+  > "$FIX/data-baddate__runs.json"
+
+# Two scheduled runs created in the same second. Ties are broken by id,
+# higher is newer: served that way the newer one (a failure) is read
+# first; served the other way round the page is refused, because the
+# order that decides the streak cannot be told from it.
+tie_t="$(iso "@$((now_s - 3600))")"
+tie_run() { printf '{"id":%s,"run_number":%s,"created_at":"%s","event":"schedule","status":"completed","conclusion":"%s"}' "$1" "$1" "$tie_t" "$2"; }
+older="$(runs_array 18 8 schedule success $((now_s - 2 * 3600)) 3600)"
+workflow_fixture data-tie active
+listing_page "$FIX/data-tie__runs.json" 10 \
+  "[$(tie_run 20 failure),$(tie_run 19 success)]" "$older"
+workflow_fixture data-tieswapped active
+listing_page "$FIX/data-tieswapped__runs.json" 10 \
+  "[$(tie_run 19 success),$(tie_run 20 failure)]" "$older"
+
+# Shapes the fleet serves every day, each judged as it stands. A full
+# page whose total_count is exactly 100 is complete, not short.
+workflow_fixture data-fullpage active
+listing_page "$FIX/data-fullpage__runs.json" 100 \
+  "$(runs_array 500 100 schedule success $((now_s - 3600)) 3600)"
+
+# A cron run still queued or in progress at the top of the page is the
+# cron having fired, so it is the newest scheduled run; it has no
+# conclusion yet, so it is neither a success nor an inconclusive run in
+# the streak.
+workflow_fixture data-inflight active
+listing_page "$FIX/data-inflight__runs.json" 13 \
+  "$(runs_array 313 3 schedule x $((now_s - 60)) 60 |
+     jq -c 'map(.conclusion = null) | .[0].status = "queued"
+            | .[1].status = "in_progress" | .[2].status = "queued"')" \
+  "$(runs_array 310 10 schedule success $((now_s - 3600)) 3600)"
+inflight_t="$(iso "@$((now_s - 60))")"
+
+# Manual dispatches at the top of the page, failing, are not the cron:
+# they must neither set the recency nor enter the streak.
+workflow_fixture data-dispatch active
+listing_page "$FIX/data-dispatch__runs.json" 13 \
+  "$(runs_array 413 3 workflow_dispatch failure $((now_s - 60)) 60)" \
+  "$(runs_array 410 10 schedule success $((now_s - 3600)) 3600)"
+dispatch_sched_t="$(iso "@$((now_s - 3600))")"
+
+repos_listing="$TMP/repos_listing.txt"
+printf '%s\n' data-shortpage data-emptylist data-crowded data-young \
+  data-dupids "${bad_totals[@]}" data-noconclusion data-baddate data-tie \
+  data-tieswapped data-fullpage data-inflight data-dispatch > "$repos_listing"
+rc=$(run_health "$repos_listing" "$TMP/report_listing.md")
+[ "$rc" -eq 1 ] && pass "broken listings page (exit 1)" \
+  || fail "broken listings exit was $rc"
+expect_status data-shortpage UNREADABLE "$TMP/report_listing.md"
+expect_reason data-shortpage "99 runs where total_count 100 promises 100" \
+  "$TMP/report_listing.md"
+expect_status data-emptylist UNREADABLE "$TMP/report_listing.md"
+expect_reason data-emptylist "0 runs where total_count 1 promises 1" \
+  "$TMP/report_listing.md"
+expect_status data-crowded UNREADABLE "$TMP/report_listing.md"
+expect_reason data-crowded "history deeper than one page; not judged" \
+  "$TMP/report_listing.md"
+expect_status data-young OK "$TMP/report_listing.md"
+for r in data-dupids data-totalneg data-total25 data-total12 \
+         data-totalhuge data-noconclusion data-baddate; do
+  expect_status "$r" UNREADABLE "$TMP/report_listing.md"
+  expect_reason "$r" "run listing unreadable" "$TMP/report_listing.md"
+done
+expect_status data-total1 UNREADABLE "$TMP/report_listing.md"
+expect_reason data-total1 "3 runs where total_count 1 promises 1" \
+  "$TMP/report_listing.md"
+expect_status data-tie OK "$TMP/report_listing.md"
+grep -E '^\| data-tie \|' "$TMP/report_listing.md" | grep -qF "$tie_t (failure)" \
+  && pass "a same-second tie reads the higher id as the newer run" \
+  || fail "tie read wrong: $(grep -E '^\| data-tie \|' "$TMP/report_listing.md")"
+grep -E '^\| data-tie \|' "$TMP/report_listing.md" | grep -qF '| FSSSSSSSSS |' \
+  && pass "the tie is ordered the same way in the streak" \
+  || fail "tie streak wrong: $(grep -E '^\| data-tie \|' "$TMP/report_listing.md")"
+expect_status data-tieswapped UNREADABLE "$TMP/report_listing.md"
+expect_reason data-tieswapped "not newest-first" "$TMP/report_listing.md"
+expect_status data-fullpage OK "$TMP/report_listing.md"
+grep -E '^\| data-fullpage \|' "$TMP/report_listing.md" | grep -qF '| SSSSSSSSSS |' \
+  && pass "a full page with total_count exactly 100 is judged" \
+  || fail "full page read wrong: $(grep -E '^\| data-fullpage \|' "$TMP/report_listing.md")"
+expect_status data-inflight OK "$TMP/report_listing.md"
+grep -E '^\| data-inflight \|' "$TMP/report_listing.md" \
+  | grep -qF "$inflight_t (-) | 0h | SSSSSSSSSS | 0F/0C |" \
+  && pass "queued and in-progress cron runs set recency but stay out of the streak" \
+  || fail "in-flight runs read wrong: $(grep -E '^\| data-inflight \|' "$TMP/report_listing.md")"
+expect_status data-dispatch OK "$TMP/report_listing.md"
+grep -E '^\| data-dispatch \|' "$TMP/report_listing.md" \
+  | grep -qF "$dispatch_sched_t (success) | 1h | SSSSSSSSSS | 0F/0C |" \
+  && pass "failing manual dispatches set neither recency nor the streak" \
+  || fail "dispatch runs read wrong: $(grep -E '^\| data-dispatch \|' "$TMP/report_listing.md")"
+for r in data-shortpage data-emptylist data-crowded data-dupids \
+         "${bad_totals[@]}" data-noconclusion data-baddate data-tieswapped; do
+  grep -F "**$r**" "$TMP/report_listing.md" | grep -qF 'ago (limit' \
+    && fail "$r: an age was computed from a page that broke a promise" \
+    || pass "$r: no age computed from a broken page"
+done
+
+echo "== staleness: the limit is judged to the second =="
+# Whole hours round down, so a run 48h59m59s old would read as 48h and
+# pass a 48 hour limit. The clock is frozen so each age is exact.
+age_now=1788782400
+for spec in 172800:OK 172801:UNHEALTHY 176399:UNHEALTHY; do
+  age=${spec%:*}; want=${spec#*:}
+  workflow_fixture "data-age$age" active
+  listing_page "$FIX/data-age${age}__runs.json" 3 \
+    "$(runs_array 3 3 schedule success $((age_now - age)) 86400)"
+  printf 'data-age%s\n' "$age" > "$TMP/repos_age.txt"
+  rc=$(run_health "$TMP/repos_age.txt" "$TMP/report_age$age.md" \
+    FLEET_HEALTH_NOW_EPOCH="$age_now")
+  expect_status "data-age$age" "$want" "$TMP/report_age$age.md"
+done
+expect_reason data-age176399 "48h59m ago (limit 48h)" "$TMP/report_age176399.md"
+# Under a minute past the limit, minutes alone would read as the limit.
+expect_reason data-age172801 "48h00m01s ago (limit 48h)" "$TMP/report_age172801.md"
 
 echo "== detection: a total blackout is an outage, not fifteen deaths =="
 # Observed live: a misfiring auth probe pushed a whole pass onto the
@@ -263,8 +519,7 @@ echo "== no-schedule: a designation, and one that can be wrong =="
 # designation that is UNHEALTHY ("no schedule-event run on record"); with
 # it, it is BY-DESIGN and silent.
 workflow_fixture data-noschedule active
-printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
-printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__completed_runs.json"
+no_runs_fixture data-noschedule
 
 repos_nosched="$TMP/repos_nosched.txt"
 printf 'data-noschedule no-schedule:curated by its own scripts\n' > "$repos_nosched"
@@ -314,8 +569,7 @@ grep -q "workflow state is 'deleted'" "$TMP/report_nosched_deleted.md" \
 # would hide the one thing it must never hide.
 for dead_state in disabled_manually disabled_inactivity disabled_fork; do
   workflow_fixture data-noschedule "$dead_state"
-  printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
-  printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__completed_runs.json"
+  no_runs_fixture data-noschedule
   rc=$(run_health "$repos_nosched" "$TMP/report_nosched_$dead_state.md")
   [ "$rc" -eq 1 ] \
     && pass "no-schedule does not excuse $dead_state" \
@@ -331,7 +585,13 @@ workflow_fixture data-noschedule active
 # and no success — a shape that would page loudly on a scheduled repo —
 # and it must still read BY-DESIGN, because a repo with no cron cannot
 # have a run of failures since its last success.
-printf '{"workflow_runs":[]}' > "$FIX/data-noschedule__schedule_runs.json"
+#
+# With one listing there is no longer a way to hold failures without a
+# newest scheduled run, and an ACTIVE workflow with runs on record pages
+# for its own reason (above). So the workflow is deleted, as data-jp's
+# is, and its history ends in failures.
+workflow_fixture data-noschedule deleted
+schedule_fixture data-noschedule '3 hours ago' failure
 completed_fixture data-noschedule failure failure failure failure
 rc=$(run_health "$repos_nosched" "$TMP/report_nosched_hist.md")
 [ "$rc" -eq 0 ] && pass "old completed runs do not revive a streak under no-schedule" \
@@ -460,8 +720,7 @@ echo "== acknowledgement: a doubled no-schedule pages on a repo it would silence
 # BY-DESIGN and silent — which is the suppression the guard exists to
 # refuse.
 workflow_fixture data-dblnosched active
-printf '{"workflow_runs":[]}' > "$FIX/data-dblnosched__schedule_runs.json"
-printf '{"workflow_runs":[]}' > "$FIX/data-dblnosched__completed_runs.json"
+no_runs_fixture data-dblnosched
 repos_dblnos="$TMP/repos_dblnos.txt"
 printf 'data-dblnosched no-schedule:first no-schedule:second\n' > "$repos_dblnos"
 rc=$(run_health "$repos_dblnos" "$TMP/report_dblnos.md")
@@ -470,19 +729,23 @@ rc=$(run_health "$repos_dblnos" "$TMP/report_dblnos.md")
 expect_status data-dblnosched UNHEALTHY "$TMP/report_dblnos.md"
 expect_reason data-dblnosched "one qualifier per line" "$TMP/report_dblnos.md"
 
-echo "== queries: only scheduled runs may reach the streak =="
+echo "== queries: only scheduled runs may reach the verdict =="
 # The fixture layer bypasses URL building entirely, so this drives the
-# real query builder through a stubbed gh. The stub answers scheduled
-# queries with successes and everything else with failures: if the
-# monitor ever drops event=schedule, a red PR run pages the fleet.
+# real query builder through a stubbed gh. The listing mixes green
+# scheduled runs with red push and PR runs, newer ones included: if the
+# client-side event filter ever lapses, a red PR run pages the fleet.
 cat > "$TMP/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 if [ "$1" = "api" ]; then
   echo "$2" >> "$GH_PATHS"
   case "$2" in
-    *"/runs?"*"event=schedule"*"per_page=5") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
-    *"/runs?"*"event=schedule"*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" "$SCHED_TS" "$SCHED_TS" ;;
-    *"/runs?"*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"}]}' "$SCHED_TS" "$SCHED_TS" "$SCHED_TS" "$SCHED_TS" ;;
+    *"/runs?"*)
+      run() { printf '{"id":%s,"created_at":"%s","event":"%s","status":"completed","conclusion":"%s"}' "$@"; }
+      printf '{"total_count":7,"workflow_runs":[%s,%s,%s,%s,%s,%s,%s]}' \
+        "$(run 7 "$T1" pull_request failure)" "$(run 6 "$T2" schedule success)" \
+        "$(run 5 "$T3" push failure)" "$(run 4 "$T4" push failure)" \
+        "$(run 3 "$T5" schedule success)" "$(run 2 "$T6" push failure)" \
+        "$(run 1 "$T7" schedule success)" ;;
     *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
   esac
   exit 0
@@ -490,22 +753,32 @@ fi
 exit 0
 STUB
 chmod +x "$TMP/bin/gh"
+stub_times=(T1="$(iso '1 hours ago')" T2="$(iso '3 hours ago')"
+  T3="$(iso '4 hours ago')" T4="$(iso '5 hours ago')"
+  T5="$(iso '27 hours ago')" T6="$(iso '28 hours ago')"
+  T7="$(iso '51 hours ago')")
 printf 'data-prfail\n' > "$TMP/repos_q.txt"
 : > "$TMP/paths.txt"
 rc=0
-PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths.txt" \
-  SCHED_TS="$(iso '3 hours ago')" FLEET_HEALTH_FIXTURES= \
+env PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths.txt" \
+  "${stub_times[@]}" FLEET_HEALTH_FIXTURES= \
   FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
   "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_q.md" > /dev/null || rc=$?
 [ "$rc" -eq 0 ] && pass "PR/push failures do not page (exit 0)" \
   || fail "unscheduled runs leaked into the verdict (exit $rc)"
 expect_status data-prfail OK "$TMP/report_q.md"
-unscheduled="$(grep '/runs?' "$TMP/paths.txt" | grep -v 'event=schedule' || true)"
-[ -z "$unscheduled" ] && pass "no run query is missing event=schedule" \
-  || fail "run query without event=schedule: $unscheduled"
-grep -q 'runs?event=schedule&status=completed' "$TMP/paths.txt" \
-  && pass "streak query is scheduled runs, completed only" \
-  || fail "streak query wrong: $(grep '/runs?' "$TMP/paths.txt" | tr '\n' ' ')"
+grep -qF "${stub_times[1]#T2=} (success) | 3h | SSS |" "$TMP/report_q.md" \
+  && pass "recency and streak are read from the scheduled runs only" \
+  || fail "row read unscheduled runs: $(grep 'data-prfail' "$TMP/report_q.md" || true)"
+# The API's own event= and status= filters serve partial pages (see
+# "Where the runs come from" in the script), so no query may use them.
+filtered="$(grep '/runs?' "$TMP/paths.txt" | grep -E 'event=|status=' || true)"
+[ -z "$filtered" ] && pass "no run query uses the API's event or status filter" \
+  || fail "filtered run query: $filtered"
+[ "$(grep '/runs?' "$TMP/paths.txt")" = \
+  "repos/ammitto/data-prfail/actions/workflows/fetch.yml/runs?per_page=100" ] \
+  && pass "one listing page, 100 runs, is read when it is enough" \
+  || fail "run queries: $(grep '/runs?' "$TMP/paths.txt" | tr '\n' ' ')"
 
 echo "== auth: an older gh must not fall through to the anonymous API =="
 # `gh auth token` arrived in gh 2.6. Probing with it alone made gh 2.4
@@ -522,8 +795,7 @@ esac
 if [ "$1" = "api" ]; then
   echo "$2" >> "$GH_PATHS"
   case "$2" in
-    *"/runs?"*"per_page=5") printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
-    *"/runs?"*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" "$SCHED_TS" ;;
+    *"/runs?"*) printf '{"total_count":1,"workflow_runs":[{"id":1,"created_at":"%s","event":"schedule","status":"completed","conclusion":"success"}]}' "$SCHED_TS" ;;
     *) printf '{"state":"active"}' ;;
   esac
 fi
@@ -550,23 +822,31 @@ env -u GH_TOKEN -u GITHUB_TOKEN PATH="$TMP/bin2:$PATH" \
   && fail "fell through to anonymous curl: $(cat "$TMP/curl.log")" \
   || pass "did not fall through to anonymous curl"
 
-echo "== streak: the page must be large enough to reach the threshold =="
-# Recency must come from the newest run on the page, not from position
-# zero. The endpoint has been observed serving a stale page: on
-# 2026-08-18 it reported data-uk's last scheduled run as three weeks old
-# while that repository was committing every morning, and the monitor
-# paged on a healthy repo for it. This stub puts the OLD run first, so a
-# reader that trusts position zero calls a healthy repo stale.
-echo "== recency: the newest run on the page wins, whatever its position =="
+echo "== order: a listing that is not newest-first is refused, not judged =="
+# Recency is the first scheduled run on the listing and the streak is
+# everything before the first success on it, so both trust the order.
+# The endpoint has served stale pages before (2026-08-18: data-uk's last
+# scheduled run read as three weeks old while it ran every morning), so
+# the order is checked rather than assumed. An OLD run served ahead of
+# newer ones would call a healthy repo stale, or put an old success
+# ahead of newer failures and clear a real streak; either way the
+# listing breaks its promise and the repo is UNREADABLE.
 cat > "$TMP/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 if [ "$1" = "api" ]; then
   [ -n "${GH_PATHS:-}" ] && echo "$2" >> "$GH_PATHS"
   case "$2" in
-    *"/runs?"*"event=schedule"*"status=completed"*)
-      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
-    *"/runs?"*"event=schedule"*)
-      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"success"}]}' "$SCHED_OLD" "$SCHED_TS" ;;
+    *"/runs?"*)
+      run() { printf '{"id":%s,"created_at":"%s","event":"schedule","status":"completed","conclusion":"%s"}' "$@"; }
+      if [ "$ORDER" = newest-first ]; then
+        printf '{"total_count":4,"workflow_runs":[%s,%s,%s,%s]}' \
+          "$(run 4 "$SCHED_TS" success)" "$(run 3 "$SCHED_NEWER" failure)" \
+          "$(run 2 "$SCHED_MID" failure)" "$(run 1 "$SCHED_OLD" failure)"
+      else
+        printf '{"total_count":4,"workflow_runs":[%s,%s,%s,%s]}' \
+          "$(run 1 "$SCHED_OLD" success)" "$(run 4 "$SCHED_TS" failure)" \
+          "$(run 3 "$SCHED_NEWER" failure)" "$(run 2 "$SCHED_MID" failure)"
+      fi ;;
     *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
   esac
   exit 0
@@ -575,40 +855,44 @@ exit 0
 STUB
 chmod +x "$TMP/bin/gh"
 printf 'data-order\n' > "$TMP/repos_order.txt"
-rc=0
-PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token \
-  SCHED_TS="$(iso '3 hours ago')" SCHED_OLD="$(iso '30 days ago')" \
-  FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_order.txt" \
-  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_order.md" > /dev/null || rc=$?
-[ "$rc" -eq 0 ] \
-  && pass "the newest run on the page decides recency, not position zero" \
-  || fail "a stale entry ahead of the newest one paged a healthy repo (exit $rc)"
+sched_ts="$(iso '3 hours ago')"
+for order in newest-first old-first; do
+  rc=0
+  PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token ORDER="$order" \
+    SCHED_TS="$sched_ts" SCHED_NEWER="$(iso '4 hours ago')" \
+    SCHED_MID="$(iso '5 hours ago')" SCHED_OLD="$(iso '30 days ago')" \
+    FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_order.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_order_$order.md" > /dev/null || rc=$?
+done
+expect_status data-order OK "$TMP/report_order_newest-first.md"
 # The conclusion must come from the same run as the timestamp. It is
-# display-only, so nothing about the verdict catches it: reading it from
-# position zero reports the OLD run's conclusion beside the NEW run's
-# time, which is a row that describes no run that ever happened.
-if grep -q '(success)' "$TMP/report_order.md"; then
-  pass "the reported conclusion belongs to the run reported beside it"
-else
-  fail "conclusion came from a different run than the timestamp: $(grep 'data-order' "$TMP/report_order.md" || true)"
-fi
+# display-only, so nothing about the verdict catches it.
+grep -qF "$sched_ts (success)" "$TMP/report_order_newest-first.md" \
+  && pass "the reported conclusion belongs to the run reported beside it" \
+  || fail "conclusion came from a different run than the timestamp: $(grep 'data-order' "$TMP/report_order_newest-first.md" || true)"
+expect_status data-order UNREADABLE "$TMP/report_order_old-first.md"
+expect_reason data-order "not newest-first" "$TMP/report_order_old-first.md"
+grep -E '^\| data-order \| OK ' "$TMP/report_order_old-first.md" > /dev/null \
+  && fail "an out-of-order listing was judged healthy" \
+  || pass "an old success served first cannot clear a real failure streak"
 
-# The streak reads the same endpoint and had the same positional trust:
-# `window` takes everything before the first S as "since the last
-# success", so an old success served ahead of newer failures clears a
-# real streak. This stub puts the OLD success first and three newer
-# failures after it; ordered correctly the repo pages, ordered by
-# position it reads clean.
-echo "== streak: the newest completed runs decide it, not API position =="
+echo "== streak: the one page is read far enough to reach the threshold =="
+# The threshold is configurable, so the runs read must follow it: read
+# one short of the threshold the streak stays short of the limit forever
+# and a dead repo reads healthy. This page holds 30 scheduled runs, all
+# the repo has; the default reads 10 of them, a threshold of 12 reads
+# 13, and 012 must read exactly what 12 reads.
 cat > "$TMP/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 if [ "$1" = "api" ]; then
-  [ -n "${GH_PATHS:-}" ] && echo "$2" >> "$GH_PATHS"
+  echo "$2" >> "$GH_PATHS"
   case "$2" in
-    *"/runs?"*"event=schedule"*"status=completed"*)
-      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"},{"created_at":"%s","conclusion":"failure"}]}' "$SCHED_OLD" "$SCHED_MID" "$SCHED_NEWER" "$SCHED_TS" ;;
-    *"/runs?"*"event=schedule"*)
-      printf '{"workflow_runs":[{"created_at":"%s","conclusion":"failure"}]}' "$SCHED_TS" ;;
+    *"/runs?"*)
+      runs=""
+      for n in $(seq 0 29); do
+        runs="$runs{\"id\":$((1000 - n)),\"created_at\":\"$(date -ud "@$(( BASE - n * 86400 ))" '+%Y-%m-%dT%H:%M:%SZ')\",\"event\":\"schedule\",\"status\":\"completed\",\"conclusion\":\"success\"},"
+      done
+      printf '{"total_count":30,"workflow_runs":[%s]}' "${runs%,}" ;;
     *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
   esac
   exit 0
@@ -616,32 +900,30 @@ fi
 exit 0
 STUB
 chmod +x "$TMP/bin/gh"
-rc=0
-PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token \
-  SCHED_TS="$(iso '3 hours ago')" SCHED_NEWER="$(iso '4 hours ago')" \
-  SCHED_MID="$(iso '5 hours ago')" SCHED_OLD="$(iso '30 days ago')" \
-  FLEET_HEALTH_FIXTURES= FLEET_HEALTH_REPOS_FILE="$TMP/repos_order.txt" \
-  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_streak_order.md" > /dev/null || rc=$?
-[ "$rc" -eq 1 ] \
-  && pass "an old success served first cannot clear a real failure streak" \
-  || fail "the streak was cleared by API position (exit $rc)"
-
-# per_page was pinned at 10 while FLEET_HEALTH_STREAK is configurable, so
-# any threshold above 10 could never be reached: the streak stayed short
-# of the limit forever and a dead repo read healthy — the silent OK this
-# monitor exists to kill.
-: > "$TMP/paths12.txt"
-rc=0
-PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths12.txt" \
-  SCHED_TS="$(iso '3 hours ago')" FLEET_HEALTH_FIXTURES= \
-  FLEET_HEALTH_STREAK=12 FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
-  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_12q.md" > /dev/null || rc=$?
-grep -q 'status=completed&per_page=13' "$TMP/paths12.txt" \
-  && pass "threshold 12 asks the API for 13 completed runs" \
-  || fail "streak page ignored the threshold: $(grep -o 'per_page=[0-9]*' "$TMP/paths12.txt" | tr '\n' ' ')"
-grep -q 'status=completed&per_page=10' "$TMP/paths.txt" \
-  && pass "the default threshold still asks for 10" \
-  || fail "default page size changed: $(grep -o 'per_page=[0-9]*' "$TMP/paths.txt" | tr '\n' ' ')"
+base_s="$(( $(date -u +%s) - 3600 ))"
+frozen_s="$(date -u +%s)"
+for streak in 3 12 012; do
+  : > "$TMP/paths_s$streak.txt"
+  rc=0
+  PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths_s$streak.txt" \
+    BASE="$base_s" FLEET_HEALTH_NOW_EPOCH="$frozen_s" FLEET_HEALTH_FIXTURES= \
+    FLEET_HEALTH_STREAK="$streak" FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
+    "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_s$streak.md" > /dev/null || rc=$?
+done
+grep -qF '| SSSSSSSSSS |' "$TMP/report_s3.md" \
+  && pass "the default threshold reads ten completed runs" \
+  || fail "default threshold read: $(grep 'data-prfail' "$TMP/report_s3.md")"
+grep -qF '| SSSSSSSSSSSSS |' "$TMP/report_s12.md" \
+  && pass "threshold 12 reads its 13 completed runs" \
+  || fail "threshold 12 read: $(grep 'data-prfail' "$TMP/report_s12.md")"
+diff -q "$TMP/report_s12.md" "$TMP/report_s012.md" > /dev/null \
+  && pass "threshold 012 reads exactly what 12 reads" \
+  || fail "012 was read as octal: $(grep 'data-prfail' "$TMP/report_s012.md")"
+for streak in 3 12 012; do
+  [ "$(grep -c '/runs?' "$TMP/paths_s$streak.txt")" -eq 1 ] \
+    || fail "threshold $streak read more than one listing page"
+done
+pass "every threshold reads exactly one listing page"
 
 # The fixture layer bypasses URL building, so this proves the other half:
 # with the runs in hand, a threshold above the old page size does reach a
@@ -668,10 +950,11 @@ FLEET_HEALTH_STREAK=12 FLEET_HEALTH_FIXTURES="$FIX" \
   "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_11.md" > /dev/null || rc=$?
 expect_status data-streak12 OK "$TMP/report_11.md"
 
+
 echo "== streak: a threshold the query cannot honour is refused =="
-# 100 is the API per_page ceiling. A larger threshold, or a non-numeric
-# one, is refused at startup rather than discovered as a quiet "OK".
-for bad in 0 101 abc -1; do
+# 99 is the ceiling. A larger threshold, or a non-numeric one, is
+# refused at startup rather than discovered as a quiet "OK".
+for bad in 0 100 abc -1; do
   rc=0
   FLEET_HEALTH_STREAK="$bad" FLEET_HEALTH_FIXTURES="$FIX" \
     FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
@@ -681,11 +964,11 @@ for bad in 0 101 abc -1; do
     || fail "FLEET_HEALTH_STREAK=$bad exited $rc, wanted 64"
 done
 rc=0
-FLEET_HEALTH_STREAK=100 FLEET_HEALTH_FIXTURES="$FIX" \
+FLEET_HEALTH_STREAK=99 FLEET_HEALTH_FIXTURES="$FIX" \
   FLEET_HEALTH_REPOS_FILE="$TMP/repos_12.txt" \
-  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_100.md" > /dev/null || rc=$?
-[ "$rc" -ne 64 ] && pass "accepts the largest honourable threshold (100)" \
-  || fail "threshold 100 was refused"
+  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_99.md" > /dev/null || rc=$?
+[ "$rc" -ne 64 ] && pass "accepts the largest honourable threshold (99)" \
+  || fail "threshold 99 was refused"
 
 echo "== streak: a leading zero means the same number everywhere =="
 # bash reads a leading zero as octal inside $((…)) but as decimal in
@@ -693,16 +976,6 @@ echo "== streak: a leading zero means the same number everywhere =="
 # while every comparison read 12 — a page one short of the threshold, the
 # exact silent OK the block above exists to kill. 008 and 09 are not octal
 # at all and aborted the run with an arithmetic error instead of exit 64.
-: > "$TMP/paths012.txt"
-rc=0
-PATH="$TMP/bin:$PATH" GH_TOKEN=stub-token GH_PATHS="$TMP/paths012.txt" \
-  SCHED_TS="$(iso '3 hours ago')" FLEET_HEALTH_FIXTURES= \
-  FLEET_HEALTH_STREAK=012 FLEET_HEALTH_REPOS_FILE="$TMP/repos_q.txt" \
-  "$SCRIPT_DIR/fleet_health.sh" --report "$TMP/report_012.md" > /dev/null || rc=$?
-grep -q 'status=completed&per_page=13' "$TMP/paths012.txt" \
-  && pass "threshold 012 asks for 13, the same as 12" \
-  || fail "012 was read as octal: $(grep -o 'per_page=[0-9]*' "$TMP/paths012.txt" | tr '\n' ' ')"
-
 # A padded threshold must be indistinguishable from its plain spelling —
 # same exit code, same verdict — not merely "does not crash", since the
 # fleet's own unhealthy exit code is easy to mistake for survival.
@@ -713,7 +986,7 @@ grep -q 'status=completed&per_page=13' "$TMP/paths012.txt" \
 # has nothing to do with the streak spelling. It is a rare flake when the
 # suite is run by hand and an intolerable one now that CI gates on it.
 frozen="$(date -u +%s)"
-for pair in 008:8 09:9 0100:100; do
+for pair in 012:12 008:8 09:9 099:99; do
   zeroed=${pair%:*}; plain=${pair#*:}
   rc_z=0; rc_p=0
   FLEET_HEALTH_STREAK="$zeroed" FLEET_HEALTH_FIXTURES="$FIX" \
@@ -783,8 +1056,7 @@ cat > "$TMP/bin3/curl" <<'STUB'
 # One argument per line so an assertion can match a header exactly.
 { for a in "$@"; do echo "$a"; done; } >> "$CURL_LOG"
 case "$*" in
-  *status=completed*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
-  *event=schedule*) printf '{"workflow_runs":[{"created_at":"%s","conclusion":"success"}]}' "$SCHED_TS" ;;
+  */runs\?*) printf '{"total_count":1,"workflow_runs":[{"id":1,"created_at":"%s","event":"schedule","status":"completed","conclusion":"success"}]}' "$SCHED_TS" ;;
   *) printf '{"path":".github/workflows/fetch.yml","state":"active"}' ;;
 esac
 STUB

@@ -36,7 +36,7 @@ data-eu
 data-eu-vessels
 data-jp no-schedule:corpus is curated by data-jp's own scripts into sources/; the gem has no fetch path for jp
 data-nz
-data-ru ack:parked for maintainer ruling on ru revival:2026-09-07
+data-ru
 data-tr
 data-uk
 data-un

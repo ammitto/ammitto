@@ -27,7 +27,7 @@ module Ammitto
     end
 
     # @return [String] Full error message including context
-    def full_message
+    def full_message(**)
       return super unless context
 
       "#{super} (Context: #{context})"
@@ -59,7 +59,7 @@ module Ammitto
     end
 
     # @return [String] Full error message including status code and URL
-    def full_message
+    def full_message(**)
       parts = [super]
       parts << "URL: #{url}" if url
       parts << "Status: #{status_code}" if status_code

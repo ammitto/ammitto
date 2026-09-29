@@ -127,8 +127,8 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
         )
       end
 
-      def row_for(birth_infos)
-        exporter.add(
+      def row_for(birth_infos, into: exporter)
+        into.add(
           {
             '@id' => 'https://www.ammitto.org/entity/eu/birth',
             'entityType' => 'person',
@@ -138,7 +138,7 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
           { 'authority' => { '@id' => 'https://www.ammitto.org/authority/eu' },
             'status' => 'active' }
         )
-        exporter.entities.first
+        into.entities.first
       end
 
       it 'exports one exact Year object' do
@@ -195,13 +195,75 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
                                        ])
       end
 
-      it 'deduplicates repeated years while retaining circa uncertainty' do
+      it 'collapses only identical claims' do
         row = row_for([
                         { 'year' => 1963 },
+                        { 'date' => '1963-05-01', 'year' => 1963 },
                         { 'year' => 1963, 'circa' => true }
                       ])
 
-        expect(row[:birthYears]).to eq([year_value('1963', circa: true)])
+        expect(row[:birthYears]).to eq([
+                                         year_value('1963'),
+                                         year_value('1963', circa: true)
+                                       ])
+      end
+
+      # Shape of us/12057's birthInfo: two spans and two single years.
+      it 'keeps every span and every year a person has' do
+        row = row_for([
+                        { 'yearRangeFrom' => 1951, 'yearRangeTo' => 1953, 'circa' => false },
+                        { 'yearRangeFrom' => 1960, 'yearRangeTo' => 1962, 'circa' => false },
+                        { 'year' => 1961, 'circa' => false },
+                        { 'year' => 1953, 'circa' => false }
+                      ])
+
+        expect(row[:birthYears]).to eq([
+                                         range_value(from: 1951, to: 1953),
+                                         year_value('1953'),
+                                         range_value(from: 1960, to: 1962),
+                                         year_value('1961')
+                                       ])
+      end
+
+      # Shape of us/24761's birthInfo: a dated year, then a record whose
+      # year and one-year span both name the following year.
+      it 'keeps a dated year beside a one-year span from another record' do
+        row = row_for([
+                        { 'date' => '1964-09-01', 'circa' => false, 'year' => 1964 },
+                        { 'circa' => false, 'year' => 1965,
+                          'dateRangeFrom' => '1965-03-01', 'dateRangeTo' => '1965-03-31',
+                          'yearRangeFrom' => 1965, 'yearRangeTo' => 1965 }
+                      ])
+
+        expect(row[:birthYears]).to eq([year_value('1964'), year_value('1965')])
+      end
+
+      # Shape of eu/eu309236's birthInfo: one record with a date and a
+      # separately stated year that disagree.
+      it 'keeps a record year that differs from its date' do
+        row = row_for([{ 'date' => '1982-04-19', 'year' => 1402, 'circa' => false }])
+
+        expect(row[:birthYears]).to eq([year_value('1402'), year_value('1982')])
+      end
+
+      it 'orders claims the same whatever order the records arrive in' do
+        records = [
+          { 'yearRangeTo' => 1980 },
+          { 'year' => 1970, 'circa' => true },
+          { 'yearRangeFrom' => 1970, 'yearRangeTo' => 1975 },
+          { 'year' => 1970 }
+        ]
+        expected = [
+          year_value('1970'),
+          year_value('1970', circa: true),
+          range_value(from: 1970, to: 1975),
+          range_value(to: 1980)
+        ]
+
+        forward = row_for(records)[:birthYears]
+        reversed = row_for(records.reverse, into: described_class.new)[:birthYears]
+
+        expect([forward, reversed]).to eq([expected, expected])
       end
 
       it 'ignores malformed records and unrelated circa flags' do

@@ -494,13 +494,16 @@ module Ammitto
 
       # The one place the row's birth-year shape is decided.
       #
-      # The result is one array of polymorphic values. A stated span becomes
-      # one DateRange; distinct source-stated years become Year objects.
-      #
-      # Precedence:
-      #   1. a stated span, unless both bounds are the same year;
-      #   2. every distinct year across the birth records;
-      #   3. legacy top-level birthDate/birth_date fields.
+      # Every birth record contributes every claim it states: a span
+      # (yearRangeFrom/To) becomes one DateRange, or one Year when both
+      # bounds are the same year, and a date or year becomes one Year.
+      # A record may state both. No claim outranks another: a span once
+      # suppressed every single year beside it, so a row could say
+      # 1951-1953 while the node's birthInfo also said 1961. Only
+      # identical claims (same kind, bounds and circa) collapse; the
+      # result is sorted so the row does not depend on record order.
+      # The legacy top-level birthDate/birth_date is read only when no
+      # record states any claim.
       #
       # @param entity [Hash] entity data
       # @return [Array<BirthYear::Value>, nil]
@@ -508,56 +511,47 @@ module Ammitto
         entity_type = entity['entityType'] || entity['entity_type']
         return nil unless entity_type == 'person'
 
-        span_info = extract_birth_year_span(entity)
-        return span_info if span_info
+        claims = birth_info_records(entity).flat_map { |record| birth_record_claims(record) }.uniq
+        return claims.sort_by { |claim| birth_claim_sort_key(claim) } unless claims.empty?
 
-        extract_birth_year_candidates(entity) || extract_birth_year_fallback(entity)
+        extract_birth_year_fallback(entity)
       end
 
-      # @param entity [Hash] entity data
-      # @return [Array<BirthYear::Value>, nil]
-      def extract_birth_year_span(entity)
-        record = birth_info_with_range(entity)
-        return nil unless record
+      # @param record [Hash] one birth record
+      # A record's date and its year are separate claims: a source can
+      # state both and disagree (a date and a year in another calendar).
+      # @return [Array<BirthYear::Value>] the span and years it states
+      def birth_record_claims(record)
+        circa = record['circa'] == true
+        years = [record['date'], record['year']].filter_map { |value| extract_year_from_date(value) }
+        [birth_record_span(record, circa), *years.map { |year| BirthYear::Year.new(year, circa: circa) }].compact
+      end
 
+      # @param record [Hash] one birth record
+      # @param circa [Boolean] the record's circa flag
+      # @return [BirthYear::Value, nil]
+      def birth_record_span(record, circa)
         from = valid_year_bound(BIRTH_YEAR_FROM_KEYS.filter_map { |key| record[key] }.first)
         to = valid_year_bound(BIRTH_YEAR_TO_KEYS.filter_map { |key| record[key] }.first)
         return nil unless from || to
+        return BirthYear::Year.new(from, circa: circa) if from == to
 
-        circa = record['circa'] == true
-
-        return [BirthYear::Year.new(from, circa: circa)] if from && to && from == to
-
-        [
-          BirthYear::DateRange.new(
-            from: from,
-            to: to,
-            circa: circa
-          )
-        ]
+        BirthYear::DateRange.new(from: from, to: to, circa: circa)
       end
 
-      # Each source record contributes its own circa state. Distinct years
-      # are represented by one Year object each; if duplicate records state
-      # the same year with different precision, circa is retained if any
-      # contributing record marked that year approximate.
-      #
-      # @param entity [Hash] entity data
-      # @return [Array<BirthYear::Value>, nil]
-      def extract_birth_year_candidates(entity)
-        resolved = birth_info_records(entity).filter_map do |record|
-          year = extract_year_from_date(record['date'] || record['year'])
-          [year, record['circa'] == true] if year
-        end
-        return nil if resolved.empty?
-
-        circa_by_year = resolved.each_with_object({}) do |(year, circa), result|
-          result[year] = result.fetch(year, false) || circa
-        end
-
-        circa_by_year.keys.sort.map do |year|
-          BirthYear::Year.new(year, circa: circa_by_year.fetch(year))
-        end
+      # Earliest year first; at the same start a Year precedes a span,
+      # a narrower span precedes a wider one, exact precedes circa.
+      # An open bound sorts as the bound it has.
+      # @param claim [BirthYear::Value]
+      # @return [Array]
+      def birth_claim_sort_key(claim)
+        low, high, kind =
+          if claim.is_a?(BirthYear::DateRange)
+            [claim.from || claim.to, claim.to || claim.from, claim.from ? 1 : 2]
+          else
+            [claim.value, claim.value, 0]
+          end
+        [low, kind, high, claim.circa ? 1 : 0]
       end
 
       # The legacy flat fields, read only when no birthInfo record named
@@ -570,15 +564,6 @@ module Ammitto
         return nil unless year
 
         [BirthYear::Year.new(year)]
-      end
-
-      # @param entity [Hash] entity data
-      # @return [Hash, nil] the first birth record stating either bound
-      def birth_info_with_range(entity)
-        birth_info_records(entity).find do |birth|
-          (BIRTH_YEAR_FROM_KEYS + BIRTH_YEAR_TO_KEYS)
-            .any? { |key| scalar_presence(birth[key]) }
-        end
       end
 
       # @param entity [Hash] entity data

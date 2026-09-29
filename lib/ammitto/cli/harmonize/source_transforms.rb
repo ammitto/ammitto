@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../errors/base_error'
+
 require_relative 'multi_shape_source_transforms'
 
 module Ammitto
@@ -28,7 +30,7 @@ module Ammitto
 
         # Raised when announcement-format YAML reaches a legacy per-entity
         # source path that cannot parse it safely.
-        class AnnouncementFormatError < StandardError; end
+        class AnnouncementFormatError < Ammitto::Error; end
 
         # Top-level YAML keys that mark the announcement format.
         ANNOUNCEMENT_FORMAT_KEYS = %w[announcement sanction_details

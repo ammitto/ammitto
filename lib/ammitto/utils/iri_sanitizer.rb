@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../errors/base_error'
+
 require 'date' # FIXED_SIZE_TYPES references Date at load time
 
 module Ammitto
@@ -66,7 +68,7 @@ module Ammitto
       # per-file error attribution in the harmonize pipeline names the
       # offending source record instead of silently emitting a shared
       # ".../unknown" IRI.
-      class MissingLocalIdError < StandardError
+      class MissingLocalIdError < Ammitto::Error
         attr_reader :source, :kind, :value
 
         # @param source [String] source code the IRI was requested for

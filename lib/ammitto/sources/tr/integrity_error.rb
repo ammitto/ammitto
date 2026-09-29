@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../errors/base_error'
+
 module Ammitto
   module Sources
     module Tr
@@ -15,7 +17,7 @@ module Ammitto
       # denotes. Parsing completes before any of it is written, so a
       # refused harvest names the offending record and leaves the
       # previous corpus untouched.
-      class IntegrityError < StandardError; end
+      class IntegrityError < Ammitto::Error; end
     end
   end
 end

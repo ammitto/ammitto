@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../errors/base_error'
+
 require 'yaml'
 
 module Ammitto
@@ -83,7 +85,7 @@ module Ammitto
       end
 
       # Error raised when a schema cannot be found
-      class SchemaNotFoundError < StandardError; end
+      class SchemaNotFoundError < Ammitto::Error; end
     end
   end
 end

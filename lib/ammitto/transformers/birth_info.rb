@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../errors/base_error'
+
 require 'date'
 require_relative '../utils/circa_marker'
 
@@ -18,7 +20,7 @@ module Ammitto
     # HarmonizeCommand rescues per file, records the offending filename,
     # and fails its health gate, so one bad record neither aborts the
     # run nor vanishes from it.
-    class InvalidYearRangeError < StandardError; end
+    class InvalidYearRangeError < Ammitto::Error; end
 
     # Raised when a birth-date range is a defect rather than a spelling:
     # a closed span whose lower bound is above its upper bound.
@@ -34,7 +36,7 @@ module Ammitto
     # HarmonizeCommand's per-file rescue records the offending filename
     # and fails its health gate, so one bad record neither aborts the
     # run nor vanishes from it.
-    class InvalidDateRangeError < StandardError; end
+    class InvalidDateRangeError < Ammitto::Error; end
 
     # Birth-date/year-range parsing cluster extracted from BaseTransformer,
     # mixed back in via `include` so #create_birth_info stays a

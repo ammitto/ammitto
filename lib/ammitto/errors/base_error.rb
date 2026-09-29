@@ -14,14 +14,26 @@ module Ammitto
   #   end
   #
   class Error < StandardError
+    # A few errors predate this hierarchy with a stdlib ancestor such as
+    # ArgumentError that existing callers rescue. Ruby allows one
+    # superclass, so those include this module instead and
+    # `rescue Ammitto::Error` still matches them through `===`.
+    module Compatible; end
+
+    def self.===(other)
+      super || (equal?(Error) && other.is_a?(Compatible))
+    end
+
     # @return [String, nil] Additional context about the error
     attr_reader :context
 
     # Initialize the error with a message and optional context
-    # @param [String] message the error message
+    # @param [String, nil] message the error message
     # @param [Hash] options additional options
     # @option options [String] :context additional context
-    def initialize(message, options = {})
+    # The message defaults like StandardError's so classes moved under this
+    # base keep accepting a bare `raise Klass`.
+    def initialize(message = nil, options = {})
       @context = options[:context]
       super(message)
     end

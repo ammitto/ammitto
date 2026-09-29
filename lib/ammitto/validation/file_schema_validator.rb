@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../errors/base_error'
+
 require 'yaml'
 require 'json'
 begin
@@ -17,7 +19,9 @@ require_relative '../data/japan/schema_resolver'
 module Ammitto
   module Validation
     # Raised when asked to validate files for an unregistered country
-    class UnknownCountryError < ArgumentError; end
+    class UnknownCountryError < ArgumentError
+      include Ammitto::Error::Compatible
+    end
 
     # Country-parameterized YAML-file-vs-JSON-Schema validator
     #

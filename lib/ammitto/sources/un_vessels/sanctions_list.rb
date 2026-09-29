@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../errors/base_error'
+
 require 'lutaml/model'
 require_relative 'vessel'
 
@@ -19,7 +21,7 @@ module Ammitto
         # layout — a layout change makes the regexp go quiet rather
         # than wrong, so it must fail the harvest loudly instead of
         # yielding a green empty list.
-        class IntegrityError < StandardError; end
+        class IntegrityError < Ammitto::Error; end
 
         attribute :vessels, Vessel, collection: true
         attribute :fetched_at, :string

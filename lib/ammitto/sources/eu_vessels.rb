@@ -32,11 +32,8 @@ module Ammitto
       # Human-readable source name
       SOURCE_NAME = 'EU Designated Vessels (via Denmark DMA)'
 
-      # Source URL for XLSX download
-      SOURCE_URL = 'https://www.dma.dk/Media/639016569144709513/ImportversionListOfEUDesignatedVessels181225.xlsx'
-
       # Index page URL
-      INDEX_URL = 'https://www.dma.dk/growth-and-framework-conditions/maritime-sanctions/sanctions-against-russia-and-belarus/eu-vessel-designations'
+      INDEX_URL = 'https://www.dma.dk/growth-and-framework-conditions/maritime-sanctions/general-information/eu-vessel-designations'
 
       # Country code (host country)
       COUNTRY_CODE = 'DK'

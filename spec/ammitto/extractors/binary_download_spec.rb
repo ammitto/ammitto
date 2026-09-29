@@ -41,6 +41,10 @@ RSpec.describe 'binary downloads' do
         allow(Tempfile).to receive(:new).and_return(temp_file)
         allow(temp_file).to receive(:binmode).and_call_original
         allow(client).to receive(:get).and_return("PK\x03\x04payload\nwith\nnewlines")
+        # EuVessels reads its workbook link from an index page first; that
+        # lookup has its own spec, and here only the download is under test.
+        link = 'https://www.dma.dk/Media/1/List.xlsx'
+        allow(extractor).to receive(:xlsx_url).and_return(link) if class_name.end_with?('::EuVesselsExtractor')
       end
 
       after do

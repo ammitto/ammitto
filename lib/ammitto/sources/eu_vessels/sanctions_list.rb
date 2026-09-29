@@ -11,7 +11,7 @@ module Ammitto
       # This list contains vessels designated under Annex XLII of
       # Council Regulation (EU) 833/2014, hosted by Danish Maritime Authority.
       #
-      # Source: https://www.dma.dk/growth-and-framework-conditions/maritime-sanctions/sanctions-against-russia-and-belarus/eu-vessel-designations
+      # Source: https://www.dma.dk/growth-and-framework-conditions/maritime-sanctions/general-information/eu-vessel-designations
       #
       class SanctionsList < Lutaml::Model::Serializable
         attribute :vessels, Vessel, collection: true

@@ -28,7 +28,7 @@ module Ammitto
         # Get the original source endpoint
         # @return [String] the official source URL
         def original_api_endpoint
-          'https://www.dma.dk/growth-and-framework-conditions/maritime-sanctions/sanctions-against-russia-and-belarus/eu-vessel-designations'
+          'https://www.dma.dk/growth-and-framework-conditions/maritime-sanctions/general-information/eu-vessel-designations'
         end
       end
     end

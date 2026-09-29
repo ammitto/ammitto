@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'json'
 require 'open3'
+require 'tmpdir'
 require_relative '../errors/base_error'
 # load_all warns through Ammitto::Logger, which reads Ammitto.configuration.
 # Declared here so this file stays independently loadable, as its other
@@ -40,8 +41,13 @@ module Ammitto
       # Default local cache directory
       DEFAULT_LOCAL_PATH = File.expand_path('~/.ammitto/data')
 
-      # URL patterns for detecting git URLs
-      URL_PATTERN = %r{\A(?:https?|git)://|git@}
+      # Git's own remote syntaxes: scheme://... or scp-like user@host:path.
+      # Anchored so a filesystem path that merely contains "git@" stays a path.
+      REMOTE_URL_PATTERN = %r{\A(?:[a-z][a-z0-9+.-]*://|[^/.@:][^/@:]*@[^/:]+:)}i
+
+      # Public, so callers outside the gem may reference it; it shares the
+      # anchored pattern so url? and they agree on what counts as a remote.
+      URL_PATTERN = REMOTE_URL_PATTERN
 
       # @return [String] Local path for the repository
       attr_reader :local_path
@@ -89,18 +95,10 @@ module Ammitto
           return true
         end
 
-        if force && File.directory?(local_path)
-          log("Removing existing repository at #{local_path}")
-          FileUtils.rm_rf(local_path)
-        end
+        return reclone if force && File.directory?(local_path)
 
         FileUtils.mkdir_p(File.dirname(local_path))
-
-        log("Cloning #{remote_url} to #{local_path}")
-        success, output = run_git_command('clone', '--depth', '1', remote_url, local_path)
-
-        raise Ammitto::Error, "Failed to clone repository: #{output}" unless success
-
+        clone_into(local_path)
         log('Clone complete')
         true
       end
@@ -362,7 +360,102 @@ module Ammitto
       # @param path [String] Path to check
       # @return [Boolean]
       def url?(path)
-        path.to_s.match?(URL_PATTERN)
+        path.to_s.match?(REMOTE_URL_PATTERN)
+      end
+
+      # --data-repository accepts any path, so --force must never delete a
+      # directory that is not our own clone. The replacement is cloned into a
+      # fresh private directory beside it and swapped in only once complete,
+      # so a failed clone or rename leaves the existing data in place.
+      # The clone check and the swap are not atomic: another process could
+      # replace local_path in between. Closing that window needs a lock this
+      # single-user CLI has never had, so the check guards against a wrong
+      # path being passed, not against a concurrent writer.
+      def reclone
+        refuse_reclone unless clone_of_remote?
+
+        workspace = Dir.mktmpdir('.ammitto-reclone-', File.dirname(local_path))
+        begin
+          fresh = File.join(workspace, 'fresh')
+          clone_into(fresh)
+          refuse_reclone unless clone_of_remote?
+          swap_in(fresh, File.join(workspace, 'previous'))
+        ensure
+          FileUtils.rm_rf(workspace)
+        end
+        log('Clone complete')
+        true
+      end
+
+      # Moving the old clone aside first means there is always a complete
+      # clone to roll back to; it is deleted with the workspace afterwards.
+      def swap_in(fresh, previous)
+        log("Replacing existing repository at #{local_path}")
+        File.rename(local_path, previous)
+        begin
+          File.rename(fresh, local_path)
+        rescue SystemCallError
+          File.rename(previous, local_path)
+          raise
+        end
+      end
+
+      def clone_into(path)
+        log("Cloning #{remote_url} to #{path}")
+        success, output = run_git_command('clone', '--depth', '1', remote_url, path)
+        raise Ammitto::Error, "Failed to clone repository: #{output}" unless success
+      end
+
+      def clone_of_remote?
+        return false unless File.directory?(File.join(local_path, '.git'))
+
+        success, output = run_git_command('-C', local_path, 'remote', 'get-url', 'origin')
+        success && canonical_remote(output.strip, local_path) == canonical_remote(remote_url, Dir.pwd)
+      end
+
+      def refuse_reclone
+        raise Ammitto::Error,
+              "Refusing to replace #{local_path}: it is not a git clone of #{remote_url}. " \
+              'Remove it yourself or choose another path.'
+      end
+
+      # A hosted repository is reachable as https://host/org/repo(.git) and
+      # git@host:org/repo(.git), so both reduce to host/org/repo with only the
+      # host case-folded. A local remote is a filesystem path, where case and
+      # a .git suffix distinguish repositories, so it is only resolved.
+      def canonical_remote(url, base)
+        local = local_remote_path(url)
+        return resolve(File.expand_path(local, base)) if local
+        return url if url.match?(%r{\Afile://}i)
+
+        host_and_path = url.sub(%r{\A[a-z][a-z0-9+.-]*://(?:[^@/]+@)?}i, '')
+                           .sub(%r{\A[^@/]+@([^:]+):}, '\\1/')
+                           .sub(%r{/+\z}, '')
+                           .delete_suffix('.git')
+        host, path = host_and_path.split('/', 2)
+        "#{host.downcase}/#{path}"
+      end
+
+      # file:// with no host or localhost names a path on this machine; a
+      # file URL naming another host is compared verbatim as a URL.
+      def local_remote_path(url)
+        return url unless url.match?(REMOTE_URL_PATTERN)
+
+        match = url.match(%r{\Afile://(localhost)?(/.*)\z}i)
+        return unless match
+
+        # file:///C:/repo names C:/repo; Windows reads /C:/repo as a folder
+        # called C: on the current drive.
+        path = match[2]
+        Gem.win_platform? ? path.sub(%r{\A/(?=[a-z]:)}i, '') : path
+      end
+
+      # A path that vanishes or becomes unreadable mid-check proves nothing
+      # about the clone, so the comparison fails closed.
+      def resolve(path)
+        File.exist?(path) ? File.realpath(path) : path
+      rescue SystemCallError => e
+        raise Ammitto::Error, "Cannot resolve #{path} to compare remotes: #{e.message}"
       end
 
       # Run a git command

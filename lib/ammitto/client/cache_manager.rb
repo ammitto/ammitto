@@ -118,8 +118,7 @@ module Ammitto
             sources: status
           }
 
-          FileUtils.mkdir_p(File.dirname(path))
-          File.write(path, MultiJson.dump(data, pretty: true))
+          Utils::AtomicFile.write(path, MultiJson.dump(data, pretty: true))
         end
       end
     end

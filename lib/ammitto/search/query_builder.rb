@@ -74,12 +74,13 @@ module Ammitto
 
           # The registry knows every source the gem has ever shipped;
           # the published API only carries the currently built ones.
-          # A source whose download fails must not take the whole
-          # search down with it, or the default all-sources call
-          # raises before reading a single published row.
+          # A source whose download fails, or whose cached copy does not
+          # parse, must not take the whole search down with it, or the
+          # default all-sources call raises before reading a single
+          # published row.
           begin
             data = source.load_data
-          rescue NetworkError => e
+          rescue NetworkError, CacheError => e
             Logger.warn("Search skipping #{code}: #{e.message}")
             @skipped_sources << code
             next

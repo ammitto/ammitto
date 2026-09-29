@@ -43,7 +43,7 @@ module Ammitto
       # @return [void]
       def write(source_code, data)
         path = source_path(source_code)
-        File.write(path, MultiJson.dump(data, pretty: true))
+        Utils::AtomicFile.write(path, MultiJson.dump(data, pretty: true))
         Logger.debug("Cached #{source_code} data to #{path}")
       end
 

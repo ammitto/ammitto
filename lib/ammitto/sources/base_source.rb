@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'fileutils'
+require 'securerandom'
+
 module Ammitto
   # BaseSource is the abstract base class for all data sources
   #
@@ -52,9 +55,55 @@ module Ammitto
       path = cache_path
       return nil unless File.exist?(path)
 
-      content = File.read(path)
+      stat = nil
+      content = File.open(path, 'rb') do |file|
+        stat = file.stat
+        file.read
+      end
       MultiJson.load(content)
+    rescue MultiJson::ParseError => e
+      # A file that does not parse would otherwise be served until its TTL
+      # expires, failing every search that includes this source. Removing
+      # it lets the next call download afresh, and CacheError lets the
+      # search skip this one source instead of aborting.
+      remove_if_unchanged(path, stat)
+      raise CacheError.new(
+        "Cached #{code} data at #{path} is not valid JSON: #{e.message}",
+        path: path
+      )
     end
+
+    # Another process may install a good file at any moment, so the entry
+    # is first renamed to a private quarantine name and its identity is
+    # checked there, where no other writer can replace it. Only the file
+    # that was read is ever deleted; anything else is linked back, and
+    # the link fails rather than overwrite a file that arrived since.
+    # Windows reports no inode, so size and mtime stand in for identity.
+    def remove_if_unchanged(path, read_stat)
+      return unless same_file?(File.stat(path), read_stat)
+
+      name = "#{path}.#{SecureRandom.hex(8)}.corrupt"
+      File.rename(path, name)
+      quarantine = name
+      return if same_file?(File.stat(quarantine), read_stat)
+
+      File.link(quarantine, path)
+    rescue Errno::ENOENT, Errno::EEXIST
+      nil
+    ensure
+      # On EEXIST a newer file already holds the path, so the quarantined
+      # one is stale and would otherwise pile up beside the cache forever.
+      # Set only after the rename, so a failed rename never deletes a name
+      # this call does not own.
+      FileUtils.rm_f(quarantine) if quarantine
+    end
+    private :remove_if_unchanged
+
+    def same_file?(current, read_stat)
+      keys = Gem.win_platform? ? %i[size mtime] : %i[dev ino size mtime]
+      keys.all? { |k| current.public_send(k) == read_stat.public_send(k) }
+    end
+    private :same_file?
 
     # Load data from cache or API
     # @param force [Boolean] force refresh from API
@@ -110,8 +159,7 @@ module Ammitto
         )
       end
 
-      # Write to cache
-      File.write(cache_path, response.body)
+      Utils::AtomicFile.write(cache_path, response.body)
 
       Logger.info("Downloaded #{code} data to #{cache_path}")
     end

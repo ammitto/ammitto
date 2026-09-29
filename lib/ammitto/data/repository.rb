@@ -400,9 +400,12 @@ module Ammitto
         end
       end
 
+      # A local file URL is handed to git as the path it names: Git for
+      # Windows cannot clone file://localhost/C:/... at all.
       def clone_into(path)
         log("Cloning #{remote_url} to #{path}")
-        success, output = run_git_command('clone', '--depth', '1', remote_url, path)
+        source = local_remote_path(remote_url) || remote_url
+        success, output = run_git_command('clone', '--depth', '1', source, path)
         raise Ammitto::Error, "Failed to clone repository: #{output}" unless success
       end
 

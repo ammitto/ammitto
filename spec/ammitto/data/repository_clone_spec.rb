@@ -139,6 +139,16 @@ RSpec.describe Ammitto::Data::Repository do
       expect(File).not_to exist(File.join(target, 'stale'))
     end
 
+    it 'hands git the path a file://localhost URL names, not the URL' do
+      repo = described_class.new(local_path: target, remote_url: file_url(origin))
+      allow(repo).to receive(:run_git_command).and_call_original
+
+      repo.clone(force: true)
+
+      expect(repo).to have_received(:run_git_command)
+        .with('clone', '--depth', '1', origin, anything)
+    end
+
     it 'reads a drive-letter file URL as that drive on Windows' do
       allow(Gem).to receive(:win_platform?).and_return(true)
       repo = described_class.new(local_path: target, remote_url: origin)

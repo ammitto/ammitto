@@ -73,19 +73,10 @@ RSpec.describe Ammitto::Sources::Uk::Transformer do
   describe 'parse failure visibility' do
     include_context 'with parse failure log capture'
 
-    it 'counts an unreadable date_designated once although it fills two period dates' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      designation = Ammitto::Sources::Uk::Designation.new(unique_id: 'UK1', date_designated: 'not-a-date')
-      entry = nil
+    let(:designation) { Ammitto::Sources::Uk::Designation.new(unique_id: 'UK1', date_designated: 'not-a-date') }
+    let(:entry_with_unreadable_date) { -> { transformer.send(:create_entry, designation) } }
 
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        entry = transformer.send(:create_entry, designation)
-      end
-
-      expect(entry.period.listed_date).to be_nil
-      expect(entry.period.effective_date).to be_nil
-      expect(io.string).to include('Parse failure in uk.listed_date')
-      expect(run.count(:uk)).to eq(1)
-    end
+    it_behaves_like 'a parse failure counted once across period dates',
+                    source: :uk, field: :listed_date, register_field: :date_designated
   end
 end

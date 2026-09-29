@@ -4,7 +4,24 @@ require 'spec_helper'
 require 'ammitto/sources/cn/announcement'
 require 'ammitto/sources/cn/transformer'
 
+# Builds the announcement the parse failure examples feed the transformer.
+module CnTransformerSpecHelpers
+  def announcement_with(publish_date:, effective_dates:)
+    Ammitto::Sources::Cn::Announcement.from_hash(
+      'announcement' => { 'document_id' => 'mofcom-2026-02', 'publish_date' => publish_date },
+      'sanction_details' => {
+        'entities' => effective_dates.each_with_index.map do |date, i|
+          { 'name' => { 'en' => "Corp #{i}" }, 'type' => 'organization',
+            'effective_date' => date, 'sanction_list' => 'cn/anti-sanction-list' }
+        end
+      }
+    )
+  end
+end
+
 RSpec.describe Ammitto::Sources::Cn::Transformer do
+  include CnTransformerSpecHelpers
+
   let(:transformer) { described_class.new }
 
   describe '#source_code' do
@@ -181,26 +198,8 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
   describe 'parse failure visibility' do
     include_context 'with parse failure log capture'
 
-    let(:run) { Ammitto::ParseFailureVisibility::Run.new }
-
-    def announcement_with(publish_date:, effective_dates:)
-      Ammitto::Sources::Cn::Announcement.from_hash(
-        'announcement' => { 'document_id' => 'mofcom-2026-02', 'publish_date' => publish_date },
-        'sanction_details' => {
-          'entities' => effective_dates.each_with_index.map do |date, i|
-            { 'name' => { 'en' => "Corp #{i}" }, 'type' => 'organization',
-              'effective_date' => date, 'sanction_list' => 'cn/anti-sanction-list' }
-          end
-        }
-      )
-    end
-
-    def counting(&block)
-      Ammitto::ParseFailureVisibility.with_run(run, &block)
-    end
-
     it 'counts an unreadable publish_date once however many entries carry it' do
-      result = counting do
+      result = count_parse_failures do
         transformer.transform_announcement(
           announcement_with(publish_date: 'not-a-date', effective_dates: %w[2026-01-01 2026-01-01])
         )
@@ -212,7 +211,7 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
     end
 
     it 'counts an unreadable effective_date once, not again for the group' do
-      result = counting do
+      result = count_parse_failures do
         transformer.transform_announcement(
           announcement_with(publish_date: '2026-01-01', effective_dates: %w[not-a-date 2026-01-01])
         )
@@ -230,7 +229,7 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
         effective_date: 'bad-effective', until_date: 'bad-until'
       )
 
-      period_change = counting do
+      period_change = count_parse_failures do
         transformer.send(:create_sanction_period_modification, modification: modification, announcement_id: 'a')
       end
 

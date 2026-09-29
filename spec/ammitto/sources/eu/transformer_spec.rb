@@ -2,7 +2,21 @@
 
 require 'spec_helper'
 
+# Transforms one entity whose regulation carries the given dates, inside
+# the example's parse failure run.
+module EuTransformerSpecHelpers
+  def entry_for(publication_date:, entry_into_force_date:)
+    regulation = Ammitto::Sources::Eu::Regulation.new(
+      publication_date: publication_date, entry_into_force_date: entry_into_force_date
+    )
+    entity = Ammitto::Sources::Eu::SanctionEntity.new(eu_reference_number: 'EU.1', regulations: [regulation])
+    count_parse_failures { transformer.send(:create_entry, entity) }
+  end
+end
+
 RSpec.describe Ammitto::Sources::Eu::Transformer do
+  include EuTransformerSpecHelpers
+
   let(:transformer) { described_class.new }
 
   describe '#source_code' do
@@ -55,18 +69,6 @@ RSpec.describe Ammitto::Sources::Eu::Transformer do
 
   describe 'parse failure visibility' do
     include_context 'with parse failure log capture'
-
-    let(:run) { Ammitto::ParseFailureVisibility::Run.new }
-
-    def entry_for(publication_date:, entry_into_force_date:)
-      regulation = Ammitto::Sources::Eu::Regulation.new(
-        publication_date: publication_date, entry_into_force_date: entry_into_force_date
-      )
-      entity = Ammitto::Sources::Eu::SanctionEntity.new(eu_reference_number: 'EU.1', regulations: [regulation])
-      entry = nil
-      Ammitto::ParseFailureVisibility.with_run(run) { entry = transformer.send(:create_entry, entity) }
-      entry
-    end
 
     it 'counts an unreadable publication_date once although it fills the legal basis and the period' do
       entry = entry_for(publication_date: 'not-a-date', entry_into_force_date: '2020-01-02')

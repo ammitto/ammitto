@@ -2,7 +2,20 @@
 
 require 'spec_helper'
 
+# Calls the private date helpers inside the example's parse failure run.
+module BaseTransformerSpecHelpers
+  def parse_counting(value, **kwargs)
+    count_parse_failures { transformer.send(:parse_date, value, **kwargs) }
+  end
+
+  def period_counting(**kwargs)
+    count_parse_failures { transformer.send(:create_period, source: :test, **kwargs) }
+  end
+end
+
 RSpec.describe Ammitto::Transformers::BaseTransformer do
+  include BaseTransformerSpecHelpers
+
   let(:transformer) { described_class.new(:test) }
 
   describe '#source_code' do
@@ -48,16 +61,6 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
 
   describe '#parse_date' do
     include_context 'with parse failure log capture'
-
-    let(:run) { Ammitto::ParseFailureVisibility::Run.new }
-
-    def parse_counting(value, **kwargs)
-      result = nil
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transformer.send(:parse_date, value, **kwargs)
-      end
-      result
-    end
 
     it 'warns and counts an unreadable value when source and field are given' do
       expect(parse_counting('not-a-date', source: :test, field: :listed_date)).to be_nil
@@ -109,16 +112,6 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
 
   describe '#create_period' do
     include_context 'with parse failure log capture'
-
-    let(:run) { Ammitto::ParseFailureVisibility::Run.new }
-
-    def period_counting(**kwargs)
-      period = nil
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        period = transformer.send(:create_period, source: :test, **kwargs)
-      end
-      period
-    end
 
     it 'requires source' do
       expect { transformer.send(:create_period, listed_date: '2020-01-02') }

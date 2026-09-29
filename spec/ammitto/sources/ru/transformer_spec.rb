@@ -70,41 +70,9 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
       )
     end
 
-    it 'warns and counts, still publishing nil' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
+    let(:parse_unreadable) { -> { transformer.transform(entity)[:entry].announcement.publish_date } }
+    let(:raise_unreadable) { -> { transformer.send(:parse_announcement_date, 'not-a-date') } }
 
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transformer.transform(entity)
-      end
-
-      expect(result[:entry].announcement.publish_date).to be_nil
-      expect(io.string).to include('Parse failure in ru.announcement_date')
-      expect(run.count(:ru)).to eq(1)
-    end
-
-    it 'stays silent but still counts in silent mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :silent }
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transformer.transform(entity)
-      end
-
-      expect(result[:entry].announcement.publish_date).to be_nil
-      expect(io.string).to be_empty
-      expect(run.count(:ru)).to eq(1)
-    end
-
-    it 'raises Ammitto::ParseFailureError in raise mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :raise }
-
-      expect { transformer.send(:parse_announcement_date, 'not-a-date') }
-        .to raise_error(Ammitto::ParseFailureError) { |e|
-          expect(e.source).to eq(:ru)
-          expect(e.field).to eq(:announcement_date)
-        }
-    end
+    it_behaves_like 'a reported parse failure', source: :ru, field: :announcement_date
   end
 end

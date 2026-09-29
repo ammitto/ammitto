@@ -17,61 +17,20 @@ RSpec.describe Ammitto::Sources::Nz::Individual do
   describe 'parse failure visibility' do
     include_context 'with parse failure log capture'
 
-    it 'warns and counts, still publishing nil' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      individual = nil
+    let(:parse_unreadable) { -> { described_class.from_row_data('dob' => 'not-a-date').dob } }
+    let(:raise_unreadable) { -> { described_class.parse_date('not-a-date', field: :dob) } }
 
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        individual = described_class.from_row_data('dob' => 'not-a-date')
-      end
-
-      expect(individual.dob).to be_nil
-      expect(io.string).to include('Parse failure in nz.dob')
-      expect(run.count(:nz)).to eq(1)
-    end
-
-    it 'stays silent but still counts in silent mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :silent }
-      run = Ammitto::ParseFailureVisibility::Run.new
-      individual = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        individual = described_class.from_row_data('dob' => 'not-a-date')
-      end
-
-      expect(individual.dob).to be_nil
-      expect(io.string).to be_empty
-      expect(run.count(:nz)).to eq(1)
-    end
-
-    it 'raises Ammitto::ParseFailureError in raise mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :raise }
-
-      expect { described_class.parse_date('not-a-date', field: :dob) }
-        .to raise_error(Ammitto::ParseFailureError) { |e|
-          expect(e.source).to eq(:nz)
-          expect(e.field).to eq(:dob)
-          expect(e.value).to eq('not-a-date')
-        }
-    end
+    it_behaves_like 'a reported parse failure', source: :nz, field: :dob, raised_value: 'not-a-date'
 
     it 'reports each date field under its own name' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        described_class.parse_date('bogus', field: :date_of_sanction)
-      end
+      count_parse_failures { described_class.parse_date('bogus', field: :date_of_sanction) }
 
       expect(run.count(:nz)).to eq(1)
       expect(io.string).to include('Parse failure in nz.date_of_sanction')
     end
 
     it 'does not report a value that parsed cleanly' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        described_class.parse_date('2012-06-29', field: :dob)
-      end
+      count_parse_failures { described_class.parse_date('2012-06-29', field: :dob) }
 
       expect(run.count(:nz)).to eq(0)
     end

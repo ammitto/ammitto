@@ -34,56 +34,19 @@ RSpec.describe Ammitto::Sources::Wb::Transformer do
       )
     end
 
-    it 'warns and counts once, still publishing nil' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
+    let(:parse_unreadable) { -> { transformer.transform(firm)[:entry].period.effective_date } }
+    let(:raise_unreadable) { -> { transformer.send(:parse_wb_date, 'not-a-date', field: :debar_from_date) } }
 
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transformer.transform(firm)
-      end
-
-      expect(result[:entry].period.effective_date).to be_nil
-      expect(io.string).to include('Parse failure in wb.debar_from_date')
-      expect(run.count(:wb)).to eq(1)
-    end
-
-    it 'stays silent but still counts in silent mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :silent }
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transformer.transform(firm)
-      end
-
-      expect(result[:entry].period.effective_date).to be_nil
-      expect(io.string).to be_empty
-      expect(run.count(:wb)).to eq(1)
-    end
+    it_behaves_like 'a reported parse failure', source: :wb, field: :debar_from_date
 
     it 'reports an unreadable debar_to_date once, not again for the status' do
       firm.debar_from_date = '2020-01-01'
       firm.debar_to_date = 'not-a-date'
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transformer.transform(firm)
-      end
+      result = count_parse_failures { transformer.transform(firm) }
 
       expect(result[:entry].period.expiry_date).to be_nil
       expect(io.string.scan('Parse failure in wb.debar_to_date').size).to eq(1)
       expect(run.count(:wb)).to eq(1)
-    end
-
-    it 'raises Ammitto::ParseFailureError in raise mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :raise }
-
-      expect { transformer.send(:parse_wb_date, 'not-a-date', field: :debar_from_date) }
-        .to raise_error(Ammitto::ParseFailureError) { |e|
-          expect(e.source).to eq(:wb)
-          expect(e.field).to eq(:debar_from_date)
-        }
     end
   end
 end

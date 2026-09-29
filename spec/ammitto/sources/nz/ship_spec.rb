@@ -17,41 +17,14 @@ RSpec.describe Ammitto::Sources::Nz::Ship do
   describe 'parse failure visibility' do
     include_context 'with parse failure log capture'
 
-    it 'warns and counts, still publishing nil' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      ship = nil
+    let(:parse_unreadable) { -> { described_class.from_row_data('date_of_sanction' => 'not-a-date').date_of_sanction } }
+    let(:raise_unreadable) { -> { described_class.parse_date('not-a-date', field: :date_record_deleted) } }
 
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        ship = described_class.from_row_data('date_of_sanction' => 'not-a-date')
+    it_behaves_like 'a reported parse failure', source: :nz, field: :date_of_sanction,
+                                                raised_field: :date_record_deleted do
+      let(:parse_unreadable_silently) do
+        -> { described_class.from_row_data('date_record_deleted' => 'not-a-date').date_record_deleted }
       end
-
-      expect(ship.date_of_sanction).to be_nil
-      expect(io.string).to include('Parse failure in nz.date_of_sanction')
-      expect(run.count(:nz)).to eq(1)
-    end
-
-    it 'stays silent but still counts in silent mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :silent }
-      run = Ammitto::ParseFailureVisibility::Run.new
-      ship = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        ship = described_class.from_row_data('date_record_deleted' => 'not-a-date')
-      end
-
-      expect(ship.date_record_deleted).to be_nil
-      expect(io.string).to be_empty
-      expect(run.count(:nz)).to eq(1)
-    end
-
-    it 'raises Ammitto::ParseFailureError in raise mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :raise }
-
-      expect { described_class.parse_date('not-a-date', field: :date_record_deleted) }
-        .to raise_error(Ammitto::ParseFailureError) { |e|
-          expect(e.source).to eq(:nz)
-          expect(e.field).to eq(:date_record_deleted)
-        }
     end
   end
 

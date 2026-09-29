@@ -329,41 +329,9 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
 
     let(:record) { source(name: 'TAMAS COMPANY', reference_number: '999', listed_date: 'not-a-date') }
 
-    it 'warns and counts, still publishing nil' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
+    let(:parse_unreadable) { -> { transform(record)[:entry].period.listed_date } }
+    let(:raise_unreadable) { -> { transformer.send(:parse_listed_date, 'not-a-date') } }
 
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transform(record)
-      end
-
-      expect(result[:entry].period.listed_date).to be_nil
-      expect(io.string).to include('Parse failure in tr.listed_date')
-      expect(run.count(:tr)).to eq(1)
-    end
-
-    it 'stays silent but still counts in silent mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :silent }
-      run = Ammitto::ParseFailureVisibility::Run.new
-      result = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        result = transform(record)
-      end
-
-      expect(result[:entry].period.listed_date).to be_nil
-      expect(io.string).to be_empty
-      expect(run.count(:tr)).to eq(1)
-    end
-
-    it 'raises Ammitto::ParseFailureError in raise mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :raise }
-
-      expect { transformer.send(:parse_listed_date, 'not-a-date') }
-        .to raise_error(Ammitto::ParseFailureError) { |e|
-          expect(e.source).to eq(:tr)
-          expect(e.field).to eq(:listed_date)
-        }
-    end
+    it_behaves_like 'a reported parse failure', source: :tr, field: :listed_date
   end
 end

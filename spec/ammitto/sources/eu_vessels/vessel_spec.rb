@@ -17,42 +17,12 @@ RSpec.describe Ammitto::Sources::EuVessels::Vessel do
   describe 'parse failure visibility' do
     include_context 'with parse failure log capture'
 
-    it 'warns and counts, still publishing nil' do
-      run = Ammitto::ParseFailureVisibility::Run.new
-      vessel = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        vessel = described_class.from_row_data('date_of_application' => 'not-a-date')
-      end
-
-      expect(vessel.date_of_application).to be_nil
-      expect(io.string).to include('Parse failure in eu_vessels.date_of_application')
-      expect(run.count(:eu_vessels)).to eq(1)
+    let(:parse_unreadable) do
+      -> { described_class.from_row_data('date_of_application' => 'not-a-date').date_of_application }
     end
+    let(:raise_unreadable) { -> { described_class.parse_date('not-a-date') } }
 
-    it 'stays silent but still counts in silent mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :silent }
-      run = Ammitto::ParseFailureVisibility::Run.new
-      vessel = nil
-
-      Ammitto::ParseFailureVisibility.with_run(run) do
-        vessel = described_class.from_row_data('date_of_application' => 'not-a-date')
-      end
-
-      expect(vessel.date_of_application).to be_nil
-      expect(io.string).to be_empty
-      expect(run.count(:eu_vessels)).to eq(1)
-    end
-
-    it 'raises Ammitto::ParseFailureError in raise mode' do
-      Ammitto.configure { |config| config.parse_failure_mode = :raise }
-
-      expect { described_class.parse_date('not-a-date') }
-        .to raise_error(Ammitto::ParseFailureError) { |e|
-          expect(e.source).to eq(:eu_vessels)
-          expect(e.field).to eq(:date_of_application)
-        }
-    end
+    it_behaves_like 'a reported parse failure', source: :eu_vessels, field: :date_of_application
   end
 
   # Moved from spec/ammitto/cli/fetch/item_mapper_spec.rb along with the

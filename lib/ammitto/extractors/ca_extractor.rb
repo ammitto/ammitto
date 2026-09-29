@@ -2,7 +2,7 @@
 
 require_relative 'base_extractor'
 require_relative 'registry'
-require_relative '../errors/base_error'
+require_relative '../error'
 
 module Ammitto
   module Extractors

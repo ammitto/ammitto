@@ -4,7 +4,7 @@ require 'fileutils'
 require 'json'
 require 'open3'
 require 'tmpdir'
-require_relative '../errors/base_error'
+require_relative '../error'
 # load_all warns through Ammitto::Logger, which reads Ammitto.configuration.
 # Declared here so this file stays independently loadable, as its other
 # requires already keep it — requiring only the logger is not enough, because

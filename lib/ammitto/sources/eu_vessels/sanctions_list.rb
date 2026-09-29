@@ -2,7 +2,7 @@
 
 require 'date'
 require 'lutaml/model'
-require_relative '../../errors/base_error'
+require_relative '../../error'
 require_relative 'vessel'
 require_relative 'subject_to'
 

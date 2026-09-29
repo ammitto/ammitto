@@ -2,7 +2,7 @@
 
 require_relative 'config/override_resolver'
 require_relative 'configuration'
-require_relative 'errors/base_error'
+require_relative 'error'
 require_relative 'logger'
 
 module Ammitto

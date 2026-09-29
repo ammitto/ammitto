@@ -35,7 +35,7 @@ require_relative 'ammitto/version'
 # Foundation
 require_relative 'ammitto/configuration'
 require_relative 'ammitto/logger'
-require_relative 'ammitto/errors/base_error'
+require_relative 'ammitto/error'
 require_relative 'ammitto/parse_failure_visibility'
 
 # All models (entities, value objects, sanctions) - uses autoload

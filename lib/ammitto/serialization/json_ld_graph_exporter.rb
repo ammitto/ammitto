@@ -6,7 +6,7 @@ require 'fileutils'
 require 'json'
 require 'time'
 require 'yaml'
-require_relative '../errors/base_error'
+require_relative '../error'
 require_relative 'json_ld_serializer'
 require_relative 'turtle_exporter'
 

@@ -12,6 +12,50 @@ require 'ammitto/cli/harmonize_command'
    ru/sanctions_list nz/sanctions_list tr/sanctions_list eu_vessels/vessel
    jp/entity un_vessels/vessel].each { |f| require "ammitto/sources/#{f}" }
 
+module IngestionRobustnessSpecHelpers
+  def transform(source, data)
+    command.send(:transform_data, source, data)
+  end
+
+  def expect_complete_pair(result)
+    pair = result.is_a?(Array) ? result.first : result
+    expect(pair[:entity]).to include('@id')
+    expect(pair[:entry]).to include('@id')
+  end
+
+  # A hash shared between two keys re-emits YAML anchors on any
+  # to_yaml re-dump — exactly what jp harvest files carry after
+  # YAML.safe_load_file(..., aliases: true). The old
+  # from_yaml(data.to_yaml) round-trip fed those anchors back into the
+  # aliases-disabled Lutaml loader (Psych::AliasesNotEnabled).
+  def with_anchor(data)
+    shared = { 'shared' => 'anchored block' }
+    data.merge('anchored_a' => shared, 'anchored_b' => shared)
+  end
+
+  # Capture the model the dispatcher actually built, without
+  # duplicating its source-to-class branching here: stand a recorder
+  # in for the transformer and keep the first argument it is handed.
+  # Throwing unwinds the dispatcher the moment the model exists, so
+  # nothing downstream of the transformer has to be simulated.
+  def captured_model(source, data)
+    recorder = Object.new
+    recorder.define_singleton_method(:respond_to_missing?) do |*|
+      true
+    end
+    recorder.define_singleton_method(:method_missing) do |_name, *args|
+      throw :captured_model, args.first
+    end
+    allow(Ammitto::Transformers::Registry)
+      .to receive(:get).and_return(recorder)
+
+    catch(:captured_model) do
+      command.send(:transform_data, source, data)
+      nil
+    end
+  end
+end
+
 # Ingestion robustness: every per-entity source path must survive YAML
 # anchors in its input (no from_yaml(data.to_yaml) round-trip through the
 # aliases-disabled Lutaml loader), announcement-format YAML must be
@@ -19,6 +63,8 @@ require 'ammitto/cli/harmonize_command'
 # usable local id must raise instead of collapsing into a shared
 # ".../unknown" IRI.
 RSpec.describe 'harmonize ingestion robustness (integration)' do
+  include IngestionRobustnessSpecHelpers
+
   # Minimal fetch-shaped data per source path, keyed by the dispatch
   # source symbol. Multi-model sources (un, au, nz) carry one fixture
   # per model branch.
@@ -91,7 +137,8 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
     }],
     eu_vessels: [{
       'vessel_name' => 'SHIP Z', 'imo_number' => '12345',
-      'date_of_application' => Date.new(2024, 5, 6)
+      'designations' => [{ 'date_of_application' => Date.new(2024, 5, 6),
+                           'subject_to' => 'Article 3s (Council Regulation 833/2014)' }]
     }],
     jp: [{
       'id' => '1', 'name' => 'ACME', 'entity_type' => 'organization',
@@ -122,26 +169,6 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
 
   after do
     FileUtils.rm_rf(exporter_dir)
-  end
-
-  def transform(source, data)
-    command.send(:transform_data, source, data)
-  end
-
-  def expect_complete_pair(result)
-    pair = result.is_a?(Array) ? result.first : result
-    expect(pair[:entity]).to include('@id')
-    expect(pair[:entry]).to include('@id')
-  end
-
-  # A hash shared between two keys re-emits YAML anchors on any
-  # to_yaml re-dump — exactly what jp harvest files carry after
-  # YAML.safe_load_file(..., aliases: true). The old
-  # from_yaml(data.to_yaml) round-trip fed those anchors back into the
-  # aliases-disabled Lutaml loader (Psych::AliasesNotEnabled).
-  def with_anchor(data)
-    shared = { 'shared' => 'anchored block' }
-    data.merge('anchored_a' => shared, 'anchored_b' => shared)
   end
 
   describe 'anchored-YAML round-trip immunity' do
@@ -284,28 +311,6 @@ RSpec.describe 'harmonize ingestion robustness (integration)' do
   # from_hash override) are pinned by value above, and dropping either
   # fails those examples.
   describe 'from_hash/from_yaml model equivalence' do
-    # Capture the model the dispatcher actually built, without
-    # duplicating its source-to-class branching here: stand a recorder
-    # in for the transformer and keep the first argument it is handed.
-    # Throwing unwinds the dispatcher the moment the model exists, so
-    # nothing downstream of the transformer has to be simulated.
-    def captured_model(source, data)
-      recorder = Object.new
-      recorder.define_singleton_method(:respond_to_missing?) do |*|
-        true
-      end
-      recorder.define_singleton_method(:method_missing) do |_name, *args|
-        throw :captured_model, args.first
-      end
-      allow(Ammitto::Transformers::Registry)
-        .to receive(:get).and_return(recorder)
-
-      catch(:captured_model) do
-        command.send(:transform_data, source, data)
-        nil
-      end
-    end
-
     source_fixtures.each do |source, fixtures|
       fixtures.each_with_index do |data, index|
         it "builds #{source} fixture #{index} the same either way" do

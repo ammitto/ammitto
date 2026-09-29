@@ -12,7 +12,7 @@ module Ammitto
     # fetch because DMA publishes each list update under a new Media id and
     # file name, so any stored download URL goes dead at the next update.
     #
-    # This list contains vessels designated under Annex XLII of Council Regulation (EU) 833/2014.
+    # The list covers vessels under Council Regulation (EU) 833/2014 (Russia) and 2017/1509 (DPRK).
     # Note: Vessels can change names, so IMO number is the key identifier.
     #
     class EuVesselsExtractor < BaseExtractor

@@ -9,11 +9,14 @@ require 'ammitto/sources/un_vessels/vessel'
 RSpec.describe 'Vessel sources list identity' do
   it 'writes the vessel list into eu_vessels entry IRIs' do
     vessel = Ammitto::Sources::EuVessels::Vessel.new(
-      vessel_name: 'Test Vessel', imo_number: '9111111'
+      vessel_name: 'Test Vessel', imo_number: '9111111',
+      designations: [Ammitto::Sources::EuVessels::Designation.new(
+        subject_to: 'Article 3s (Council Regulation 833/2014)'
+      )]
     )
 
     entry = Ammitto::Sources::EuVessels::Transformer.new
-                                                    .transform(vessel)[:entry]
+                                                    .transform(vessel).first[:entry]
 
     expect(entry.id)
       .to include('/entry/eu_vessels/vessel-sanctions-list/')

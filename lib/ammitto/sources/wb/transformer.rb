@@ -97,7 +97,7 @@ module Ammitto
           period = create_period(
             source: :wb,
             effective_date: parse_wb_date(firm.debar_from_date, field: :debar_from_date),
-            expiry_date: parse_wb_date(firm.debar_to_date, field: :debar_to_date)
+            expiry_date: firm.debar_to_date
           )
 
           Ammitto::SanctionEntry.new(

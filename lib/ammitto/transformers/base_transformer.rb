@@ -254,13 +254,29 @@ module Ammitto
                       parse_date(effective_date, source: source, field: :effective_date)
                     end
 
+        expiry = parse_date(expiry_date, source: source, field: :expiry_date)
+
         Ammitto::TemporalPeriod.new(
           listed_date: listed,
           effective_date: effective,
-          expiry_date: parse_date(expiry_date, source: source, field: :expiry_date),
-          is_indefinite: expiry_date.nil?,
+          expiry_date: expiry,
+          is_indefinite: indefinite_for(expiry_date, expiry),
           last_updated: last_updated
         )
+      end
+
+      # A source that states no expiry lists without end. A stated expiry
+      # this gem could not read says nothing either way, so the flag stays
+      # nil rather than claiming a scheduled end or its absence; the value
+      # itself is reported by parse_date.
+      # @param raw [String, Date, nil] expiry as the source gave it
+      # @param parsed [Date, nil] the parsed expiry
+      # @return [Boolean, nil]
+      def indefinite_for(raw, parsed)
+        return false if parsed
+        return true if raw.nil? || raw.to_s.empty?
+
+        nil
       end
 
       # Create a SanctionEffect

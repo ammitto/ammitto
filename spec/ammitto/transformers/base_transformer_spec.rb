@@ -145,5 +145,29 @@ RSpec.describe Ammitto::Transformers::BaseTransformer do
       expect(period.is_indefinite).to be(false)
       expect(run.count(:test)).to eq(0)
     end
+
+    it 'marks a period with no stated expiry as indefinite' do
+      expect([period_counting.is_indefinite, period_counting(expiry_date: '').is_indefinite])
+        .to eq([true, true])
+      expect(run.count(:test)).to eq(0)
+    end
+
+    # An expiry the source stated but this gem could not read neither
+    # proves a scheduled end nor its absence.
+    it 'leaves is_indefinite unasserted for an unreadable expiry and reports it' do
+      period = period_counting(expiry_date: 'until further notice')
+
+      expect(period.expiry_date).to be_nil
+      expect(period.is_indefinite).to be_nil
+      expect(io.string).to include('Parse failure in test.expiry_date')
+      expect(run.count(:test)).to eq(1)
+    end
+
+    it 'omits isIndefinite from the JSON-LD period when it is unasserted' do
+      period = period_counting(expiry_date: 'until further notice')
+
+      expect(Ammitto::Serialization::JsonLdSerializer.new.send(:serialize_period, period))
+        .not_to have_key('isIndefinite')
+    end
   end
 end

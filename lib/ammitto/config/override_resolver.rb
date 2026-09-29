@@ -85,7 +85,7 @@ module Ammitto
         when :output_format then Defaults::DEFAULT_OUTPUT_FORMAT
         when :connection_timeout then Defaults::CONNECTION_TIMEOUT
         when :read_timeout then Defaults::READ_TIMEOUT
-        when :verbose then false
+        when :verbose then Defaults::VERBOSE
         end
       end
     end

@@ -8,7 +8,7 @@ require 'ammitto'
 #
 # QueryBuilder#execute already says so in its own comment, and rescues
 # NetworkError per source to make it true. But BaseSource#download_to_cache
-# calls Faraday.get directly, and Faraday raises its own error class for a
+# goes through Faraday, and Faraday raises its own error class for a
 # transport failure — DNS, refused connection, timeout. That escaped the
 # rescue, so on a cold cache with no network `Ammitto.search` died with
 # Faraday::ConnectionFailed instead of returning the sources it could read.
@@ -17,6 +17,8 @@ require 'ammitto'
 # path already handles. These examples pin both halves: the conversion,
 # and the survival that depends on it.
 RSpec.describe 'search when a source cannot be reached' do
+  include ApiClientConnectionStub
+
   let(:source) do
     Class.new(Ammitto::BaseSource) { def code = :tr }.new
   end
@@ -28,16 +30,14 @@ RSpec.describe 'search when a source cannot be reached' do
   after { FileUtils.remove_entry(cache_dir) if File.directory?(cache_dir) }
 
   it 'reports a transport failure as NetworkError, not as a Faraday error' do
-    allow(Faraday).to receive(:get)
-      .and_raise(Faraday::ConnectionFailed.new('Failed to open TCP connection'))
+    stub_api_client_get.and_raise(Faraday::ConnectionFailed.new('Failed to open TCP connection'))
 
     expect { source.download_to_cache }
       .to raise_error(Ammitto::NetworkError, /Failed to download tr data/)
   end
 
   it 'keeps the underlying reason in the message' do
-    allow(Faraday).to receive(:get)
-      .and_raise(Faraday::ConnectionFailed.new('getaddrinfo: Name or service not known'))
+    stub_api_client_get.and_raise(Faraday::ConnectionFailed.new('getaddrinfo: Name or service not known'))
 
     expect { source.download_to_cache }
       .to raise_error(Ammitto::NetworkError, /getaddrinfo/)
@@ -71,8 +71,7 @@ RSpec.describe 'search when a source cannot be reached' do
   it 'lets a search finish instead of raising out of it' do
     # The whole point: a laptop with no network gets an empty result set
     # and a warning, not a stack trace.
-    allow(Faraday).to receive(:get)
-      .and_raise(Faraday::ConnectionFailed.new('Failed to open TCP connection'))
+    stub_api_client_get.and_raise(Faraday::ConnectionFailed.new('Failed to open TCP connection'))
 
     results = nil
     expect { results = Ammitto.search('mohammad', sources: [:tr], limit: 3) }

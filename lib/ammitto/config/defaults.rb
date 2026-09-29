@@ -7,7 +7,7 @@ module Ammitto
     # This module provides the baseline defaults that can be overridden
     # by programmatic configuration or environment variables.
     #
-    # Priority: ENV > Programmatic API > Defaults
+    # Priority for Ammitto.configuration: explicit assignment > ENV > Defaults
     module Defaults
       # Default cache directory
       CACHE_DIR = File.expand_path('~/.ammitto')
@@ -32,6 +32,9 @@ module Ammitto
 
       # Default read timeout (30 seconds)
       READ_TIMEOUT = 30
+
+      # Default verbose flag
+      VERBOSE = false
 
       # Default log level
       LOG_LEVEL = 'info'

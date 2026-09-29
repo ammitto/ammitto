@@ -93,7 +93,7 @@ module Ammitto
 
         verbose: {
           type: :boolean,
-          default: false,
+          default: Config::Defaults::VERBOSE,
           env: 'AMMITTO_VERBOSE',
           desc: 'Enable verbose output',
           cli_flag: '--verbose',
@@ -235,9 +235,11 @@ module Ammitto
             option = OPTIONS[key]
             next unless option
 
+            # An env-backed option gets no Thor default: Thor would fill an
+            # unset flag with it and hide the environment from the resolver.
             thor_class.class_option key,
                                     type: option[:type],
-                                    default: option[:default],
+                                    default: option[:env] ? nil : option[:default],
                                     desc: option[:desc],
                                     aliases: option[:cli_short] ? [option[:cli_short]] : []
           end

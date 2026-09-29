@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'config/defaults'
+require_relative 'config/env_provider'
 
 module Ammitto
   # Configuration class for Ammitto gem settings
@@ -52,37 +53,31 @@ module Ammitto
     DEFAULT_API_BASE_URL = Config::Defaults::API_BASE_URL
 
     # Default cache directory
-    DEFAULT_CACHE_DIR = File.expand_path('~/.ammitto')
+    DEFAULT_CACHE_DIR = Config::Defaults::CACHE_DIR
 
     # Default cache TTL (1 hour)
-    DEFAULT_CACHE_TTL = 3600
+    DEFAULT_CACHE_TTL = Config::Defaults::CACHE_TTL
 
     # Default connection timeout (10 seconds)
-    DEFAULT_CONNECTION_TIMEOUT = 10
+    DEFAULT_CONNECTION_TIMEOUT = Config::Defaults::CONNECTION_TIMEOUT
 
     # Default read timeout (30 seconds)
-    DEFAULT_READ_TIMEOUT = 30
+    DEFAULT_READ_TIMEOUT = Config::Defaults::READ_TIMEOUT
 
     # Default data repository directory (../data from project root, not gem root)
-    # __dir__ is lib/ammitto, so we go up 3 levels then into data
-    DEFAULT_DATA_REPOSITORY = File.expand_path('../../../data', __dir__)
+    DEFAULT_DATA_REPOSITORY = Config::Defaults::DATA_REPOSITORY
 
     # Default sources directory (parent of gem directory where data-* repos live)
-    # __dir__ is lib/ammitto, so we go up 3 levels: lib/ammitto -> lib -> ammitto(gem) -> ammitto(project)
-    DEFAULT_SOURCES_DIR = File.expand_path('../../..', __dir__)
+    DEFAULT_SOURCES_DIR = Config::Defaults::SOURCES_DIR
 
-    # Initialize configuration with defaults
+    # Keys the environment may set, so a documented AMMITTO_* variable
+    # reaches every reader of this object and not only the CLI
+    ENV_KEYS = %i[api_base_url cache_dir cache_ttl connection_timeout read_timeout
+                  verbose parse_failure_mode data_repository sources_dir].freeze
+
+    # Initialize configuration from defaults, then the environment
     def initialize
-      @api_base_url = DEFAULT_API_BASE_URL
-      @cache_dir = DEFAULT_CACHE_DIR
-      @cache_ttl = DEFAULT_CACHE_TTL
-      @connection_timeout = DEFAULT_CONNECTION_TIMEOUT
-      @read_timeout = DEFAULT_READ_TIMEOUT
-      @verbose = false
-      @logger = nil
-      @parse_failure_mode = Config::Defaults::PARSE_FAILURE_MODE
-      @data_repository = DEFAULT_DATA_REPOSITORY
-      @sources_dir = DEFAULT_SOURCES_DIR
+      reset!
     end
 
     # @return [String] Full path to the cache sources directory
@@ -95,7 +90,9 @@ module Ammitto
       File.join(cache_dir, 'metadata.json')
     end
 
-    # Reset configuration to defaults
+    # Reset configuration to defaults, then re-read the environment.
+    # The environment is read here, once, so a later assignment through
+    # Ammitto.configure still wins over it.
     # @return [void]
     def reset!
       @api_base_url = DEFAULT_API_BASE_URL
@@ -103,11 +100,21 @@ module Ammitto
       @cache_ttl = DEFAULT_CACHE_TTL
       @connection_timeout = DEFAULT_CONNECTION_TIMEOUT
       @read_timeout = DEFAULT_READ_TIMEOUT
-      @verbose = false
+      @verbose = Config::Defaults::VERBOSE
       @logger = nil
       @parse_failure_mode = Config::Defaults::PARSE_FAILURE_MODE
       @data_repository = DEFAULT_DATA_REPOSITORY
       @sources_dir = DEFAULT_SOURCES_DIR
+      apply_environment
+    end
+
+    private
+
+    def apply_environment
+      Config::EnvProvider.configuration.slice(*ENV_KEYS).each do |key, value|
+        value = File.expand_path(value) if key == :cache_dir
+        instance_variable_set(:"@#{key}", value)
+      end
     end
   end
 

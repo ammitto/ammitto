@@ -372,19 +372,6 @@ module Ammitto
 
     private
 
-    # Get resolved configuration
-    # @return [Hash]
-    def resolved_config
-      @resolved_config ||= begin
-        resolver = Config::OverrideResolver.new(
-          verbose: options[:verbose],
-          log_level: options[:log_level],
-          cache_dir: options[:cache_dir]
-        )
-        resolver.resolve_all
-      end
-    end
-
     # Print error message
     # @param message [String] error message
     def error(message)

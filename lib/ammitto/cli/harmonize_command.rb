@@ -74,7 +74,7 @@ module Ammitto
       def normalize_sources(sources)
         if options[:scan]
           # Auto-detect data-* repositories
-          parent_dir = options[:sources_dir] || Config::Defaults::SOURCES_DIR
+          parent_dir = options[:sources_dir] || Ammitto.configuration.sources_dir
           detected = Config::Defaults.detect_data_repositories(parent_dir)
           puts "Auto-detected sources: #{detected.join(', ')}" if options[:verbose]
           detected
@@ -837,7 +837,7 @@ module Ammitto
       # Get cache directory
       # @return [String]
       def cache_dir
-        options[:cache_dir] || File.expand_path('~/.ammitto')
+        options[:cache_dir] || Ammitto.configuration.cache_dir
       end
 
       # Print summary of results using the gate classification, so the

@@ -143,7 +143,8 @@ module Ammitto
       # call. On a cold cache with no network, `Ammitto.search` died with
       # Faraday::ConnectionFailed instead of returning what it could.
       begin
-        response = Faraday.get(api_endpoint)
+        # Use ApiClient's connection so the configured timeouts apply here too
+        response = Client::ApiClient.new.connection.get(api_endpoint)
       rescue Faraday::Error => e
         raise NetworkError.new(
           "Failed to download #{code} data: #{e.message}",

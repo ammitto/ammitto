@@ -5,6 +5,7 @@ require 'fileutils'
 require 'yaml'
 require_relative '../config/defaults'
 require_relative '../error'
+require_relative '../parse_failure_visibility'
 require_relative 'fetch/source_registry'
 require_relative 'fetch/item_mapper'
 require_relative 'fetch/collision_and_collapse_guard'
@@ -107,8 +108,16 @@ module Ammitto
       # Fetch all requested sources
       # @return [void]
       def fetch_all
-        results = @sources.map do |source|
-          fetch_source(source)
+        # The xlsx and pdf parsers read dates here, not at harmonize, which only
+        # reloads the YAML written below; without a count of its own a
+        # fetch-time failure is visible in silent mode nowhere at all.
+        parse_run = ParseFailureVisibility::Run.new
+        results = ParseFailureVisibility.with_run(parse_run) do
+          @sources.map { |source| fetch_source(source) }
+        end
+
+        results.each do |result|
+          result[:parse_failures] = parse_run.count(result[:code])
         end
 
         print_summary(results)
@@ -373,6 +382,11 @@ module Ammitto
 
         puts
         puts "Fetch complete: #{success} succeeded, #{failed} failed"
+
+        puts 'Parse failures by source:'
+        results.each do |result|
+          puts "  #{result[:code]}: #{result.fetch(:parse_failures, 0)}"
+        end
 
         return unless failed.positive?
 

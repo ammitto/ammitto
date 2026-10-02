@@ -11,7 +11,7 @@ module Ammitto
       # announcement-format guard and its marker constants, plus the
       # transform_<source> methods for fixed-shape sources (UK, EU, UN, US,
       # WB, CA, and UN_VESSELS). The shape-branching sources (AU, CH, CN, NZ,
-      # and JP), plus the fixed-shape RU, TR, and EU_VESSELS transforms, live
+      # JP, and RU), plus the fixed-shape TR and EU_VESSELS transforms, live
       # in MultiShapeSourceTransforms instead, split out purely to keep both
       # modules under the Metrics/ModuleLength budget. #transform_data still
       # dispatches every source, from either module, through this one table.

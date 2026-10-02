@@ -45,7 +45,7 @@ module Ammitto
 
         # @return [Boolean]
         def person?
-          type != 'organization'
+          type == 'individual'
         end
 
         # @return [Boolean]

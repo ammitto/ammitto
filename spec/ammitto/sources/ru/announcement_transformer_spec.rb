@@ -221,6 +221,23 @@ RSpec.describe Ammitto::Sources::Ru::AnnouncementTransformer do
     end
   end
 
+  describe 'a party whose type cannot be read' do
+    [nil, '', 'person', 'vessel', 'Individual', 'ORGANIZATION', ' individual'].each do |unread|
+      it "refuses type #{unread.inspect} rather than guessing a person" do
+        untyped = Ammitto::Sources::Ru::Announcement.from_hash(
+          'announcement' => { 'document_id' => '755-07-04-2022' },
+          'sanction_details' => {
+            'entities' => [{ 'name' => { 'en' => 'Someone' },
+                             'type' => unread }]
+          }
+        )
+
+        expect { transformer.transform_announcement(untyped) }
+          .to raise_error(Ammitto::ParseError, /no readable type/)
+      end
+    end
+  end
+
   describe 'an announcement with a long document id' do
     it 'keeps two same-named parties apart' do
       long = Ammitto::Sources::Ru::Announcement.from_hash(

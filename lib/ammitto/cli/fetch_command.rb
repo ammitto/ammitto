@@ -102,6 +102,8 @@ module Ammitto
           extractor_class = extractor_class_for(source)
           endpoint = extractor_class&.new&.api_endpoint
           puts "  #{source}: #{endpoint || 'N/A'}"
+        rescue LoadError => e
+          puts "  #{source}: #{load_failure_message(e)}"
         end
       end
 
@@ -157,10 +159,19 @@ module Ammitto
           # through a supported flag.
           refuse_empty_extraction(source, extractor.run)
         end
-      rescue StandardError => e
+      # LoadError is a ScriptError, not a StandardError. Code one source needs
+      # that will not load (its extractor, or a library it requires) fails
+      # that source; the rest of the run still goes ahead.
+      rescue StandardError, LoadError => e
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         puts e.backtrace.first(5).join("\n") if options[:verbose]
-        error_result(source, e.message)
+        error_result(source, e.is_a?(LoadError) ? load_failure_message(e) : e.message)
+      end
+
+      # @param error [LoadError] raised while loading code a source needs
+      # @return [String]
+      def load_failure_message(error)
+        "code this source needs failed to load: #{error.message}"
       end
 
       # Turn an extractor run that parsed to nothing into an error.

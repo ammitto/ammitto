@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../../parse_failure_visibility'
 require_relative '../../utils/presence'
 
 module Ammitto
@@ -58,8 +59,9 @@ module Ammitto
           entity.alias_alternate_spellings = data['alias_alternate_spellings']
           entity.address = data['address']
           entity.sanction_status = data['sanction_status']
-          entity.date_of_sanction = parse_date(data['date_of_sanction'])
-          entity.date_of_additional_sanction = parse_date(data['date_of_additional_sanction'])
+          entity.date_of_sanction = parse_date(data['date_of_sanction'], field: :date_of_sanction)
+          entity.date_of_additional_sanction =
+            parse_date(data['date_of_additional_sanction'], field: :date_of_additional_sanction)
           entity.travel_ban = data['travel_ban']
           entity.asset_freeze = data['asset_freeze']
           entity.aircraft_ban = data['aircraft_ban']
@@ -71,13 +73,26 @@ module Ammitto
         end
 
         # Parse date value
-        def self.parse_date(value)
+        #
+        # A value NZ writes that Date.parse cannot read publishes as nil,
+        # so it is reported to keep a trace of what the register actually
+        # said.
+        # @param value [Object, nil] the raw cell value
+        # @param field [Symbol, nil] the attribute the value was destined for;
+        #   an unreadable value is reported only when one is given
+        # @return [Date, nil]
+        def self.parse_date(value, field: nil)
           return nil if value.nil?
           return value if value.is_a?(Date)
 
           begin
             Date.parse(value.to_s)
-          rescue ArgumentError
+          rescue ArgumentError => e
+            if field
+              Ammitto::ParseFailureVisibility.report(
+                source: :nz, field: field, value: value, error: e
+              )
+            end
             nil
           end
         end

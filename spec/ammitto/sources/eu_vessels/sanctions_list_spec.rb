@@ -22,6 +22,13 @@ module EuVesselsSanctionsListSpecHelpers
   def designations(vessel)
     vessel.designations.map { |d| [d.date_of_application, d.subject_to] }
   end
+
+  # Reads an unreadable date of application, which publishes as nil; the
+  # 'a reported parse failure' shared example calls it in every mode.
+  def parse_unreadable
+    -> { described_class.read_date('not-a-date', field: :date_of_application) }
+  end
+  alias raise_unreadable parse_unreadable
 end
 
 RSpec.describe Ammitto::Sources::EuVessels::SanctionsList do
@@ -108,6 +115,33 @@ RSpec.describe Ammitto::Sources::EuVessels::SanctionsList do
     Dir.mktmpdir do |dir|
       expect { command.send(:write_items, :eu_vessels, items, dir) }
         .to raise_error(Ammitto::Cmd::Fetch::FilenameCollisionError, /eu-vessel-9000001\.yaml/)
+    end
+  end
+
+  # A date of application the workbook writes that does not read as a date
+  # refuses the row; the report keeps a trace of what the list stated.
+  describe 'parse failure visibility' do
+    include_context 'with parse failure log capture'
+
+    it_behaves_like 'a reported parse failure',
+                    source: :eu_vessels, field: :date_of_application, raised_value: 'not-a-date'
+
+    it 'counts the unreadable date of a workbook row it refuses' do
+      expect { count_parse_failures { parse([['Alpha', 9_000_001, 'soon', russia]]) } }
+        .to raise_error(Ammitto::ParseError, /row 2 .*date of application "soon"/)
+      expect(run.count(:eu_vessels)).to eq(1)
+    end
+
+    it 'leaves a blank cell nil without reporting it' do
+      expect(count_parse_failures { described_class.read_date('  ', field: :date_of_application) }).to be_nil
+      expect(run.count(:eu_vessels)).to eq(0)
+      expect(io.string).to be_empty
+    end
+
+    it 'does not report a value that parsed cleanly' do
+      count_parse_failures { described_class.read_date('2025-05-20', field: :date_of_application) }
+
+      expect(run.count(:eu_vessels)).to eq(0)
     end
   end
 end

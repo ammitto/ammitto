@@ -20,6 +20,69 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
     end
   end
 
+  # data-au stores the control date ISO; DFAT's own sheet writes it m/d/y.
+  describe 'the control date as listed date' do
+    include_context 'with parse failure log capture'
+
+    let(:listed_for) do
+      lambda do |value|
+        transformer.send(:create_period, source: :au,
+                                         listed_date: transformer.send(:parse_control_date, value)).listed_date
+      end
+    end
+    let(:parse_unreadable) { -> { listed_for.call('garbage') } }
+    let(:raise_unreadable) { -> { listed_for.call('13/40/24') } }
+
+    it 'reads the ISO date data-au stores' do
+      expect(listed_for.call('2024-02-23')).to eq(Date.new(2024, 2, 23))
+    end
+
+    it "reads DFAT's month-first date" do
+      expect(listed_for.call('2/23/24')).to eq(Date.new(2024, 2, 23))
+    end
+
+    it 'reads a four-digit month-first year as written' do
+      expect(listed_for.call('6/18/2025')).to eq(Date.new(2025, 6, 18))
+    end
+
+    # No plausibility floor: a four-digit year, or an ISO date, is published as
+    # the source wrote it, however early. Read proleptic Gregorian: the
+    # default Date::ITALY has no 10/10/1582 and would report it.
+    {
+      '2/3/0001' => Date.new(1, 2, 3, Date::GREGORIAN),
+      '2/3/0099' => Date.new(99, 2, 3, Date::GREGORIAN),
+      '2/3/0000' => Date.new(0, 2, 3, Date::GREGORIAN),
+      '2/3/1899' => Date.new(1899, 2, 3),
+      '0001-01-01' => Date.new(1, 1, 1, Date::GREGORIAN),
+      '1899-12-31' => Date.new(1899, 12, 31),
+      '10/10/1582' => Date.new(1582, 10, 10, Date::GREGORIAN),
+      '1582-10-10' => Date.new(1582, 10, 10, Date::GREGORIAN)
+    }.each do |value, date|
+      it "publishes #{value.inspect} as written, without a report" do
+        expect(count_parse_failures { listed_for.call(value) }).to eq(date)
+        expect(run.count(:au)).to eq(0)
+      end
+    end
+
+    it 'publishes no date, and reports nothing, when there is none' do
+      expect(count_parse_failures { listed_for.call('') }).to be_nil
+      expect(run.count(:au)).to eq(0)
+    end
+
+    it_behaves_like 'a reported parse failure', source: :au, field: :listed_date,
+                                                raised_value: '13/40/24'
+
+    # Date.parse would read each of the first four as a date; none is a shape
+    # DFAT or data-au writes. '2/3/024' has a year that is not two or four
+    # digits, and '2024-02-30' is not a calendar date.
+    ['2/3', '23 Feb', '02-03-2024', '2024-2-3', '2/3/024', '2024-02-30', '2/30/24'].each do |value|
+      it "reports #{value.inspect} once and publishes no date" do
+        expect(count_parse_failures { listed_for.call(value) }).to be_nil
+        expect(run.count(:au)).to eq(1)
+      end
+    end
+  end
+
   describe '#transform' do
     # Driven through the legacy `Ammitto::Transformers::AuTransformer` alias so
     # the constant keeps its only coverage after this class gained its own file.

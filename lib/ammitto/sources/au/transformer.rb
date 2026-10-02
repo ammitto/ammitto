@@ -332,21 +332,39 @@ module Ammitto
           end
         end
 
+        # DFAT's own sheet writes the control date m/d/y ("2/2/26"), which
+        # Date.parse would read day-first. data-au stores it ISO
+        # ("2024-02-23"). Those two shapes are read strictly; anything else
+        # is reported rather than handed to Date.parse, which would guess
+        # a date out of "2/3" or "02-03-2024". Both are read proleptic
+        # Gregorian: the default Date::ITALY has no 10/10/1582 and would
+        # report a date the source wrote validly.
         def parse_control_date(date_str)
-          return nil if date_str.nil? || date_str.empty?
+          text = date_str.to_s.strip
+          return nil if text.empty?
 
-          # Format: "2/2/26" or "6/18/25"
-          begin
-            parts = date_str.split('/')
-            if parts.length == 3
-              month = parts[0].to_i
-              day = parts[1].to_i
-              year = parts[2].to_i
-              year += 2000 if year < 100
-              Date.new(year, month, day)
-            end
-          rescue Date::Error
-            nil
+          if text.match?(%r{\A\d{1,2}/\d{1,2}/\d+\z})
+            month, day, year_text = text.split('/')
+            Date.new(control_year(year_text), month.to_i, day.to_i, Date::GREGORIAN)
+          elsif text.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+            Date.iso8601(text, Date::GREGORIAN)
+          else
+            raise Date::Error, "unrecognised control date: #{text.inspect}"
+          end
+        rescue Date::Error => e
+          ParseFailureVisibility.report(source: :au, field: :listed_date, value: date_str, error: e)
+          nil
+        end
+
+        # Two digits are DFAT's short year (+2000); four are written in
+        # full, as written. Any other width is not a year DFAT writes, and
+        # shifting it by value would invent one.
+        def control_year(year_text)
+          case year_text.length
+          when 2 then year_text.to_i + 2000
+          when 4 then year_text.to_i
+          else
+            raise Date::Error, "unrecognised control date year: #{year_text.inspect}"
           end
         end
 

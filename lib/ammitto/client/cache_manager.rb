@@ -99,9 +99,6 @@ module Ammitto
             data = client.fetch_source(code)
             cache.write(code, data)
             { status: :refreshed, message: 'Cache updated' }
-          rescue NetworkError => e
-            Logger.error("Failed to refresh #{code}: #{e.message}")
-            { status: :error, message: e.message }
           rescue StandardError => e
             Logger.error("Failed to refresh #{code}: #{e.message}")
             { status: :error, message: e.message }

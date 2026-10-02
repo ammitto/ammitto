@@ -131,6 +131,31 @@ ammitto fetch eu --format yaml
 
 | `--output-dir DIR`
 | Output directory for fetched data
+
+| `--prune`
+| Applies to `--format yaml` only; with any other format the source fails with an error and nothing is fetched or removed.
+Remove the files of records the source no longer lists. A file is removed only
+when the directory's previous `_index.yaml` names the same source and either
+records the file in its `files` list, or the source's filenames carry a prefix
+(every source except uk, eu, un and us), the file carries it and its content
+has the shape of that source's records (a file that cannot be read as one is
+left in place). So the first `--prune` run over an existing index of the same
+source removes the prefixed files no current record writes, while uk, eu, un
+and us remove only files an earlier `--prune` run
+recorded. A file another source wrote is never removed. Skipped when several
+sources share one `--output-dir`. `--prune` assumes one fetch per output
+directory at a time and does not lock the directory.
+With `--prune`, `_index.yaml` also records `pruned` (files removed) and `files`.
+When the ceiling below leaves files in place it adds `left_in_place` (their
+count) and `left_in_place_files` (their names, sorted); without `--prune` the
+index keeps `source`, `count`, `fetched_at` and `schema` only
+
+| `--allow-shrink`
+| Accept a harvest of less than half the previous one. With `--prune`, also accept removing more than 5% of the previous harvest
+(at least one file is always within the limit, provided the previous
+index records its count as an integer). Above that share the files stay
+in place, the run prints a warning and still succeeds. Files left in place stay
+recorded as owned, so a later run with `--allow-shrink` removes them
 |===
 
 === harmonize

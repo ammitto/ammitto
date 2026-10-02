@@ -9,6 +9,7 @@ require_relative '../parse_failure_visibility'
 require_relative 'fetch/source_registry'
 require_relative 'fetch/item_mapper'
 require_relative 'fetch/collision_and_collapse_guard'
+require_relative 'fetch/stale_record_pruner'
 
 module Ammitto
   module Cmd
@@ -27,6 +28,7 @@ module Ammitto
       include Fetch::SourceRegistry
       include Fetch::ItemMapper
       include Fetch::CollisionAndCollapseGuard
+      include Fetch::StaleRecordPruner
 
       COLLAPSE_RATIO = Fetch::CollisionAndCollapseGuard::COLLAPSE_RATIO
       NO_FETCH_PATH = Fetch::SourceRegistry::NO_FETCH_PATH
@@ -136,6 +138,17 @@ module Ammitto
         extractor_class = extractor_class_for(source)
         return error_result(source, 'No extractor available') unless extractor_class
 
+        # Pruning lives in save_as_yaml, which only the yaml route reaches.
+        # Accepting the flag elsewhere would run the fetch and quietly
+        # delete nothing, so it is refused before anything is written.
+        if options[:prune] && !yaml_model_route?(source)
+          return error_result(
+            source,
+            '--prune applies only to --format yaml; this run would not ' \
+            'prune. Nothing was fetched, written or removed.'
+          )
+        end
+
         # Create output directory
         output_dir = options[:output_dir] || File.join(cache_dir, 'processed', source.to_s)
         FileUtils.mkdir_p(output_dir)
@@ -145,9 +158,7 @@ module Ammitto
         extractor.verbose = options[:verbose] if extractor.respond_to?(:verbose=)
 
         # Fetch and parse using source models if format is yaml
-        format = options[:format] || 'yaml'
-
-        if format == 'yaml' && source_model_class_for(source)
+        if yaml_model_route?(source)
           fetch_with_source_models(source, extractor, output_dir)
         else
           # The same refusal has to cover this branch. BaseExtractor#run
@@ -161,6 +172,14 @@ module Ammitto
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         puts e.backtrace.first(5).join("\n") if options[:verbose]
         error_result(source, e.message)
+      end
+
+      # Whether a fetch of this source reaches save_as_yaml.
+      #
+      # @param source [Symbol] source code
+      # @return [Boolean] true for the yaml format with a source model
+      def yaml_model_route?(source)
+        (options[:format] || 'yaml') == 'yaml' && !source_model_class_for(source).nil?
       end
 
       # Turn an extractor run that parsed to nothing into an error.
@@ -225,9 +244,9 @@ module Ammitto
         # selects on :error only, so a source whose document parsed to
         # nothing — a changed namespace, a maintenance page served with a
         # 200, a renamed root element — reported "1 succeeded, 0 failed"
-        # and exited 0. Nothing deletes the previous harvest either, so
-        # the downstream harmonize gate then passed on yesterday's files
-        # and stayed green too.
+        # and exited 0. An empty harvest leaves the previous files in
+        # place, even under --prune, so the downstream harmonize gate then
+        # passed on yesterday's files and stayed green too.
         #
         # These are sanctions lists. RuExtractor already states the
         # principle for its own source: the stop-list is never
@@ -263,17 +282,10 @@ module Ammitto
       def save_as_yaml(source, data, output_dir)
         items = items_from_data(source, data)
         written = write_items(source, items, output_dir)
+        pruned = prune_stale_records(source, written, output_dir)
 
-        # Save index file with metadata. count is the number of files
-        # this run wrote, not the number of items it saw: they used to
-        # differ silently whenever two items shared a filename, so the run
-        # reported more records than it had actually written.
-        #
-        # Not a count of the directory's contents. Nothing here removes
-        # files from a previous harvest, so a delisted record's file
-        # outlives the run that dropped it — longstanding behaviour of
-        # this command, and a separate question from whether one run
-        # overwrites its own records.
+        # count is the number of files this run wrote, not the number of
+        # items it saw: two items sharing a filename are written once.
         count = written.size
         index = {
           'source' => source.to_s,
@@ -281,11 +293,45 @@ module Ammitto
           'fetched_at' => Time.now.utc.iso8601,
           'schema' => "ammitto:sources:#{source}:v1"
         }
+        if options[:prune]
+          index['pruned'] = pruned.size
+          # The next --prune run may delete only what is named here: what
+          # this run wrote, and what an earlier run owned that the prune
+          # ceiling left in place.
+          retained = retained_records(source, written, output_dir)
+          index['files'] = (written.keys + retained).sort
+          # With a non-empty harvest, what remains after the prune pass is
+          # what the ceiling spared; an empty one only carries files forward.
+          record_left_in_place(index, written.empty? ? [] : retained)
+        end
         File.write(File.join(output_dir, '_index.yaml'), index.to_yaml)
 
+        report_pruned(source, pruned)
         puts "[#{source}] Saved #{count} files to #{output_dir}" if options[:verbose]
 
         count
+      end
+
+      # Under --prune a refusal is otherwise only a line in a log; the
+      # index is what the data repository commits.
+      # @param index [Hash] the index being written
+      # @param left [Array<String>] files the ceiling left in place
+      # @return [void]
+      def record_left_in_place(index, left)
+        return if left.empty?
+
+        index['left_in_place'] = left.size
+        index['left_in_place_files'] = left
+      end
+
+      # @param source [Symbol] source code
+      # @param pruned [Array<String>] filenames removed
+      # @return [void]
+      def report_pruned(source, pruned)
+        return unless options[:prune] && options[:verbose]
+
+        puts "[#{source}] Pruned #{pruned.size} files no longer listed"
+        pruned.each { |name| puts "  #{name}" }
       end
 
       # Parse a workbook and dispose of the temporary file it arrived in.

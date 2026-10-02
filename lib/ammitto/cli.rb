@@ -152,7 +152,13 @@ module Ammitto
                           desc: 'Accept a harvest that produced less than ' \
                                 'half the records of the previous one ' \
                                 '(refused by default: a drop that large is ' \
-                                'usually a parser that stopped matching)'
+                                'usually a parser that stopped matching). ' \
+                                'With --prune, also accept removing more ' \
+                                'than 5% of the previous harvest'
+    option :prune, type: :boolean, default: false,
+                   desc: 'Delete record files from the previous harvest ' \
+                         'that this run did not write (records the ' \
+                         'source no longer lists)'
     def fetch(*sources)
       require_relative 'cli/fetch_command'
       Cmd::FetchCommand.new(options, sources).run

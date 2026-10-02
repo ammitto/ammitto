@@ -15,23 +15,25 @@ require 'lutaml/model'
 # - Central Bank sanctions
 # - Government decrees (Постановления)
 #
-# @example Using RU models
+# The unit is the announcement: one file per MID publication, with the
+# parties it names inside it. data-ru stores them under
+# `sources/announcements/`.
+#
+# data-ru stores `name: { ru:, en: }` per party, not the flat
+# `{ russian_name:, english_name: }` record ListAnnouncement models.
+#
+# @example Loading an announcement
 #   require 'ammitto/sources/ru'
 #
-#   # After HTML parsing, create models
-#   announcement = Ammitto::Sources::Ru::Announcement.from_parsed_data({
-#     number: "2025-001",
-#     date: "2025-01-15",
-#     list_type: "stop_list",
-#     entities: [{ russian_name: "...", english_name: "..." }]
-#   })
+#   announcement = Ammitto::Sources::Ru::Announcement.from_yaml(
+#     File.read('sources/announcements/20220413-1.yml')
+#   )
+#   announcement.entities.first.english_name  # => "Peter Rey Aguilar"
 #
-# @example Saving to YAML
-#   yaml = announcement.to_yaml
-#   File.write("ru_announcement_2025_001.yaml", yaml)
-#
-# @example Loading from YAML
-#   announcement = Ammitto::Sources::Ru::Announcement.from_yaml(yaml)
+# @example Harmonizing everyone it names
+#   transformer = Ammitto::Sources::Ru::Transformer.new
+#   result = transformer.transform_announcement(announcement)
+#   result[:entities].length
 #
 
 module Ammitto
@@ -56,5 +58,6 @@ module Ammitto
 end
 
 # Load all RU source models
+require_relative 'ru/announcement'
 require_relative 'ru/sanctions_list'
 require_relative 'ru/transformer'

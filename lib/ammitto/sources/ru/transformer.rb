@@ -2,6 +2,8 @@
 
 require_relative '../../transformers/base_transformer'
 require_relative '../../parse_failure_visibility'
+require_relative 'announcement_transformer'
+require_relative 'list_announcement'
 
 module Ammitto
   module Sources
@@ -57,11 +59,22 @@ module Ammitto
           end
         end
 
-        # Transform all entities from an announcement
-        # @param announcement [Ammitto::Sources::Ru::Announcement]
-        # @return [Array<Hash>] array of transformation results
+        # Transform an announcement and everyone it names.
+        #
+        # An announcement file goes to AnnouncementTransformer, which returns
+        # the contract Sources::Cn::Transformer does. A flat ListAnnouncement
+        # keeps the array of per-record results Ammitto 1.0.0 returned for
+        # it, so released callers are unaffected.
+        #
+        # @param announcement [Announcement, ListAnnouncement]
+        # @return [Hash, Array<Hash>] for an Announcement: entities, entries,
+        #   group, official_announcement and legal_citations; for a
+        #   ListAnnouncement: one transform result per entity
         def transform_announcement(announcement)
-          announcement.entities.map { |entity| transform(entity) }
+          return announcement.entities.map { |e| transform(e) } if
+            announcement.is_a?(ListAnnouncement)
+
+          AnnouncementTransformer.new.transform_announcement(announcement)
         end
 
         private

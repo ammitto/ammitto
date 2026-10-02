@@ -7,6 +7,17 @@ module Ammitto
   module Cmd
     module Fetch
       module ItemMapper
+        # The prefix #filename_from_ref puts on each source's record files.
+        # uk, eu, un and us carry none. A source missing here has no known
+        # naming, so nothing that relies on this table may treat its files
+        # as its own.
+        FILENAME_PREFIXES = {
+          uk: '', eu: '', un: '', us: '',
+          wb: 'wb-', au: 'au-', ca: 'ca-', ch: 'ch-',
+          cn: 'cn-', ru: 'ru-', tr: 'tr-', nz: 'nz-',
+          eu_vessels: 'eu-vessel-', jp: 'jp-', un_vessels: 'un-vessel-'
+        }.freeze
+
         private
 
         # Get items collection from parsed data

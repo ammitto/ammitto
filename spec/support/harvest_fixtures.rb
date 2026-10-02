@@ -28,14 +28,15 @@ module HarvestFixtures
   #
   # @param dir [String] the output directory
   # @param count [Integer] what that harvest recorded
+  # @param files [Array<String>, nil] filenames that harvest recorded as its
+  #   own, left out of the index when nil
   # @return [void]
-  def previous_harvest(dir, count)
-    File.write(
-      File.join(dir, '_index.yaml'),
-      { 'source' => 'uk', 'count' => count,
-        'fetched_at' => '2026-08-27T06:00:00Z',
-        'schema' => 'ammitto:sources:uk:v1' }.to_yaml
-    )
+  def previous_harvest(dir, count, files: nil)
+    index = { 'source' => 'uk', 'count' => count,
+              'fetched_at' => '2026-08-27T06:00:00Z',
+              'schema' => 'ammitto:sources:uk:v1' }
+    index['files'] = files if files
+    File.write(File.join(dir, '_index.yaml'), index.to_yaml)
   end
 
   # Options shaped the way Thor hands them to a command.

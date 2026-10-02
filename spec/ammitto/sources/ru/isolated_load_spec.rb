@@ -24,9 +24,9 @@ RSpec.describe 'Ammitto::Sources::Ru model files' do
   # declaration while the count stayed the same, so the guard would be
   # weaker than it looks. Comparing the named list against what is actually
   # on disk fails loudly when a model is added or renamed.
-  files = %w[announcement announcement_block announcement_transformer entity
+  files = %w[announcement announcement_block announcement_guards announcement_transformer entity
              document_id_guard instrument list_announcement lost_party_guard measure
-             sanction_details sanctioned_entity sanctions_list].freeze
+             party_type_guard sanction_details sanctioned_entity sanctions_list].freeze
 
   it 'covers every model file in the directory' do
     on_disk = Dir[File.expand_path('../../../../lib/ammitto/sources/ru/*.rb',

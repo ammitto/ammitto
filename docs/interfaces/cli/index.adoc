@@ -131,6 +131,20 @@ ammitto fetch eu --format yaml
 
 | `--output-dir DIR`
 | Output directory for fetched data
+
+| `--prune`
+| Applies to `--format yaml` only; with any other format the source fails with an error and nothing is fetched or removed. Remove the files of records the source no longer lists. Only files this
+source recorded as its own in `_index.yaml` on an earlier `--prune` run are
+removed, so the first `--prune` run into a directory records ownership and
+removes nothing. A file another source wrote is never removed. Skipped when
+several sources share one `--output-dir`. `--prune` assumes one fetch per
+output directory at a time and does not lock the directory
+
+| `--allow-shrink`
+| Accept a harvest of less than half the previous one. With `--prune`, also accept removing more than 5% of the previous harvest.
+Above that share the files stay in place and the run says so. Files left in
+place stay recorded as owned, so a later run with `--allow-shrink` removes
+them
 |===
 
 === harmonize

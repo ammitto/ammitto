@@ -310,10 +310,10 @@ level:
 
 The `--scan` flag auto-detects every `data-*` directory under a parent path,
 so a harmonize run does not have to enumerate its sources. It is declared on
-`harmonize` alone (`lib/ammitto/cli.rb:180`). Every top-level command also
+`harmonize` alone (`lib/ammitto/cli.rb:184`). Every top-level command also
 takes `--verbose` and `--cache-dir`, registered once for that class at
 `lib/ammitto/cli.rb:102`. On top of those, `fetch` adds `--all`, `--dry-run`,
-`--format`, `--output-dir` and `--allow-shrink`, and `process` adds
+`--format`, `--output-dir`, `--prune` and `--allow-shrink`, and `process` adds
 `--force`. Neither adds `--scan`. The nearest equivalent is `fetch --all`,
 which enumerates the sources that command can reach rather than scanning
 directories.

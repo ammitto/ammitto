@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative 'authority'
 require_relative 'entity_link'
 require_relative 'name_variant'
 require_relative 'source_reference'
+require_relative 'utils/iri_sanitizer'
 
 module Ammitto
   # Entity is the abstract base class for all sanctioned entities
@@ -28,6 +30,11 @@ module Ammitto
     attribute :same_as, :string, collection: true # URIs of same entity in other systems
     attribute :remarks, :string
     attribute :sanction_entry_ids, :string, collection: true # Entry IRIs
+    # The authority code the search layer read off the node it built this
+    # entity from. Deliberately not an attribute and not mapped: Entity
+    # serialization does not carry an authority, and #authority answers a
+    # code. Set only by Search::ResultSet.
+    attr_writer :explicit_authority
 
     json do
       map 'id', to: :id
@@ -60,6 +67,26 @@ module Ammitto
       names.map(&:display_name).compact
     end
 
+    # The code of the authority this entity belongs to.
+    #
+    # Entity nodes do not carry an authority; the IRI builder
+    # (Utils::IriSanitizer.entity_iri) puts the source code in the second
+    # path segment, so that is the answer unless the search layer saw an
+    # authority on the node (see Authority.code_from). Codes are lower case.
+    #
+    # @return [String, nil] the authority code
+    def authority
+      explicit = Authority.code_from(@explicit_authority)
+      return explicit if explicit
+      # Anything but a String (nil, lutaml's uninitialized value, a malformed
+      # node's array) has no IRI to read a segment from.
+      return nil unless id.is_a?(String)
+
+      # The segment answers only if it is a code, so this agrees with
+      # ResultSet#authorities, which reads every authority through code_from.
+      Authority.code_from(Utils::IriSanitizer.parse_entity_iri(canonical_entity_iri)&.fetch(:source).to_s)
+    end
+
     # Check if this entity matches a search term
     # @param term [String] the search term
     # @return [Boolean] whether there's a match
@@ -82,6 +109,15 @@ module Ammitto
       # Also add the entry ID to the sanction_entry_ids array
       self.sanction_entry_ids ||= []
       sanction_entry_ids << entry.id if entry.id
+    end
+
+    private
+
+    # The exporters still emit entity IRIs on the apex host
+    # (`https://ammitto.org/...`); the parser reads only the canonical www
+    # base, so the apex is read as the same IRI.
+    def canonical_entity_iri
+      id.sub(%r{\Ahttps://ammitto\.org/}, "#{Utils::IriSanitizer::BASE_URI}/")
     end
   end
 end

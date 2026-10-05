@@ -29,4 +29,31 @@ RSpec.describe Ammitto::Authority do
       expect(missing).to be_empty
     end
   end
+
+  describe '.code_from' do
+    {
+      'https://www.ammitto.org/authority/UN' => 'un',
+      'https://www.ammitto.org/authority/un/' => 'un',
+      'EU' => 'eu',
+      { '@id' => 'https://www.ammitto.org/authority/uk' } => 'uk',
+      { id: 'JP' } => 'jp',
+      'https://example.org/authority/un' => nil,
+      'ftp://www.ammitto.org/authority/un' => nil,
+      'https://www.ammitto.org/entity/un/1' => nil,
+      '  ' => nil,
+      'eu_vessels' => 'eu_vessels',
+      'has space' => nil,
+      'a/b' => nil,
+      '_x' => nil,
+      ' un ' => nil,
+      "un\n" => nil,
+      "\u212Ae" => nil,
+      'https://www.ammitto.org/authority/un?x=1' => nil,
+      %w[un] => nil
+    }.each do |value, code|
+      it "reads #{value.inspect} as #{code.inspect}" do
+        expect(described_class.code_from(value)).to eq(code)
+      end
+    end
+  end
 end

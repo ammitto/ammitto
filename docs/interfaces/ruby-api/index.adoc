@@ -147,8 +147,12 @@ results.size
 # Filter by entity type
 persons = results.by_entity_type(:person)
 
-# Filter by authority
+# Filter by authority: entities and entries alike, matched on the
+# lower-case authority code
 un_results = results.by_authority(:un)
+
+# The term the query actually searched (trimmed)
+results.term
 
 # Filter by status
 active = results.by_status(:active)
@@ -167,8 +171,16 @@ results.to_json
 All entities inherit from `Ammitto::Entity`, which is what `require "ammitto"`
 loads. An `Ammitto::Search::ResultSet` can also hold `Ammitto::SanctionEntry`
 records, which carry no `entity_type`; `entity_types` skips them and
-`by_entity_type` filters them out, the way `by_authority` and `by_status`
-already skip entities.
+`by_entity_type` filters them out, the way `by_status` skips entities.
+
+`Entity#authority` returns the lower-case authority code as a String. An
+`authority` on a node handed to `Search::ResultSet` wins (an
+`https://www.ammitto.org/authority/<code>` IRI, a bare code, or a node
+carrying either as `@id` or `id`); entity serialization does not carry it.
+Otherwise the code is the source segment of the entity IRI,
+`https://www.ammitto.org/entity/<code>/<id>`. It is `nil` when neither
+yields one. `SanctionEntry#authority` still returns an `Authority`;
+`ResultSet#authorities` and `#by_authority` reduce both to the same code.
 
 === PersonEntity
 

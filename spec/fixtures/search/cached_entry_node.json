@@ -1,0 +1,45 @@
+{
+  "@id": "https://www.ammitto.org/entry/un/consolidated-list/cde002",
+  "@type": "SanctionEntry",
+  "entityId": "https://www.ammitto.org/entity/un/cde002",
+  "authority": {
+    "@id": "https://www.ammitto.org/authority/un"
+  },
+  "regime": {
+    "@id": "https://www.ammitto.org/regime/drc",
+    "name": "Democratic Republic of the Congo"
+  },
+  "legalBases": [],
+  "effects": [
+    {
+      "@type": "SanctionEffect",
+      "effectType": "asset_freeze",
+      "scope": "full"
+    },
+    {
+      "@type": "SanctionEffect",
+      "effectType": "travel_ban",
+      "scope": "full"
+    }
+  ],
+  "reasons": [],
+  "period": {
+    "@type": "TemporalPeriod",
+    "listedDate": "2007-03-29",
+    "effectiveDate": "2007-03-29",
+    "isIndefinite": true
+  },
+  "status": "active",
+  "statusHistory": [],
+  "referenceNumber": "CDe.002",
+  "remarks": "Privately-owned airline, operates out of Butembo. Since December 2008, BAL no longer holds an aircraft operating license in the DRC. INTERPOL-UN Security Council Special Notice:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Entities",
+  "rawSourceData": {
+    "@type": "RawSourceData",
+    "sourceFormat": "xml",
+    "sourceSpecificFields": {
+      "un:dataId": "6908024",
+      "un:versionNum": "1",
+      "un:entityType": "entity"
+    }
+  }
+}

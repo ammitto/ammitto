@@ -39,19 +39,19 @@ module Ammitto
           end
         end
 
-        def firms_from_json(data, _doc)
-          # Handle nested response.ZPROCSUPP structure
-          if data.is_a?(Hash) && data.key?('ZPROCSUPP')
-            data['ZPROCSUPP'].map { |item| SanctionedFirm.from_json(item) }
-          elsif data.is_a?(Array)
-            data.map { |item| SanctionedFirm.from_json(item) }
-          else
-            []
+        # lutaml-model calls a custom `from` method with the model being built
+        # and the raw value, and uses only what the method assigns.
+        def firms_from_json(model, value)
+          items = value.is_a?(Hash) ? value['ZPROCSUPP'] : value
+          model.firms = (items.is_a?(Array) ? items : []).map do |item|
+            SanctionedFirm.from_json(item.to_json)
           end
         end
 
-        def firms_to_json
-          { 'ZPROCSUPP' => firms.map(&:to_json) }
+        # The matching `to` method gets the model and the element being
+        # written, and writes the key itself.
+        def firms_to_json(model, doc)
+          doc['ZPROCSUPP'] = model.items.map { |firm| SanctionedFirm.as_json(firm) }
         end
 
         # Every fetched record this source carries.

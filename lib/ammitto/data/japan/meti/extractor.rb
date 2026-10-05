@@ -4,6 +4,7 @@ require 'mechanize'
 require 'fileutils'
 require 'tempfile'
 require_relative 'foreign_user_list'
+require_relative '../../../configuration'
 
 module Ammitto
   module Data
@@ -165,7 +166,7 @@ module Ammitto
           # Check if verbose mode is enabled
           # @return [Boolean]
           def verbose?
-            @verbose || ENV['AMMITTO_VERBOSE'] == 'true'
+            @verbose || Ammitto.configuration.verbose
           end
         end
       end

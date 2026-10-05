@@ -6,6 +6,7 @@ require 'fileutils'
 require 'json'
 require 'time'
 require 'yaml'
+require_relative '../configuration'
 require_relative '../error'
 require_relative 'json_ld_serializer'
 require_relative 'turtle_exporter'
@@ -562,7 +563,7 @@ module Ammitto
         export_stats
         copy_context_file
 
-        return unless ENV['VERBOSE']
+        return unless Ammitto.configuration.verbose
 
         puts "Exported #{@entities.length} entities, #{@entries.length} entries, " \
              "#{@instruments.length} instruments, #{@regimes.length} regimes, " \

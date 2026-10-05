@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'http_client'
+require_relative '../configuration'
 
 module Ammitto
   module Extractors
@@ -146,7 +147,7 @@ module Ammitto
       # Check if verbose mode is enabled
       # @return [Boolean]
       def verbose?
-        @verbose || ENV['AMMITTO_VERBOSE'] == 'true'
+        @verbose || Ammitto.configuration.verbose
       end
 
       # Download a binary payload to a Tempfile and hand back its path.

@@ -2,6 +2,7 @@
 
 require 'mechanize'
 require 'nokogiri'
+require_relative '../configuration'
 
 module Ammitto
   module Scrapers
@@ -98,7 +99,7 @@ module Ammitto
       # Check if verbose mode is enabled
       # @return [Boolean]
       def verbose?
-        options[:verbose] || ENV['AMMITTO_VERBOSE'] == 'true'
+        options[:verbose] || Ammitto.configuration.verbose
       end
 
       # Extract text from a node, stripping whitespace

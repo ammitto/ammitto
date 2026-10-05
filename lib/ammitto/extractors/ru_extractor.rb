@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../configuration'
 require_relative 'base_extractor'
 require_relative 'registry'
 
@@ -299,7 +300,7 @@ module Ammitto
       # Check if verbose mode is enabled
       # @return [Boolean]
       def verbose?
-        @verbose || ENV['AMMITTO_VERBOSE'] == 'true'
+        @verbose || Ammitto.configuration.verbose
       end
     end
   end

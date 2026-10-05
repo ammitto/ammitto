@@ -3,6 +3,7 @@
 require 'date'
 require 'lutaml/model'
 require_relative '../../error'
+require_relative '../../parse_failure_visibility'
 require_relative 'vessel'
 require_relative 'subject_to'
 
@@ -85,20 +86,27 @@ module Ammitto
           problem.call("has IMO number #{imo.inspect}, not seven digits") unless blank?(imo) || imo.to_s.strip.match?(/\A\d{7}\z/)
           data['imo_number'] = blank?(imo) ? nil : imo.to_s.strip
 
-          data['date_of_application'] = read_date(data['date_of_application']) ||
+          data['date_of_application'] = read_date(data['date_of_application'], field: :date_of_application) ||
                                         problem.call("has date of application #{data['date_of_application'].inspect}, not a date")
           SubjectTo.parse(data['subject_to'])
           data
         end
 
+        # A cell that holds text but not a date is reported, so the count of
+        # what the list stated and this parser could not read survives the
+        # row's refusal.
         # @param value [Object] a date cell
+        # @param field [Symbol] the attribute the value was destined for
         # @return [Date, nil] nil when the cell does not hold a date
-        def self.read_date(value)
+        def self.read_date(value, field:)
           return value if value.is_a?(Date)
           return nil if blank?(value)
 
           Date.strptime(value.to_s.strip, '%Y-%m-%d')
-        rescue ArgumentError
+        rescue ArgumentError => e
+          Ammitto::ParseFailureVisibility.report(
+            source: :eu_vessels, field: field, value: value, error: e
+          )
           nil
         end
 

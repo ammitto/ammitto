@@ -170,6 +170,71 @@ RSpec.describe Ammitto::Cmd::Fetch::CollisionAndCollapseGuard do
     end
   end
 
+  describe 'an index written by another source' do
+    # An --output-dir shared by two sources holds one _index.yaml, so its
+    # count describes whichever source harvested last.
+    it 'is not a previous harvest of this source' do
+      command = Ammitto::Cmd::FetchCommand.new(thor_options, ['uk'])
+
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, '_index.yaml'),
+                   { 'source' => 'eu', 'count' => 1000 }.to_yaml)
+        write_harvest(command, uk_records(40), dir)
+
+        expect(written_records(dir).length).to eq(40)
+      end
+    end
+
+    it 'still refuses a collapse against an index of the same source' do
+      command = Ammitto::Cmd::FetchCommand.new(thor_options, ['uk'])
+
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, '_index.yaml'),
+                   { 'source' => 'uk', 'count' => 1000 }.to_yaml)
+
+        expect { write_harvest(command, uk_records(40), dir) }
+          .to raise_error(Ammitto::ParseError, /produced 40 record\(s\) where the last one produced 1000/)
+      end
+    end
+
+    it 'still refuses an unreadable index of the same source' do
+      command = Ammitto::Cmd::FetchCommand.new(thor_options, ['uk'])
+
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, '_index.yaml'),
+                   { 'source' => 'uk', 'count' => 'lots' }.to_yaml)
+
+        expect { write_harvest(command, uk_records(3), dir) }
+          .to raise_error(Ammitto::ParseError, /no record count could be read/)
+      end
+    end
+
+    [nil, false, [], 0, '', ' '].each do |value|
+      it "refuses an index whose source is #{value.inspect}" do
+        command = Ammitto::Cmd::FetchCommand.new(thor_options, ['uk'])
+
+        Dir.mktmpdir do |dir|
+          File.write(File.join(dir, '_index.yaml'),
+                     { 'source' => value, 'count' => 1000 }.to_yaml)
+
+          expect { write_harvest(command, uk_records(40), dir) }
+            .to raise_error(Ammitto::ParseError, /no record count could be read/)
+        end
+      end
+    end
+
+    it 'treats an index with no source key as this source, as before' do
+      command = Ammitto::Cmd::FetchCommand.new(thor_options, ['uk'])
+
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, '_index.yaml'), { 'count' => 1000 }.to_yaml)
+
+        expect { write_harvest(command, uk_records(40), dir) }
+          .to raise_error(Ammitto::ParseError, /where the last one produced 1000/)
+      end
+    end
+  end
+
   describe 'writing records to disk' do
     let(:output_dir) { Dir.mktmpdir('ammitto-fetch') }
 

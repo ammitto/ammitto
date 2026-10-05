@@ -3,6 +3,8 @@
 require 'yaml'
 require 'fileutils'
 require 'json'
+require_relative '../serialization/json_ld_serializer'
+require_relative 'legacy_deprecation'
 
 module Ammitto
   module Exporter
@@ -26,6 +28,7 @@ module Ammitto
       attr_reader :base_dir, :output_dir, :serializer
 
       def initialize(base_dir: nil, output_dir: nil)
+        LegacyDeprecation.warn_once(self.class)
         @base_dir = base_dir || default_base_dir
         @output_dir = output_dir || File.join(@base_dir, 'data')
         @serializer = Ammitto::Serialization::JsonLdSerializer.new

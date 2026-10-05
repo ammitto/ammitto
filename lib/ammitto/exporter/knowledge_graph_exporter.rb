@@ -2,6 +2,8 @@
 
 require 'json'
 require 'fileutils'
+require 'time'
+require_relative '../data/knowledge_graph_loader'
 
 module Ammitto
   module Exporter

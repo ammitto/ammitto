@@ -8,6 +8,7 @@
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
 require 'ammitto'
+require 'ammitto/exporter/knowledge_graph_exporter'
 require 'ammitto/serialization/search_index_exporter'
 
 # Base directory should be the parent of the ammitto gem directory

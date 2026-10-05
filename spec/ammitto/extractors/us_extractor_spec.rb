@@ -6,6 +6,8 @@ require 'open-uri'
 require 'ammitto/extractors/us_extractor'
 
 RSpec.describe Ammitto::Extractors::UsExtractor do
+  include VerboseEnvironmentHelper
+
   # OFAC publishes the SDN list twice: the flat sdn.xml this extractor
   # reads, and SDN_ADVANCED.ZIP in a different schema. #fetch used to try
   # the flat file and fall back to the archive.
@@ -40,17 +42,16 @@ RSpec.describe Ammitto::Extractors::UsExtractor do
       expect(client).to have_received(:get).with(described_class::SDN_URL, headers: agent)
     end
 
-    # BaseExtractor#verbose? also honours AMMITTO_VERBOSE. Reading the bare
-    # `verbose` accessor instead left this source silent for an operator who
-    # had set the env var and got progress from every other extractor.
+    # BaseExtractor#verbose? reads the configuration, which honours
+    # AMMITTO_VERBOSE. Reading the bare `verbose` accessor instead left this
+    # source silent for an operator who had set the env var and got progress
+    # from every other extractor.
     it 'honours AMMITTO_VERBOSE, not just the accessor' do
       allow(client).to receive(:get).and_return('<sdnList/>')
-      original = ENV.fetch('AMMITTO_VERBOSE', nil)
-      ENV['AMMITTO_VERBOSE'] = 'true'
 
-      expect { extractor.fetch }.to output(/Downloading SDN list/).to_stdout
-    ensure
-      ENV['AMMITTO_VERBOSE'] = original
+      with_verbose_env('AMMITTO_VERBOSE' => 'true') do
+        expect { extractor.fetch }.to output(/Downloading SDN list/).to_stdout
+      end
     end
 
     context 'when the download fails' do

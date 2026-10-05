@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../../configuration'
 require_relative 'mofcom_page'
 require_relative 'mfa_page'
 
@@ -162,7 +163,7 @@ module Ammitto
         # Check if verbose mode is enabled
         # @return [Boolean]
         def verbose?
-          options[:verbose] || ENV['AMMITTO_VERBOSE'] == 'true'
+          options[:verbose] || Ammitto.configuration.verbose
         end
       end
     end

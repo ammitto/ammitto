@@ -134,6 +134,7 @@ RSpec.describe Ammitto::Config::OverrideResolver do
       provider = Ammitto::Config::EnvProvider
       names = (provider::ENV_MAPPING.values + provider::ENV_ALIASES.values)
               .map { |var| "#{provider::PREFIX}#{var}" }
+              .push(provider::LEGACY_VERBOSE)
       with_env_cleared(names) do
         with_sources_env('', '') do
           expect(provider.any_set?).to be(false)

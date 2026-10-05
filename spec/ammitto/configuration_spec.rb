@@ -6,6 +6,7 @@ RSpec.describe Ammitto::Configuration do
   provider = Ammitto::Config::EnvProvider
   env_names = (provider::ENV_MAPPING.values + provider::ENV_ALIASES.values)
               .map { |name| "#{provider::PREFIX}#{name}" }
+              .push(provider::LEGACY_VERBOSE)
 
   around do |example|
     saved = env_names.to_h { |name| [name, ENV.fetch(name, nil)] }
@@ -19,8 +20,9 @@ RSpec.describe Ammitto::Configuration do
   it 'uses the defaults when no environment variable is set' do
     config = described_class.new
 
-    expect([config.cache_dir, config.api_base_url])
-      .to eq([Ammitto::Config::Defaults::CACHE_DIR, Ammitto::Config::Defaults::API_BASE_URL])
+    expect([config.cache_dir, config.api_base_url, config.verbose])
+      .to eq([Ammitto::Config::Defaults::CACHE_DIR, Ammitto::Config::Defaults::API_BASE_URL,
+              Ammitto::Config::Defaults::VERBOSE])
   end
 
   it 'honours the documented environment variables' do

@@ -44,17 +44,25 @@ module Ammitto
       # Fallback ENV names consulted when the primary variable is unset
       ENV_ALIASES = { sources_dir: 'DATA_DIR' }.freeze
 
+      # Unprefixed variable that also enables verbose output, so a bare
+      # VERBOSE=1 works without knowing the AMMITTO_ prefix. It is consulted
+      # only when AMMITTO_VERBOSE is absent, and being set at all enables
+      # verbose, an empty value included.
+      LEGACY_VERBOSE = 'VERBOSE'
+
       class << self
         # Check if any Ammitto ENV variable carries a usable value
         #
-        # Mirrors {configuration}: variables set to an empty string are
-        # ignored there, so they do not count as set here either.
+        # Mirrors {configuration}: AMMITTO_ variables set to an empty string
+        # are ignored there, so they do not count as set here either. The
+        # legacy VERBOSE counts whenever it is present, empty included, and
+        # only while AMMITTO_VERBOSE is absent.
         #
         # @return [Boolean]
         def any_set?
           ENV_MAPPING.any? do |key, env_var|
             !env_value(env_var, ENV_ALIASES[key]).nil?
-          end
+          end || legacy_verbose?
         end
 
         # Get configuration from environment
@@ -68,11 +76,19 @@ module Ammitto
 
             config[key] = parse_value(key, value)
           end
+          config[:verbose] = true if legacy_verbose?
 
           config
         end
 
         private
+
+        # AMMITTO_VERBOSE wins whenever it is present, so an empty one keeps
+        # verbose off even when VERBOSE is set.
+        # @return [Boolean] whether the legacy VERBOSE variable applies
+        def legacy_verbose?
+          ENV.key?(LEGACY_VERBOSE) && !ENV.key?("#{PREFIX}#{ENV_MAPPING.fetch(:verbose)}")
+        end
 
         # Read an ENV variable, falling back to its alias
         # @param primary [String] primary variable name (without prefix)

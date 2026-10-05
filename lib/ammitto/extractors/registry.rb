@@ -14,6 +14,13 @@ module Ammitto
     #   extractor = Registry.get(:eu)
     #
     class Registry
+      # Where the extractor files live.
+      EXTRACTOR_DIR = __dir__
+
+      # Sources with an extractor file. Only these codes ever become a
+      # path, so a code like "../x" cannot reach a file outside the list.
+      EXTRACTORS = %i[eu un us wb uk au ca ch cn ru tr nz eu_vessels un_vessels jp].freeze
+
       # @return [Hash<Symbol, Class>] registered extractors
       @extractors = {}
 
@@ -56,56 +63,32 @@ module Ammitto
         def load_extractor(code)
           return if @extractors.key?(code.to_sym)
 
-          # Try to auto-load
-          begin
-            case code.to_sym
-            when :eu
-              require_relative 'eu_extractor'
-            when :un
-              require_relative 'un_extractor'
-            when :us
-              require_relative 'us_extractor'
-            when :wb
-              require_relative 'wb_extractor'
-            when :uk
-              require_relative 'uk_extractor'
-            when :au
-              require_relative 'au_extractor'
-            when :ca
-              require_relative 'ca_extractor'
-            when :ch
-              require_relative 'ch_extractor'
-            when :cn
-              require_relative 'cn_extractor'
-            when :ru
-              require_relative 'ru_extractor'
-            when :tr
-              require_relative 'tr_extractor'
-            when :nz
-              require_relative 'nz_extractor'
-            when :eu_vessels
-              require_relative 'eu_vessels_extractor'
-            when :un_vessels
-              require_relative 'un_vessels_extractor'
-            when :jp
-              require_relative 'jp_extractor'
-            end
-          rescue LoadError
-            # Extractor not available
-          end
+          path = extractor_path(code)
+          require path if path
         end
 
         # Check if extractor class is defined for code
         # @param code [Symbol] source code
         # @return [Boolean]
         def extractor_defined?(code)
-          extractor_name = "#{code}_extractor"
-          begin
-            require_relative extractor_name
-            true
-          rescue LoadError
-            false
-          end
+          path = extractor_path(code)
+          return false unless path
+
+          require path
+          true
+        end
+
+        # Only an absent extractor file means "no extractor": the callers
+        # require the path this returns unguarded, so a LoadError from
+        # inside a file that exists (its own require of a missing gem) is
+        # a broken extractor and surfaces instead of reading as N/A.
+        # @param code [Symbol] source code
+        # @return [String, nil] the extractor file, when it exists
+        def extractor_path(code)
+          return unless EXTRACTORS.include?(code.to_sym)
+
+          path = File.join(EXTRACTOR_DIR, "#{code}_extractor.rb")
+          path if File.file?(path)
         end
       end
     end

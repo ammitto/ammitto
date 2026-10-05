@@ -107,5 +107,13 @@ RSpec.describe Ammitto::Cmd::Fetch::SourceRegistry do
     it 'returns nil for a source with no registered extractor' do
       expect(registry.send(:extractor_class_for, :not_a_source)).to be_nil
     end
+
+    # A broken extractor file is a defect to surface, not a source that
+    # has no fetch path.
+    it 'lets a LoadError from an extractor that fails to load propagate' do
+      allow(Ammitto::Extractors::Registry).to receive(:get).and_raise(LoadError, 'cannot load such file -- missing_dep')
+
+      expect { registry.send(:extractor_class_for, :au) }.to raise_error(LoadError, /missing_dep/)
+    end
   end
 end

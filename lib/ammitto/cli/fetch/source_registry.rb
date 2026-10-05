@@ -82,8 +82,6 @@ module Ammitto
           when :jp then Ammitto::Sources::Jp::SanctionsList
           when :un_vessels then Ammitto::Sources::UnVessels::SanctionsList
           end
-        rescue LoadError
-          nil
         end
 
         # Get extractor class for source
@@ -91,8 +89,6 @@ module Ammitto
         # @return [Class, nil] extractor class
         def extractor_class_for(source)
           Ammitto::Extractors::Registry.get(source)
-        rescue LoadError
-          nil
         end
       end
     end

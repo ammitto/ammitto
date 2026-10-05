@@ -60,6 +60,39 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     end
   end
 
+  describe 'a source whose extractor fails to load' do
+    before do
+      allow(Ammitto::Extractors::Registry).to receive(:get).and_call_original
+      allow(Ammitto::Extractors::Registry).to receive(:get)
+        .with(:uk).and_raise(LoadError, 'cannot load such file -- missing_dep')
+    end
+
+    it 'fails that source and still fetches the others' do
+      cmd = described_class.new({}, %w[uk eu])
+      allow(cmd).to receive(:fetch_source).and_call_original
+      allow(cmd).to receive(:fetch_source)
+        .with(:eu).and_return({ code: :eu, status: :success, count: 3 })
+
+      expect { cmd.run }
+        .to raise_error(Thor::Error, /Fetch failed for: uk/)
+        .and output(/1 succeeded, 1 failed.*code this source needs failed to load: cannot load such file -- missing_dep/m).to_stdout
+    end
+
+    it 'prints the load error with --verbose' do
+      cmd = described_class.new({ verbose: true }, %w[uk])
+
+      expect { cmd.run }
+        .to raise_error(Thor::Error, /Fetch failed for: uk/)
+        .and output(/\[uk\] ERROR: cannot load such file -- missing_dep/).to_stdout
+    end
+
+    it 'names the load failure in a dry run instead of aborting it' do
+      cmd = described_class.new({ dry_run: true }, %w[uk])
+
+      expect { cmd.run }.to output(/uk: code this source needs failed to load: cannot load such file -- missing_dep/).to_stdout
+    end
+  end
+
   describe 'disposing of the downloaded workbook' do
     let(:extractor) { instance_double(Ammitto::Extractors::TrExtractor) }
     let(:model_class) { class_double(Ammitto::Sources::Tr::SanctionsList) }

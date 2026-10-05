@@ -2,7 +2,9 @@
 
 require 'yaml'
 require 'fileutils'
+require_relative '../ontology/types'
 require_relative '../utils/iri_sanitizer'
+require_relative '../utils/list_types_registry'
 
 module Ammitto
   module Data

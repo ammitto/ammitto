@@ -5,6 +5,7 @@ require 'fileutils'
 require 'json'
 require 'date'
 require_relative '../schema/context'
+require_relative 'legacy_deprecation'
 
 module Ammitto
   module Exporter
@@ -25,6 +26,7 @@ module Ammitto
       attr_reader :base_dir, :output_dir
 
       def initialize(base_dir: nil, output_dir: nil)
+        LegacyDeprecation.warn_once(self.class)
         @base_dir = base_dir || find_base_dir
         @output_dir = output_dir || File.join(@base_dir, 'data')
       end

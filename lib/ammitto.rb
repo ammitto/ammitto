@@ -101,7 +101,6 @@ require_relative 'ammitto/transformers/registry'
 # Exporter
 require_relative 'ammitto/exporter/simple_exporter'
 require_relative 'ammitto/exporter/json_ld_export'
-require_relative 'ammitto/exporter/knowledge_graph_exporter'
 
 # Configure Moxml to use Nokogiri adapter (when needed)
 # Moxml::Configuration.adapter = :nokogiri

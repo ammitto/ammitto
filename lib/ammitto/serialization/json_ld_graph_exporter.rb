@@ -181,7 +181,7 @@ module Ammitto
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.
-        warn "Warning: Could not load instrument #{file}: #{e.message}" if ENV['VERBOSE']
+        warn "Warning: Could not load instrument #{file}: #{e.message}"
       end
 
       # Load supporting data (document types, organizations) from every
@@ -210,10 +210,10 @@ module Ammitto
       #
       # Identifiers are source-qualified, so a clash means two repositories
       # claim one source's row — a data defect, not a merge to resolve, hence
-      # an unconditional warning rather than the VERBOSE-gated ones nearby
-      # that report unreadable files. It is deliberately not fatal: the
-      # unattended publish spans fifteen repositories, and losing the whole
-      # graph over one duplicated row is the worse outcome.
+      # an unconditional warning, like the ones nearby that report unreadable
+      # files. It is deliberately not fatal: the unattended publish spans
+      # fifteen repositories, and losing the whole graph over one duplicated
+      # row is the worse outcome.
       # @param collection [Hash] collection claiming into
       # @param key [String] identifier being claimed
       # @param value [Object] node to store
@@ -277,7 +277,7 @@ module Ammitto
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.
-        warn "Warning: Could not load document types #{file}: #{e.message}" if ENV['VERBOSE']
+        warn "Warning: Could not load document types #{file}: #{e.message}"
       end
 
       # Load organizations from YAML file
@@ -330,7 +330,7 @@ module Ammitto
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.
-        warn "Warning: Could not load organizations #{file}: #{e.message}" if ENV['VERBOSE']
+        warn "Warning: Could not load organizations #{file}: #{e.message}"
       end
 
       # Add a document type to the graph

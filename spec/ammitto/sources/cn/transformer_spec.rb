@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'ammitto/sources/cn/announcement'
 require 'ammitto/sources/cn/transformer'
 
-# Builds the announcement the parse failure examples feed the transformer.
+# Builds the announcements and modifications the examples feed the transformer.
 module CnTransformerSpecHelpers
   def announcement_with(publish_date:, effective_dates:)
     Ammitto::Sources::Cn::Announcement.from_hash(
@@ -16,6 +16,20 @@ module CnTransformerSpecHelpers
         end
       }
     )
+  end
+
+  def announce(document_id)
+    announcement = Ammitto::Sources::Cn::Announcement.from_hash(
+      'announcement' => { 'document_id' => document_id }
+    )
+    described_class.new.transform_announcement(announcement)
+  end
+
+  def modify(target_id)
+    modification = Ammitto::Sources::Cn::Modification.new(target_announcement_id: target_id)
+    described_class.new.send(:create_sanction_period_modification,
+                             modification: modification,
+                             announcement_id: 'https://www.ammitto.org/announcement/cn/abc')
   end
 end
 
@@ -131,7 +145,7 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
     end
   end
 
-  describe 'an announcement reference with an unusable document_id' do
+  describe 'an entity reference' do
     let(:entity) do
       Ammitto::Sources::Cn::Entity.new(
         name: { 'zh-Hans' => '北京ABC科技有限公司', 'en' => 'Beijing ABC' },
@@ -146,46 +160,11 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       transformer.send(:create_entity_reference, entity, announcement)
     end
 
-    # `sanitize_id` returns DEFAULT_ID for every id it cannot use, but the
-    # old `||` fallback only rejected nil. So an entity's reference
-    # depended on how its source spelled "no document id": an absent one
-    # gave "cn-", and each of these gave "unknown-".
-    it 'treats a blank document_id the same as an absent one' do
-      blank = reference_for('document_id' => '')
-
-      expect(blank).to eq(reference_for({}))
-      expect(blank).to start_with('cn-')
-    end
-
-    it 'treats a whitespace-only document_id the same as an absent one' do
-      whitespace = reference_for('document_id' => "  \t ")
-
-      expect(whitespace).to eq(reference_for({}))
-      expect(whitespace).to start_with('cn-')
-    end
-
-    # The shape this source actually produces: a document id written in
-    # Chinese leaves no ASCII behind, so the sanitizer cannot build an id
-    # from it either.
-    it 'treats a document_id that sanitizes to nothing as an absent one' do
-      cjk = reference_for('document_id' => '公告')
-
-      expect(Ammitto::Utils::IriSanitizer.sanitize('公告'))
-        .to eq(Ammitto::Utils::IriSanitizer::DEFAULT_ID)
-      expect(cjk).to eq(reference_for({}))
-      expect(cjk).to start_with('cn-')
-    end
-
-    # A source that writes the word out is spelling "no id" as well. It
-    # joins the same bucket, which separates nothing main held apart: it
-    # already sanitized to DEFAULT_ID alongside the blank and CJK cases.
-    it 'treats a literal "unknown" document_id as an absent one' do
-      literal = reference_for(
-        'document_id' => Ammitto::Utils::IriSanitizer::DEFAULT_ID
-      )
-
-      expect(literal).to eq(reference_for({}))
-      expect(literal).to start_with('cn-')
+    [nil, '', "  \t ", '公告', Ammitto::Utils::IriSanitizer::DEFAULT_ID].each do |id|
+      it "refuses a document_id of #{id.inspect} rather than share a reference" do
+        expect { reference_for('document_id' => id) }
+          .to raise_error(Ammitto::ParseError, /no usable document_id/)
+      end
     end
 
     it 'still uses a document_id the sanitizer can build an id from' do
@@ -259,6 +238,42 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       entries = transformer.transform_announcement(announcement)[:entries]
 
       expect(entries.map { |entry| entry.period.is_indefinite }).to eq([true, true])
+    end
+  end
+
+  # Every IRI an announcement or modification mints starts from a document
+  # id. One that is absent or sanitizes to the shared fallback would give
+  # every such file the same IRI, each overwriting the others in the export.
+  describe 'an id that cannot name an announcement' do
+    [nil, '', '公告', Ammitto::Utils::IriSanitizer::DEFAULT_ID].each do |id|
+      it "refuses an announcement whose document_id is #{id.inspect}" do
+        expect { announce(id) }.to raise_error(Ammitto::ParseError, /no usable document_id/)
+      end
+
+      it "refuses a modification whose target_announcement_id is #{id.inspect}" do
+        expect { modify(id) }.to raise_error(Ammitto::ParseError, /no usable target_announcement_id/)
+      end
+    end
+
+    # With no block at all, the announcement and its group would share
+    # .../announcement/cn/ and .../group/cn/ with every other such file.
+    it 'refuses an announcement with no announcement block' do
+      announcement = Ammitto::Sources::Cn::Announcement.from_hash(
+        'sanction_details' => { 'entities' => [{ 'name' => { 'en' => 'A' } }, { 'name' => { 'en' => 'B' } }] }
+      )
+
+      expect { transformer.transform_announcement(announcement) }
+        .to raise_error(Ammitto::ParseError, /no usable document_id/)
+    end
+
+    it 'still names an announcement whose document_id the sanitizer can use' do
+      expect(announce('〔2025〕7号')[:official_announcement].id)
+        .to eq('https://www.ammitto.org/announcement/cn/20257')
+    end
+
+    it 'still names a modification whose target the sanitizer can use' do
+      expect(modify('〔2025〕7号').id)
+        .to eq('https://www.ammitto.org/modification/cn/abc-20257')
     end
   end
 end

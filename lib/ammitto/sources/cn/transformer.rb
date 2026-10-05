@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../../error'
 require_relative '../../transformers/base_transformer'
 require_relative '../../official_announcement'
 require_relative '../../person_entity'
@@ -39,12 +40,6 @@ module Ammitto
         # from, and also for one that sanitizes to the sentinel itself —
         # a source that writes "unknown". Both are unusable to us.
         UNUSABLE_ID = Ammitto::Utils::IriSanitizer::DEFAULT_ID
-
-        # Reference prefix for an entity whose announcement carries no
-        # usable document id. Not a real document id, so it shares a
-        # bucket with any source id that happens to sanitize to "cn" —
-        # the same exposure `|| 'CN'` already carried.
-        NO_DOCUMENT_ID = 'CN'
 
         # Mapping of Chinese list types to regime codes and list type slugs
         LIST_TYPE_MAPPING = {
@@ -189,23 +184,8 @@ module Ammitto
           { entity: org, entry: entry }
         end
 
-        # `||` only rejected nil, but `sanitize_id` returns DEFAULT_ID for
-        # everything it cannot build an id from: blank, whitespace, and —
-        # the likely shape on a Chinese source — an id with no ASCII left
-        # after sanitizing ("公告" sanitizes to "unknown"). Those all
-        # skipped the 'CN' fallback and came back "unknown-", where an
-        # absent document_id gave "cn-", so the same entity got two
-        # references depending on how the source spelled "no id". Ask the
-        # sanitizer whether it got an id; it cannot then disagree with us.
-        #
-        # A source that writes the word "unknown" is spelling "no id" too,
-        # and it lands in this bucket with the rest. That merges nothing
-        # main kept apart: "unknown", "" and "公告" all sanitized to
-        # DEFAULT_ID already, so they shared a bucket before this change
-        # and share one after. What changes is which bucket.
         def create_entity_reference(entity, announcement)
-          doc_id = sanitize_id(announcement.announcement&.document_id)
-          doc_id = sanitize_id(NO_DOCUMENT_ID) if doc_id == UNUSABLE_ID
+          doc_id = naming_id(announcement.announcement&.document_id, :document_id)
           name_ref = entity.english_name || entity.chinese_name
           "#{doc_id}-#{sanitize_id(name_ref.to_s[0..30])}"
         end
@@ -341,12 +321,11 @@ module Ammitto
         end
 
         def create_official_announcement(announcement_block, report_failures: true)
-          return nil unless announcement_block
-
+          id = generate_announcement_id(naming_id(announcement_block&.document_id, :document_id))
           report_as = report_failures ? { source: :cn, field: :publish_date } : {}
 
           Ammitto::OfficialAnnouncement.new(
-            id: generate_announcement_id(sanitize_id(announcement_block.document_id || 'unknown')),
+            id: id,
             title: extract_announcement_title(announcement_block),
             url: announcement_block.url,
             publish_date: parse_date(announcement_block.publish_date, **report_as),
@@ -468,8 +447,24 @@ module Ammitto
 
         def generate_modification_id(announcement_id, target_id)
           local_id = announcement_id.to_s.split('/').last
-          target_ref = sanitize_id(target_id || 'unknown')
+          target_ref = naming_id(target_id, :target_announcement_id)
           "https://www.ammitto.org/modification/cn/#{local_id}-#{target_ref}"
+        end
+
+        # An IRI is minted from this id, so one that is absent or sanitizes
+        # to the shared fallback (blank, only punctuation, only Chinese
+        # script, or "unknown" itself) would give every such file the same
+        # IRI, each overwriting the others in the export.
+        # @raise [Ammitto::ParseError] when the id cannot name anything
+        def naming_id(raw_id, field)
+          id = sanitize_id(raw_id)
+          return id unless id == UNUSABLE_ID
+
+          raise Ammitto::ParseError.new(
+            "cn record has no usable #{field} (#{raw_id.inspect}), " \
+            'so it cannot be told apart from any other lacking one',
+            format: :yaml
+          )
         end
       end
     end

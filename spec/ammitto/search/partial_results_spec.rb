@@ -97,7 +97,6 @@ RSpec.describe 'a search that could not read every source' do
   # instantiate is a source we did not read, which is exactly what this
   # list is for.
   it 'records a source it could not instantiate at all' do
-    allow(Ammitto::Registry).to receive(:instance).and_call_original
     allow(Ammitto::Registry).to receive(:instance).with(:tr).and_return(nil)
 
     results = Ammitto.search('match', sources: %i[eu tr])

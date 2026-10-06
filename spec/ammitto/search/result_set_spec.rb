@@ -162,8 +162,8 @@ RSpec.describe Ammitto::Search::ResultSet do
   # "SanctionEntry" to SanctionEntry and everything else to an Entity, and
   # #to_json_ld greps the set for both classes separately. The two
   # families carry different attributes — SanctionEntry has authority and
-  # status and no entity_type, Entity has entity_type and neither of the
-  # others — so every filter on this class meets members that cannot
+  # status and no entity_type, Entity has entity_type and an authority
+  # derived from its IRI but no status — so every filter on this class meets members that cannot
   # answer it.
   #
   # #by_authority and #by_status were written for that and skip a member
@@ -248,9 +248,9 @@ RSpec.describe Ammitto::Search::ResultSet do
                authority: set.by_authority(:tr).to_a,
                status: set.by_status(:active).to_a })
         .to eq(entity_types: %w[person organization],
-               authorities: [],
+               authorities: %w[tr],
                person: [person],
-               authority: [],
+               authority: [person, organization],
                status: [entry])
     end
   end
@@ -278,6 +278,60 @@ RSpec.describe Ammitto::Search::ResultSet do
       expect(results.to_a.map(&:class))
         .to eq([Ammitto::PersonEntity, Ammitto::SanctionEntry])
       expect(results.entity_types).to eq(['person'])
+    end
+  end
+
+  describe 'a SanctionEntry whose authority is unset' do
+    it 'contributes no authority, whether nil or lutaml\'s uninitialized value' do
+      entry = Ammitto::SanctionEntry.new(id: 'https://www.ammitto.org/entry/tr/9')
+      allow(entry).to receive(:authority).and_return(Lutaml::Model::UninitializedClass.instance)
+
+      expect(described_class.new([entry]).authorities).to eq([])
+    end
+  end
+
+  describe '#by_authority argument' do
+    let(:set) do
+      described_class.new([{ '@id' => 'https://www.ammitto.org/entity/un/2', 'entityType' => 'person' }])
+    end
+
+    ['un', 'UN', :un, 'https://www.ammitto.org/authority/un',
+     'https://www.ammitto.org/authority/un/'].each do |arg|
+      it "matches on #{arg.inspect}" do
+        expect(set.by_authority(arg).size).to eq(1)
+      end
+    end
+
+    it 'matches nothing for a value that names no authority' do
+      expect([set.by_authority('').size, set.by_authority('https://example.org/x').size]).to eq([0, 0])
+    end
+  end
+
+  describe 'authority of entity results' do
+    let(:nodes) do
+      [
+        { '@id' => 'https://www.ammitto.org/entity/un_vessels/1', '@type' => 'VesselEntity',
+          'entityType' => 'vessel' },
+        { '@id' => 'https://www.ammitto.org/entity/un/2', '@type' => 'PersonEntity',
+          'entityType' => 'person' }
+      ]
+    end
+
+    it 'lists the authorities of entities' do
+      expect(described_class.new(nodes).authorities).to eq(%w[un_vessels un])
+    end
+
+    it 'filters entities by authority' do
+      expect(described_class.new(nodes).by_authority(:un).map(&:id))
+        .to eq(['https://www.ammitto.org/entity/un/2'])
+    end
+
+    it 'takes the explicit authority from whichever spelling names one' do
+      node = { '@id' => 'https://www.ammitto.org/entity/un/3', '@type' => 'PersonEntity' }
+      [{ 'authority' => '', authority: 'EU' }, { authority: {}, 'authority' => 'EU' },
+       { 'authority' => nil, authority: 'EU' }].each do |extra|
+        expect(described_class.new([node.merge(extra)]).authorities).to eq(['eu'])
+      end
     end
   end
 end

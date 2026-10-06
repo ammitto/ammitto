@@ -93,10 +93,10 @@ module Ammitto
       #
       # Guarded the way #by_authority and #by_status are, because a set
       # holds whatever the search returned: SanctionEntry has no
-      # entity_type, Entity has neither authority nor status, and any of
-      # the three filters can be handed a set containing both. An entry
-      # simply is not an entity of the requested type, so it drops out —
-      # the same answer #by_authority gives an Entity.
+      # entity_type, Entity has no status, and any of the three filters
+      # can be handed a set containing both. An entry simply is not an
+      # entity of the requested type, so it drops out — the same answer
+      # #by_status gives an Entity.
       #
       # @param type [Symbol, String] the entity type
       # @return [ResultSet] filtered results
@@ -112,9 +112,11 @@ module Ammitto
       # @param code [Symbol, String] the authority code
       # @return [ResultSet] filtered results
       def by_authority(code)
-        filtered = entries.select do |e|
-          e.respond_to?(:authority) && e.authority&.id == code.to_s
-        end
+        # The argument is read the way stored codes are, so the code, the
+        # authority IRI and a different case all name the same authority; one
+        # that names none matches nothing (not the members with no authority).
+        wanted = Authority.code_from(code.to_s)
+        filtered = wanted ? entries.select { |e| authority_code(e) == wanted } : []
         ResultSet.new(filtered, term: term, total_count: total_count,
                                 skipped_sources: skipped_sources)
       end
@@ -145,8 +147,7 @@ module Ammitto
       # Get unique authorities in results
       # @return [Array<String>]
       def authorities
-        entries.map { |e| e.respond_to?(:authority) ? e.authority&.id : nil }
-               .uniq.compact
+        entries.map { |e| authority_code(e) }.uniq.compact
       end
 
       # Convert to JSON-LD format
@@ -166,6 +167,21 @@ module Ammitto
       end
 
       private
+
+      # An entry's Authority#id can hold the full authority IRI (the wire
+      # '@id' becomes id) while an Entity answers a bare code, so both are
+      # reduced to the one code. A member with no authority contributes
+      # nothing.
+      # @param member [SanctionEntry, Entity, Object]
+      # @return [String, nil]
+      def authority_code(member)
+        return nil unless member.respond_to?(:authority)
+
+        authority = member.authority
+        return nil if authority.nil? || Lutaml::Model::Utils.uninitialized?(authority)
+
+        Authority.code_from(authority.respond_to?(:id) ? authority.id : authority)
+      end
 
       # Normalize entries to objects
       # @param entries [Array] the raw entries
@@ -206,19 +222,19 @@ module Ammitto
       end
 
       def build_person(hash)
-        PersonEntity.new(normalize_model_hash(hash))
+        build_entity_model(PersonEntity, hash)
       end
 
       def build_organization(hash)
-        OrganizationEntity.new(normalize_model_hash(hash))
+        build_entity_model(OrganizationEntity, hash)
       end
 
       def build_vessel(hash)
-        VesselEntity.new(normalize_model_hash(hash))
+        build_entity_model(VesselEntity, hash)
       end
 
       def build_aircraft(hash)
-        AircraftEntity.new(normalize_model_hash(hash))
+        build_entity_model(AircraftEntity, hash)
       end
 
       def build_sanction_entry(hash)
@@ -226,7 +242,26 @@ module Ammitto
       end
 
       def build_entity(hash)
-        Entity.new(normalize_model_hash(hash))
+        build_entity_model(Entity, hash)
+      end
+
+      # The authority a node names is read from the input before the
+      # recursive normalisation (which would reshape it) and handed to the
+      # entity, which answers it as a code. A value that names no authority
+      # is ignored. Entity serialization is unaffected.
+      # @param klass [Class] the Entity class to build
+      # @param hash [Hash]
+      # @return [Entity]
+      def build_entity_model(klass, hash)
+        attrs = normalize_model_hash(hash)
+        attrs.delete(:authority)
+        entity = klass.new(attrs)
+        # Either spelling may be present; the first value that names an
+        # authority wins, so a nil or blank under one cannot hide a valid
+        # value under the other.
+        raw = hash.values_at('authority', :authority).find { |v| Authority.code_from(v) }
+        entity.explicit_authority = raw if raw
+        entity
       end
 
       # Recursively convert a JSON-LD hash (camelCase, @id/@type keywords)

@@ -125,7 +125,8 @@ module Ammitto
     def search(term, options = {})
       query = Search::QueryBuilder.new(term, options).build
       entries = query.execute
-      Search::ResultSet.new(entries, skipped_sources: query.skipped_sources)
+      Search::ResultSet.new(entries, term: query.term,
+                                     skipped_sources: query.skipped_sources)
     end
 
     # Refresh the local cache

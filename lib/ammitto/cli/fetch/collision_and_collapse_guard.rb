@@ -98,15 +98,22 @@ module Ammitto
           raise Ammitto::ParseError, collapse_message(source, count, previous)
         end
 
-        # The count the last harvest into this directory recorded, or nil
-        # when there has not been one.
+        # The count the last harvest of this source into this directory
+        # recorded, or nil when there has not been one.
         #
-        # Only absence returns nil. `_index.yaml` is missing on a first
-        # harvest and after a directory is cleared by hand, and neither is a
-        # reason to refuse. An index that is present and cannot be read is:
-        # treating that as "no previous harvest" would let a corrupt file
-        # switch this gate off without saying so, which is the shape of
-        # failure the gate exists to catch.
+        # Absence returns nil, and so does an index naming another source:
+        # a directory shared by two sources holds one `_index.yaml`, so its
+        # count belongs to whichever harvested last and says nothing about
+        # this one. An index with no `source` key predates the field and is
+        # taken as this source's, which is what it was before the field
+        # existed.
+        #
+        # `_index.yaml` is missing on a first harvest and after a directory
+        # is cleared by hand, and neither is a reason to refuse. An index
+        # that is present and cannot be read is: treating that as "no
+        # previous harvest" would let a corrupt file switch this gate off
+        # without saying so, which is the shape of failure the gate exists
+        # to catch. Its source cannot be told, so it is refused too.
         #
         # @param source [Symbol] source code
         # @param output_dir [String] directory to read the index from
@@ -116,23 +123,37 @@ module Ammitto
           path = File.join(output_dir, '_index.yaml')
           return nil unless File.exist?(path)
 
-          count = index_count(path)
+          document = index_document(path)
+          return nil if another_sources_index?(document, source, path)
+
+          count = document.is_a?(Hash) ? document['count'] : nil
           return count if count.is_a?(Integer) && !count.negative?
 
           raise Ammitto::ParseError, unreadable_index_message(source, path)
         end
 
-        # @param path [String] the index file
-        # @return [Object, nil] whatever `count` holds, or nil if unreadable
-        def index_count(path)
-          document = YAML.safe_load_file(path)
-          # A document that parses but is not a mapping — a bare list, a
-          # number, `false` — has no key to read. Checked rather than
-          # rescued: rescuing the TypeError it would raise would also
-          # swallow a programming error here.
-          return nil unless document.is_a?(Hash)
+        # A `source` key that is present but not a non-blank string, null
+        # included, names no source, so the index is as unreadable as one
+        # without a count. Only an absent key means a legacy index.
+        #
+        # @param document [Object, nil] what `index_document` returned
+        # @param source [Symbol] source code
+        # @param path [String] the index file, for the error message
+        # @return [Boolean] whether the index names a different source
+        # @raise [Ammitto::ParseError] when `source` is not a non-blank string
+        def another_sources_index?(document, source, path)
+          return false unless document.is_a?(Hash) && document.key?('source')
 
-          document['count']
+          recorded = document['source']
+          raise Ammitto::ParseError, unreadable_index_message(source, path) unless recorded.is_a?(String) && !recorded.strip.empty?
+
+          recorded != source.to_s
+        end
+
+        # @param path [String] the index file
+        # @return [Object, nil] the parsed document, or nil if unreadable
+        def index_document(path)
+          YAML.safe_load_file(path)
         rescue Psych::Exception, SystemCallError, IOError
           nil
         end

@@ -27,6 +27,14 @@ module Ammitto
         url = "#{base_url}/sources/#{source_code}.jsonld"
         response = get(url)
 
+        if response.status == 404
+          raise SourceDataNotFoundError.new(
+            "No #{source_code} data is published at #{url} (HTTP 404)",
+            status_code: 404,
+            url: url
+          )
+        end
+
         unless response.success?
           raise NetworkError.new(
             "Failed to fetch #{source_code} data",

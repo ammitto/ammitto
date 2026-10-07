@@ -79,6 +79,15 @@ module Ammitto
     end
   end
 
+  # Error raised when the API answers 404 for a source's data: the source
+  # is not published there. It is a NetworkError so that a search skips the
+  # source and records it, as it does for any other download failure.
+  #
+  # @example
+  #   raise Ammitto::SourceDataNotFoundError.new("No ru data is published at https://...", status_code: 404)
+  #
+  class SourceDataNotFoundError < NetworkError; end
+
   # Error raised for cache-related failures
   #
   # @example

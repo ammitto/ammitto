@@ -152,6 +152,14 @@ module Ammitto
         )
       end
 
+      if response.status == 404
+        raise SourceDataNotFoundError.new(
+          "No #{code} data is published at #{api_endpoint} (HTTP 404)",
+          status_code: 404,
+          url: api_endpoint
+        )
+      end
+
       unless response.success?
         raise NetworkError.new(
           "Failed to download #{code} data",

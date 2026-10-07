@@ -405,3 +405,9 @@ rescue Ammitto::ParseError => e
   puts "Parse error: #{e.message}"
 end
 ----
+
+A source the API does not publish answers HTTP 404 when its data is
+downloaded, which raises `Ammitto::SourceDataNotFoundError`, a `NetworkError`.
+A search skips that source and lists it in `skipped_sources`; loading the
+source directly, or `ApiClient#fetch_source`, raises the error. The 404 is not
+remembered: the next load that needs the data asks the API again.

@@ -114,7 +114,8 @@ module Ammitto
           result = transformer.transform_announcement(announcement)
 
           # Export SanctionGroup if present
-          @exporter.add_group(result[:group], source: :cn) if result[:group]
+          @exporter.add_group(result[:group], source: :cn) if
+            result[:group] && !collecting_iri_candidates?
 
           # Return array of entity/entry pairs
           result[:entities].zip(result[:entries]).map do |entity, entry|

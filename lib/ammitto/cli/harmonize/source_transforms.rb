@@ -46,6 +46,9 @@ module Ammitto
           transformer = Ammitto::Transformers::Registry.get(source)
           return { entity: nil, entry: nil } unless transformer
 
+          transformer.iri_collision_registry = @iri_collision_registry if
+            transformer.class.method_defined?(:iri_collision_registry=)
+
           # Transform based on source
           case source
           when :uk

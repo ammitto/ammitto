@@ -3,6 +3,7 @@
 require_relative '../error'
 
 require 'date' # FIXED_SIZE_TYPES references Date at load time
+require 'digest'
 
 module Ammitto
   module Utils
@@ -54,6 +55,14 @@ module Ammitto
 
       # Maximum length for a sanitized identifier
       MAX_ID_LENGTH = 64
+
+      require_relative 'iri_collision_registry'
+      require_relative 'iri_collision_sanitizer'
+
+      extend CollisionAware
+
+      # Hex characters of the digest appended to a colliding cut id
+      DIGEST_LENGTH = 8
 
       # Default identifier when sanitization results in empty string.
       # Only non-identifying IRI components (source codes, list types,
@@ -242,11 +251,15 @@ module Ammitto
         # @return [String] sanitized identifier
         # @raise [MissingLocalIdError] when the id is nil/empty or
         #   sanitizes to an empty string
-        def sanitize_local_id!(local_id, source:, kind:)
+        def sanitize_local_id!(local_id, source:, kind:, list_type: nil,
+                               collision_registry: nil)
           text = local_id.nil? ? '' : local_id.to_s
-          sanitized =
-            text.strip.empty? ? '' : apply_sanitization_rules(text)
-          return sanitized unless sanitized.empty?
+          sanitized = text.strip.empty? ? '' : normalize(text)
+          unless sanitized.empty?
+            return identifier_for(sanitized, kind: kind, source: source,
+                                             list_type: list_type,
+                                             collision_registry: collision_registry)
+          end
 
           raise MissingLocalIdError.new(source: source, kind: kind,
                                         value: local_id)
@@ -267,8 +280,9 @@ module Ammitto
         #   entity_iri("cn", "mitsubishi-heavy-industries")
         #   # => "https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries"
         #
-        def entity_iri(source, local_id)
-          id = sanitize_local_id!(local_id, source: source, kind: 'entity')
+        def entity_iri(source, local_id, collision_registry: nil)
+          id = sanitize_local_id!(local_id, source: source, kind: 'entity',
+                                            collision_registry: collision_registry)
           "#{BASE_URI}/entity/#{sanitize(source)}/#{id}"
         end
 
@@ -321,7 +335,10 @@ module Ammitto
         # @return [String] slug, stable under a second pass
         #
         def regime_slug(code)
-          sanitize(code).sub(/-\z/, '')
+          id = normalize(code)
+          return DEFAULT_ID if id.empty?
+
+          truncate_id(id).sub(/-\z/, '')
         end
 
         # Generate an entry IRI (LIST-SPECIFIC).
@@ -343,8 +360,10 @@ module Ammitto
         #   entry_iri("cn", "unreliable-entity-list", "mitsubishi-heavy-industries")
         #   # => "https://www.ammitto.org/entry/cn/unreliable-entity-list/mitsubishi-heavy-industries"
         #
-        def entry_iri(source, list_type, local_id)
-          id = sanitize_local_id!(local_id, source: source, kind: 'entry')
+        def entry_iri(source, list_type, local_id, collision_registry: nil)
+          id = sanitize_local_id!(local_id, source: source, kind: 'entry',
+                                            list_type: list_type,
+                                            collision_registry: collision_registry)
           "#{BASE_URI}/entry/#{sanitize(source)}/#{sanitize(list_type)}/#{id}"
         end
 
@@ -362,9 +381,10 @@ module Ammitto
         #   announcement_iri("cn", "mofcom-2026-11")
         #   # => "https://www.ammitto.org/announcement/cn/mofcom-2026-11"
         #
-        def announcement_iri(source, local_id)
+        def announcement_iri(source, local_id, collision_registry: nil)
           id = sanitize_local_id!(local_id, source: source,
-                                            kind: 'announcement')
+                                            kind: 'announcement',
+                                            collision_registry: collision_registry)
           "#{BASE_URI}/announcement/#{sanitize(source)}/#{id}"
         end
 
@@ -382,9 +402,10 @@ module Ammitto
         #   legal_instrument_iri("cn", "export-control-law")
         #   # => "https://www.ammitto.org/legal_instrument/cn/export-control-law"
         #
-        def legal_instrument_iri(source, local_id)
+        def legal_instrument_iri(source, local_id, collision_registry: nil)
           id = sanitize_local_id!(local_id, source: source,
-                                            kind: 'legal_instrument')
+                                            kind: 'legal_instrument',
+                                            collision_registry: collision_registry)
           "#{BASE_URI}/legal_instrument/#{sanitize(source)}/#{id}"
         end
 
@@ -576,13 +597,7 @@ module Ammitto
         # @param str [Object] the string to sanitize
         # @return [String] sanitized identifier, possibly empty
         def apply_sanitization_rules(str)
-          str.to_s
-             .gsub(/\s+/, '-') # Replace whitespace with hyphens
-             .gsub(/[^a-zA-Z0-9\-_]/, '') # Remove non-alphanumeric/hyphen/underscore chars
-             .gsub(/--+/, '-')           # Collapse multiple hyphens
-             .gsub(/^-|-$/, '')          # Remove leading/trailing hyphens
-             .downcase                   # Lowercase
-             .slice(0, MAX_ID_LENGTH)    # Truncate
+          truncate_id(normalize(str))
         end
       end
     end

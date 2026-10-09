@@ -541,6 +541,130 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
     end
   end
 
+  context 'with collision-aware candidate transforms' do
+    include_context 'with parse failure log capture'
+
+    let(:sources_dir) { Dir.mktmpdir('ammitto_collision_sources') }
+    let(:output_dir) { Dir.mktmpdir('ammitto_collision_output') }
+    let(:options) { { sources_dir: sources_dir, output_dir: output_dir } }
+    let(:command) { described_class.new(options, ['tr']) }
+    let(:shared_prefix) { 'x' * 64 }
+
+    after { FileUtils.rm_rf(output_dir) }
+
+    def write_tr_yaml(basename, reference_number, listed_date: '2024-01-01')
+      dir = File.join(sources_dir, 'data-tr', 'processed')
+      FileUtils.mkdir_p(dir)
+      File.write(
+        File.join(dir, basename),
+        {
+          'name' => reference_number,
+          'entity_type' => 'organization',
+          'program' => 'Law No. 7262, Articles 3.A/3.B',
+          'listed_date' => listed_date,
+          'reference_number' => reference_number
+        }.to_yaml
+      )
+    end
+
+    def graph_from(output)
+      JSON.parse(File.read(File.join(output, 'sources', 'tr.jsonld')))['@graph']
+    end
+
+    def entity_iris_by_name(graph)
+      graph.filter_map do |node|
+        name = node.dig('names', 0, 'fullName')
+        [name, node['@id']] if name
+      end.to_h
+    end
+
+    it 'does not digest a surviving record because a failed candidate registered its id' do
+      bad_id = "#{shared_prefix}-bad"
+      good_id = "#{shared_prefix}-good"
+      Ammitto.configure { |config| config.parse_failure_mode = :raise }
+      write_tr_yaml('bad.yml', bad_id, listed_date: 'not a date')
+      write_tr_yaml('good.yml', good_id)
+
+      expect { command.run }.to raise_error(Thor::Error)
+
+      good = graph_from(output_dir).find do |node|
+        node.dig('names', 0, 'fullName') == good_id
+      end
+      expect(good['@id']).to end_with("/entity/tr/#{'x' * 64}")
+    end
+
+    it 'reports one warning and one parse failure after the final transform pass' do
+      bad_id = "#{shared_prefix}-bad"
+      good_id = "#{shared_prefix}-good"
+      Ammitto.configure { |config| config.parse_failure_mode = :warn }
+      write_tr_yaml('bad.yml', bad_id, listed_date: 'not a date')
+      write_tr_yaml('good.yml', good_id)
+      captured = nil
+      allow(command).to receive(:enforce_health_gates)
+        .and_wrap_original do |original, results|
+          captured = results
+          original.call(results)
+        end
+
+      command.run
+
+      expect(io.string.scan('Parse failure in tr.listed_date').length).to eq(1)
+      expect(captured.first[:parse_failures]).to eq(1)
+    end
+
+    it 'reports a raised parse failure once although its record leaves before the final pass' do
+      bad_id = "#{shared_prefix}-bad"
+      good_id = "#{shared_prefix}-good"
+      Ammitto.configure { |config| config.parse_failure_mode = :raise }
+      write_tr_yaml('bad.yml', bad_id, listed_date: 'not a date')
+      write_tr_yaml('good.yml', good_id)
+      captured = nil
+      allow(command).to receive(:enforce_health_gates)
+        .and_wrap_original do |original, results|
+          captured = results
+          original.call(results)
+        end
+
+      expect { command.run }.to raise_error(Thor::Error)
+
+      expect(io.string.scan('Parse failure in tr.listed_date').length).to eq(1)
+      expect(captured.first[:parse_failures]).to eq(1)
+    end
+
+    it 'keeps command output independent of which colliding file is first' do
+      first_id = "#{shared_prefix}-first"
+      second_id = "#{shared_prefix}-second"
+      forward = run_tr_order(first_id, second_id)
+      reverse = run_tr_order(second_id, first_id)
+
+      expect(entity_iris_by_name(forward)).to eq(entity_iris_by_name(reverse))
+      expect(entity_iris_by_name(forward).size).to eq(2)
+    end
+
+    private
+
+    def run_tr_order(first_id, second_id)
+      root = Dir.mktmpdir('ammitto_order_sources')
+      input = File.join(root, 'data-tr', 'processed')
+      output = File.join(root, 'output')
+      FileUtils.mkdir_p(input)
+      [first_id, second_id].each_with_index do |id, index|
+        File.write(File.join(input, "#{('a'.ord + index).chr}.yml"), {
+          'name' => id,
+          'entity_type' => 'organization',
+          'program' => 'Law No. 7262, Articles 3.A/3.B',
+          'listed_date' => '2024-01-01',
+          'reference_number' => id
+        }.to_yaml)
+      end
+
+      described_class.new({ sources_dir: root, output_dir: output }, ['tr']).run
+      graph_from(output)
+    ensure
+      FileUtils.rm_rf(root) if root
+    end
+  end
+
   # Health-gate behaviour for the same command, scoped here rather than
   # split into a second top-level describe. Needs its own output tree.
   context 'with health gates over a harmonized run' do

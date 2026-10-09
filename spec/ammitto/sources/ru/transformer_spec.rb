@@ -42,6 +42,34 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
     end
   end
 
+  describe '#transform_announcement under a collision registry' do
+    def announcement_citing(instrument_id)
+      Ammitto::Sources::Ru::Announcement.from_hash(
+        'announcement' => { 'document_id' => '1-01-01-2025' },
+        'sanction_details' => {
+          'instruments' => [{ 'id' => instrument_id }],
+          'entities' => [{ 'name' => { 'en' => 'Someone' }, 'type' => 'individual' }]
+        }
+      )
+    end
+
+    it 'digests long legal instrument ids that would collide at the cut' do
+      announcements = %w[first second].map do |suffix|
+        announcement_citing("ru/#{'federal-law-' * 6}#{suffix}")
+      end
+      registry = Ammitto::Utils::IriSanitizer::CollisionRegistry.new
+      transformer.iri_collision_registry = registry
+      announcements.each { |a| transformer.transform_announcement(a) }
+      registry.finalize!
+
+      ids = announcements.map do |a|
+        transformer.transform_announcement(a)[:legal_citations].first.legal_instrument_id
+      end
+
+      expect(ids.uniq.size).to eq(2)
+    end
+  end
+
   describe '#authority' do
     it 'returns RU authority' do
       auth = transformer.send(:authority)

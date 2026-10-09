@@ -35,6 +35,7 @@ module Ammitto
       include BirthInfo
 
       attr_reader :source_code, :list_type
+      attr_writer :iri_collision_registry
 
       # Initialize with source code and optional list type
       # @param source_code [Symbol] the source identifier (e.g., :uk, :eu)
@@ -73,7 +74,10 @@ module Ammitto
       #   # => "https://www.ammitto.org/entity/cn/mitsubishi-heavy-industries"
       #
       def generate_entity_id(local_id)
-        Utils::IriSanitizer.entity_iri(source_code.to_s, local_id)
+        Utils::IriSanitizer.entity_iri(
+          source_code.to_s, local_id,
+          collision_registry: @iri_collision_registry
+        )
       end
 
       # Generate a unique entry ID (LIST-SPECIFIC).
@@ -91,7 +95,10 @@ module Ammitto
       #
       def generate_entry_id(local_id, entry_list_type: nil)
         effective_list_type = entry_list_type || list_type || default_list_type
-        Utils::IriSanitizer.entry_iri(source_code.to_s, effective_list_type, local_id)
+        Utils::IriSanitizer.entry_iri(
+          source_code.to_s, effective_list_type, local_id,
+          collision_registry: @iri_collision_registry
+        )
       end
 
       # Generate a list type IRI.
@@ -112,7 +119,10 @@ module Ammitto
       #   is blank or sanitizes to nothing
       #
       def generate_announcement_id(local_id)
-        Utils::IriSanitizer.announcement_iri(source_code.to_s, local_id)
+        Utils::IriSanitizer.announcement_iri(
+          source_code.to_s, local_id,
+          collision_registry: @iri_collision_registry
+        )
       end
 
       # Generate a legal instrument ID (LIST-AGNOSTIC).
@@ -123,7 +133,10 @@ module Ammitto
       #   is blank or sanitizes to nothing
       #
       def generate_legal_instrument_id(local_id)
-        Utils::IriSanitizer.legal_instrument_iri(source_code.to_s, local_id)
+        Utils::IriSanitizer.legal_instrument_iri(
+          source_code.to_s, local_id,
+          collision_registry: @iri_collision_registry
+        )
       end
 
       # Get the default list type for this source.

@@ -36,7 +36,8 @@ module Ammitto
           announcement = Ammitto::Sources::Ru::Announcement.from_hash(data)
           result = transformer.transform_announcement(announcement)
 
-          @exporter.add_group(result[:group], source: :ru) if result[:group]
+          @exporter.add_group(result[:group], source: :ru) if
+            result[:group] && !collecting_iri_candidates?
 
           result[:entities].zip(result[:entries]).map do |entity, entry|
             {

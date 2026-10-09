@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'date'
+
 require_relative 'authority'
 require_relative 'sanction_regime'
 require_relative 'list_type'
@@ -11,6 +13,7 @@ require_relative 'legal_instrument'
 require_relative 'official_announcement'
 require_relative 'raw_source_data'
 require_relative 'ontology/value_objects/legal_citation'
+require_relative 'ontology/sanction/sanction_period_modification'
 
 module Ammitto
   # SanctionEntry represents a single sanction entry
@@ -45,6 +48,7 @@ module Ammitto
     attribute :period, TemporalPeriod             # Time period
     attribute :status, :string, default: 'active' # Current status
     attribute :status_history, StatusChange, collection: true
+    attribute :modifications, Ontology::Sanction::SanctionPeriodModification, collection: true
     attribute :reference_number, :string          # Authority's ID
     attribute :remarks, :string                   # Additional remarks
     attribute :announcement, OfficialAnnouncement # Official announcement
@@ -64,6 +68,7 @@ module Ammitto
       map 'period', to: :period
       map 'status', to: :status
       map 'statusHistory', to: :status_history
+      map 'modifications', to: :modifications
       map 'referenceNumber', to: :reference_number
       map 'remarks', to: :remarks
       map 'announcement', to: :announcement
@@ -129,6 +134,34 @@ module Ammitto
     # @return [StatusChange, nil] the most recent status change
     def latest_status_change
       status_history.max_by(&:date)
+    end
+
+    # Keep historical status queries separate so current published status is not mutated.
+    # @param date [Date, String, Time]
+    # @return [String]
+    def status_as_of(date)
+      as_of = Date.parse(date.to_s)
+      changes = Array(status_history).sort_by { |change| Date.parse(change.date.to_s) }
+      # With no recorded history the current status is all there is to go on.
+      return status || 'active' if changes.empty?
+
+      # Before its first recorded change an entry was in force: the current
+      # status describes the end of the history, not its start.
+      status = changes.first&.from_status || 'active'
+
+      changes.each do |change|
+        change_date = Date.parse(change.date.to_s)
+        break if change_date > as_of
+
+        return 'terminated' if change.termination?
+
+        status = change.to_status
+        next unless change.suspension? && change.suspension_end_date
+
+        status = 'active' if as_of > change.suspension_end_date
+      end
+
+      status
     end
 
     # Add a status change to history

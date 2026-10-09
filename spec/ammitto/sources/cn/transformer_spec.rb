@@ -288,6 +288,26 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
         .to eq('https://www.ammitto.org/announcement/cn/20257')
     end
 
+    it 'counts no affected parties as 0 when the source names none' do
+      modification = Ammitto::Sources::Cn::Modification.new(target_announcement_id: '〔2025〕7号')
+      result = described_class.new.send(:create_sanction_period_modification,
+                                        modification: modification,
+                                        announcement_id: 'https://www.ammitto.org/announcement/cn/abc')
+
+      expect(result.affected_entity_count).to eq(0)
+    end
+
+    it 'carries the names of the affected parties' do
+      modification = Ammitto::Sources::Cn::Modification.new(
+        target_announcement_id: '〔2025〕7号', affected_entity_names: %w[Skydio PVH]
+      )
+      result = described_class.new.send(:create_sanction_period_modification,
+                                        modification: modification,
+                                        announcement_id: 'https://www.ammitto.org/announcement/cn/abc')
+
+      expect([result.affected_entity_names, result.affected_entity_count]).to eq([%w[Skydio PVH], 2])
+    end
+
     it 'still names a modification whose target the sanitizer can use' do
       expect(modify('〔2025〕7号').id)
         .to eq('https://www.ammitto.org/modification/cn/abc-20257')

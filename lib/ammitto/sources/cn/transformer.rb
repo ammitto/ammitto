@@ -131,6 +131,7 @@ module Ammitto
             create_sanction_period_modification(
               modification: mod,
               announcement_id: official_ann&.id,
+              announcement: official_ann,
               legal_citations: legal_citations
             )
           end
@@ -468,13 +469,17 @@ module Ammitto
           "https://www.ammitto.org/group/cn/#{local_id}"
         end
 
-        def create_sanction_period_modification(modification:, announcement_id:, legal_citations: [])
+        def create_sanction_period_modification(modification:, announcement_id:, announcement: nil,
+                                                legal_citations: [])
           mod_id = generate_modification_id(announcement_id, modification.target_announcement_id)
 
           Ammitto::Ontology::Sanction::SanctionPeriodModification.new(
             id: mod_id,
             target_type: 'announcement',
-            target_announcement_id: modification.target_announcement_id,
+            target_announcement_id: generate_announcement_id(
+              naming_id(modification.target_announcement_id, :target_announcement_id)
+            ),
+            target_announcement_document_id: modification.target_announcement_id,
             target_announcement_date: parse_date(modification.target_announcement_date,
                                                  source: :cn, field: :target_announcement_date),
             action: modification.action,
@@ -482,12 +487,32 @@ module Ammitto
             effective_time: modification.effective_time,
             until_date: parse_date(modification.until_date, source: :cn, field: :until_date),
             until_time: modification.until_time,
-            duration_days: modification.duration_days,
-            announcement_id: announcement_id,
+            announcement: embedded_announcement(announcement),
+            affected_entity_count: modification.affected_entity_count,
+            affected_entity_names: modification.affected_entity_names,
             legal_citations: legal_citations,
-            notes: modification.notes,
-            status: 'active'
+            notes: modification.notes
           )
+        end
+
+        def embedded_announcement(announcement)
+          return nil unless announcement
+
+          {
+            'id' => announcement.id,
+            'title' => announcement.title,
+            'url' => announcement.url,
+            'publish_date' => announcement.publish_date,
+            'publish_time' => announcement.publish_time,
+            'document_type' => announcement.document_type,
+            'document_id' => announcement.document_id,
+            'signatory' => announcement.signatory,
+            'signatory_title' => announcement.signatory_title,
+            'publisher' => announcement.publisher,
+            'authority' => announcement.authority,
+            'content' => announcement.content,
+            'language' => announcement.language
+          }.compact
         end
 
         def generate_modification_id(announcement_id, target_id)

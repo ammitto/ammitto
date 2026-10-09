@@ -273,6 +273,7 @@ module Ammitto
 
               # SanctionPeriodModification properties
               'targetAnnouncementId' => { '@id' => 'targetAnnouncementId', '@type' => '@id' },
+              'targetAnnouncementDocumentId' => { '@id' => 'targetAnnouncementDocumentId' },
               'targetAnnouncementDate' => { '@id' => 'targetAnnouncementDate', '@type' => 'xsd:date' },
               'affectedEntityCount' => { '@id' => 'affectedEntityCount', '@type' => 'xsd:integer' },
               'affectedEntityNames' => { '@id' => 'affectedEntityName', '@container' => '@set' },

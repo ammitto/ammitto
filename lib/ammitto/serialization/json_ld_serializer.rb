@@ -51,6 +51,7 @@ module Ammitto
           'period' => serialize_period(entry.period),
           'status' => entry.status,
           'statusHistory' => serialize_status_history(entry.status_history),
+          'modifications' => serialize_modifications(entry.modifications),
           'referenceNumber' => entry.reference_number,
           'remarks' => entry.remarks,
           'groupId' => entry.group_id,
@@ -105,6 +106,15 @@ module Ammitto
       def to_json(data)
         JSON.pretty_generate(data)
       end
+
+      # JSON-LD term => attribute name for an announcement embedded as a hash.
+      EMBEDDED_ANNOUNCEMENT_FIELDS = {
+        'title' => 'title', 'url' => 'url', 'publishDate' => 'publish_date',
+        'publishTime' => 'publish_time', 'author' => 'author', 'authorDate' => 'author_date',
+        'documentType' => 'document_type', 'documentId' => 'document_id', 'signatory' => 'signatory',
+        'signatoryTitle' => 'signatory_title', 'publisher' => 'publisher', 'authority' => 'authority',
+        'content' => 'content', 'language' => 'language'
+      }.freeze
 
       private
 
@@ -473,6 +483,56 @@ module Ammitto
             'suspensionEndDate' => change.suspension_end_date
           }.compact
         end
+      end
+
+      def serialize_modifications(modifications)
+        return nil unless modifications.is_a?(Array)
+
+        nodes = modifications.filter_map { |modification| serialize_modification(modification) }
+        nodes.empty? ? nil : nodes
+      end
+
+      def serialize_modification(modification)
+        {
+          '@id' => modification.id,
+          '@type' => 'SanctionPeriodModification',
+          'targetType' => modification.target_type,
+          'targetId' => presence(modification.target_id),
+          'targetAnnouncementId' => modification.target_announcement_id,
+          'targetAnnouncementDocumentId' => modification.target_announcement_document_id,
+          'targetAnnouncementDate' => modification.target_announcement_date,
+          'action' => modification.action,
+          'effectiveDate' => modification.effective_date,
+          'effectiveTime' => modification.effective_time,
+          'untilDate' => modification.until_date,
+          'untilTime' => modification.until_time,
+          'announcement' => serialize_embedded_announcement(modification.announcement),
+          'affectedEntityCount' => modification.affected_entity_count,
+          'affectedEntityNames' => presence(modification.affected_entity_names),
+          'legalCitations' => serialize_legal_citations(modification.legal_citations),
+          'notes' => modification.notes
+        }.compact
+      end
+
+      def serialize_embedded_announcement(announcement)
+        return nil unless announcement
+
+        return serialize_announcement(announcement) unless announcement.is_a?(Hash)
+
+        node = { '@type' => 'OfficialAnnouncement', '@id' => embedded_value(announcement, '@id', 'id') }
+        EMBEDDED_ANNOUNCEMENT_FIELDS.each do |term, snake|
+          node[term] = embedded_value(announcement, term, snake)
+        end
+        node.compact
+      end
+
+      # A hash may arrive with JSON-LD terms or attribute names, as strings
+      # or symbols, depending on whether it was parsed or built in Ruby.
+      def embedded_value(hash, term, snake)
+        [term, term.to_sym, snake, snake.to_sym].each do |key|
+          return hash[key] unless hash[key].nil?
+        end
+        nil
       end
 
       def serialize_notice_reference(ref)

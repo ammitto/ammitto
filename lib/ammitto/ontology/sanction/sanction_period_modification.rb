@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
-require_relative '../value_objects/localized_string'
 require_relative '../value_objects/legal_citation'
 
 module Ammitto
@@ -13,29 +12,25 @@ module Ammitto
       # such as suspensions, resumptions, terminations, amendments, or extensions.
       # It provides a structured way to track the history of changes.
       #
-      # @example Creating a 90-day suspension
+      # @example Creating a suspension
       #   mod = SanctionPeriodModification.new(
       #     id: "https://www.ammitto.org/modification/cn/2025-001",
-      #     target_type: "entry",
-      #     target_id: "https://www.ammitto.org/entry/cn/uel-2024-015",
+      #     target_type: "announcement",
       #     target_announcement_id: "https://www.ammitto.org/announcement/cn/2024-015",
+      #     target_announcement_document_id: "〔2025〕7号",
       #     target_announcement_date: Date.new(2024, 12, 15),
-      #     action: "suspend",
       #     effective_date: Date.new(2025, 1, 1),
       #     until_date: Date.new(2025, 4, 1),
-      #     duration_days: 90,
-      #     duration_description: "90天",
-      #     announcement_id: "https://www.ammitto.org/announcement/cn/2025-001",
-      #     status: "active"
+      #     action: "suspend",
+      #     notes: "暂停相关措施90天"
       #   )
       #
       # @example Creating a delisting (stop action)
       #   mod = SanctionPeriodModification.new(
-      #     target_type: "entry",
-      #     target_id: "https://www.ammitto.org/entry/cn/uel-2024-020",
+      #     target_type: "announcement",
       #     action: "stop",
       #     effective_date: Date.new(2025, 2, 15),
-      #     announcement_id: "https://www.ammitto.org/announcement/cn/2025-015"
+      #     announcement: { 'id' => 'https://www.ammitto.org/announcement/cn/2025-015' }
       #   )
       #
       class SanctionPeriodModification < Lutaml::Model::Serializable
@@ -47,13 +42,17 @@ module Ammitto
         # @return [String, nil]
         attribute :target_type, :string
 
-        # IRI of the target being modified
-        # @return [String, nil]
-        attribute :target_id, :string
+        # IRIs of affected sanction entries
+        # @return [Array<String>, nil]
+        attribute :target_id, :string, collection: true
 
         # Announcement that originally created the target
         # @return [String, nil]
         attribute :target_announcement_id, :string
+
+        # Source document number, retained separately from its minted IRI
+        # @return [String, nil]
+        attribute :target_announcement_document_id, :string
 
         # Date of the original announcement
         # @return [Date, nil]
@@ -87,33 +86,18 @@ module Ammitto
         # @return [String, nil]
         attribute :until_time, :string
 
-        # Duration in days
-        # @return [Integer, nil]
-        attribute :duration_days, :integer
-
-        # Duration description in original language (e.g., "90天", "1年")
-        # @return [String, nil]
-        attribute :duration_description, :string
-
-        # Announcement that triggered this modification
-        # @return [String, nil]
-        attribute :announcement_id, :string
+        # Announcement that triggered this modification. A hash keeps this
+        # model independent from OfficialAnnouncement's reverse reference.
+        # @return [Hash, nil]
+        attribute :announcement, :hash
 
         # Legal citations for this modification
         # @return [Array<LegalCitation>, nil]
         attribute :legal_citations, ValueObjects::LegalCitation, collection: true
 
-        # Reason for the modification (multilingual)
-        # @return [Array<LocalizedString>, nil]
-        attribute :reason, ValueObjects::LocalizedString, collection: true
-
         # Additional notes
         # @return [String, nil]
         attribute :notes, :string
-
-        # Current status (active, expired, superseded)
-        # @return [String]
-        attribute :status, :string, default: 'active'
 
         # Check if this is a suspension
         # @return [Boolean]
@@ -125,21 +109,6 @@ module Ammitto
         # @return [Boolean]
         def delisting?
           action == 'stop'
-        end
-
-        # Check if modification is active
-        # @return [Boolean]
-        def active?
-          status == 'active'
-        end
-
-        # Check if suspension has expired
-        # @return [Boolean]
-        def expired?
-          return false unless suspension?
-          return false unless until_date
-
-          until_date < Date.today
         end
 
         # Get the effective datetime
@@ -171,6 +140,7 @@ module Ammitto
           map :target_type, to: :target_type
           map :target_id, to: :target_id
           map :target_announcement_id, to: :target_announcement_id
+          map :target_announcement_document_id, to: :target_announcement_document_id
           map :target_announcement_date, to: :target_announcement_date
           map :affected_entity_count, to: :affected_entity_count
           map :affected_entity_names, to: :affected_entity_names
@@ -179,13 +149,28 @@ module Ammitto
           map :effective_time, to: :effective_time
           map :until_date, to: :until_date
           map :until_time, to: :until_time
-          map :duration_days, to: :duration_days
-          map :duration_description, to: :duration_description
-          map :announcement_id, to: :announcement_id
+          map :announcement, to: :announcement
           map :legal_citations, to: :legal_citations
-          map :reason, to: :reason
           map :notes, to: :notes
-          map :status, to: :status
+        end
+
+        json do
+          map 'id', to: :id
+          map 'targetType', to: :target_type
+          map 'targetId', to: :target_id
+          map 'targetAnnouncementId', to: :target_announcement_id
+          map 'targetAnnouncementDocumentId', to: :target_announcement_document_id
+          map 'targetAnnouncementDate', to: :target_announcement_date
+          map 'action', to: :action
+          map 'effectiveDate', to: :effective_date
+          map 'effectiveTime', to: :effective_time
+          map 'untilDate', to: :until_date
+          map 'untilTime', to: :until_time
+          map 'announcement', to: :announcement
+          map 'affectedEntityCount', to: :affected_entity_count
+          map 'affectedEntityNames', to: :affected_entity_names
+          map 'legalCitations', to: :legal_citations
+          map 'notes', to: :notes
         end
       end
     end

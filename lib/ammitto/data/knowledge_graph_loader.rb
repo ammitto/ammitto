@@ -260,15 +260,28 @@ module Ammitto
       # @return [Hash] Harmonized data structure
       #
       def to_harmonized
+        # Register every entity and entry record's id before minting any, so ids
+        # that share a truncated prefix get the same digest IRIs harmonize gives
+        # them. An entry's entity_id is a reference, not a record: it is minted
+        # against the entity records' decision, as harmonize does.
+        @iri_collision_registry = Utils::IriSanitizer::CollisionRegistry.new
+        entities = load_entities
+        entries = load_entries
+        entities.each { |entity| entity_iri(entity['id']) }
+        entries.each { |entry| entry_iri(entry['list_type'], entry['id']) }
+        @iri_collision_registry.finalize!
+
         {
           source: source_code,
           index: load_index,
-          entities: load_entities.map { |e| harmonize_entity(e) },
-          entries: load_entries.map { |e| harmonize_entry(e) },
+          entities: entities.map { |e| harmonize_entity(e) },
+          entries: entries.map { |e| harmonize_entry(e) },
           announcements: load_announcements.map { |a| harmonize_announcement(a) },
           legal_instruments: load_legal_instruments.map { |li| harmonize_legal_instrument(li) },
           lists: load_lists.map { |l| harmonize_list(l) }
         }
+      ensure
+        @iri_collision_registry = nil
       end
 
       # Generate an entity IRI (LIST-AGNOSTIC).
@@ -279,7 +292,8 @@ module Ammitto
       #   is blank or sanitizes to nothing
       #
       def entity_iri(local_id)
-        Utils::IriSanitizer.entity_iri(source_code, local_id)
+        Utils::IriSanitizer.entity_iri(source_code, local_id,
+                                       collision_registry: @iri_collision_registry)
       end
 
       # Generate an entry IRI (LIST-SPECIFIC).
@@ -291,7 +305,8 @@ module Ammitto
       #   is blank or sanitizes to nothing
       #
       def entry_iri(list_type, local_id)
-        Utils::IriSanitizer.entry_iri(source_code, list_type, local_id)
+        Utils::IriSanitizer.entry_iri(source_code, list_type, local_id,
+                                      collision_registry: @iri_collision_registry)
       end
 
       # Generate an announcement IRI (LIST-AGNOSTIC).

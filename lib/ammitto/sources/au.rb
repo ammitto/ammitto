@@ -19,7 +19,8 @@ require 'lutaml/model'
 #
 # The Australian sanctions ontology consists of these core concepts:
 #
-# 1. Entity - The sanctioned party (Individual, Organization, or Vessel)
+# 1. Entity - The sanctioned party (Individual, Organization, or Vessel;
+#    any other Type is kept as a GenericEntity with the Type as written)
 # 2. Name - Name variants with script and type information
 # 3. Sanction - The sanctions imposed (effects, regime, legal basis)
 # 4. Legal Instrument - The law/regulation authorizing the sanction
@@ -73,7 +74,7 @@ require 'lutaml/model'
 # - Name model: name.rb
 # - Sanction model: sanction.rb
 # - Entity base class: base_entity.rb
-# - Entities: individual.rb, organization.rb, vessel.rb
+# - Entities: individual.rb, organization.rb, vessel.rb, generic_entity.rb
 # - Collection: sanctions_list.rb
 #
 # @example Loading AU data

@@ -31,6 +31,33 @@ RSpec.describe Ammitto::Cmd::Harmonize::SourceTransforms do
     command.send(:transform_data, command.sources.fetch(0), record)
   end
 
+  context 'with an AU generic entity record' do
+    let(:source_code) { :au }
+
+    let(:record) do
+      {
+        'reference' => '9000',
+        'entity_type' => 'Ship Owner',
+        'names' => [{ 'text' => 'SHIP OWNER', 'name_type' => 'Primary Name' }],
+        'address' => 'Port Louis, Mauritius',
+        'imo_number' => '9271951',
+        'sanction' => { 'control_date' => '6/18/25' }
+      }
+    end
+
+    it 'serializes it as a base Entity with the source Type unchanged' do
+      result = harmonize(record)
+
+      expect(result[:entity]['@type']).to eq('Entity')
+      expect(result[:entity]['entityType']).to eq('Ship Owner')
+      expect(result[:entity]['names'].first['fullName']).to eq('SHIP OWNER')
+      expect(result[:entry]['rawSourceData']['sourceSpecificFields']).to include(
+        'au:type' => 'Ship Owner',
+        'au:address' => 'Port Louis, Mauritius'
+      )
+    end
+  end
+
   describe '#transform_jp with an announcement that carries no ids' do
     include HarmonizeSourcesDir
 

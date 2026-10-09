@@ -286,5 +286,65 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
         expect(result[:entity].names.size).to eq(2)
       end
     end
+
+    context 'when transforming a generic entity' do
+      let(:generic_entity) do
+        Ammitto::Sources::Au::GenericEntity.new(
+          reference: '9000',
+          entity_type: 'Ship Owner',
+          names: [
+            Ammitto::Sources::Au::Name.new(
+              text: 'SHIP OWNER',
+              name_type: Ammitto::Sources::Au::NameType::PRIMARY,
+              script: 'Latn'
+            )
+          ],
+          address: 'Port Louis, Mauritius',
+          additional_info: 'Role',
+          sanction: Ammitto::Sources::Au::Sanction.new(
+            committees: 'Autonomous (Vessels)',
+            control_date: '6/18/25',
+            instrument: 'Instrument',
+            targeted_financial_sanction: true
+          )
+        )
+      end
+
+      subject(:result) { transformer.transform(generic_entity) }
+
+      it 'returns the base Entity with the source Type unchanged' do
+        expect(result[:entity]).to be_a(Ammitto::Entity)
+        expect(result[:entity].class).to eq(Ammitto::Entity)
+        expect(result[:entity].entity_type).to eq('Ship Owner')
+        expect(result[:entity].names.first.full_name).to eq('SHIP OWNER')
+      end
+
+      it 'adds the sanction entry and preserves generic address fields' do
+        entity = result[:entity]
+        entry = result[:entry]
+
+        expect(entity.sanction_entry_ids).to eq([entry.id])
+        expect(entry.raw_source_data.source_specific_fields).to include(
+          'au:type' => 'Ship Owner',
+          'au:address' => 'Port Louis, Mauritius'
+        )
+      end
+    end
+
+    describe '#transform_from_hash' do
+      it 'routes an unknown entity_type to GenericEntity before shape checks' do
+        result = transformer.transform_from_hash(
+          'reference' => '9000',
+          'entity_type' => 'Ship Owner',
+          'names' => [{ 'text' => 'SHIP OWNER', 'name_type' => 'Primary Name' }],
+          'address' => 'Port Louis, Mauritius',
+          'imo_number' => '9271951',
+          'sanction' => { 'control_date' => '6/18/25' }
+        )
+
+        expect(result[:entity].entity_type).to eq('Ship Owner')
+        expect(result[:entity].class).to eq(Ammitto::Entity)
+      end
+    end
   end
 end

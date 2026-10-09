@@ -4,8 +4,8 @@ require 'spec_helper'
 
 # Every model file must stand up on its own.
 #
-# `sanctions_list.rb` held all fourteen definitions: five enumeration
-# modules, seven models, a base class and the collection. Splitting turns
+# `sanctions_list.rb` held all definitions: enumeration modules, model
+# classes, a base class and the collection. Splitting turns
 # "these share a file, so they are always loaded together" into a require
 # graph, and a graph can have a missing edge.
 #
@@ -29,7 +29,7 @@ require 'spec_helper'
 RSpec.describe 'Ammitto::Sources::Au model files' do
   include IsolatedLoadHelper
 
-  # Named exclusions rather than a grep for a superclass. Three of these
+  # Named exclusions rather than a grep for a superclass. Four of these
   # models subclass `BaseEntity` rather than Lutaml directly, and five are
   # plain modules with no superclass at all, so any grep keyed on `Lutaml`
   # would drop them silently. Naming what is NOT a model fails loudly when
@@ -42,7 +42,7 @@ RSpec.describe 'Ammitto::Sources::Au model files' do
           .sort
 
   it 'covers every definition in the directory' do
-    expect(files.length).to eq(14)
+    expect(files.length).to eq(15)
   end
 
   files.each do |name|

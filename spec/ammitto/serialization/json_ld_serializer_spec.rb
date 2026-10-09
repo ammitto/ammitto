@@ -58,6 +58,43 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
   end
 
   describe '#serialize_entry' do
+    it 'emits modification nodes with their source and affected entry references' do
+      modification = Ammitto::Ontology::Sanction::SanctionPeriodModification.new(
+        id: 'https://www.ammitto.org/modification/cn/20250514-20257',
+        target_type: 'announcement',
+        target_id: [entry_iri],
+        target_announcement_id: 'https://www.ammitto.org/announcement/cn/20257',
+        target_announcement_document_id: '〔2025〕7号',
+        action: 'suspend',
+        effective_date: Date.new(2025, 5, 14),
+        until_date: Date.new(2025, 8, 12),
+        announcement: { 'id' => 'https://www.ammitto.org/announcement/cn/202505142200' },
+        affected_entity_count: 1,
+        notes: '暂停相关措施90天'
+      )
+
+      node = serializer.serialize_entry(build_entry(modifications: [modification]))
+      mod = node['modifications'].first
+
+      expect(mod).to include(
+        '@id' => modification.id,
+        '@type' => 'SanctionPeriodModification',
+        'targetType' => 'announcement',
+        'targetId' => [entry_iri],
+        'targetAnnouncementId' => 'https://www.ammitto.org/announcement/cn/20257',
+        'targetAnnouncementDocumentId' => '〔2025〕7号',
+        'effectiveDate' => Date.new(2025, 5, 14),
+        'untilDate' => Date.new(2025, 8, 12),
+        'affectedEntityCount' => 1,
+        'notes' => '暂停相关措施90天'
+      )
+      expect(mod['announcement']).to include(
+        '@type' => 'OfficialAnnouncement',
+        '@id' => 'https://www.ammitto.org/announcement/cn/202505142200'
+      )
+      expect(mod).not_to have_key('status')
+    end
+
     it 'emits groupId' do
       group_iri = 'https://www.ammitto.org/group/cn/2026-1'
       entry = build_entry(group_id: group_iri)
@@ -145,6 +182,17 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
 
   # A field that is not serialized is a field the website never sees,
   # however faithfully the models carry it.
+  describe 'an announcement embedded in a modification as a hash' do
+    it 'keeps every field whether keyed by JSON-LD term or attribute name, string or symbol' do
+      built = { id: 'a', publish_date: '2025-11-05', authority: 'MOFCOM', content: 'C' }
+      parsed = { '@id' => 'a', 'publishDate' => '2025-11-05', 'authority' => 'MOFCOM', 'content' => 'C' }
+
+      expect(serializer.send(:serialize_embedded_announcement, built))
+        .to eq(serializer.send(:serialize_embedded_announcement, parsed))
+        .and include('@id' => 'a', 'publishDate' => '2025-11-05', 'authority' => 'MOFCOM', 'content' => 'C')
+    end
+  end
+
   describe 'birth date and year ranges' do
     def birth_node(**attrs)
       entity = build_entity(birth_info: [Ammitto::BirthInfo.new(**attrs)])
@@ -231,6 +279,12 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
 
   describe 'the generated JSON-LD context' do
     let(:terms) { Ammitto::Schema::Context.context['@context'] }
+
+    it 'declares the raw CN target announcement document number' do
+      expect(terms['targetAnnouncementDocumentId']).to eq(
+        '@id' => 'targetAnnouncementDocumentId'
+      )
+    end
 
     it 'declares both bounds as gYear, so a consumer can type them' do
       expect(terms['yearRangeFrom'])

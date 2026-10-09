@@ -2,6 +2,7 @@
 
 require_relative '../../error'
 require_relative '../../transformers/base_transformer'
+require_relative '../../logger'
 require_relative '../../official_announcement'
 require_relative '../../person_entity'
 require_relative '../../organization_entity'
@@ -83,8 +84,9 @@ module Ammitto
           entities = []
           entries = []
 
+          references = announcement_references(announcement)
           announcement.entities.each do |entity|
-            result = transform_entity(entity, announcement, legal_citations)
+            result = transform_entity(entity, announcement, legal_citations, references.fetch(entity))
             entities << result[:entity]
             entries << result[:entry]
           end
@@ -143,18 +145,17 @@ module Ammitto
         private
 
         # Transform a single Entity from the YAML format
-        def transform_entity(entity, announcement, legal_citations)
+        def transform_entity(entity, announcement, legal_citations, ref)
           if entity.person?
-            transform_person_entity(entity, announcement, legal_citations)
+            transform_person_entity(entity, announcement, legal_citations, ref)
           else
-            transform_org_entity(entity, announcement, legal_citations)
+            transform_org_entity(entity, announcement, legal_citations, ref)
           end
         end
 
-        def transform_person_entity(entity, announcement, legal_citations)
-          ref = create_entity_reference(entity, announcement)
+        def transform_person_entity(entity, announcement, legal_citations, ref)
           entity_id = generate_entity_id(ref)
-          entry = create_entry(entity, announcement, entity_id, legal_citations)
+          entry = create_entry(entity, announcement, entity_id, legal_citations, ref)
 
           person = Ammitto::PersonEntity.new(
             id: entity_id,
@@ -168,10 +169,9 @@ module Ammitto
           { entity: person, entry: entry }
         end
 
-        def transform_org_entity(entity, announcement, legal_citations)
-          ref = create_entity_reference(entity, announcement)
+        def transform_org_entity(entity, announcement, legal_citations, ref)
           entity_id = generate_entity_id(ref)
-          entry = create_entry(entity, announcement, entity_id, legal_citations)
+          entry = create_entry(entity, announcement, entity_id, legal_citations, ref)
 
           org = Ammitto::OrganizationEntity.new(
             id: entity_id,
@@ -184,10 +184,58 @@ module Ammitto
           { entity: org, entry: entry }
         end
 
-        def create_entity_reference(entity, announcement)
+        def cut_reference(doc_id, name)
+          "#{doc_id}-#{sanitize_id(name[0..30])}"
+        end
+
+        # The readable part of a reference is the name cut at 31 characters,
+        # so two long names sharing that prefix in one announcement would
+        # meet on one IRI and the exporter would keep only one of them.
+        # Parties whose cut references clash take their full name instead;
+        # if any two parties still share a reference after that, nothing in
+        # the source tells them apart, so each takes a number in notice
+        # order and a warning names them for a human to check. Computed once
+        # per transform_announcement and passed down, so it holds no state
+        # between announcements.
+        def announcement_references(announcement)
           doc_id = naming_id(announcement.announcement&.document_id, :document_id)
-          name_ref = entity.english_name || entity.chinese_name
-          "#{doc_id}-#{sanitize_id(name_ref.to_s[0..30])}"
+          names = announcement.entities.map { |e| (e.english_name || e.chinese_name).to_s }
+          refs = names.map { |name| cut_reference(doc_id, name) }
+          clashing = refs.each_index.group_by { |i| sanitize_id(refs[i]) }.values.select { |g| g.size > 1 }.flatten
+          clashing.each { |i| refs[i] = "#{doc_id}-#{sanitize_id(names[i])}" }
+          number_identical_references(announcement, names, refs)
+
+          references = {}.compare_by_identity
+          announcement.entities.each_with_index { |e, i| references[e] = refs[i] }
+          references
+        end
+
+        def number_identical_references(announcement, names, refs)
+          groups = refs.each_index.group_by { |i| sanitize_id(refs[i]) }
+          taken = groups.select { |_, group| group.size == 1 }.keys
+          groups.each_value do |group|
+            next if group.size == 1
+
+            base = refs[group.first]
+            number = 0
+            group.each do |i|
+              number += 1
+              number += 1 while taken.include?(numbered_reference(base, number))
+              refs[i] = numbered_reference(base, number)
+              taken << refs[i]
+            end
+            Ammitto::Logger.warn(
+              "#{announcement.announcement&.document_id}: parties share one id even after taking full names, " \
+              "numbered in notice order: #{group.map { |i| names[i] }.join(' / ')}"
+            )
+          end
+        end
+
+        # The suffix replaces the tail rather than following it, because the
+        # sanitizer cuts ids at MAX_ID_LENGTH and would drop it.
+        def numbered_reference(base, number)
+          suffix = "-#{number}"
+          sanitize_id("#{sanitize_id(base)[0, Ammitto::Utils::IriSanitizer::MAX_ID_LENGTH - suffix.length]}#{suffix}")
         end
 
         def transform_names(entity)
@@ -212,7 +260,7 @@ module Ammitto
           names
         end
 
-        def create_entry(entity, announcement, entity_id, legal_citations)
+        def create_entry(entity, announcement, entity_id, legal_citations, ref)
           list_info = LIST_TYPE_MAPPING[entity.list_type_code] || {
             code: entity.list_type_code.to_s.upcase,
             name: entity.sanction_list,
@@ -221,10 +269,7 @@ module Ammitto
           }
 
           Ammitto::SanctionEntry.new(
-            id: generate_entry_id(
-              create_entity_reference(entity, announcement),
-              entry_list_type: list_info[:list_slug]
-            ),
+            id: generate_entry_id(ref, entry_list_type: list_info[:list_slug]),
             entity_id: entity_id,
             authority: authority,
             regime: create_regime(code: list_info[:code], name: list_info[:name]),
@@ -232,7 +277,7 @@ module Ammitto
             reasons: transform_reasons(entity.reason),
             period: create_temporal_period(entity),
             status: 'active',
-            reference_number: create_entity_reference(entity, announcement),
+            reference_number: ref,
             # transform_announcement already built and reported this block;
             # reporting it again per entry would count one bad cell many times.
             announcement: create_official_announcement(announcement.announcement, report_failures: false),

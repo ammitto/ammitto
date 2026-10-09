@@ -6,6 +6,22 @@ require 'ammitto/sources/cn/transformer'
 
 # Builds the announcements and modifications the examples feed the transformer.
 module CnTransformerSpecHelpers
+  def listing(names, document_id: '2026年第11号')
+    Ammitto::Sources::Cn::Announcement.from_hash(
+      'announcement' => { 'document_id' => document_id },
+      'sanction_details' => {
+        'entities' => names.map do |name|
+          { 'name' => { 'en' => name }, 'type' => 'organization',
+            'effective_date' => '2026-02-24', 'sanction_list' => 'cn/export-control-list' }
+        end
+      }
+    )
+  end
+
+  def entity_ids(names)
+    described_class.new.transform_announcement(listing(names))[:entities].map(&:id)
+  end
+
   def announcement_with(publish_date:, effective_dates:)
     Ammitto::Sources::Cn::Announcement.from_hash(
       'announcement' => { 'document_id' => 'mofcom-2026-02', 'publish_date' => publish_date },
@@ -157,7 +173,8 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
       announcement = Ammitto::Sources::Cn::Announcement.from_hash(
         'announcement' => announcement_fields
       )
-      transformer.send(:create_entity_reference, entity, announcement)
+      announcement.sanction_details = Ammitto::Sources::Cn::SanctionDetails.new(entities: [entity])
+      transformer.send(:announcement_references, announcement).fetch(entity)
     end
 
     [nil, '', "  \t ", '公告', Ammitto::Utils::IriSanitizer::DEFAULT_ID].each do |id|
@@ -274,6 +291,85 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
     it 'still names a modification whose target the sanitizer can use' do
       expect(modify('〔2025〕7号').id)
         .to eq('https://www.ammitto.org/modification/cn/abc-20257')
+    end
+  end
+
+  describe 'parties whose cut names clash in one announcement' do
+    # Real party names from data-cn import-export-control-list/202611.yml
+    let(:marine) { 'Mitsubishi Heavy Industries Marine Machinery & Equipment Co., Ltd.' }
+    let(:maritime) { 'Mitsubishi Heavy Industries Maritime Systems, Ltd.' }
+    let(:base) { 'https://www.ammitto.org/entity/cn/202611-' }
+
+    it 'keeps the cut-name id when nothing clashes' do
+      expect(entity_ids([marine, 'Short Co'])).to eq(["#{base}mitsubishi-heavy-industries-mar", "#{base}short-co"])
+    end
+
+    it 'gives each clashing party its full-name id' do
+      expect(entity_ids([marine, maritime, 'Short Co'])).to eq(
+        ["#{base}mitsubishi-heavy-industries-marine-machinery-equipment-co",
+         "#{base}mitsubishi-heavy-industries-maritime-systems-ltd", "#{base}short-co"]
+      )
+    end
+
+    it 'gives the same ids whatever the listing order' do
+      expect(entity_ids([maritime, marine]).sort).to eq(entity_ids([marine, maritime]).sort)
+    end
+
+    it 'numbers the parties in notice order when full names still clash, and warns' do
+      allow(Ammitto::Logger).to receive(:warn)
+
+      expect(entity_ids([marine, 'Short Co', marine])).to eq(
+        ["#{base}mitsubishi-heavy-industries-marine-machinery-equipment-1", "#{base}short-co",
+         "#{base}mitsubishi-heavy-industries-marine-machinery-equipment-2"]
+      )
+      expect(Ammitto::Logger).to have_received(:warn).once
+                                                     .with(/2026年第11号: parties share one id even after taking full names, .*#{Regexp.escape(marine)}/)
+    end
+
+    it 'gives a numbered party\'s entry the same reference as its entity' do
+      allow(Ammitto::Logger).to receive(:warn)
+      result = described_class.new.transform_announcement(listing([marine, marine]))
+      refs = result[:entities].map { |e| e.id.split('/').last }
+
+      expect(result[:entries].map { |e| e.id.split('/').last }).to eq(refs)
+      expect(result[:entries].map(&:reference_number)).to eq(refs)
+    end
+
+    it 'numbers a full-name id that meets another party\'s cut id' do
+      allow(Ammitto::Logger).to receive(:warn)
+      prefix = "Foo#{'.' * 28}"
+
+      expect(entity_ids(["#{prefix}-X", "#{prefix}-Y", 'Foo-X'])).to eq(
+        ["#{base}foo-x-1", "#{base}foo-y", "#{base}foo-x-2"]
+      )
+    end
+
+    it 'skips a number another party already holds' do
+      allow(Ammitto::Logger).to receive(:warn)
+
+      expect(entity_ids(['Short Co', 'Short Co-1', 'Short Co'])).to eq(
+        ["#{base}short-co-2", "#{base}short-co-1", "#{base}short-co-3"]
+      )
+    end
+
+    it 'keeps the number when the full-name reference fills the 64-character id' do
+      # 40 + '-' + 23 shared characters is exactly 64: the references first
+      # differ at character 65, the first one the sanitizer cuts away.
+      allow(Ammitto::Logger).to receive(:warn)
+      long_doc = 'a' * 40
+      names = ["#{'b' * 23}x", "#{'b' * 23}y"]
+      ids = described_class.new.transform_announcement(listing(names, document_id: long_doc))[:entities].map(&:id)
+
+      expect(ids.map { |id| id.split('/').last }).to eq(
+        ["#{'a' * 40}-#{'b' * 21}-1", "#{'a' * 40}-#{'b' * 21}-2"]
+      )
+    end
+
+    it 'does not warn when full names resolve the clash' do
+      allow(Ammitto::Logger).to receive(:warn)
+      entity_ids([marine, maritime])
+
+      expect(Ammitto::Logger).not_to have_received(:warn)
     end
   end
 end

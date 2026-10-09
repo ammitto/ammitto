@@ -269,6 +269,10 @@ module Ammitto
         entries = load_entries
         entities.each { |entity| entity_iri(entity['id']) }
         entries.each { |entry| entry_iri(entry['list_type'], entry['id']) }
+        announcements = load_announcements
+        legal_instruments = load_legal_instruments
+        lists = load_lists
+        register_announcement_and_instrument_iris(announcements, legal_instruments, entries + lists)
         @iri_collision_registry.finalize!
 
         {
@@ -276,9 +280,9 @@ module Ammitto
           index: load_index,
           entities: entities.map { |e| harmonize_entity(e) },
           entries: entries.map { |e| harmonize_entry(e) },
-          announcements: load_announcements.map { |a| harmonize_announcement(a) },
-          legal_instruments: load_legal_instruments.map { |li| harmonize_legal_instrument(li) },
-          lists: load_lists.map { |l| harmonize_list(l) }
+          announcements: announcements.map { |a| harmonize_announcement(a) },
+          legal_instruments: legal_instruments.map { |li| harmonize_legal_instrument(li) },
+          lists: lists.map { |l| harmonize_list(l) }
         }
       ensure
         @iri_collision_registry = nil
@@ -317,7 +321,8 @@ module Ammitto
       #   is blank or sanitizes to nothing
       #
       def announcement_iri(local_id)
-        Utils::IriSanitizer.announcement_iri(source_code, local_id)
+        Utils::IriSanitizer.announcement_iri(source_code, local_id,
+                                             collision_registry: @iri_collision_registry)
       end
 
       # Generate a legal instrument IRI (LIST-AGNOSTIC).
@@ -328,7 +333,8 @@ module Ammitto
       #   is blank or sanitizes to nothing
       #
       def legal_instrument_iri(local_id)
-        Utils::IriSanitizer.legal_instrument_iri(source_code, local_id)
+        Utils::IriSanitizer.legal_instrument_iri(source_code, local_id,
+                                                 collision_registry: @iri_collision_registry)
       end
 
       # Generate a list IRI.
@@ -341,6 +347,18 @@ module Ammitto
       end
 
       private
+
+      # Harmonize mints announcement and legal instrument IRIs from the records
+      # that cite them, so every id this loader will emit, cited or stored, must
+      # be in the collision decision, even one cited without its own file.
+      def register_announcement_and_instrument_iris(announcements, legal_instruments, citing_records)
+        announcements.each { |announcement| announcement_iri(announcement['id']) }
+        legal_instruments.each { |instrument| legal_instrument_iri(instrument['id']) }
+        citing_records.each do |record|
+          announcement_iri(record['announcement_id']) if record['announcement_id']
+          (record['legal_instrument_ids'] || []).each { |li_id| legal_instrument_iri(li_id) }
+        end
+      end
 
       def detect_source_code
         # First, check index file

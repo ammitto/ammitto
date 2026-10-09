@@ -51,7 +51,7 @@ Metrics/ClassLength:
 Metrics/CyclomaticComplexity:
   Max: 47
 
-# Offense count: 8
+# Offense count: 7
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
   Exclude:
@@ -60,7 +60,6 @@ Metrics/MethodLength:
     - 'lib/ammitto/schema/context.rb'
     - 'lib/ammitto/serialization/json_ld_graph_exporter.rb'
     - 'lib/ammitto/serialization/neo4j_exporter.rb'
-    - 'scripts/aggregate_to_site.rb'
     - 'scripts/import_neo4j_full.rb'
     - 'scripts/parse_ru_sanctions_list.rb'
 

@@ -2,6 +2,7 @@
 
 require 'yaml'
 require_relative 'item_mapper'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Cmd
@@ -23,9 +24,12 @@ module Ammitto
       # hold no source field and a directory can hold another source's
       # file under a name that happens to match: a file under the prefix
       # that is not shaped like this source's record is never adopted. The
-      # unprefixed sources (uk, eu, un, us) have only the record: a
-      # directory can hold files of other sources under the same unprefixed
-      # names, and nothing else tells them apart.
+      # unprefixed sources (uk, eu, un, us) have no name to narrow the
+      # directory, and their record classes share keys (addresses,
+      # entity_type, first_name), so a file made only of shared keys would
+      # pass the shape test of several: for them the file must also carry
+      # the key the record's identifier reads, which a written record
+      # always has and a stray file of shared keys does not.
       module StaleRecordPruner
         # The largest share of the previous harvest one run may remove.
         # Delistings arrive a few at a time; a larger drop is more likely a
@@ -36,11 +40,21 @@ module Ammitto
         # to nothing could never drop a record.
         PRUNE_CEILING = 0.05
 
-        # The list-class attributes whose elements the source's #items
-        # returns, which are the records fetch writes as files. A list can
-        # carry collections that are not records (ch has programs beside
-        # its targets), so the attributes are named, not discovered.
+        # The key each unprefixed source's #identifier reads. No two of
+        # these sources write the same one.
+        IDENTITY_KEYS = {
+          uk: 'unique_id', eu: 'eu_reference_number',
+          un: 'reference_number', us: 'uid'
+        }.freeze
+
+        # The list-class attributes that lead to the records its #items
+        # returns, which fetch writes as files. Most are record collections;
+        # UN wraps its individual/entity collections, and a list can carry
+        # collections that are not records (ch has programs beside its
+        # targets), so the attributes are named, not discovered.
         ITEM_ATTRIBUTES = {
+          uk: %i[designations], eu: %i[sanction_entities],
+          un: %i[individuals entities], us: %i[entries],
           wb: %i[firms], au: %i[individuals organizations vessels generic_entities],
           ca: %i[records], ch: %i[targets], tr: %i[entities],
           nz: %i[individuals entities ships], eu_vessels: %i[vessels],
@@ -53,9 +67,7 @@ module Ammitto
         #
         # Called only after write_items returned, so a harvest it refused
         # never reaches here. An empty harvest is skipped explicitly: with
-        # nothing written, every recorded file would look stale. For an
-        # unprefixed source an index without a files list names no owned
-        # files, so that run only records the list and removes nothing.
+        # nothing written, every recorded file would look stale.
         #
         # @param source [Symbol] source code
         # @param written [Hash{String => Array}] filenames this run wrote
@@ -177,10 +189,12 @@ module Ammitto
           recorded = carried_forward_files(previous)
           candidates = recorded | prefixed_files(prefix, output_dir)
           candidates.select do |name|
-            name == File.basename(name) && name.end_with?('.yaml') &&
+            path = File.join(output_dir, name)
+            name == File.basename(name) && !name.start_with?('.') && name.end_with?('.yaml') &&
               name != '_index.yaml' && name.start_with?(prefix) &&
-              !written.key?(name) && File.file?(File.join(output_dir, name)) &&
-              (recorded.include?(name) || record_of_source?(source, File.join(output_dir, name)))
+              !written.key?(name) && File.file?(path) &&
+              (!prefix.empty? || !File.symlink?(path)) &&
+              (recorded.include?(name) || adoptable?(source, prefix, name, path))
           end.sort
         end
 
@@ -195,8 +209,26 @@ module Ammitto
           return true if carried_forward_files(current).include?(name)
 
           prefix = ItemMapper::FILENAME_PREFIXES[source]
-          !prefix.to_s.empty? && name.start_with?(prefix) &&
-            record_of_source?(source, File.join(output_dir, name))
+          path = File.join(output_dir, name)
+          (prefix.to_s.empty? ? !File.symlink?(path) : name.start_with?(prefix)) &&
+            adoptable?(source, prefix.to_s, name, path)
+        end
+
+        # Whether a file no index records may be taken as this source's: it
+        # must be shaped like its record, and an unprefixed source never
+        # takes a file under another source's prefix, whose records can
+        # carry the same keys (tr writes reference_number too). A file the
+        # index records is this source's own whatever its name.
+        # @param source [Symbol] source code
+        # @param prefix [String] the source's filename prefix
+        # @param name [String] filename
+        # @param path [String] the file
+        # @return [Boolean]
+        def adoptable?(source, prefix, name, path)
+          foreign = prefix.empty? && ItemMapper::FILENAME_PREFIXES.values.any? do |other|
+            !other.empty? && name.start_with?(other)
+          end
+          !foreign && record_of_source?(source, path)
         end
 
         # Whether a file holds a record of this source, judged by its keys:
@@ -210,10 +242,24 @@ module Ammitto
         def record_of_source?(source, path)
           document = YAML.safe_load_file(path, permitted_classes: [Date, Time])
           return false unless document.is_a?(Hash) && !document.empty?
+          return false unless identified?(source, document)
 
           record_keys(source).any? { |keys| (document.keys - keys).empty? }
         rescue Psych::Exception, SystemCallError, IOError
           false
+        end
+
+        # @param source [Symbol] source code
+        # @param document [Hash] the file's top-level mapping
+        # The identity attributes are strings, so anything else under the
+        # key (false, a list, a mapping) is not a record's identity.
+        # @return [Boolean] true when the source needs no identity key or
+        #   the document carries a non-blank string under it, blank as
+        #   Utils::Presence judges it, Unicode whitespace included
+        def identified?(source, document)
+          key = IDENTITY_KEYS[source]
+          value = document[key] if key
+          key.nil? || (value.is_a?(String) && Utils::Presence.present?(value))
         end
 
         # The YAML keys each record class of a source writes. A source
@@ -226,22 +272,25 @@ module Ammitto
 
           ITEM_ATTRIBUTES.fetch(source, []).filter_map do |name|
             attribute = list.attributes[name]
-            next unless attribute&.type.respond_to?(:mappings_for)
+            record_class = if attribute&.collection?
+                             attribute.type
+                           elsif attribute&.type.respond_to?(:attributes)
+                             attribute.type.attributes[:items]&.type
+                           end
+            next unless record_class.respond_to?(:mappings_for)
 
-            attribute.type.mappings_for(:yaml).mappings.map { |mapping| mapping.name.to_s }
+            record_class.mappings_for(:yaml).mappings.map { |mapping| mapping.name.to_s }
           end
         end
 
         # Files in the directory that carry a source's filename prefix: the
         # prefix plus an index naming the source is what adopts a file
         # written before any --prune run recorded it. An empty prefix
-        # matches every file, so it adopts nothing.
+        # matches every file; the caller's shape check is what narrows it.
         # @param prefix [String] the source's filename prefix
         # @param output_dir [String] output directory
         # @return [Array<String>] filenames
         def prefixed_files(prefix, output_dir)
-          return [] if prefix.empty?
-
           Dir.children(output_dir).select { |name| name.start_with?(prefix) }
         rescue SystemCallError
           []

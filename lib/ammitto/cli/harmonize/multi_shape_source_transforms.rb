@@ -26,9 +26,11 @@ module Ammitto
         # @param data [Hash] source data
         # @return [Hash]
         def transform_au(transformer, data)
-          # Detect record type: vessels carry imo_number, individuals carry
-          # dates_of_birth; the rest are organizations
-          source = if data.key?('imo_number')
+          # A source Type outside the known shapes must survive as-is because
+          # dropping it would leave fetch --prune to delete its record file.
+          source = if Ammitto::Sources::Au::GenericEntity.record?(data)
+                     Ammitto::Sources::Au::GenericEntity.from_hash(data)
+                   elsif data.key?('imo_number')
                      Ammitto::Sources::Au::Vessel.from_hash(data)
                    elsif data.key?('dates_of_birth')
                      Ammitto::Sources::Au::Individual.from_hash(data)

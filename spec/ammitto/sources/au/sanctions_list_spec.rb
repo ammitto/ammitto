@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'tmpdir'
+require 'thor'
 require 'ammitto/sources/au'
+require 'ammitto/cli'
+require 'ammitto/cli/fetch_command'
 
 RSpec.describe Ammitto::Sources::Au::SanctionsList do
   let(:sample_csv) do
@@ -51,6 +55,86 @@ RSpec.describe Ammitto::Sources::Au::SanctionsList do
 
     it 'parses vessels correctly' do
       expect(list.vessels.size).to eq(1)
+    end
+
+    it 'keeps an unknown type and its continuation row as one generic entity' do
+      allow(Ammitto::Logger).to receive(:warn)
+
+      csv = <<~CSV
+        Reference,Name of Individual or Entity,Type,Name Type,Alias Strength,Address,Additional Information,Listing Information,Committees,Control Date,Instrument of Designation,Targeted Financial Sanction,Travel Ban,Arms Embargo,Maritime Restriction
+        9000,SHIP OWNER,Ship Owner,Primary Name,,Port Louis,Role,Listed,Autonomous (Vessels),6/18/25,Instrument,TRUE,FALSE,FALSE,TRUE
+        9000a,SHIP OWNER ALIAS,Ship Owner,Alias,Strong,Port Louis,Role,Listed,Autonomous (Vessels),6/18/25,Instrument,TRUE,FALSE,FALSE,TRUE
+        9001,UNKNOWN PARTY,Aircraft,Primary Name,,Sydney,Role,Listed,Australia,1/1/25,Instrument,FALSE,FALSE,FALSE,FALSE
+      CSV
+
+      parsed = described_class.from_csv(csv)
+      generic = parsed.generic_entities
+
+      expect(generic.size).to eq(2)
+      expect(generic.first).to be_a(Ammitto::Sources::Au::GenericEntity)
+      expect(generic.first.reference).to eq('9000')
+      expect(generic.first.entity_type).to eq('Ship Owner')
+      expect(generic.first.names.map(&:text)).to contain_exactly('SHIP OWNER', 'SHIP OWNER ALIAS')
+      expect(parsed.items).to include(*generic)
+      expect(parsed.count).to eq(2)
+      expect(Ammitto::Logger).to have_received(:warn).with(
+        'au: unknown Type "Ship Owner" on 2 rows; kept as generic entities'
+      )
+      expect(Ammitto::Logger).to have_received(:warn).with(
+        'au: unknown Type "Aircraft" on 1 row; kept as generic entities'
+      )
+      expect(Ammitto::Logger).to have_received(:warn).twice
+    end
+
+    it 'leaves two unknown Types under one reference for the fetch collision guard to refuse' do
+      allow(Ammitto::Logger).to receive(:warn)
+
+      csv = <<~CSV
+        Reference,Name of Individual or Entity,Type,Name Type,Alias Strength,Address,Additional Information,Listing Information,Committees,Control Date,Instrument of Designation,Targeted Financial Sanction,Travel Ban,Arms Embargo,Maritime Restriction
+        9000,SHIP OWNER,Ship Owner,Primary Name,,Port Louis,Role,Listed,Autonomous (Vessels),6/18/25,Instrument,TRUE,FALSE,FALSE,TRUE
+        9000a,SOME PLANE,Aircraft,Primary Name,,Sydney,Role,Listed,Australia,1/1/25,Instrument,FALSE,FALSE,FALSE,FALSE
+      CSV
+
+      parsed = described_class.from_csv(csv)
+      expect(parsed.generic_entities.map(&:entity_type)).to eq(['Ship Owner', 'Aircraft'])
+
+      command = Ammitto::Cmd::FetchCommand.new(Thor::CoreExt::HashWithIndifferentAccess.new, ['au'])
+      Dir.mktmpdir do |dir|
+        expect { command.send(:write_items, :au, parsed.items, dir) }
+          .to raise_error(Ammitto::Cmd::Fetch::FilenameCollisionError)
+      end
+    end
+
+    it 'treats a blank Type as a generic entity and warns with its spelling' do
+      allow(Ammitto::Logger).to receive(:warn)
+
+      row = Array.new(19)
+      row[0] = '9002'
+      row[1] = 'BLANK TYPE'
+      row[2] = ''
+      row[3] = 'Primary Name'
+      csv = sample_csv.lines.first + CSV.generate_line(row)
+
+      parsed = described_class.from_csv(csv)
+
+      expect(parsed.generic_entities.first.entity_type).to eq('')
+      expect(YAML.safe_load(parsed.generic_entities.first.to_yaml)).to include('entity_type' => '')
+      expect(Ammitto::Logger).to have_received(:warn).with(
+        'au: unknown Type "" on 1 row; kept as generic entities'
+      )
+    end
+
+    it 'warns for a nil Type while preserving nil' do
+      allow(Ammitto::Logger).to receive(:warn)
+
+      csv = "#{sample_csv.lines.first}9003,MISSING TYPE\n"
+      parsed = described_class.from_csv(csv)
+
+      expect(parsed.generic_entities.first.entity_type).to be_nil
+      expect(YAML.safe_load(parsed.generic_entities.first.to_yaml)).to include('entity_type' => nil)
+      expect(Ammitto::Logger).to have_received(:warn).with(
+        'au: unknown Type nil on 1 row; kept as generic entities'
+      )
     end
 
     it 'returns correct total count' do

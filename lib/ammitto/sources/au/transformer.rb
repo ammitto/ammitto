@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../transformers/base_transformer'
+require_relative 'generic_entity'
 
 module Ammitto
   module Sources
@@ -93,8 +94,25 @@ module Ammitto
           { entity: entity, entry: entry }
         end
 
-        # Generic transform method
-        # @param source [Object] AU Individual, Organization, or Vessel
+        # Keep unrecognized AU records in the normal transform and entry path.
+        # @param generic_entity [Ammitto::Sources::Au::GenericEntity]
+        # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        def transform_generic_entity(generic_entity)
+          entity = Ammitto::Entity.new(
+            id: generate_entity_id(generic_entity.reference),
+            entity_type: generic_entity.entity_type,
+            names: transform_names(generic_entity.names),
+            remarks: build_remarks(generic_entity)
+          )
+          entry = create_entry(generic_entity, entity.id)
+
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
+        end
+
+        # Route every source model through the shared entry lifecycle.
+        # @param source [Object] AU source entity model
         # @return [Hash]
         def transform(source)
           case source
@@ -104,6 +122,8 @@ module Ammitto
             transform_organization(source)
           when Ammitto::Sources::Au::Vessel
             transform_vessel(source)
+          when Ammitto::Sources::Au::GenericEntity
+            transform_generic_entity(source)
           else
             raise ArgumentError, "Unknown source type: #{source.class}"
           end
@@ -122,9 +142,11 @@ module Ammitto
           entity_type = data['type'] || data['entity_type']
 
           # Determine source model class based on type or data content
-          source = if entity_type == 'person' || entity_type == 'Individual' ||
-                      data.key?('dates_of_birth') || data.key?('birth_info') ||
-                      data.key?('person_details')
+          source = if Ammitto::Sources::Au::GenericEntity.record?(data)
+                     Ammitto::Sources::Au::GenericEntity.from_hash(data)
+                   elsif entity_type == 'person' || entity_type == 'Individual' ||
+                         data.key?('dates_of_birth') || data.key?('birth_info') ||
+                         data.key?('person_details')
                      Ammitto::Sources::Au::Individual.from_hash(data)
                    elsif entity_type == 'vessel' || entity_type == 'Vessel' ||
                          data.key?('vessel_details') || data.key?('imo_number')
@@ -172,6 +194,18 @@ module Ammitto
 
         def create_entry(source, entity_id)
           sanction = source.sanction
+          source_specific_fields = {
+            'au:reference' => source.reference,
+            'au:committees' => sanction&.committees,
+            'au:control_date' => sanction&.control_date,
+            'au:instrument' => sanction&.instrument,
+            'au:listing_info' => sanction&.listing_information
+          }
+          if source.is_a?(Ammitto::Sources::Au::GenericEntity)
+            source_specific_fields['au:type'] = source.entity_type
+            source_specific_fields['au:address'] = source.address
+          end
+
           Ammitto::SanctionEntry.new(
             id: generate_entry_id(source.reference),
             entity_id: entity_id,
@@ -184,13 +218,7 @@ module Ammitto
             legal_bases: transform_legal_instrument(sanction&.instrument),
             raw_source_data: create_raw_source_data(
               source_format: 'csv',
-              source_specific_fields: {
-                'au:reference' => source.reference,
-                'au:committees' => sanction&.committees,
-                'au:control_date' => sanction&.control_date,
-                'au:instrument' => sanction&.instrument,
-                'au:listing_info' => sanction&.listing_information
-              }
+              source_specific_fields: source_specific_fields
             )
           )
         end

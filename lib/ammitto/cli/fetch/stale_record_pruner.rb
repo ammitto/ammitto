@@ -41,7 +41,7 @@ module Ammitto
         # carry collections that are not records (ch has programs beside
         # its targets), so the attributes are named, not discovered.
         ITEM_ATTRIBUTES = {
-          wb: %i[firms], au: %i[individuals organizations vessels],
+          wb: %i[firms], au: %i[individuals organizations vessels generic_entities],
           ca: %i[records], ch: %i[targets], tr: %i[entities],
           nz: %i[individuals entities ships], eu_vessels: %i[vessels],
           un_vessels: %i[vessels]

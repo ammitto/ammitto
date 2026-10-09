@@ -74,7 +74,9 @@ module Ammitto
           return announcement.entities.map { |e| transform(e) } if
             announcement.is_a?(ListAnnouncement)
 
-          AnnouncementTransformer.new.transform_announcement(announcement)
+          nested = AnnouncementTransformer.new
+          nested.iri_collision_registry = @iri_collision_registry
+          nested.transform_announcement(announcement)
         end
 
         private

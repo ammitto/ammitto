@@ -443,33 +443,17 @@ module Ammitto
 
         return { code: source, status: :error, error: 'No YAML files found' } if yaml_files.empty?
 
-        # Parse and transform
-        entities_count = 0
-        entries_count = 0
         errors = []
-        source_graph = []
 
-        # The YAML parse belongs inside the per-file rescue: a file that
-        # exists but will not parse is a per-file data defect, never exempt,
-        # not a source-level error --allow-empty can clear. Escaping to the
-        # method-level rescue silenced the whole source and exited 0, and
-        # discarded every other file's entities with it.
-        yaml_files.each do |file|
-          data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
-          next unless data
-
-          result = transform_data(source, data)
-          added = ingest_results(result, source, source_graph, errors, File.basename(file))
-          entities_count += added
-          entries_count += added
-        rescue ParseFailureError => e
-          error_msg = "#{File.basename(file)}: #{e.message}"
-          puts "[#{source}] Parse failure: #{error_msg}" if options[:verbose]
-          errors << error_msg
-        rescue StandardError => e
-          error_msg = "#{File.basename(file)}: #{e.message}"
-          puts "[#{source}] Error processing #{error_msg}" if options[:verbose]
-          errors << error_msg
+        begin
+          records = parse_source_records(yaml_files, source, errors)
+          candidates = collect_iri_candidates(source, records, errors)
+          entities_count, entries_count, source_graph = ingest_candidates(
+            source, candidates, errors
+          )
+        ensure
+          @collecting_iri_candidates = false
+          @iri_collision_registry = nil
         end
 
         # Per-source aggregate: required by BaseSource downloads and
@@ -484,6 +468,92 @@ module Ammitto
       rescue StandardError => e
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         { code: source, status: :error, error: e.message }
+      end
+
+      # Parse all files before transforming any record so the candidate pass
+      # sees a complete source.
+      def parse_source_records(yaml_files, source, errors)
+        yaml_files.filter_map do |file|
+          data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
+          [file, data] if data
+        rescue ParseFailureError => e
+          record_transform_error(errors, source, file, e)
+          nil
+        rescue StandardError => e
+          record_transform_error(errors, source, file, e)
+          nil
+        end
+      end
+
+      # Run a non-publishing transform pass, then freeze the source's collision
+      # decisions for the final pass.
+      def collect_iri_candidates(source, records, errors)
+        @iri_collision_registry = Utils::IriSanitizer::CollisionRegistry.new
+        @collecting_iri_candidates = true
+        candidates = records.filter_map do |file, data|
+          candidate_result, parse_failed = @iri_collision_registry.with_candidate do
+            ParseFailureVisibility.without_reporting do
+              transform_data(source, data)
+            end
+          end
+          [file, data, candidate_result, parse_failed]
+        rescue ParseFailureError => e
+          record_transform_error(errors, source, file, e)
+          nil
+        rescue StandardError => e
+          record_transform_error(errors, source, file, e)
+          nil
+        end
+        @iri_collision_registry.finalize!
+        candidates
+      end
+
+      # Transform surviving records again, this time publishing the finalized
+      # entity and entry IRIs.
+      def ingest_candidates(source, candidates, errors)
+        source_graph = []
+        entities_count = 0
+        entries_count = 0
+        @collecting_iri_candidates = false
+        rerun_transform = @iri_collision_registry.collisions? || %i[cn ru].include?(source)
+
+        candidates.each do |file, data, candidate_result, parse_failed|
+          result = if rerun_transform || parse_failed
+                     transform_data(source, data)
+                   else
+                     candidate_result
+                   end
+          added = ingest_results(result, source, source_graph, errors, File.basename(file))
+          entities_count += added
+          entries_count += added
+        rescue ParseFailureError => e
+          record_transform_error(errors, source, file, e)
+        rescue StandardError => e
+          record_transform_error(errors, source, file, e)
+        end
+
+        [entities_count, entries_count, source_graph]
+      end
+
+      # Record a per-file transform error with the same user-facing wording
+      # used by the pre-registry harmonize loop.
+      # @param errors [Array<String>] per-file error collector
+      # @param source [Symbol] source code
+      # @param file [String] source file
+      # @param error [Exception]
+      # @return [void]
+      def record_transform_error(errors, source, file, error)
+        error_msg = "#{File.basename(file)}: #{error.message}"
+        label = error.is_a?(ParseFailureError) ? 'Parse failure' : 'Error processing'
+        puts "[#{source}] #{label}: #{error_msg}" if options[:verbose]
+        errors << error_msg
+      end
+
+      # Candidate transforms must not publish groups before the registry is
+      # finalized. Ordinary transforms and all final output still publish them.
+      # @return [Boolean]
+      def collecting_iri_candidates?
+        @collecting_iri_candidates == true
       end
 
       # Feed transformed results into the exporters. A source file may

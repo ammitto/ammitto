@@ -79,6 +79,35 @@ module StaleRecordPrunerSpecHelpers
   def index_in(dir)
     YAML.safe_load_file(File.join(dir, '_index.yaml'))
   end
+
+  # @param source [Symbol] source code
+  # @param name [Symbol] list attribute named in ITEM_ATTRIBUTES
+  # @return [Class] the record class yielded by the list's #items
+  def item_type_for(source, name)
+    attribute = pruning.send(:source_model_class_for, source).attributes.fetch(name)
+    return attribute.type if attribute.collection?
+
+    attribute.type.attributes.fetch(:items).type
+  end
+
+  # Put one item in every record collection the list class has, named in
+  # ITEM_ATTRIBUTES or not, so #items shows which of them it returns. UN
+  # wraps its collections in an object holding them under `items`.
+  # @param source [Symbol] source code
+  # @return [Object] a source list with one object in every collection
+  def list_with_every_collection(source)
+    list = pruning.send(:source_model_class_for, source).new
+    list.class.attributes.each do |name, attribute|
+      if attribute.collection?
+        list.public_send("#{name}=", [attribute.type.new]) if attribute.type.respond_to?(:mappings_for)
+      elsif attribute.type.respond_to?(:attributes) && attribute.type.attributes[:items]&.collection?
+        wrapper = attribute.type.new
+        wrapper.items = [attribute.type.attributes[:items].type.new]
+        list.public_send("#{name}=", wrapper)
+      end
+    end
+    list
+  end
 end
 
 RSpec.describe Ammitto::Cmd::FetchCommand do
@@ -302,32 +331,27 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
     end
   end
 
-  it 'names, for each prefixed source, exactly the list attributes its #items returns' do
-    table = Ammitto::Cmd::Fetch::ItemMapper::FILENAME_PREFIXES
+  it 'names, for each fetchable source, exactly the list attributes its #items returns' do
     fetchable = Ammitto::Config::Defaults::FETCHABLE_SOURCES
-    prefixed = fetchable.reject { |source| table.fetch(source).empty? }
-    expect(Ammitto::Cmd::Fetch::StaleRecordPruner::ITEM_ATTRIBUTES.keys).to match_array(prefixed)
+    expect(Ammitto::Cmd::Fetch::StaleRecordPruner::ITEM_ATTRIBUTES.keys).to match_array(fetchable)
 
-    prefixed.each do |source|
-      list_class = pruning.send(:source_model_class_for, source)
-      collections = list_class.attributes.select { |_, a| a.collection? && a.type.respond_to?(:mappings_for) }
-      list = list_class.new(collections.transform_values { |a| [a.type.new] })
+    fetchable.each do |source|
       named = Ammitto::Cmd::Fetch::StaleRecordPruner::ITEM_ATTRIBUTES.fetch(source)
+      list = list_with_every_collection(source)
 
-      expect(list.items.map(&:class)).to match_array(named.map { |n| collections.fetch(n).type }),
+      expect(list.items.map(&:class)).to match_array(named.map { |name| item_type_for(source, name) }),
                                          "#{source}: ITEM_ATTRIBUTES differs from #items"
     end
   end
 
-  it 'adopts the file the real writer produces for every record class of every prefixed source' do
+  it 'adopts the file the real writer produces for every record class of every fetchable source' do
     attributes = Ammitto::Cmd::Fetch::StaleRecordPruner::ITEM_ATTRIBUTES
     expect(attributes).not_to be_empty
 
     attributes.each do |source, names|
-      list_class = pruning.send(:source_model_class_for, source)
       names.each do |name|
         Dir.mktmpdir do |directory|
-          item = populated(list_class.attributes.fetch(name).type)
+          item = populated(item_type_for(source, name))
           written = described_class.new(thor_options, [source.to_s])
                                    .send(:write_items, source, [item], directory)
           path = File.join(directory, written.keys.first)
@@ -439,14 +463,191 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
   end
 
   context 'with --prune over a source whose filenames carry no prefix' do
-    it 'removes nothing from an index that lists no files' do
+    it 'adopts and removes a shaped orphan for every empty-prefix source' do
+      shapes = {
+        uk: { 'unique_id' => 'GBR-orphan' },
+        eu: { 'eu_reference_number' => 'EU-orphan' },
+        un: { 'reference_number' => 'UN-orphan' },
+        us: { 'uid' => 'US-orphan' }
+      }
+
+      shapes.each do |source, shape|
+        Dir.mktmpdir do |source_dir|
+          index_for(source_dir, source.to_s, 41)
+          File.write(File.join(source_dir, 'orphan.yaml'), shape.to_yaml)
+          command = described_class.new(thor_options(prune: true), [source.to_s])
+
+          pruned = command.send(:prune_stale_records, source,
+                                { 'current.yaml' => [] }, source_dir)
+
+          expect(pruned).to eq(['orphan.yaml']), source.to_s
+          expect(File).not_to exist(File.join(source_dir, 'orphan.yaml'))
+        end
+      end
+    end
+
+    it 'keeps a non-record YAML file while adopting a shaped orphan' do
       index_for(dir, 'uk', 41)
-      leave_files(dir, *listed, 'gbr-orphan.yaml')
+      File.write(File.join(dir, 'gbr-orphan.yaml'), { 'unique_id' => 'GBR-orphan' }.to_yaml)
+      File.write(File.join(dir, 'source.yaml'), { 'source' => 'uk' }.to_yaml)
+      File.write(File.join(dir, 'name.yaml'), { 'name' => 'not a record' }.to_yaml)
 
-      pruned = pruning.send(:prune_stale_records, :uk, listed.to_h { |n| [n, []] }, dir)
+      pruned = pruning.send(:prune_stale_records, :uk, { 'current.yaml' => [] }, dir)
 
-      expect(pruned).to be_empty
+      expect(pruned).to eq(['gbr-orphan.yaml'])
+      expect(written_records(dir)).to include('source.yaml', 'name.yaml')
+    end
+
+    it 'does not adopt protected directory entries' do
+      index_for(dir, 'uk', 41)
+      File.write(File.join(dir, 'gbr-orphan.yaml'), { 'unique_id' => 'GBR-orphan' }.to_yaml)
+      File.write(File.join(dir, '.gbr-hidden.yaml'), { 'unique_id' => 'GBR-hidden' }.to_yaml)
+      File.write(File.join(dir, '.gitkeep'), '')
+      File.write(File.join(dir, 'gbr-not-yaml.txt'), { 'unique_id' => 'GBR-text' }.to_yaml)
+      Dir.mkdir(File.join(dir, 'gbr-directory.yaml'))
+      Dir.mkdir(File.join(dir, 'gbr-target'))
+      File.symlink(File.join(dir, 'gbr-target'), File.join(dir, 'gbr-symlink.yaml'))
+      File.write(File.join(dir, '.gbr-file-target.yaml'), { 'unique_id' => 'GBR-file-target' }.to_yaml)
+      File.symlink(File.join(dir, '.gbr-file-target.yaml'), File.join(dir, 'gbr-file-symlink.yaml'))
+
+      pruned = pruning.send(:prune_stale_records, :uk, { 'current.yaml' => [] }, dir)
+
+      expect(pruned).to eq(['gbr-orphan.yaml'])
+      expect(File).to exist(File.join(dir, '_index.yaml'))
+      expect(File).to exist(File.join(dir, '.gbr-hidden.yaml'))
+      expect(File).to exist(File.join(dir, '.gitkeep'))
+      expect(File).to exist(File.join(dir, 'gbr-not-yaml.txt'))
+      expect(File).to exist(File.join(dir, 'gbr-directory.yaml'))
+      expect(File).to exist(File.join(dir, 'gbr-symlink.yaml'))
+      expect(File).to exist(File.join(dir, 'gbr-file-symlink.yaml'))
+      expect(File.symlink?(File.join(dir, 'gbr-symlink.yaml'))).to be(true)
+      expect(File.symlink?(File.join(dir, 'gbr-file-symlink.yaml'))).to be(true)
+    end
+
+    it 'leaves too many shaped orphans in place and records them' do
+      names = %w[gbr-orphan-a.yaml gbr-orphan-b.yaml gbr-orphan-c.yaml]
+      index_for(dir, 'uk', 41)
+      names.each_with_index do |name, index|
+        File.write(File.join(dir, name), { 'unique_id' => "GBR-orphan-#{index}" }.to_yaml)
+      end
+
+      expect { save(pruning, uk_records(40), dir) }
+        .to output(/left 3 files in place/).to_stderr
+
+      expect(index_in(dir)).to include('left_in_place' => 3,
+                                       'left_in_place_files' => names.sort)
+      expect(written_records(dir)).to include(*names)
+    end
+
+    it 'lets a later --allow-shrink run remove the orphans the ceiling recorded' do
+      names = %w[gbr-orphan-a.yaml gbr-orphan-b.yaml gbr-orphan-c.yaml]
+      index_for(dir, 'uk', 41)
+      names.each_with_index do |name, index|
+        File.write(File.join(dir, name), { 'unique_id' => "GBR-orphan-#{index}" }.to_yaml)
+      end
+      expect { save(pruning, uk_records(40), dir) }.to output.to_stderr
+
+      accepting = described_class.new(thor_options(prune: true, allow_shrink: true), ['uk'])
+      save(accepting, uk_records(40), dir)
+
+      expect(written_records(dir)).to match_array(Array.new(40) { |i| "gbr#{i}.yaml" })
+      expect(index_in(dir)['files']).to match_array(Array.new(40) { |i| "gbr#{i}.yaml" })
+    end
+
+    it 'keeps a shaped orphan through an empty harvest and adopts it on the next one' do
+      index_for(dir, 'uk', 41)
+      File.write(File.join(dir, 'gbr-orphan.yaml'), { 'unique_id' => 'GBR-orphan' }.to_yaml)
+
+      empty = pruning.send(:prune_stale_records, :uk, {}, dir)
+      expect(empty).to be_empty
       expect(written_records(dir)).to include('gbr-orphan.yaml')
+
+      pruned = pruning.send(:prune_stale_records, :uk, { 'current.yaml' => [] }, dir)
+      expect(pruned).to eq(['gbr-orphan.yaml'])
+    end
+
+    it 'partially prunes shaped orphans within the five percent ceiling' do
+      names = %w[gbr-orphan-a.yaml gbr-orphan-b.yaml]
+      index_for(dir, 'uk', 41)
+      names.each_with_index do |name, index|
+        File.write(File.join(dir, name), { 'unique_id' => "GBR-orphan-#{index}" }.to_yaml)
+      end
+
+      save(pruning, uk_records(39), dir)
+
+      expect(written_records(dir)).to match_array(Array.new(39) { |i| "gbr#{i}.yaml" })
+    end
+
+    it 'keeps a file made only of keys another source shares, or without a string identity' do
+      index_for(dir, 'uk', 41)
+      File.write(File.join(dir, 'gbr-orphan.yaml'), { 'unique_id' => 'GBR-orphan' }.to_yaml)
+      File.write(File.join(dir, 'shared.yaml'), { 'addresses' => [] }.to_yaml)
+      File.write(File.join(dir, 'blank.yaml'), { 'unique_id' => ' ', 'addresses' => [] }.to_yaml)
+      File.write(File.join(dir, 'wide-blank.yaml'), { 'unique_id' => "\u2003" }.to_yaml)
+      { 'false' => false, 'list' => [], 'map' => {}, 'number' => 7 }.each do |name, value|
+        File.write(File.join(dir, "#{name}.yaml"), { 'unique_id' => value }.to_yaml)
+      end
+
+      pruned = pruning.send(:prune_stale_records, :uk, { 'current.yaml' => [] }, dir)
+
+      expect(pruned).to eq(['gbr-orphan.yaml'])
+      expect(written_records(dir)).to include('shared.yaml', 'blank.yaml', 'wide-blank.yaml', 'false.yaml', 'list.yaml',
+                                              'map.yaml', 'number.yaml')
+    end
+
+    it 'names, for each unprefixed source, the key its records are identified by' do
+      Ammitto::Cmd::Fetch::StaleRecordPruner::IDENTITY_KEYS.each do |source, key|
+        Ammitto::Cmd::Fetch::StaleRecordPruner::ITEM_ATTRIBUTES.fetch(source).each do |name|
+          record = item_type_for(source, name).new(key.to_sym => 'ID-1')
+          expect(record.identifier).to eq('ID-1'), "#{source}/#{name}"
+          expect(YAML.safe_load(record.to_yaml)).to include(key => 'ID-1')
+        end
+      end
+      unprefixed = Ammitto::Cmd::Fetch::ItemMapper::FILENAME_PREFIXES.select { |_, p| p.empty? }.keys
+      expect(Ammitto::Cmd::Fetch::StaleRecordPruner::IDENTITY_KEYS.keys).to match_array(unprefixed)
+    end
+
+    it 'keeps a path that became a symlink between the scan and the delete' do
+      index_for(dir, 'uk', 41)
+      File.write(File.join(dir, '.target.yaml'), { 'unique_id' => 'GBR-target' }.to_yaml)
+      File.symlink(File.join(dir, '.target.yaml'), File.join(dir, 'gbr-swapped.yaml'))
+
+      expect(pruning.send(:delete_if_still_owned, :uk, 'gbr-swapped.yaml', dir)).to be(false)
+      expect(File.symlink?(File.join(dir, 'gbr-swapped.yaml'))).to be(true)
+    end
+
+    it "keeps another source's shaped record under an unprefixed name" do
+      index_for(dir, 'uk', 41)
+      File.write(File.join(dir, 'gbr-orphan.yaml'), { 'unique_id' => 'GBR-orphan' }.to_yaml)
+      File.write(File.join(dir, 'eu-record.yaml'), { 'eu_reference_number' => 'EU-record' }.to_yaml)
+
+      pruned = pruning.send(:prune_stale_records, :uk, { 'current.yaml' => [] }, dir)
+
+      expect(pruned).to eq(['gbr-orphan.yaml'])
+      expect(written_records(dir)).to include('eu-record.yaml')
+    end
+
+    it "keeps another source's record under that source's prefix, even when its keys fit" do
+      index_for(dir, 'un', 41)
+      File.write(File.join(dir, 'orphan.yaml'), { 'reference_number' => 'UN-orphan' }.to_yaml)
+      File.write(File.join(dir, 'tr-7.yaml'), { 'reference_number' => 'TR-7' }.to_yaml)
+      un_pruning = described_class.new(thor_options(prune: true), ['un'])
+
+      pruned = un_pruning.send(:prune_stale_records, :un, { 'current.yaml' => [] }, dir)
+
+      expect(pruned).to eq(['orphan.yaml'])
+      expect(written_records(dir)).to include('tr-7.yaml')
+      expect(un_pruning.send(:delete_if_still_owned, :un, 'tr-7.yaml', dir)).to be(false)
+    end
+
+    it 'still removes a file the index records under a name another prefix starts' do
+      index_for(dir, 'un', 41, files: ['tr-7.yaml'])
+      File.write(File.join(dir, 'tr-7.yaml'), { 'reference_number' => 'TR-7' }.to_yaml)
+      un_pruning = described_class.new(thor_options(prune: true), ['un'])
+
+      pruned = un_pruning.send(:prune_stale_records, :un, { 'current.yaml' => [] }, dir)
+
+      expect(pruned).to eq(['tr-7.yaml'])
     end
   end
 

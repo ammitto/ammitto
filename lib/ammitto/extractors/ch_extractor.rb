@@ -12,7 +12,7 @@ module Ammitto
     # XSD: https://www.seco.admin.ch/dam/seco/en/dokumente/Aussenwirtschaft/Wirtschaftsbeziehungen/Exportkontrollen/Sanktionen/xml_specification_document_xsd_version_6-12-2023.xsd.download.xsd/swiss-sanctions-list_v3.1.xsd
     # Format: XML
     #
-    # Note: Swiss server is slow and may require manual download.
+    # Note: Swiss server is slow.
     #
     class ChExtractor < BaseExtractor
       attr_accessor :verbose
@@ -35,13 +35,6 @@ module Ammitto
       # Fetch raw data from Switzerland
       # @return [String] raw XML content
       def fetch
-        # Check for local reference file first
-        local_file = find_local_reference_file
-        if local_file && File.exist?(local_file)
-          puts "[#{code}] Using local reference file: #{local_file}" if verbose
-          return File.read(local_file)
-        end
-
         # No explicit Accept-Encoding: setting it disables Net::HTTP's
         # automatic gzip inflation and would hand gzip bytes to the XML parser
         headers = {
@@ -72,21 +65,6 @@ module Ammitto
           sleep(wait_time)
           retry
         end
-      end
-
-      # Find local reference file
-      # @return [String, nil] path to local file or nil
-      def find_local_reference_file
-        # Check common locations for local reference files
-        base_dir = File.expand_path('../../..', __dir__)
-        possible_paths = [
-          File.join(base_dir, '..', 'data-ch', 'reference-docs', 'consolidated-list_2026-02-18.xml'),
-          File.join(base_dir, '..', 'data-ch', 'reference-docs', 'consolidated-list.xml'),
-          File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list_2026-02-18.xml'),
-          File.join(base_dir, 'data-ch', 'reference-docs', 'consolidated-list.xml')
-        ]
-
-        possible_paths.find { |path| File.exist?(path) }
       end
 
       # Extract entities from Switzerland XML

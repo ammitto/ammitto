@@ -20,7 +20,8 @@ require 'lutaml/model'
 # `sources/announcements/`.
 #
 # data-ru stores `name: { ru:, en: }` per party, not the flat
-# `{ russian_name:, english_name: }` record ListAnnouncement models.
+# `{ russian_name:, english_name:, entity_type: }` record ListAnnouncement
+# models.
 #
 # @example Loading an announcement
 #   require 'ammitto/sources/ru'

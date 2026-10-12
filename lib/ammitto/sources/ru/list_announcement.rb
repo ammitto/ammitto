@@ -7,7 +7,7 @@ module Ammitto
   module Sources
     module Ru
       # A stop-list announcement in the flat `{ russian_name:,
-      # english_name: }` shape SanctionsList collects.
+      # english_name:, entity_type: }` shape SanctionsList collects.
       #
       # Its own name because `Ru::Announcement` models the
       # `sources/announcements/*.yml` files data-ru stores, and two models
@@ -42,7 +42,7 @@ module Ammitto
             announcement.entities << SanctionedEntity.new(
               russian_name: entity_data[:russian_name],
               english_name: entity_data[:english_name],
-              entity_type: entity_data[:entity_type] || 'person',
+              entity_type: entity_data[:entity_type],
               list_type: announcement.list_type,
               announcement_number: announcement.number,
               announcement_date: announcement.date,

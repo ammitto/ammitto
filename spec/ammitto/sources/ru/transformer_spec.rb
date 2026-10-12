@@ -18,13 +18,46 @@ RSpec.describe Ammitto::Sources::Ru::Transformer do
     it 'returns one entity/entry pair per entity, as in 1.0.0' do
       flat = Ammitto::Sources::Ru::ListAnnouncement.from_parsed_data(
         number: '1', list_type: 'stop_list',
-        entities: [{ russian_name: 'Иванов', english_name: 'Ivanov' }]
+        entities: [{ russian_name: 'Иванов', english_name: 'Ivanov',
+                     entity_type: 'person' }]
       )
 
       results = transformer.transform_announcement(flat)
 
       expect(results.map(&:keys)).to eq([%i[entity entry]])
       expect(results.first[:entity]).to be_a(Ammitto::PersonEntity)
+    end
+
+    # As PartyTypeGuard does for announcement files: an untyped party is
+    # refused, not published as a person or an organization.
+    it 'refuses an untyped party' do
+      flat = Ammitto::Sources::Ru::ListAnnouncement.from_parsed_data(
+        number: '1', list_type: 'stop_list',
+        entities: [{ russian_name: 'Иванов', english_name: 'Ivanov' }]
+      )
+
+      expect { transformer.transform_announcement(flat) }
+        .to raise_error(Ammitto::ParseError, /no readable type \(nil\)/)
+    end
+
+    it 'names an untyped party by its Russian name when it has no English one' do
+      flat = Ammitto::Sources::Ru::ListAnnouncement.from_parsed_data(
+        number: '1', list_type: 'stop_list',
+        entities: [{ russian_name: 'Иванов' }]
+      )
+
+      expect { transformer.transform_announcement(flat) }
+        .to raise_error(Ammitto::ParseError, /ru entity "Иванов" has no readable type/)
+    end
+
+    it 'names an untyped party by its Russian name when its English one is blank' do
+      flat = Ammitto::Sources::Ru::ListAnnouncement.from_parsed_data(
+        number: '1', list_type: 'stop_list',
+        entities: [{ russian_name: 'Иванов', english_name: "\u00A0" }]
+      )
+
+      expect { transformer.transform_announcement(flat) }
+        .to raise_error(Ammitto::ParseError, /ru entity "Иванов" has no readable type/)
     end
   end
 

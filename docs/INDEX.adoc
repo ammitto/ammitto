@@ -35,7 +35,7 @@ Ammitto aggregates sanctions data from official government sources worldwide and
 | Legal bases, effects, reasons, status history
 
 | *Lightweight search*
-| Client-side search with ~8MB index instead of 70MB full data
+| Client-side search with a lightweight index instead of the full data
 
 | *Ruby gem*
 | Easy integration with Ruby applications

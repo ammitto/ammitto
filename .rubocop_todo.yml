@@ -28,12 +28,11 @@ Lint/Void:
 Metrics/AbcSize:
   Max: 152
 
-# Offense count: 13
+# Offense count: 12
 # Configuration parameters: CountComments, Max, CountAsOne.
 Metrics/ClassLength:
   Exclude:
     - 'lib/ammitto/cli/harmonize_command.rb'
-    - 'lib/ammitto/exporter/json_ld_export.rb'
     - 'lib/ammitto/serialization/json_ld_graph_exporter.rb'
     - 'lib/ammitto/serialization/json_ld_serializer.rb'
     - 'lib/ammitto/serialization/neo4j_direct_importer.rb'

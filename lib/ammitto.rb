@@ -98,10 +98,6 @@ require_relative 'ammitto/validation'
 # Transformers
 require_relative 'ammitto/transformers/registry'
 
-# Exporter
-require_relative 'ammitto/exporter/simple_exporter'
-require_relative 'ammitto/exporter/json_ld_export'
-
 # Configure Moxml to use Nokogiri adapter (when needed)
 # Moxml::Configuration.adapter = :nokogiri
 

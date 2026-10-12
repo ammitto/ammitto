@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.chdir(File.expand_path(__dir__)) do
     `git ls-files -z`.split("\x0").select do |f|
       f.match?(%r{\A(lib|exe|schemas)/}) ||
-        %w[ammitto.gemspec README.adoc LICENSE.txt].include?(f)
+        %w[ammitto.gemspec README.adoc CHANGELOG.adoc LICENSE.txt].include?(f)
     end
   end
   spec.platform      = Gem::Platform::RUBY
@@ -48,7 +48,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'thor', '~> 1.3'
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage
-  spec.metadata['changelog_uri'] = "#{spec.homepage}/releases"
+  spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/main/CHANGELOG.adoc"
   spec.metadata['bug_tracker_uri'] = "#{spec.homepage}/issues"
   spec.metadata['rubygems_mfa_required'] = 'true'
 end

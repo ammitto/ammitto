@@ -78,11 +78,11 @@ RSpec.describe Ammitto::Cmd::Harmonize::SourceTransforms do
       }
     end
 
-    it 'serializes it as a base Entity with the source Type unchanged' do
+    it 'serializes it as a base Entity typed organization, keeping the source Type as au:type' do
       result = harmonize(record)
 
       expect(result[:entity]['@type']).to eq('Entity')
-      expect(result[:entity]['entityType']).to eq('Ship Owner')
+      expect(result[:entity]['entityType']).to eq('organization')
       expect(result[:entity]['names'].first['fullName']).to eq('SHIP OWNER')
       expect(result[:entry]['rawSourceData']['sourceSpecificFields']).to include(
         'au:type' => 'Ship Owner',

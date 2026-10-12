@@ -312,10 +312,12 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
 
       subject(:result) { transformer.transform(generic_entity) }
 
-      it 'returns the base Entity with the source Type unchanged' do
+      it 'returns the base Entity with an entityType the validator accepts' do
         expect(result[:entity]).to be_a(Ammitto::Entity)
         expect(result[:entity].class).to eq(Ammitto::Entity)
-        expect(result[:entity].entity_type).to eq('Ship Owner')
+        expect(result[:entity].entity_type).to eq('organization')
+        serialized = Ammitto::Serialization::JsonLdSerializer.new.serialize_entity(result[:entity])
+        expect(Ammitto::Schema::Validator.new.validate_entity(serialized)).to eq([])
         expect(result[:entity].names.first.full_name).to eq('SHIP OWNER')
       end
 
@@ -342,7 +344,8 @@ RSpec.describe Ammitto::Sources::Au::Transformer do
           'sanction' => { 'control_date' => '6/18/25' }
         )
 
-        expect(result[:entity].entity_type).to eq('Ship Owner')
+        expect(result[:entity].entity_type).to eq('organization')
+        expect(result[:entry].raw_source_data.source_specific_fields['au:type']).to eq('Ship Owner')
         expect(result[:entity].class).to eq(Ammitto::Entity)
       end
     end

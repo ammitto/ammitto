@@ -74,19 +74,30 @@ module Ammitto
           super(:cn)
         end
 
+        # The lists whose notices take a list-qualified announcement id.
+        # MOFCOM numbers export-control notices in a sequence of its own,
+        # so a bare number meets the MFA anti-sanction decisions and the
+        # unreliable-entity decisions on one IRI (第1号 already does). The
+        # two older lists keep the ids they have always published.
+        QUALIFIED_ANNOUNCEMENT_LISTS = %w[export_control].freeze
+
         # Transform an Announcement (YAML format) to all harmonized models
         # @param announcement [Ammitto::Sources::Cn::Announcement]
+        # @param list_type_code [String, nil] the list the notice is filed
+        #   under; overrides each entity's sanction_list when given
         # @return [Hash] { entities:, entries:, group:, official_announcement:, legal_citations: }
-        def transform_announcement(announcement)
+        def transform_announcement(announcement, list_type_code: nil)
+          list_code = announcement_list_code(announcement, list_type_code)
           legal_citations = create_legal_citations(announcement.instruments)
-          official_ann = create_official_announcement(announcement.announcement)
+          official_ann = create_official_announcement(announcement.announcement, list_code: list_code)
 
           entities = []
           entries = []
 
           references = announcement_references(announcement)
           announcement.entities.each do |entity|
-            result = transform_entity(entity, announcement, legal_citations, references.fetch(entity))
+            context = { list_code: list_type_code || entity.list_type_code, announcement_list: list_code }
+            result = transform_entity(entity, announcement, legal_citations, references.fetch(entity), context)
             entities << result[:entity]
             entries << result[:entry]
           end
@@ -122,17 +133,20 @@ module Ammitto
 
         # Transform a MeasureModification to harmonized models
         # @param modification [Ammitto::Sources::Cn::MeasureModification]
+        # @param list_type_code [String, nil] the list the update is filed
+        #   under; its targets are notices of that same list
         # @return [Hash] { official_announcement:, modifications:, legal_citations: }
-        def transform_modification(modification)
+        def transform_modification(modification, list_type_code: nil)
           legal_citations = create_legal_citations(modification.instruments)
-          official_ann = create_official_announcement(modification.announcement)
+          official_ann = create_official_announcement(modification.announcement, list_code: list_type_code)
 
           modifications = modification.modifications.map do |mod|
             create_sanction_period_modification(
               modification: mod,
               announcement_id: official_ann&.id,
               announcement: official_ann,
-              legal_citations: legal_citations
+              legal_citations: legal_citations,
+              list_code: list_type_code
             )
           end
 
@@ -145,18 +159,38 @@ module Ammitto
 
         private
 
+        # The list a whole notice belongs to: the one it is filed under, or
+        # failing that the one all its entities declare. A filed list that
+        # disagrees with what the entities declare is reported, since it
+        # means the source copied the wrong list into the notice. Harmonize
+        # transforms each file twice, so the line appears once per pass, as
+        # the shared-reference warning below does.
+        def announcement_list_code(announcement, list_type_code)
+          declared = announcement.entities.map(&:list_type_code).uniq
+          return (declared.one? ? declared.first : nil) unless list_type_code
+
+          mismatched = declared - [list_type_code]
+          if mismatched.any?
+            Ammitto::Logger.warn(
+              "#{announcement.announcement&.document_id}: filed under #{list_type_code} " \
+              "but its entities declare #{mismatched.join(', ')}; using #{list_type_code}"
+            )
+          end
+          list_type_code
+        end
+
         # Transform a single Entity from the YAML format
-        def transform_entity(entity, announcement, legal_citations, ref)
+        def transform_entity(entity, announcement, legal_citations, ref, context)
           if entity.person?
-            transform_person_entity(entity, announcement, legal_citations, ref)
+            transform_person_entity(entity, announcement, legal_citations, ref, context)
           else
-            transform_org_entity(entity, announcement, legal_citations, ref)
+            transform_org_entity(entity, announcement, legal_citations, ref, context)
           end
         end
 
-        def transform_person_entity(entity, announcement, legal_citations, ref)
+        def transform_person_entity(entity, announcement, legal_citations, ref, context)
           entity_id = generate_entity_id(ref)
-          entry = create_entry(entity, announcement, entity_id, legal_citations, ref)
+          entry = create_entry(entity, announcement, entity_id, legal_citations, ref, context)
 
           person = Ammitto::PersonEntity.new(
             id: entity_id,
@@ -170,9 +204,9 @@ module Ammitto
           { entity: person, entry: entry }
         end
 
-        def transform_org_entity(entity, announcement, legal_citations, ref)
+        def transform_org_entity(entity, announcement, legal_citations, ref, context)
           entity_id = generate_entity_id(ref)
-          entry = create_entry(entity, announcement, entity_id, legal_citations, ref)
+          entry = create_entry(entity, announcement, entity_id, legal_citations, ref, context)
 
           org = Ammitto::OrganizationEntity.new(
             id: entity_id,
@@ -261,12 +295,13 @@ module Ammitto
           names
         end
 
-        def create_entry(entity, announcement, entity_id, legal_citations, ref)
-          list_info = LIST_TYPE_MAPPING[entity.list_type_code] || {
-            code: entity.list_type_code.to_s.upcase,
+        def create_entry(entity, announcement, entity_id, legal_citations, ref, context)
+          list_code = context[:list_code]
+          list_info = LIST_TYPE_MAPPING[list_code] || {
+            code: list_code.to_s.upcase,
             name: entity.sanction_list,
             authority: 'MOFCOM',
-            list_slug: entity.list_type_code.to_s.gsub('_', '-')
+            list_slug: list_code.to_s.gsub('_', '-')
           }
 
           Ammitto::SanctionEntry.new(
@@ -281,12 +316,13 @@ module Ammitto
             reference_number: ref,
             # transform_announcement already built and reported this block;
             # reporting it again per entry would count one bad cell many times.
-            announcement: create_official_announcement(announcement.announcement, report_failures: false),
+            announcement: create_official_announcement(announcement.announcement, report_failures: false,
+                                                                                  list_code: context[:announcement_list]),
             legal_citations: legal_citations,
             raw_source_data: create_raw_source_data(
               source_format: 'yaml',
               source_specific_fields: {
-                'cn:list_type' => entity.list_type_code,
+                'cn:list_type' => list_code,
                 'cn:sanction_list' => entity.sanction_list,
                 'cn:chinese_name' => entity.chinese_name,
                 'cn:english_name' => entity.english_name
@@ -366,8 +402,8 @@ module Ammitto
           )
         end
 
-        def create_official_announcement(announcement_block, report_failures: true)
-          id = generate_announcement_id(naming_id(announcement_block&.document_id, :document_id))
+        def create_official_announcement(announcement_block, report_failures: true, list_code: nil)
+          id = generate_announcement_id(announcement_local_id(announcement_block&.document_id, list_code))
           report_as = report_failures ? { source: :cn, field: :publish_date } : {}
 
           Ammitto::OfficialAnnouncement.new(
@@ -470,14 +506,14 @@ module Ammitto
         end
 
         def create_sanction_period_modification(modification:, announcement_id:, announcement: nil,
-                                                legal_citations: [])
+                                                legal_citations: [], list_code: nil)
           mod_id = generate_modification_id(announcement_id, modification.target_announcement_id)
 
           Ammitto::Ontology::Sanction::SanctionPeriodModification.new(
             id: mod_id,
             target_type: 'announcement',
             target_announcement_id: generate_announcement_id(
-              naming_id(modification.target_announcement_id, :target_announcement_id)
+              announcement_local_id(modification.target_announcement_id, list_code, field: :target_announcement_id)
             ),
             target_announcement_document_id: modification.target_announcement_id,
             target_announcement_date: parse_date(modification.target_announcement_date,
@@ -519,6 +555,13 @@ module Ammitto
           local_id = announcement_id.to_s.split('/').last
           target_ref = naming_id(target_id, :target_announcement_id)
           "https://www.ammitto.org/modification/cn/#{local_id}-#{target_ref}"
+        end
+
+        def announcement_local_id(document_id, list_code, field: :document_id)
+          local_id = naming_id(document_id, field)
+          return local_id unless QUALIFIED_ANNOUNCEMENT_LISTS.include?(list_code)
+
+          "#{LIST_TYPE_MAPPING.fetch(list_code)[:list_slug]}-#{local_id}"
         end
 
         # An IRI is minted from this id, so one that is absent or sanitizes

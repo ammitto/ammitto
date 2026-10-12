@@ -41,8 +41,9 @@ module Ammitto
         # Transform data using appropriate transformer
         # @param source [Symbol] source code
         # @param data [Hash] source data
+        # @param file [String, nil] path the data was read from
         # @return [Hash] { entity: Hash, entry: Hash }
-        def transform_data(source, data)
+        def transform_data(source, data, file: nil)
           transformer = Ammitto::Transformers::Registry.get(source)
           return { entity: nil, entry: nil } unless transformer
 
@@ -68,7 +69,7 @@ module Ammitto
           when :ch
             transform_ch(transformer, data)
           when :cn
-            transform_cn(transformer, data)
+            transform_cn(transformer, data, file)
           when :ru
             transform_ru(transformer, data)
           when :nz

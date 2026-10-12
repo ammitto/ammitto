@@ -116,6 +116,65 @@ RSpec.describe Ammitto::Sources::Cn::Transformer do
     end
   end
 
+  describe 'a notice filed under a list its entities do not declare' do
+    def notice(document_id, sanction_list)
+      Ammitto::Sources::Cn::Announcement.from_hash(
+        'announcement' => { 'document_id' => document_id },
+        'sanction_details' => {
+          'entities' => %w[Alpha Beta].map do |name|
+            { 'name' => { 'en' => name }, 'type' => 'organization',
+              'effective_date' => '2025-01-02', 'sanction_list' => sanction_list }
+          end
+        }
+      )
+    end
+
+    let(:export_control) do
+      described_class.new.transform_announcement(notice('第1号', 'cn/anti-sanction-list'),
+                                                 list_type_code: 'export_control')
+    end
+    let(:anti_sanction) do
+      described_class.new.transform_announcement(notice('第1号', 'cn/anti-sanction-list'),
+                                                 list_type_code: 'anti_sanctions')
+    end
+
+    it 'files its entries under the list it is filed under' do
+      entry = export_control[:entries].first
+
+      expect(entry.id).to start_with('https://www.ammitto.org/entry/cn/import-export-control-list/')
+      expect(entry.regime.code).to eq('CN_EXPORT_CONTROL')
+    end
+
+    it 'gives it a group and announcement apart from another list sharing its number' do
+      expect(export_control[:group].id).to eq('https://www.ammitto.org/group/cn/import-export-control-list-1')
+      expect(export_control[:official_announcement].id)
+        .to eq('https://www.ammitto.org/announcement/cn/import-export-control-list-1')
+      expect(export_control[:group].id).not_to eq(anti_sanction[:group].id)
+      expect(export_control[:official_announcement].id).not_to eq(anti_sanction[:official_announcement].id)
+      expect(export_control[:entries].first.announcement.id).to eq(export_control[:official_announcement].id)
+    end
+
+    it 'keeps the ids an anti-sanction notice has always published' do
+      expect(anti_sanction[:group].id).to eq('https://www.ammitto.org/group/cn/1')
+      expect(anti_sanction[:entries].first.id).to eq('https://www.ammitto.org/entry/cn/anti-sanction-list/1-alpha')
+    end
+
+    it 'points an update filed under the same list at the qualified notice' do
+      update = Ammitto::Sources::Cn::MeasureModification.from_hash(
+        'announcement' => { 'document_id' => '第2号' },
+        'measure_modifications' => { 'modifications' => [{ 'target_announcement_id' => '第1号' }] }
+      )
+      target = described_class.new.transform_modification(update, list_type_code: 'export_control')[:modifications]
+                              .first.target_announcement_id
+
+      expect(target).to eq(export_control[:official_announcement].id)
+    end
+
+    it 'keeps entity ids, which are not list-specific' do
+      expect(export_control[:entities].map(&:id)).to eq(anti_sanction[:entities].map(&:id))
+    end
+  end
+
   describe 'an instrument with a blank identifier' do
     # `if instrument.id` guards nil, not blank, and "" is truthy, so a
     # record carrying `id: ""` used to reach the sanitizer and raise.

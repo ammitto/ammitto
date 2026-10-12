@@ -31,6 +31,39 @@ RSpec.describe Ammitto::Cmd::Harmonize::SourceTransforms do
     command.send(:transform_data, command.sources.fetch(0), record)
   end
 
+  context 'with a CN notice filed in a list directory' do
+    let(:source_code) { :cn }
+
+    let(:record) do
+      {
+        'announcement' => { 'document_id' => '第1号' },
+        'sanction_details' => {
+          'entities' => [{ 'name' => { 'en' => 'Alpha' }, 'type' => 'organization',
+                           'effective_date' => '2025-01-02', 'sanction_list' => 'cn/anti-sanction-list' }]
+        }
+      }
+    end
+
+    def entry_id_from(file)
+      command.send(:transform_data, :cn, record, file: file).first[:entry]['@id']
+    end
+
+    it 'takes the list from the directory over the entity field' do
+      expect(entry_id_from('/d/sources/sanction-lists/import-export-control-list/202501.yml'))
+        .to start_with('https://www.ammitto.org/entry/cn/import-export-control-list/')
+    end
+
+    it 'reads the list of an update from its -updates directory' do
+      expect(command.send(:cn_list_from_path, '/d/sources/sanction-updates/import-export-control-list-updates/x.yml'))
+        .to eq('export_control')
+    end
+
+    it 'falls back to the entity field when the directory names no list' do
+      expect(entry_id_from('/d/processed/202501.yml'))
+        .to start_with('https://www.ammitto.org/entry/cn/anti-sanction-list/')
+    end
+  end
+
   context 'with an AU generic entity record' do
     let(:source_code) { :au }
 

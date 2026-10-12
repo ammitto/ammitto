@@ -90,13 +90,14 @@ module Ammitto
         # Transform CN data
         # @param transformer [Object] transformer instance
         # @param data [Hash] source data
+        # @param file [String, nil] path the data was read from
         # @return [Hash, Array<Hash>] single result or array of results
-        def transform_cn(transformer, data)
+        def transform_cn(transformer, data, file = nil)
           # Check if this is the new data-cn YAML format
           if data.key?('announcement') && data.key?('sanction_details')
-            transform_cn_announcement(transformer, data)
+            transform_cn_announcement(transformer, data, file)
           elsif data.key?('announcement') && data.key?('measure_modifications')
-            transform_cn_modification(transformer, data)
+            transform_cn_modification(transformer, data, file)
           else
             # Only the announcement and modification shapes are supported;
             # anything else is a data defect the health gates must see, not a
@@ -108,10 +109,11 @@ module Ammitto
         # Transform CN announcement (new YAML format)
         # @param transformer [Object] transformer instance
         # @param data [Hash] source data
+        # @param file [String, nil] path the data was read from
         # @return [Array<Hash>] array of transformation results
-        def transform_cn_announcement(transformer, data)
+        def transform_cn_announcement(transformer, data, file = nil)
           announcement = Ammitto::Sources::Cn::Announcement.from_hash(data)
-          result = transformer.transform_announcement(announcement)
+          result = transformer.transform_announcement(announcement, list_type_code: cn_list_from_path(file))
 
           # Export SanctionGroup if present
           @exporter.add_group(result[:group], source: :cn) if
@@ -126,13 +128,29 @@ module Ammitto
           end
         end
 
+        # data-cn files each notice under sources/sanction-lists/<list slug>/
+        # (and each update under sources/sanction-updates/<list slug>-updates/),
+        # and that directory is curated per list, while the per-entity
+        # sanction_list field has been copied wrong (the 2025 export-control
+        # 第1号 notice says anti-sanction-list). The directory therefore wins
+        # when it names a known list.
+        # @param file [String, nil] path the data was read from
+        # @return [String, nil] list type code, or nil when the path names none
+        def cn_list_from_path(file)
+          return nil unless file
+
+          slug = File.basename(File.dirname(file)).delete_suffix('-updates')
+          code = Ammitto::Sources::Cn::Entity.list_type_code_for(slug)
+          code == 'unknown' ? nil : code
+        end
+
         # Transform CN modification (new YAML format)
         # @param transformer [Object] transformer instance
         # @param data [Hash] source data
         # @return [Hash] empty entity/entry pair for a modification
-        def transform_cn_modification(transformer, data)
+        def transform_cn_modification(transformer, data, file = nil)
           modification = Ammitto::Sources::Cn::MeasureModification.from_hash(data)
-          transformer.transform_modification(modification)
+          transformer.transform_modification(modification, list_type_code: cn_list_from_path(file))
 
           # Modifications amend an existing entity rather than adding one; the
           # ingest path treats a nil pair as a designed skip.

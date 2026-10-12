@@ -65,15 +65,21 @@ module Ammitto
           '不可靠实体清单' => 'unreliable_entity',
           'unreliable-entity-list' => 'unreliable_entity',
           '出口管制管控名单' => 'export_control',
-          'import-export-control-list' => 'export_control'
+          'import-export-control-list' => 'export_control',
+          'export-control-list' => 'export_control'
         }.freeze
+
+        # @param value [String, nil] a list label or slug, "cn/" prefix optional
+        # @return [String] the list type code, or 'unknown'
+        def self.list_type_code_for(value)
+          LIST_TYPE_CODES.fetch(value.to_s.strip.delete_prefix('cn/'), 'unknown')
+        end
 
         # Get list type code, accepting Chinese labels and data slugs
         # (with or without the "cn/" prefix)
         # @return [String]
         def list_type_code
-          key = sanction_list.to_s.strip.delete_prefix('cn/')
-          LIST_TYPE_CODES.fetch(key, 'unknown')
+          self.class.list_type_code_for(sanction_list)
         end
 
         # The identifier ItemMapper names this record's file after.

@@ -677,18 +677,20 @@ module Ammitto
         FileUtils.mkdir_p(search_index_dir)
 
         # Group the already-finalized rows once, then serialize each group.
-        # Do not build a monolithic payload and split it afterward.
-        rows_by_source = rows.group_by { |row| row[:authority] }
-        shards = rows_by_source.map do |authority, source_rows|
-          code = shard_code(authority)
-
+        # Do not build a monolithic payload and split it afterward. Group by
+        # the shard file name, not the raw authority: a missing authority
+        # and an unsafe one both land in unknown.json, and grouping by the
+        # raw value would write that file once per authority, each write
+        # overwriting the last and the manifest listing it repeatedly.
+        rows_by_shard = rows.group_by { |row| shard_code(row[:authority]) }
+        shards = rows_by_shard.map do |code, shard_rows|
           File.write(
             File.join(search_index_dir, "#{code}.json"),
             JSON.generate(
               search_index_data(
-                source_rows,
+                shard_rows,
                 generated,
-                authority ? 1 : 0
+                shard_rows.filter_map { |row| row[:authority] }.uniq.length
               )
             )
           )
@@ -696,7 +698,7 @@ module Ammitto
           {
             code: code,
             file: "#{code}.json",
-            count: source_rows.length
+            count: shard_rows.length
           }
         end
 
@@ -704,7 +706,7 @@ module Ammitto
           search_index_dir,
           generated: generated,
           total_entities: rows.length,
-          source_count: rows_by_source.keys.compact.length,
+          source_count: rows.filter_map { |row| row[:authority] }.uniq.length,
           shards: shards
         )
 

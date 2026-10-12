@@ -616,6 +616,28 @@ RSpec.describe Ammitto::Cmd::FetchCommand do
       expect(File.symlink?(File.join(dir, 'gbr-swapped.yaml'))).to be(true)
     end
 
+    it 'keeps a recorded file that is now a symlink and records it as left in place' do
+      previous_harvest(dir, 41, files: [*listed, 'gbr-linked.yaml'])
+      File.write(File.join(dir, '.target.yaml'), "old: true\n")
+      File.symlink(File.join(dir, '.target.yaml'), File.join(dir, 'gbr-linked.yaml'))
+
+      expect { save(pruning, uk_records(40), dir) }.to output(/gbr-linked\.yaml/).to_stderr
+
+      expect(File.symlink?(File.join(dir, 'gbr-linked.yaml'))).to be(true)
+      expect(index_in(dir)).to include('pruned' => 0, 'left_in_place_files' => ['gbr-linked.yaml'])
+      expect(index_in(dir)['files']).to include('gbr-linked.yaml')
+    end
+
+    it 'keeps a recorded file of a prefixed source that became a symlink before the delete' do
+      index_for(dir, 'tr', 41, files: ['tr-linked.yaml'])
+      File.write(File.join(dir, '.target.yaml'), "old: true\n")
+      File.symlink(File.join(dir, '.target.yaml'), File.join(dir, 'tr-linked.yaml'))
+      tr_pruning = described_class.new(thor_options(prune: true), ['tr'])
+
+      expect(tr_pruning.send(:delete_if_still_owned, :tr, 'tr-linked.yaml', dir)).to be(false)
+      expect(File.symlink?(File.join(dir, 'tr-linked.yaml'))).to be(true)
+    end
+
     it "keeps another source's shaped record under an unprefixed name" do
       index_for(dir, 'uk', 41)
       File.write(File.join(dir, 'gbr-orphan.yaml'), { 'unique_id' => 'GBR-orphan' }.to_yaml)

@@ -80,6 +80,7 @@ module Ammitto
           previous = previous_index(source, output_dir)
           return [] unless previous
 
+          report_irregular(source, irregular_records(written, output_dir, previous))
           stale = stale_records(source, written, output_dir, previous)
           return [] if prune_too_large?(source, stale.size, previous['count'])
 
@@ -101,9 +102,10 @@ module Ammitto
         #   file in place must not report success.
         def delete_if_still_owned(source, name, output_dir)
           current = previous_index(source, output_dir)
-          return false unless current && owned_name?(source, name, current, output_dir)
+          path = File.join(output_dir, name)
+          return false unless current && regular_file?(path) && owned_name?(source, name, current, output_dir)
 
-          File.delete(File.join(output_dir, name))
+          File.delete(path)
           true
         rescue Errno::ENOENT
           false
@@ -128,7 +130,46 @@ module Ammitto
           return [] unless previous
           return carried_forward_files(previous) if written.empty?
 
-          stale_records(source, written, output_dir, previous)
+          (stale_records(source, written, output_dir, previous) |
+            irregular_records(written, output_dir, previous)).sort
+        end
+
+        # Recorded files that are now a symlink, a directory or anything
+        # else that is not a regular file. The index names what this source
+        # wrote, not what the path points at now: deleting a link the data
+        # repository tracks, or whatever replaced the file, is not undoing
+        # this source's own write. They stay where they are and stay
+        # recorded, so the index says they were left in place.
+        # @param written [Hash{String => Array}] filenames this run wrote
+        # @param output_dir [String] output directory
+        # @param previous [Hash] the previous index of this source
+        # @return [Array<String>] sorted filenames
+        def irregular_records(written, output_dir, previous)
+          carried_forward_files(previous).select do |name|
+            path = File.join(output_dir, name)
+            name == File.basename(name) && name != '_index.yaml' && !written.key?(name) &&
+              (File.symlink?(path) || File.exist?(path)) && !regular_file?(path)
+          end.sort
+        end
+
+        # @param source [Symbol] source code
+        # @param names [Array<String>] recorded files that are not regular
+        # @return [void]
+        def report_irregular(source, names)
+          return if names.empty?
+
+          warn "[#{source}] --prune left #{names.size} recorded files in place " \
+               "that are no longer regular files: #{names.join(', ')}"
+        end
+
+        # A symlink is never followed: it is the link itself that a delete
+        # would remove, and a link is not a record this source wrote.
+        # @param path [String] the file
+        # @return [Boolean] whether the path itself is a regular file
+        def regular_file?(path)
+          File.lstat(path).file?
+        rescue SystemCallError
+          false
         end
 
         # A run that wrote nothing deleted nothing, so every file the
@@ -192,8 +233,7 @@ module Ammitto
             path = File.join(output_dir, name)
             name == File.basename(name) && !name.start_with?('.') && name.end_with?('.yaml') &&
               name != '_index.yaml' && name.start_with?(prefix) &&
-              !written.key?(name) && File.file?(path) &&
-              (!prefix.empty? || !File.symlink?(path)) &&
+              !written.key?(name) && regular_file?(path) &&
               (recorded.include?(name) || adoptable?(source, prefix, name, path))
           end.sort
         end
@@ -210,7 +250,7 @@ module Ammitto
 
           prefix = ItemMapper::FILENAME_PREFIXES[source]
           path = File.join(output_dir, name)
-          (prefix.to_s.empty? ? !File.symlink?(path) : name.start_with?(prefix)) &&
+          (prefix.to_s.empty? || name.start_with?(prefix)) &&
             adoptable?(source, prefix.to_s, name, path)
         end
 

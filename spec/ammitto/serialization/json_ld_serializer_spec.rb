@@ -326,6 +326,22 @@ RSpec.describe Ammitto::Serialization::JsonLdSerializer do
       end
     end
 
+    # The serializer emits effectiveDate on sanction periods and on
+    # period modifications; without a typed term it expanded to a plain
+    # string while its neighbour untilDate expanded to a date.
+    it 'expands effectiveDate to an xsd:date literal' do
+      expect(terms['effectiveDate'])
+        .to eq({ '@id' => 'effectiveDate', '@type' => 'xsd:date' })
+
+      node = { 'effectiveDate' => '2025-04-04' }
+             .merge(Ammitto::Schema::Context.context)
+      literal = JSON::LD::API.expand(node).first[
+        'https://ammitto.org/schema/v1/effectiveDate'
+      ].first
+      expect(literal['@type'])
+        .to eq('http://www.w3.org/2001/XMLSchema#date')
+    end
+
     it 'declares both date bounds as xsd:date' do
       expect(terms['dateRangeFrom'])
         .to eq({ '@id' => 'dateRangeFrom', '@type' => 'xsd:date' })

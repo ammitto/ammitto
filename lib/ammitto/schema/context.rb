@@ -279,6 +279,8 @@ module Ammitto
               'affectedEntityNames' => { '@id' => 'affectedEntityName', '@container' => '@set' },
               'action' => { '@id' => 'action' },
               'untilDate' => { '@id' => 'untilDate', '@type' => 'xsd:date' },
+              # Also emitted on TemporalPeriod nodes, so one term covers both.
+              'effectiveDate' => { '@id' => 'effectiveDate', '@type' => 'xsd:date' },
               'untilTime' => { '@id' => 'untilTime' },
               'durationDays' => { '@id' => 'durationDays', '@type' => 'xsd:integer' },
               'durationDescription' => { '@id' => 'durationDescription' },

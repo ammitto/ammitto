@@ -25,7 +25,6 @@ module Ammitto
         SCHEMA_FILES = {
           announcement: 'jp-announcement.yml',
           legal_instrument: 'jp-legal-instrument.yml',
-          document_type: 'jp-document-type.yml',
           document_types: 'document-types.yml',
           organizations: 'organizations.yml'
         }.freeze

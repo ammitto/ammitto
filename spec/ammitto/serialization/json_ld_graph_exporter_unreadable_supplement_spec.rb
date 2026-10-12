@@ -45,6 +45,22 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
       .to output(/Could not load instrument .*law\.yml/).to_stderr
   end
 
+  it 'reports a legal instrument file that has no id in a default run' do
+    FileUtils.mkdir_p(instruments)
+    File.write(File.join(instruments, 'law.yml'), "title: A law\n")
+
+    expect { build(instruments_dir: instruments) }
+      .to output(/Could not load instrument .*law\.yml: no id/).to_stderr
+  end
+
+  it 'reports an empty legal instrument file in a default run' do
+    FileUtils.mkdir_p(instruments)
+    File.write(File.join(instruments, 'law.yml'), '')
+
+    expect { build(instruments_dir: instruments) }
+      .to output(/Could not load instrument .*law\.yml: no id/).to_stderr
+  end
+
   it 'reports an unreadable document types file in a default run' do
     write_unreadable(supporting, 'document-types.yml')
 

@@ -382,7 +382,8 @@ end
 # Export
 exporter.export('./api/v1')
 # Creates:
-#   ./api/v1/search-index.json
+#   ./api/v1/search-index/manifest.json   (lists the shard files)
+#   ./api/v1/search-index/{authority}.json (one shard per authority, or unknown.json)
 #   ./api/v1/facets/authorities.json
 #   ./api/v1/facets/types.json
 #   ./api/v1/facets/countries.json

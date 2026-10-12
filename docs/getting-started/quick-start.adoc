@@ -162,7 +162,7 @@ ammitto harmonize --all --combine --output-dir ./api/v1
 
 == Using the Search Index
 
-The lightweight search index (~8MB) enables fast client-side search. The gem
+The lightweight search index enables fast client-side search. The gem
 builds and exports the index; loading and querying it is the client's job.
 
 [source,ruby]
@@ -179,29 +179,60 @@ entry_hash = { 'status' => 'active',
                'authority' => { 'countryCode' => 'UN' } }
 exporter.add(entity_hash, entry_hash)
 
-# Write search-index.json plus the facet files
+# Write search-index/ (manifest.json plus one shard per authority, and
+# unknown.json for rows without a usable authority) and the facet files
 exporter.export('./api/v1')
 ----
 
-Read the exported index back with any JSON parser:
+The index is sharded by authority; rows with no usable authority go to an
+`unknown.json` shard. `search-index/manifest.json` lists the
+shard files (`file` is relative to the `search-index/` directory); each shard
+holds that authority's rows. Read them back with any JSON parser:
 
 [source,ruby]
 ----
-index = JSON.parse(File.read('./api/v1/search-index.json'))
-results = index['entities'].select do |e|
+require 'json'
+
+index_dir = './api/v1/search-index'
+manifest = JSON.parse(File.read(File.join(index_dir, 'manifest.json')))
+rows = manifest['shards'].flat_map do |shard|
+  JSON.parse(File.read(File.join(index_dir, shard['file'])))['entities']
+end
+results = rows.select do |e|
   e['primaryName'].to_s.downcase.include?('kim')
 end
 ----
 
 === Search Index Structure
 
+`search-index/manifest.json` carries totals across all shards and one
+descriptor per shard, sorted by code (excerpt):
+
 [source,json]
 ----
 {
   "metadata": {
-    "generated": "2025-02-26T00:00:00Z",
-    "totalEntities": 55908,
-    "sources": 15
+    "generated": "2026-10-11T15:23:22Z",
+    "totalEntities": 61460,
+    "sources": 14
+  },
+  "shards": [
+    { "code": "au", "file": "au.json", "count": 4009 },
+    { "code": "un", "file": "un.json", "count": 1010 }
+  ]
+}
+----
+
+Each shard (here `search-index/un.json`) carries the same metadata for its
+own rows, and the rows themselves:
+
+[source,json]
+----
+{
+  "metadata": {
+    "generated": "2026-10-11T15:23:22Z",
+    "totalEntities": 1010,
+    "sources": 1
   },
   "entities": [
     {

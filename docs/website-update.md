@@ -56,7 +56,7 @@ Still needed:
 - `api/v1/node/entity/{source}/{id}.jsonld` - Individual entity nodes
 - `api/v1/node/entry/{source}/{list_type}/{id}.jsonld` - Individual entry nodes
 - `api/v1/node/list/{source}/{list_type}.jsonld` - List definition nodes
-- `api/v1/search-index.json` - Lightweight search index
+- `api/v1/search-index/` - Lightweight search index (`manifest.json` plus one shard per authority and `unknown.json` for rows without a usable authority)
 - `api/v1/facets/list_types.json` - List type facets
 - `api/v1/by-list/{source}/{list_type}.jsonld` - By-list slices
 

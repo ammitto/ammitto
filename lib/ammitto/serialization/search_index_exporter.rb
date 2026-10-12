@@ -12,9 +12,11 @@ module Ammitto
   module Serialization
     # SearchIndexExporter creates a lightweight search index for client-side search
     #
-    # The website currently loads 69MB of JSON-LD data. This exporter creates
-    # a lightweight (~5-10MB) search-index.json with only essential fields,
-    # allowing full entity data to be loaded on-demand from node files.
+    # Client-side search needs a few fields per entity, not the full
+    # JSON-LD graph. This exporter writes a search-index/ directory (a
+    # manifest.json plus one shard per authority, unknown.json for rows
+    # without a usable authority) holding only those fields, so full
+    # entity data can be loaded on demand from node files.
     #
     # Rows are deduplicated by entity @id: one search row per entity,
     # however many entity/entry pairs the input carries. Repeated ids

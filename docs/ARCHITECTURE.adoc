@@ -29,12 +29,9 @@ into multiple structured formats for downstream consumers.
 | Repository | Role in the pipeline
 
 | `ammitto/ammitto` | Ruby gem. CLI for scraping, transforming, and exporting.
-| `ammitto/data-{source}` (15 repos) | Per-jurisdiction data: raw download, harmonized YAML, JSON-LD API.
-| `ammitto/data` | Aggregated knowledge graph across all sources.
-| `ammitto/ammitto.github.io` | Vue.js website that consumes the JSON-LD API.
-| `ammitto/schemas` | Canonical JSON Schema definitions for the data model.
-| `ammitto/infrastructure` | Deployment configuration.
-| `ammitto/adapters` | Integration adapters for downstream systems.
+| `ammitto/data-{source}` (15 repos) | Per-jurisdiction data: per-entity YAML in `processed/` (written by `ammitto fetch`), curated YAML in `sources/` where a source needs it.
+| `ammitto/data` | Aggregated knowledge graph across all sources, harmonized from the `data-{source}` repos into `api/v1/`.
+| `ammitto/ammitto.github.io` | Vue.js website. Its deploy workflow runs `ammitto harmonize` over the `data-{source}` repos and serves the JSON-LD API it produces.
 |===
 
 == The pipeline
@@ -50,26 +47,26 @@ that the next stage consumes.
                                        │
 ┌──────────────────────────────────────▼─────────────────────────────────────┐
 │  2. HARMONIZE (transform to unified YAML)                                  │
-│     downloaded/        → sources/ + processed/    [the "same shape"]       │
+│     `ammitto fetch` → data-{source}/processed/   [the "same shape"]        │
 │     Per-source extractors live in ammitto/lib/ammitto/sources/{source}/    │
 └──────────────────────────────────────┬─────────────────────────────────────┘
                                        │
 ┌──────────────────────────────────────▼─────────────────────────────────────┐
-│  3. EXPORT (per-source JSON-LD)                                            │
-│     sources/processed/ → api/                                              │
+│  3. EXPORT (JSON-LD, run inside `ammitto harmonize`)                       │
+│     processed/ + sources/ → <output-dir>/sources/{code}.jsonld             │
 │     Per-source exporters in ammitto/lib/ammitto/serialization/             │
 └──────────────────────────────────────┬─────────────────────────────────────┘
                                        │
 ┌──────────────────────────────────────▼─────────────────────────────────────┐
 │  4. AGGREGATE                                                              │
-│     data-{source}/api/ → data/api/v1/                                      │
-│     `ammitto harmonize --scan` auto-detects all data-* repos               │
+│     data-{source}/processed/ + sources/ → data/api/v1/ (committed)         │
+│     `ammitto harmonize --all --sources-dir` reads every data-* checkout    │
 └──────────────────────────────────────┬─────────────────────────────────────┘
                                        │
 ┌──────────────────────────────────────▼─────────────────────────────────────┐
 │  5. PUBLISH + MULTI-FORMAT EXPORT                                          │
-│     data/api/v1/  →  ammitto.github.io (Vue website)                       │
-│                   →  JSON-LD, Turtle, search-index.json,                   │
+│     ammitto.github.io deploy runs its own harmonize → public/api/v1/       │
+│                   →  JSON-LD, Turtle, search-index/ shards,                │
 │                      ontology browser, Neo4j import                        │
 └────────────────────────────────────────────────────────────────────────────┘
 ....
@@ -158,8 +155,8 @@ CLI::
 Exporters (in `ammitto/lib/ammitto/serialization/`)::
   * `json_ld_graph_exporter.rb` — Knowledge graph: one node file per
     entity/entry/regime/authority/instrument, plus `all.jsonld`.
-  * `search_index_exporter.rb` — Lightweight search index (~8MB instead
-    of the full ~70MB graph) for client-side FlexSearch.
+  * `search_index_exporter.rb` — Lightweight search index for
+    client-side FlexSearch.
   * `ontology_exporter.rb` — Class definitions, property definitions,
     class hierarchy, example entities (for the ontology browser UI).
   * `rdf_serializer.rb` / `turtle_exporter.rb` — RDF/Turtle output for
@@ -167,20 +164,22 @@ Exporters (in `ammitto/lib/ammitto/serialization/`)::
   * `neo4j_exporter.rb` (and `neo4j_direct_importer.rb`) — Graph-database
     import bundles for downstream graph analysis.
 
-Outputs (per `data-{source}` repo)::
+Outputs::
 
-  `api/`::        JSON-LD output, structured the same way as the
-                  aggregated `data/api/v1/` directory.
-  `api/v1/`::     Alternate versioned layout (some repos use this).
+  The `data-{source}` repos hold no JSON-LD output. Export runs inside
+  `ammitto harmonize`, which reads each repo's `processed/` (and
+  `sources/`) and writes into the `--output-dir` it is given: `data/api/v1/`
+  for the `ammitto/data` workflow, `public/api/v1/` for the website build.
 
 == Stage 4 — Aggregate
 
-The `ammitto/data` repo combines every `data-{source}` output into a single
-knowledge graph.
+The `ammitto/data` repo combines every `data-{source}` repo into a single
+knowledge graph. Its `harmonize.yml` checks out all 15 `data-{source}` repos
+under `sources/` and harmonizes their `processed/` (and `sources/`) YAML.
 
 CLI::
-  `ammitto harmonize --scan --sources-dir /path/to/parent`
-  (auto-detects all `data-*` repos and processes them together)
+  `ammitto harmonize --all --sources-dir ./sources --output-dir ./api/v1 --combine`
+  (`--scan` instead of `--all` auto-detects the `data-*` repos present)
 
 Outputs (`data/api/v1/`)::
 
@@ -196,8 +195,10 @@ Outputs (`data/api/v1/`)::
     Class and property definitions for the ontology browser.
   `sources/{source}.jsonld`::
     Per-source aggregated file (e.g. `sources/eu.jsonld`).
-  `search-index.json`::     Lightweight search index.
-  `all.jsonld`::            Complete knowledge graph (~70MB).
+  `search-index/`::         Lightweight search index: `manifest.json`
+                            plus one shard file per authority, and
+                            `unknown.json` for rows without a usable authority.
+  `all.jsonld`::            Complete knowledge graph.
   `all.ttl`::               Turtle/RDF representation.
   `stats.json`::            Entity counts per source.
 
@@ -205,28 +206,34 @@ Outputs (`data/api/v1/`)::
 
 === Website (`ammitto/ammitto.github.io`)
 
-Vue.js 3 + Tailwind site. Consumes the JSON-LD API from `data/api/v1/`.
+Vue.js 3 + Tailwind site. Its `deploy.yml` clones the 15 `data-{source}`
+repos, runs `ammitto harmonize` over them into `public/api/v1/`, and
+deploys the result; it does not read `data/api/v1/`. The `ammitto/data`
+workflow dispatches this deploy after it publishes.
 
 Pages::
   * `/` — Landing page.
-  * `/search` — Loads `search-index.json`, indexes in FlexSearch, returns
+  * `/search` — Loads `search-index/manifest.json` and the shards it
+    lists, indexes them in FlexSearch, returns
     instant results. Full entity detail fetched on click from
     `node/entity/{source}/{id}.jsonld`.
   * `/ontology` — Class hierarchy, property browser, example entities.
-    Sourced from `ontology/{classes,properties,hierarchy}.jsonld`.
+    Sourced from `ontology/classes.jsonld`, `ontology/properties.jsonld`
+    and `ontology/hierarchy.json`.
 
 API surface (served as static JSON)::
 
 [cols="2,4"]
 |===
 | Endpoint | Description
-| `/api/v1/search-index.json` | Lightweight search payload
-| `/api/v1/node/entity/{source}/{ref}` | Single entity
-| `/api/v1/node/entry/{source}/{ref}` | Single sanction entry
-| `/api/v1/by-authority/{code}` | Entries by authority
-| `/api/v1/by-regime/{code}` | Entries by regime
-| `/api/v1/by-status/{status}` | Entries by status
-| `/api/v1/by-type/{type}` | Entities by type
+| `/api/v1/search-index/manifest.json` | Search index manifest (lists the shards)
+| `/api/v1/search-index/{authority}.json` | Lightweight search payload, one shard per authority (rows with no usable authority go to `unknown.json`)
+| `/api/v1/node/entity/{source}/{ref}.jsonld` | Single entity
+| `/api/v1/node/entry/{source}/{list_type}/{ref}.jsonld` | Single sanction entry
+| `/api/v1/by-authority/{code}.jsonld` | Entries by authority
+| `/api/v1/by-regime/{code}.jsonld` | Entries by regime
+| `/api/v1/by-status/{status}.jsonld` | Entries by status
+| `/api/v1/by-type/{type}.jsonld` | Entities by type
 | `/api/v1/facets/{type}.json` | Facet counts
 | `/api/v1/ontology/classes.jsonld` | Ontology class definitions
 | `/api/v1/all.jsonld` | Complete graph
@@ -240,7 +247,7 @@ API surface (served as static JSON)::
 | Format | Use case | Producer
 | JSON-LD | Primary web API, semantic web | `JsonLdGraphExporter`
 | Turtle (.ttl) | RDF/SPARQL ecosystems | `TurtleExporter`
-| Search index | Client-side FlexSearch (~8MB) | `SearchIndexExporter`
+| Search index | Client-side FlexSearch | `SearchIndexExporter`
 | Ontology browser data | UI class/property tree | `OntologyExporter`
 | Neo4j import | Graph database analysis | `Neo4jExporter`
 |===
@@ -348,8 +355,6 @@ data-{source}/
 ├── reference-docs/     # Source-side documentation (PDFs, HTML, MD)
 ├── sources/            # Stage 2: harmonized YAML (canonical shape)
 ├── processed/          # Stage 2: per-entity YAML files (derived)
-├── api/                # Stage 3: JSON-LD output (this repo's API)
-│   └── v1/             # Versioned layout (some repos)
 ├── schemas/            # Source-specific schema supplements
 ├── scripts/            # Source-specific helper scripts (e.g. PDF parsers)
 ├── README.adoc         # Source data format + harmonized format docs

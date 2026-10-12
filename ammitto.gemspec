@@ -14,8 +14,13 @@ Gem::Specification.new do |spec|
                        'aircraft from various international sources including EU, UN, US, ' \
                        'World Bank, and more.'
 
+  # Runtime files only: schemas/ is read by Data::China and Data::Japan
+  # SchemaLoader, lib/ carries the knowledge graph schema YAML.
   spec.files         = Dir.chdir(File.expand_path(__dir__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+    `git ls-files -z`.split("\x0").select do |f|
+      f.match?(%r{\A(lib|exe|schemas)/}) ||
+        %w[ammitto.gemspec README.adoc LICENSE.txt].include?(f)
+    end
   end
   spec.platform      = Gem::Platform::RUBY
   spec.require_paths = ['lib']

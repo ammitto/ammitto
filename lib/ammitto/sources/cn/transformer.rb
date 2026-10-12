@@ -70,6 +70,10 @@ module Ammitto
           'en' => { key: 'en', script: 'Latn', is_primary: false }
         }.freeze
 
+        # Set by harmonize so each announcement picks up its modifications.
+        # @return [ModificationIndex, nil]
+        attr_accessor :modification_index
+
         def initialize
           super(:cn)
         end
@@ -121,6 +125,8 @@ module Ammitto
             # Set group_id on all entries
             entries.each { |e| e.group_id = group.id }
           end
+
+          attach_modifications(entries, official_ann)
 
           {
             entities: entities,
@@ -177,6 +183,20 @@ module Ammitto
             )
           end
           list_type_code
+        end
+
+        # Keyed by the list each entry is published under, so a document
+        # number reused by another list never picks up these modifications.
+        def attach_modifications(entries, official_ann)
+          return unless modification_index
+
+          entries.group_by { |e| list_slug_for_regime(e.regime&.code) }.each do |list, list_entries|
+            modification_index.attach(list_entries, list, official_ann)
+          end
+        end
+
+        def list_slug_for_regime(code)
+          LIST_TYPE_MAPPING.values.find { |info| info[:code] == code }&.fetch(:list_slug)
         end
 
         # Transform a single Entity from the YAML format

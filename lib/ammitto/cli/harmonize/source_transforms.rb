@@ -49,6 +49,8 @@ module Ammitto
 
           transformer.iri_collision_registry = @iri_collision_registry if
             transformer.class.method_defined?(:iri_collision_registry=)
+          transformer.modification_index = @cn_modification_index if
+            transformer.class.method_defined?(:modification_index=)
 
           # Transform based on source
           case source

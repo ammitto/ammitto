@@ -4,6 +4,7 @@ require_relative '../../transformers/base_transformer'
 require_relative '../../parse_failure_visibility'
 require_relative 'announcement_transformer'
 require_relative 'list_announcement'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -51,11 +52,24 @@ module Ammitto
         # Transform a RU SanctionedEntity to ontology models
         # @param source_entity [Ammitto::Sources::Ru::SanctionedEntity]
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
+        # @raise [Ammitto::ParseError] when the entity's type is neither
+        #   person nor organization, as PartyTypeGuard refuses for
+        #   announcement files: either answer would be a guess
         def transform(source_entity)
           if source_entity.person?
             transform_person(source_entity)
-          else
+          elsif source_entity.organization?
             transform_organization(source_entity)
+          else
+            # A blank English name must not hide a usable Russian one.
+            name = Utils::Presence.presence(source_entity.english_name) ||
+                   Utils::Presence.presence(source_entity.russian_name)
+            raise Ammitto::ParseError.new(
+              "ru entity #{name.inspect} has no " \
+              "readable type (#{source_entity.entity_type.inspect}); " \
+              'expected "person" or "organization"',
+              format: :yaml
+            )
           end
         end
 
@@ -64,7 +78,8 @@ module Ammitto
         # An announcement file goes to AnnouncementTransformer, which returns
         # the contract Sources::Cn::Transformer does. A flat ListAnnouncement
         # keeps the array of per-record results Ammitto 1.0.0 returned for
-        # it, so released callers are unaffected.
+        # it, but a record typed as neither person nor organization is now
+        # refused rather than published under a guessed type.
         #
         # @param announcement [Announcement, ListAnnouncement]
         # @return [Hash, Array<Hash>] for an Announcement: entities, entries,

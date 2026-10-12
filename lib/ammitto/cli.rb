@@ -339,18 +339,15 @@ module Ammitto
         ammitto source japan fetch meti --output-dir ./data  # Save to custom directory
     DESC
     # Thor dispatches on the FIRST element of the argv it is handed, so the
-    # subcommand has to lead. This passed `[country] + args`, which made
-    # every documented invocation — `ammitto source japan fetch meti` —
-    # look for a command named `japan`, print `Could not find command
-    # "japan"` and, because SourceCommand defined no `exit_on_failure?`,
-    # exit 0 having done nothing.
+    # subcommand has to lead: with the country first, `ammitto source japan
+    # fetch meti` would look for a command named `japan`.
     #
     # @param country [String] country name, e.g. `japan`
     # @param subcommand [String] SourceCommand command, e.g. `fetch`
     # @param args [Array<String>] remaining arguments, e.g. the source code
     def source(country, subcommand, *args)
       require_relative 'cli/source_command'
-      Cmd::SourceCommand.start([subcommand, country] + args)
+      Cmd::SourceCommand.start(with_verbose([subcommand, country] + args))
     end
 
     # ---- Validate Command ----
@@ -371,12 +368,23 @@ module Ammitto
     DESC
     def validate(*args)
       require_relative 'cli/validate_command'
-      Cmd::ValidateCommand.start(args)
+      Cmd::ValidateCommand.start(with_verbose(args))
     end
 
     # ---- Helper Methods ----
 
     private
+
+    # `--verbose`/`-v` is a class option of this CLI, so Thor consumes it
+    # before a delegating command's `args` is built; hand it back (or
+    # AMMITTO_VERBOSE) or the delegated Thor class never sees it.
+    # @param args [Array<String>] argv for the delegated Thor class
+    # @return [Array<String>]
+    def with_verbose(args)
+      return args unless Options::Registry.resolve(:verbose, provided: options[:verbose])
+
+      args + ['--verbose']
+    end
 
     # Print error message
     # @param message [String] error message

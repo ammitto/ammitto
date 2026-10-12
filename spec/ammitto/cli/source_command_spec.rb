@@ -119,4 +119,25 @@ RSpec.describe Ammitto::Cmd::SourceCommand do
       end
     end
   end
+
+  # The top-level CLI declares `--verbose`/`-v` as a class option, so Thor
+  # consumed the flag before `source` forwarded its arguments.
+  describe 'ammitto source ... --verbose' do
+    before do
+      require 'ammitto/data/china'
+      extractor = instance_double(Ammitto::Data::China::Extractor, fetch_to_yaml: 0)
+      allow(Ammitto::Data::China::Extractor).to receive(:new).and_return(extractor)
+    end
+
+    %w[--verbose -v].each do |flag|
+      it "reaches the subcommand with #{flag}" do
+        Dir.mktmpdir do |dir|
+          expect do
+            Ammitto::CLI.start(['source', 'china', 'fetch', 'mfa-anti-sanction-list',
+                                '--output-dir', dir, flag])
+          end.to output(/Fetching China mfa-anti-sanction-list/).to_stdout
+        end
+      end
+    end
+  end
 end

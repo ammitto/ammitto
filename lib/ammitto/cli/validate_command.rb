@@ -14,6 +14,10 @@ module Ammitto
     #   Ammitto::Cmd::ValidateCommand.start(['china', 'sources/'])
     #
     class ValidateCommand < Thor
+      # Every subcommand accepts it: Ammitto::CLI#validate forwards it to all.
+      class_option :verbose, type: :boolean, default: false, aliases: '-v',
+                             desc: 'Show detailed output for all files'
+
       desc 'china [PATH]', 'Validate China YAML files against schemas'
       long_desc <<~DESC
         Validate China sanctions data YAML files against JSON schemas.
@@ -28,8 +32,6 @@ module Ammitto
           ammitto validate china sources/sanction-lists/announcement.yml  # Single file
           ammitto validate china --verbose               # Show all file details
       DESC
-      option :verbose, type: :boolean, default: false, aliases: '-v',
-                       desc: 'Show detailed output for all files'
       option :sources, type: :string, default: 'sources', aliases: '-s',
                        desc: 'Default sources directory (used if PATH not provided)'
       def china(path = nil)

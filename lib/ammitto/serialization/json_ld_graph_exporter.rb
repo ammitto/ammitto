@@ -175,10 +175,13 @@ module Ammitto
       # @return [void]
       def load_instrument_file(file)
         data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
-        return unless data && data['id']
+        id = data['id'] if data.is_a?(Hash)
+        # Without an id the instrument cannot be stored or linked, so it is
+        # left out; report that the same way an unreadable file is reported.
+        return warn("Warning: Could not load instrument #{file}: no id") unless id
 
         # Store by the ID (e.g., "cn/mofcom-unreliable-entity-list-provisions")
-        claim(@loaded_instruments, data['id'], data, 'Legal instrument', file)
+        claim(@loaded_instruments, id, data, 'Legal instrument', file)
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.

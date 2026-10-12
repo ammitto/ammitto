@@ -21,6 +21,10 @@ RSpec.describe Ammitto::Sources::Cn::Entity do
       expect(code_for('cn/import-export-control-list')).to eq('export_control')
     end
 
+    it 'matches the export-control slug data-cn writes' do
+      expect(code_for('cn/export-control-list')).to eq('export_control')
+    end
+
     it 'matches bare slugs without the source prefix' do
       expect(code_for('anti-sanction-list')).to eq('anti_sanctions')
       expect(code_for('unreliable-entity-list')).to eq('unreliable_entity')

@@ -493,7 +493,7 @@ module Ammitto
         candidates = records.filter_map do |file, data|
           candidate_result, parse_failed = @iri_collision_registry.with_candidate do
             ParseFailureVisibility.without_reporting do
-              transform_data(source, data)
+              transform_data(source, data, file: file)
             end
           end
           [file, data, candidate_result, parse_failed]
@@ -519,7 +519,7 @@ module Ammitto
 
         candidates.each do |file, data, candidate_result, parse_failed|
           result = if rerun_transform || parse_failed
-                     transform_data(source, data)
+                     transform_data(source, data, file: file)
                    else
                      candidate_result
                    end

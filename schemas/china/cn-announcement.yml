@@ -143,11 +143,17 @@ properties:
               description: Time when sanctions take effect (HH:MM)
             sanction_list:
               type: string
+              # Every value here resolves through Entity::LIST_TYPE_CODES;
+              # data-cn writes the cn/ ids, older sources the Chinese labels.
               enum:
+                - cn/anti-sanction-list
+                - cn/unreliable-entity-list
+                - cn/export-control-list
+                - cn/import-export-control-list
                 - 反制裁清单
                 - 不可靠实体清单
                 - 出口管制管控名单
-              description: Type of sanction list
+              description: Sanction list id (cn/...) or its Chinese label
             reason:
               type: array
               minItems: 1

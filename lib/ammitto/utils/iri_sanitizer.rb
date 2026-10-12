@@ -341,6 +341,16 @@ module Ammitto
           truncate_id(id).sub(/-\z/, '')
         end
 
+        # The regime code a slug stands for, before the length cut, so a
+        # caller can tell two codes that are one regime (spelling or
+        # whitespace variants) from two regimes cut to one slug.
+        #
+        # @param code [String] regime code
+        # @return [String]
+        def regime_identity(code)
+          normalize(code)
+        end
+
         # Generate an entry IRI (LIST-SPECIFIC).
         #
         # Entries are junction records linking entities to specific lists.

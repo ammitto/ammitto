@@ -125,13 +125,15 @@ RSpec.describe Ammitto::Data::KnowledgeGraphLoader do
     File.write(File.join(dir, filename), data.to_yaml)
   end
 
+  # The id rides in `item`, not `country`: the country becomes the regime
+  # code, and two regimes cut to one slug now refuse to harmonize.
   def source_record(id)
     {
-      'country' => id,
+      'country' => nil,
       'entity_type' => 'organization',
       'entity_or_ship' => "Entity #{id}",
       'schedule' => nil,
-      'item' => nil
+      'item' => id
     }
   end
 

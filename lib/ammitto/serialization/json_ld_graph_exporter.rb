@@ -126,6 +126,7 @@ module Ammitto
         @organizations = {}
         @loaded_instruments = {}
         @instrument_slugs = {}
+        @regime_codes = {}
 
         # Statistics tracking
         @stats = {
@@ -665,6 +666,7 @@ module Ammitto
         # "ca_moldova " were one regime published as two nodes.
         slug = Ammitto::Utils::IriSanitizer.regime_slug(code_lower)
         regime_id = Ammitto::Utils::IriSanitizer.regime_iri(code_lower)
+        register_regime_slug(slug, code)
 
         # Store full regime if not already present
         @regimes[slug] ||= {
@@ -955,6 +957,27 @@ module Ammitto
         end
 
         @instrument_slugs[iri] ||= { slug: slug, original: original }
+      end
+
+      # Raise when two different regime codes cut to one slug: @regimes
+      # keeps the first, so the second regime's entries would point at a
+      # node naming another regime. Codes that normalize alike (case,
+      # whitespace, the bilingual Canadian spelling) are one regime and
+      # stay merged, as register_instrument_slug does for instruments.
+      # @param slug [String] regime slug
+      # @param code [String] regime code as the source states it
+      # @return [void]
+      def register_regime_slug(slug, code)
+        identity = Ammitto::Utils::IriSanitizer.regime_identity(code.to_s.downcase)
+        existing = @regime_codes[slug]
+        if existing && existing[:identity] != identity
+          raise Ammitto::Error,
+                "Regime slug collision on #{slug}: " \
+                "#{existing[:code].inspect} and #{code.inspect} " \
+                'cut to the same slug'
+        end
+
+        @regime_codes[slug] ||= { identity: identity, code: code }
       end
 
       # Export entity node files

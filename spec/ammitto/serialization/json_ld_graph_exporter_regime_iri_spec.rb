@@ -92,4 +92,22 @@ RSpec.describe Ammitto::Serialization::JsonLdGraphExporter do
     expect(exporter.regimes.values.first['@id'])
       .to eq('https://www.ammitto.org/regime/belarus-eo14038')
   end
+
+  it 'raises when two different regimes cut to one slug' do
+    # Same first 64 characters, different regimes: keeping the first would
+    # point the second regime's entries at a node naming another regime.
+    add_entry('e1', "#{'a' * 64}x")
+
+    expect { add_entry('e2', "#{'a' * 64}y") }
+      .to raise_error(Ammitto::Error, /Regime slug collision/)
+  end
+
+  it 'keeps codes that normalize alike as one regime' do
+    add_entry('e1', 'CA_Moldova')
+    add_entry('e2', 'ca_moldova ')
+    add_entry('e3', 'CA_China / Chine')
+    add_entry('e4', 'ca_china-chine')
+
+    expect(exporter.regimes.keys).to eq(%w[ca_moldova ca_china-chine])
+  end
 end

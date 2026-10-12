@@ -753,6 +753,38 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(shard['entities'].length).to eq(1)
     end
 
+    it 'writes every row that maps to the unknown shard into one file' do
+      exporter = described_class.new
+      exporter.add(
+        { '@id' => 'https://www.ammitto.org/entity/x/1', 'entityType' => 'person',
+          'names' => [{ 'fullName' => 'No Authority' }] },
+        { 'status' => 'active' }
+      )
+      exporter.add(
+        { '@id' => 'https://www.ammitto.org/entity/x/2', 'entityType' => 'person',
+          'names' => [{ 'fullName' => 'Unsafe Authority' }] },
+        { 'authority' => 'BAD/../X', 'status' => 'active' }
+      )
+      exporter.add(
+        { '@id' => 'https://www.ammitto.org/entity/x/3', 'entityType' => 'person',
+          'names' => [{ 'fullName' => 'Other Unsafe Authority' }] },
+        { 'authority' => 'a b', 'status' => 'active' }
+      )
+
+      exporter.export(output_dir)
+
+      search_index_dir = File.join(output_dir, 'search-index')
+      manifest = JSON.parse(File.read(File.join(search_index_dir, 'manifest.json')))
+      expect(manifest['shards']).to eq(
+        [{ 'code' => 'unknown', 'file' => 'unknown.json', 'count' => 3 }]
+      )
+      shard = JSON.parse(File.read(File.join(search_index_dir, 'unknown.json')))
+      expect(shard['entities'].map { |row| row['id'] }).to eq(
+        %w[1 2 3].map { |n| "https://www.ammitto.org/entity/x/#{n}" }
+      )
+      expect(shard['metadata']).to include('totalEntities' => 3, 'sources' => 2)
+    end
+
     it 'creates facets directory' do
       exporter.export(output_dir)
 

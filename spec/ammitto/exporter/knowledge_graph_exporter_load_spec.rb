@@ -9,13 +9,17 @@ RSpec.describe 'Ammitto::Exporter::KnowledgeGraphExporter loading' do
   include IsolatedLoadHelper
   include KnowledgeGraphFixture
 
-  it "is not defined by require 'ammitto'" do
+  # SimpleExporter and JsonLdExport minted ammitto.org IRIs from a lossy slug,
+  # outside the collision registry the harmonize path uses.
+  it "is not defined by require 'ammitto', nor are the removed exporters" do
     ok, err = load_in_subprocess(
       'ammitto',
-      'exit(Ammitto::Exporter.const_defined?(:KnowledgeGraphExporter, false) ? 1 : 0)'
+      'loaded = %w[KnowledgeGraphExporter SimpleExporter JsonLdExport].select { |c| ' \
+      'defined?(Ammitto::Exporter) && Ammitto::Exporter.const_defined?(c, false) }; ' \
+      'abort(loaded.join(", ")) unless loaded.empty?'
     )
 
-    expect(ok).to be(true), "require 'ammitto' defined the exporter:\n#{err}"
+    expect(ok).to be(true), "require 'ammitto' defined an exporter:\n#{err}"
   end
 
   it 'loads when required explicitly' do

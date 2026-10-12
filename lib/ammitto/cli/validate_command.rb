@@ -107,9 +107,12 @@ module Ammitto
         when 'organizations'
           puts 'Organizations Schema: organizations.yml'
           puts 'Used for organization definitions'
+        when 'sanction_lists'
+          puts 'Sanction Lists Schema: sanction-lists.yml'
+          puts 'Used for the sanction list registry'
         else
           puts "Unknown schema type: #{type}"
-          puts 'Available types: announcement, modification, legal_instrument, document_types, organizations'
+          puts 'Available types: announcement, modification, legal_instrument, document_types, organizations, sanction_lists'
           exit(1)
         end
       end

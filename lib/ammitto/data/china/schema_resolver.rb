@@ -8,7 +8,8 @@ module Ammitto
       # SchemaResolver analyzes file paths and content to determine the appropriate
       # schema type for validation. It uses a priority-based resolution strategy:
       #
-      # 1. Check by filename (document-types.yml, organizations.yml)
+      # 1. Check by filename (document-types.yml, organizations.yml, and
+      #    supporting/sanction-lists.yml, the list registry)
       # 2. Check by directory path (legal-instruments, sanction-updates)
       # 3. Check by content structure (measure_modifications, sanction_details)
       #
@@ -51,6 +52,11 @@ module Ammitto
           organizations.yaml
         ].freeze
 
+        SANCTION_LISTS_FILES = %w[
+          sanction-lists.yml
+          sanction-lists.yaml
+        ].freeze
+
         class << self
           # Determine schema type based on file path and content
           #
@@ -64,10 +70,12 @@ module Ammitto
           # - :legal_instrument - Legal instruments and laws
           # - :document_types - Document type definitions
           # - :organizations - Organization definitions
+          # - :sanction_lists - The sanction list registry
           def resolve(file_path, content = nil)
             # 1. Check by filename first (highest priority)
             return :document_types if document_types_file?(file_path)
             return :organizations if organizations_file?(file_path)
+            return :sanction_lists if sanction_lists_file?(file_path)
 
             # 2. Check by directory path
             return :legal_instrument if legal_instrument_directory?(file_path)
@@ -101,6 +109,15 @@ module Ammitto
           def organizations_file?(file_path)
             filename = File.basename(file_path).downcase
             ORGANIZATIONS_FILES.any? { |f| f == filename }
+          end
+
+          # supporting/sanction-lists.yml is the list registry, not an
+          # announcement, though its name contains the sanction-lists dir.
+          # @param file_path [String] Path to check
+          # @return [Boolean] true if it's the list registry file
+          def sanction_lists_file?(file_path)
+            File.basename(File.dirname(file_path)).casecmp?('supporting') &&
+              SANCTION_LISTS_FILES.include?(File.basename(file_path).downcase)
           end
 
           # Check if file is in a legal-instruments directory

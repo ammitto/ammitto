@@ -26,7 +26,8 @@ module Ammitto
           legal_instrument: 'cn-legal-instrument.yml',
           document_type: 'cn-document-type.yml',
           document_types: 'document-types.yml',
-          organizations: 'organizations.yml'
+          organizations: 'organizations.yml',
+          sanction_lists: 'sanction-lists.yml'
         }.freeze
 
         class << self

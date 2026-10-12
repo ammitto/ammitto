@@ -446,14 +446,17 @@ module Ammitto
         errors = []
 
         begin
+          @cn_modification_index = cn_modification_index(input_dir) if source == :cn
           records = parse_source_records(yaml_files, source, errors)
           candidates = collect_iri_candidates(source, records, errors)
           entities_count, entries_count, source_graph = ingest_candidates(
             source, candidates, errors
           )
+          errors.concat(@cn_modification_index.errors) if @cn_modification_index
         ensure
           @collecting_iri_candidates = false
           @iri_collision_registry = nil
+          @cn_modification_index = nil
         end
 
         # Per-source aggregate: required by BaseSource downloads and
@@ -468,6 +471,20 @@ module Ammitto
       rescue StandardError => e
         puts "[#{source}] ERROR: #{e.message}" if options[:verbose]
         { code: source, status: :error, error: e.message }
+      end
+
+      # data-cn keeps measure modifications in sources/sanction-updates,
+      # beside the sanction-lists directory harmonize reads; a processed/
+      # input sits one level higher, beside sources/. They are indexed
+      # before any announcement is transformed so both transform passes
+      # attach the same modifications whatever the file order.
+      # @param input_dir [String] the resolved CN input directory
+      # @return [Ammitto::Sources::Cn::ModificationIndex]
+      def cn_modification_index(input_dir)
+        parent = File.dirname(input_dir)
+        updates_dir = [File.join(parent, 'sanction-updates'), File.join(parent, 'sources', 'sanction-updates')]
+                      .find { |dir| Dir.exist?(dir) }
+        Ammitto::Sources::Cn::ModificationIndex.build(updates_dir, Ammitto::Transformers::Registry.get(:cn))
       end
 
       # Parse all files before transforming any record so the candidate pass

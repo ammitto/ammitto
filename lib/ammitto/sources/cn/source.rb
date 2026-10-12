@@ -6,6 +6,7 @@ require_relative 'measure_modification'
 require_relative 'document_types_source'
 require_relative 'organizations_source'
 require_relative 'transformer'
+require_relative 'modification_index'
 
 module Ammitto
   module Sources

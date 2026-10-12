@@ -95,12 +95,17 @@ module Ammitto
         end
 
         # Keep unrecognized AU records in the normal transform and entry path.
+        #
+        # The published entityType must be one Schema::Validator accepts, so
+        # an unknown Type is published as organization, the type DFAT's own
+        # catch-all "Entity" maps to. The Type as written stays on the entry
+        # as au:type.
         # @param generic_entity [Ammitto::Sources::Au::GenericEntity]
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
         def transform_generic_entity(generic_entity)
           entity = Ammitto::Entity.new(
             id: generate_entity_id(generic_entity.reference),
-            entity_type: generic_entity.entity_type,
+            entity_type: 'organization',
             names: transform_names(generic_entity.names),
             remarks: build_remarks(generic_entity)
           )

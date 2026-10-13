@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
-require_relative 'date_normalizer'
-require_relative 'birth_details'
+require_relative 'individual'
 
 module Ammitto
   module Sources
     module Uk
-      # Individual-specific details for UK designation
+      # The <IndividualDetails> element of a UK designation.
       #
-      # Contains person-specific information like DOB, nationalities,
-      # positions, and birth details.
+      # OFSI nests the person-level facts one level down, in a single
+      # <Individual>; the readers below pass through to it so callers keep
+      # asking the details object for dobs, nationalities and the rest.
       #
       # @example
       #   details = Ammitto::Sources::Uk::IndividualDetails.from_xml(xml)
@@ -18,60 +18,62 @@ module Ammitto
       #   details.nationalities.each { |n| puts n }
       #
       class IndividualDetails < Lutaml::Model::Serializable
-        include DateNormalizer
-
-        attribute :dobs, :string, collection: true
-        attribute :nationalities, :string, collection: true
-        attribute :positions, :string, collection: true
-        attribute :birth_details, BirthDetails
+        attribute :individual, Individual
 
         xml do
           root 'IndividualDetails'
-
-          # NOTE: Lutaml::Model handles nested collections with wrapper elements
-          map_element 'DOBs', to: :dobs do
-            map_element 'DOB', to: :dobs
-          end
-          map_element 'Nationalities', to: :nationalities do
-            map_element 'Nationality', to: :nationalities
-          end
-          map_element 'Positions', to: :positions do
-            map_element 'Position', to: :positions
-          end
-          map_element 'BirthDetails', to: :birth_details
+          map_element 'Individual', to: :individual
         end
 
-        yaml do
-          map 'dobs', to: :dobs
-          map 'nationalities', to: :nationalities
-          map 'positions', to: :positions
-          map 'birth_details', to: :birth_details
+        key_value do
+          map 'individual', to: :individual
+        end
+
+        # @return [Array<String>] dates of birth, normalized
+        def dobs
+          individual&.dobs || []
+        end
+
+        # @return [Array<String>]
+        def nationalities
+          individual&.nationalities || []
+        end
+
+        # @return [Array<String>]
+        def positions
+          individual&.positions || []
+        end
+
+        # @return [Array<String>]
+        def genders
+          individual&.genders || []
+        end
+
+        # @return [BirthDetails, nil]
+        def birth_details
+          individual&.birth_details
+        end
+
+        # @return [Array<Passport>]
+        def passports
+          individual&.passports || []
+        end
+
+        # @return [Array<NationalIdentifier>]
+        def national_identifiers
+          individual&.national_identifiers || []
         end
 
         # Get primary date of birth (first non-placeholder)
         # @return [String, nil]
         def primary_dob
-          normalized_dobs.find { |d| !d.include?('dd/mm') && !d.include?('--') }
+          dobs.find { |d| !d.include?('dd/mm') && !d.include?('--') }
         end
 
         # Check if there are valid (non-placeholder) DOBs
         # @return [Boolean]
         def valid_dobs?
-          normalized_dobs.any? { |d| !d.include?('dd/mm') && !d.include?('--') }
-        end
-
-        # Get all DOBs in normalized ISO format
-        # @return [Array<String>]
-        def normalized_dobs
-          return [] if @dobs.nil?
-
-          @dobs.map { |d| normalize_date(d) }
-        end
-
-        # Override to return normalized DOBs
-        # @return [Array<String>]
-        def dobs
-          normalized_dobs
+          dobs.any? { |d| !d.include?('dd/mm') && !d.include?('--') }
         end
       end
     end

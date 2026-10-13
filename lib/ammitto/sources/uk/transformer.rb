@@ -77,10 +77,12 @@ module Ammitto
 
         # Create the appropriate entity type based on designation
         # @param designation [Ammitto::Sources::Uk::Designation]
-        # @return [PersonEntity, OrganizationEntity]
+        # @return [PersonEntity, OrganizationEntity, VesselEntity]
         def create_entity(designation)
           if designation.individual?
             create_person_entity(designation)
+          elsif designation.ship?
+            create_vessel_entity(designation)
           else
             create_organization_entity(designation)
           end
@@ -97,7 +99,9 @@ module Ammitto
             addresses: transform_addresses(designation.addresses),
             birth_info: transform_birth_info(designation.individual_details),
             nationalities: transform_nationalities(designation.individual_details),
-            title: extract_title(designation.individual_details),
+            gender: designation.individual_details&.genders&.first,
+            identifications: transform_identifications(designation.individual_details),
+            title: extract_title(designation),
             position: extract_position(designation.individual_details),
             remarks: designation.other_information
           )
@@ -112,6 +116,25 @@ module Ammitto
             entity_type: 'organization',
             names: transform_names(designation),
             addresses: transform_addresses(designation.addresses),
+            remarks: designation.other_information
+          )
+        end
+
+        # Create a VesselEntity from a UK ship designation
+        # @param designation [Ammitto::Sources::Uk::Designation]
+        # @return [VesselEntity]
+        def create_vessel_entity(designation)
+          ship = designation.ship_details&.ship
+
+          Ammitto::VesselEntity.new(
+            id: generate_entity_id(designation.unique_id),
+            entity_type: 'vessel',
+            names: transform_names(designation),
+            imo_number: normalize_imo(ship&.imo_numbers&.first),
+            flag_state: ship&.current_believed_flags&.first,
+            previous_flags: ship&.previous_flags || [],
+            vessel_type: ship&.types_of_ship&.first,
+            build_year: parse_build_year(ship&.years_built&.first),
             remarks: designation.other_information
           )
         end
@@ -237,11 +260,59 @@ module Ammitto
           details.nationalities.compact
         end
 
-        # Extract title from individual details
+        # Transform passports and national identifiers to Identification
+        # objects
         # @param details [Ammitto::Sources::Uk::IndividualDetails, nil]
+        # @return [Array<Identification>]
+        def transform_identifications(details)
+          return [] unless details
+
+          passports = details.passports.map do |passport|
+            create_identification(
+              type: 'Passport',
+              number: passport.number,
+              note: passport.additional_information
+            )
+          end
+          national_ids = details.national_identifiers.map do |identifier|
+            create_identification(
+              type: 'NationalID',
+              number: identifier.number,
+              note: identifier.additional_information
+            )
+          end
+
+          (passports + national_ids).uniq do |id|
+            [id.type, id.number, id.note]
+          end
+        end
+
+        # Honorifics OFSI lists on the designation, such as Mullah or Haji
+        # @param designation [Ammitto::Sources::Uk::Designation]
         # @return [String, nil]
-        def extract_title(_details)
-          nil # UK schema doesn't have separate title field
+        def extract_title(designation)
+          titles = designation.titles
+          return nil if titles.nil? || titles.empty?
+
+          titles.join(', ')
+        end
+
+        # OFSI writes IMO numbers both as "IMO9562233" and "9562233"
+        # @param value [String, nil]
+        # @return [String, nil]
+        def normalize_imo(value)
+          return nil if value.nil?
+
+          imo = value.strip.sub(/\AIMO\s*/i, '')
+          imo.empty? ? nil : imo
+        end
+
+        # @param value [String, nil]
+        # @return [Integer, nil]
+        def parse_build_year(value)
+          return nil unless value&.match?(/\A\d{4}\z/)
+
+          value.to_i
         end
 
         # Extract position from individual details

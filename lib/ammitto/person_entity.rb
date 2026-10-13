@@ -5,6 +5,7 @@ require_relative 'address'
 require_relative 'birth_info'
 require_relative 'contact_info'
 require_relative 'identification'
+require_relative 'utils/presence'
 
 module Ammitto
   # PersonEntity represents a sanctioned individual person
@@ -61,7 +62,7 @@ module Ammitto
 
     # @return [String, nil] birth country
     def birth_country
-      primary_birth_info&.country
+      birth_info&.find { |birth| Utils::Presence.present?(birth&.country) }&.country
     end
 
     # Check if this person matches a search term

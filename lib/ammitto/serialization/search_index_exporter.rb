@@ -475,22 +475,21 @@ module Ammitto
           return addr['country'] if addr.is_a?(Hash) && addr['country']
         end
 
-        # From birth info
-        if entity['birthInfo'].is_a?(Array) && entity['birthInfo'].first
-          birth = entity['birthInfo'].first
-          return birth['countryCode'] if birth.is_a?(Hash) && birth['countryCode']
-          return birth['country_code'] if birth.is_a?(Hash) && birth['country_code']
-          return birth['country'] if birth.is_a?(Hash) && birth['country']
-        end
+        extract_birth_country(entity)
+      end
 
-        # Also check birth_info (snake_case)
-        if entity['birth_info'].is_a?(Array) && entity['birth_info'].first
-          birth = entity['birth_info'].first
-          return birth['countryCode'] if birth.is_a?(Hash) && birth['countryCode']
-          return birth['country_code'] if birth.is_a?(Hash) && birth['country_code']
-          return birth['country'] if birth.is_a?(Hash) && birth['country']
-        end
+      def extract_birth_country(entity)
+        %w[birthInfo birth_info].each do |key|
+          records = entity[key]
+          next unless records.is_a?(Array)
 
+          records.grep(Hash).each do |birth|
+            %w[countryCode country_code country].each do |field|
+              country = string_presence(birth[field])
+              return country if country
+            end
+          end
+        end
         nil
       end
 

@@ -114,6 +114,46 @@ RSpec.describe Ammitto::Serialization::SearchIndexExporter do
       expect(exporter.entities.first[:country]).to eq('KP')
     end
 
+    describe 'countries in independent birth records' do
+      let(:entity) do
+        { '@id' => 'https://www.ammitto.org/entity/un/birth-country',
+          'entityType' => 'person', 'names' => [{ 'fullName' => 'Test' }] }
+      end
+      let(:entry) do
+        { 'authority' => { '@id' => 'https://www.ammitto.org/authority/un' }, 'status' => 'active' }
+      end
+
+      %w[birthInfo birth_info].each do |key|
+        it "finds the country after date-only and blank #{key} records" do
+          births = [nil, { 'year' => 1980 }, { 'countryCode' => '  ', 'country' => '' },
+                    { 'countryCode' => 0, 'country' => 'DRC' }]
+          exporter.add(entity.merge(key => births), entry)
+          exporter.export(output_dir)
+
+          shard = JSON.parse(File.read(File.join(output_dir, 'search-index', 'un.json')))
+          countries = JSON.parse(File.read(File.join(output_dir, 'facets', 'countries.json')))
+          expect(shard['entities'].first['country']).to eq('DRC')
+          expect(countries['facets']).to include(include('code' => 'DRC', 'count' => 1))
+        end
+      end
+
+      %w[countryCode country_code country].each do |key|
+        it "reads the first stated #{key} in a later birth record" do
+          births = [{ 'date' => '1980-01-01' }, { key => 'DRC' }, { 'country' => 'France' }]
+          exporter.add(entity.merge('birthInfo' => births), entry)
+          expect(exporter.entities.first[:country]).to eq('DRC')
+        end
+      end
+
+      %w[nationalities citizenships addresses].each do |key|
+        it "retains #{key} precedence over birth countries" do
+          exporter.add(entity.merge(key => [{ 'countryCode' => 'FR' }],
+                                    'birthInfo' => [{ 'year' => 1980 }, { 'country' => 'DRC' }]), entry)
+          expect(exporter.entities.first[:country]).to eq('FR')
+        end
+      end
+    end
+
     describe 'birth-year value objects' do
       def year_value(value, circa: false)
         Ammitto::Serialization::BirthYear::Year.new(value, circa: circa)

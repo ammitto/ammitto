@@ -38,6 +38,8 @@ module Ammitto
         def transform(record)
           if record.individual?
             transform_individual(record)
+          elsif record.vessel?
+            transform_vessel(record)
           else
             transform_organization(record)
           end
@@ -50,6 +52,25 @@ module Ammitto
             id: generate_entity_id(record.generate_id),
             entity_type: 'person',
             names: transform_names(record),
+            birth_info: transform_birth_info(record),
+            title: record.english_title_or_ship_type,
+            remarks: build_remarks(record)
+          )
+
+          entry = create_entry(record, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
+        end
+
+        def transform_vessel(record)
+          entity = Ammitto::VesselEntity.new(
+            id: generate_entity_id(record.generate_id),
+            entity_type: 'vessel',
+            names: transform_names(record),
+            imo_number: record.imo_number,
+            vessel_type: record.english_title_or_ship_type,
+            build_year: build_year(record),
             remarks: build_remarks(record)
           )
 
@@ -85,7 +106,35 @@ module Ammitto
             )
           end
 
+          record.alias_names.each do |alias_name|
+            next if names.any? { |name| name.full_name == alias_name }
+
+            names << create_name_variant(full_name: alias_name)
+          end
+
           names
+        end
+
+        # A value that offers alternatives ("1972-08-10 or 1972-08-11")
+        # states no single birth date, and one that carries no readable
+        # year or date (a bare month name, "born in the early 1970s")
+        # would publish an empty BirthInfo; both are left in the processed
+        # YAML only.
+        def transform_birth_info(record)
+          dob = record.date_of_birth_or_ship_build_date.to_s.strip
+          return [] if dob.empty? || dob.match?(/\sor\s/i)
+
+          year = without_circa_marker(dob).to_s[/\A(\d{4})-\d{2}\z/, 1]
+          birth = create_birth_info(date: dob, year: year, circa: circa_string?(dob))
+          readable = [birth.date, birth.year, birth.date_range_from,
+                      birth.year_range_from, birth.year_range_to]
+          readable.any? ? [birth] : []
+        end
+
+        # A vessel's build date is stated as a year.
+        def build_year(record)
+          year = record.date_of_birth_or_ship_build_date.to_s.strip
+          Integer(year, 10) if year.match?(/\A\d{4}\z/)
         end
 
         def create_entry(record, entity_id)

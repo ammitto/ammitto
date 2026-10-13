@@ -33,7 +33,9 @@ module Ammitto
         attribute :place_of_birth_list, PlaceOfBirthList
         attribute :remarks, :string
         attribute :title, :string
-        attribute :nationality_list, ProgramList # Same structure as programList
+        attribute :nationality_list, NationalityList
+        attribute :citizenship_list, CitizenshipList
+        attribute :vessel_info, VesselInfo
 
         xml do
           root 'sdnEntry'
@@ -52,6 +54,8 @@ module Ammitto
           map_element 'remarks', to: :remarks
           map_element 'title', to: :title
           map_element 'nationalityList', to: :nationality_list
+          map_element 'citizenshipList', to: :citizenship_list
+          map_element 'vesselInfo', to: :vessel_info
         end
 
         yaml do
@@ -69,6 +73,8 @@ module Ammitto
           map 'remarks', to: :remarks
           map 'title', to: :title
           map 'nationality_list', to: :nationality_list
+          map 'citizenship_list', to: :citizenship_list
+          map 'vessel_info', to: :vessel_info
         end
 
         # Helper methods
@@ -118,6 +124,16 @@ module Ammitto
 
         def places_of_birth
           place_of_birth_list&.items || []
+        end
+
+        # @return [Array<String>] nationality countries, in source order
+        def nationalities
+          nationality_list&.countries || []
+        end
+
+        # @return [Array<String>] citizenship countries, in source order
+        def citizenships
+          citizenship_list&.countries || []
         end
 
         # The identifier ItemMapper names this record's file after.

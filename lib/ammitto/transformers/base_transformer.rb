@@ -220,16 +220,18 @@ module Ammitto
       # @param country [String, nil] country name
       # @param country_iso_code [String, nil] ISO country code
       # @param postal_code [String, nil] postal code
+      # @param po_box [String, nil] post office box
       # @return [Address] the address
       def create_address(street: nil, city: nil, state: nil, country: nil,
-                         country_iso_code: nil, postal_code: nil)
+                         country_iso_code: nil, postal_code: nil, po_box: nil)
         Ammitto::Address.new(
           street: street,
           city: city,
           state: state,
           country: country,
           country_iso_code: country_iso_code,
-          postal_code: postal_code
+          postal_code: postal_code,
+          po_box: po_box
         )
       end
 
@@ -347,14 +349,18 @@ module Ammitto
       # @param number [String, nil] document number
       # @param issuing_country [String, nil] issuing country
       # @param note [String, nil] additional notes
+      # @param issue_date [Date, nil] date the document was issued
+      # @param expiry_date [Date, nil] date the document stops being valid
       # @return [Identification] the identification
       def create_identification(type: nil, number: nil, issuing_country: nil,
-                                note: nil)
+                                note: nil, issue_date: nil, expiry_date: nil)
         Ammitto::Identification.new(
           type: type,
           number: number,
           issuing_country: issuing_country,
-          note: note
+          note: note,
+          issue_date: issue_date,
+          expiry_date: expiry_date
         )
       end
     end

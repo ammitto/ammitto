@@ -28,6 +28,18 @@ module Ammitto
         attribute :schedule, :string
         attribute :item, :string
         attribute :date_of_listing, :string
+        # <Aliases-Alias> holds every alias in one string, mostly
+        # separated by semicolons. Kept as the source wrote it so the
+        # processed YAML round-trips; #alias_names splits it.
+        attribute :aliases, :string
+        # <ShipIMONumber-NumeroOMIDuNavire> is not always an IMO number:
+        # the 2026-09-22 Iran additions (items 116 to 120) carry a Persian
+        # personal name in it. Kept as written; #imo_number is the
+        # guarded reading.
+        attribute :ship_imo_number, :string
+        # A person's title or rank for personal records, a vessel type for
+        # ships, in the bilingual "English | French" form.
+        attribute :title_or_ship_type, :string
 
         # Canada renamed every element to a bilingual form between the
         # 24 and 25 August 2026 harvests: <Country> became <Country-Pays>,
@@ -48,6 +60,10 @@ module Ammitto
           map_element 'Schedule-Annexe', to: :schedule
           map_element 'Item-NumeroDarticle', to: :item
           map_element 'DateOfListing-DateDinscription', to: :date_of_listing
+          map_element 'Aliases-Alias', to: :aliases
+          map_element 'ShipIMONumber-NumeroOMIDuNavire', to: :ship_imo_number
+          map_element 'TitleOrShipType-TitreOuTypeDeNavire',
+                      to: :title_or_ship_type
         end
 
         # YAML mapping for processed YAML files
@@ -61,7 +77,50 @@ module Ammitto
           map 'schedule', to: :schedule
           map 'item', to: :item
           map 'date_of_listing', to: :date_of_listing
+          map 'aliases', to: :aliases
+          map 'ship_imo_number', to: :ship_imo_number
+          map 'title_or_ship_type', to: :title_or_ship_type
         end
+
+        IMO_NUMBER = /\A\d{7}\z/
+
+        # The IMO number, only when the element holds one.
+        # @return [String, nil]
+        def imo_number
+          value = ship_imo_number.to_s.strip
+          value if IMO_NUMBER.match?(value)
+        end
+
+        # Whether this record is a vessel: the only records that carry a
+        # genuine IMO number.
+        # @return [Boolean]
+        def vessel?
+          !imo_number.nil?
+        end
+
+        # Each alias in <Aliases-Alias>. The list is split on semicolons
+        # only: a free-text " or " joins variants in some entries but also
+        # sits inside single names, and guessing which would invent
+        # structure the source does not state.
+        # @return [Array<String>]
+        def alias_names
+          aliases.to_s.split(';').map { |part| squish(part) }.reject(&:empty?).uniq
+        end
+
+        # The title or ship type in the English half of the bilingual
+        # value; the full text stays in #title_or_ship_type.
+        # @return [String, nil]
+        def english_title_or_ship_type
+          value = squish(title_or_ship_type.to_s.split('|', 2).first)
+          value unless value.empty?
+        end
+
+        # Source values carry line breaks and non-breaking spaces inside
+        # and around names and types.
+        def squish(text)
+          text.to_s.gsub(/[[:space:]]+/, ' ').strip
+        end
+        private :squish
 
         # Get full name. Person records carry GivenName/LastName;
         # organization and ship records carry EntityOrShip instead.

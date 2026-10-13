@@ -4,6 +4,7 @@ require 'fileutils'
 require 'yaml'
 require 'json'
 require 'time'
+require_relative '../utils/input_directory'
 require_relative '../serialization/json_ld_graph_exporter'
 require_relative '../serialization/search_index_exporter'
 require_relative '../serialization/ontology_exporter'
@@ -135,7 +136,15 @@ module Ammitto
         # Export all collected nodes to files
         if results.any? { |r| r[:status] == :success }
           puts 'Exporting knowledge graph...' if options[:verbose]
-          @exporter.export
+          # A source that dropped files to errors fails the run below; it
+          # must not also lose the nodes it published before.
+          evaluate_gates(results)
+          results.each do |result|
+            incomplete = result[:status] != :success || result[:parse_failures].to_i.positive? ||
+                         result[:gate_failures].any? || result[:exempted_failures].any?
+            @exporter.hold_back(result[:code]) if incomplete
+          end
+          @exporter.export(cleanup: false)
 
           puts 'Exporting search index...' if options[:verbose]
           @search_indexer.export(output_dir)
@@ -166,6 +175,8 @@ module Ammitto
         report_error = options[:report] ? write_report(results) : nil
         enforce_health_gates(results)
         raise Thor::Error, report_error if report_error
+
+        @exporter.cleanup_stale_nodes
       end
 
       # Health gates: a run that produced no data or swallowed errors must
@@ -492,7 +503,11 @@ module Ammitto
       def parse_source_records(yaml_files, source, errors)
         yaml_files.filter_map do |file|
           data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
-          [file, data] if data
+          if data.nil? || data == false
+            errors << "#{File.basename(file)}: source YAML contains no record"
+            next
+          end
+          [file, data]
         rescue ParseFailureError => e
           record_transform_error(errors, source, file, e)
           nil
@@ -540,7 +555,10 @@ module Ammitto
                    else
                      candidate_result
                    end
-          added = ingest_results(result, source, source_graph, errors, File.basename(file))
+          intentional_skip = source == :cn && data.is_a?(Hash) &&
+                             data.key?('announcement') && data.key?('measure_modifications')
+          added = ingest_results(result, source, source_graph, errors, File.basename(file),
+                                 intentional_skip: intentional_skip)
           entities_count += added
           entries_count += added
         rescue ParseFailureError => e
@@ -582,21 +600,21 @@ module Ammitto
       # @param errors [Array<String>] per-file error collector (health gates)
       # @param filename [String] source file for error attribution
       # @return [Integer] number of entity/entry pairs ingested
-      def ingest_results(result, source, source_graph, errors, filename)
+      def ingest_results(result, source, source_graph, errors, filename, intentional_skip: false)
         results_list = result.is_a?(Array) ? result : [result]
         added = 0
+        errors << "#{filename}: transform produced no entity/entry pairs" if results_list.empty? && !intentional_skip
 
         results_list.each do |r|
-          # Both halves absent is a designed skip (e.g. CN measure
-          # modifications); a non-Hash result or half-formed pair is a data
-          # defect and must surface through the health gates.
+          # CN modifications amend existing entities without producing a
+          # pair. Other omissions must not look like upstream removals.
           unless r.is_a?(Hash)
             errors << "#{filename}: transform produced invalid result (#{r.class})"
             next
           end
-          next if r[:entity].nil? && r[:entry].nil?
+          next if intentional_skip && r[:entity].nil? && r[:entry].nil?
 
-          unless r[:entity]&.key?('@id') && r[:entry]&.key?('@id')
+          unless @exporter.exportable_pair?(r[:entity], r[:entry], source.to_s)
             errors << "#{filename}: transform produced incomplete entity/entry pair"
             next
           end
@@ -685,12 +703,12 @@ module Ammitto
         sub = File.join(options[:input_dir], source.to_s)
         base = options[:input_dir]
 
-        if Dir.exist?(sub)
+        if Utils::InputDirectory.directory?(sub)
           views = resolve_yaml_files(sub)
           files = views[:eligible].any? ? views[:chosen] : views[:legacy]
           return [sub, files]
         end
-        return [base, resolve_yaml_files(base)[:legacy]] if Dir.exist?(base)
+        return [base, resolve_yaml_files(base)[:legacy]] if Utils::InputDirectory.directory?(base)
 
         nil
       end
@@ -761,18 +779,18 @@ module Ammitto
           %w[processed sources/sanction-lists].each do |subpath|
             data_repo_names(source).each do |repo|
               path = File.join(options[:sources_dir], repo, subpath)
-              return path if Dir.exist?(path)
+              return path if Utils::InputDirectory.directory?(path)
             end
           end
 
           data_repo_names(source).each do |repo|
             raw_path = File.join(options[:sources_dir], repo, 'raw')
-            return find_latest_subdir(raw_path) if Dir.exist?(raw_path)
+            return find_latest_subdir(raw_path) if Utils::InputDirectory.directory?(raw_path)
           end
         end
 
         cache_raw = File.join(cache_dir, 'raw', source.to_s)
-        return find_latest_subdir(cache_raw) if Dir.exist?(cache_raw)
+        return find_latest_subdir(cache_raw) if Utils::InputDirectory.directory?(cache_raw)
 
         nil
       end
@@ -803,7 +821,9 @@ module Ammitto
       # @return [Hash{Symbol=>Array<String>}] tier views
       def resolve_yaml_files(dir)
         empty = { eligible: [], chosen: [], legacy: [] }
-        return empty if dir.nil? || !Dir.exist?(dir)
+        return empty if dir.nil? || !Utils::InputDirectory.directory?(dir)
+
+        Utils::InputDirectory.verify_tree!(dir)
 
         direct = yaml_files_in(dir, 'entities') + yaml_files_in(dir)
         one_level = yaml_files_in(dir, '*')
@@ -858,11 +878,11 @@ module Ammitto
       # @param base_dir [String] base directory
       # @return [String, nil] latest subdirectory
       def find_latest_subdir(base_dir)
-        return nil unless Dir.exist?(base_dir)
+        return nil unless Utils::InputDirectory.directory?(base_dir)
 
         subdirs = Dir.children(base_dir).select do |child|
           path = File.join(base_dir, child)
-          Dir.exist?(path) && child.match?(/^\d{4}-\d{2}-\d{2}$/)
+          Utils::InputDirectory.directory?(path) && child.match?(/^\d{4}-\d{2}-\d{2}$/)
         end.sort.reverse
 
         return nil if subdirs.empty?
@@ -904,7 +924,7 @@ module Ammitto
             next unless repo
 
             path = File.join(sources_dir, repo, 'sources', subdir)
-            path if Dir.exist?(path)
+            path if Utils::InputDirectory.directory?(path)
           end.uniq
           return paths unless paths.empty?
         end
@@ -915,7 +935,7 @@ module Ammitto
         input_dir = options[:input_dir]
         if input_dir
           path = File.join(File.dirname(input_dir), subdir)
-          return [path] if Dir.exist?(path)
+          return [path] if Utils::InputDirectory.directory?(path)
         end
 
         []

@@ -2,6 +2,7 @@
 
 require 'digest'
 require_relative '../utils/iri_sanitizer'
+require_relative '../utils/input_directory'
 require 'fileutils'
 require 'json'
 require 'time'
@@ -50,6 +51,15 @@ module Ammitto
       # Extensions a consumer can fetch directly: the JSON-LD aggregate,
       # its raw JSON form, and the Turtle sibling written alongside it.
       PUBLISHABLE_FILE_GLOB = '*.{jsonld,json,ttl}'
+
+      # Node directories whose first path component below them is a source
+      # code. Every file under <dir>/<source>/ belongs to that source's
+      # export, so a completed run can replace the whole subtree.
+      SOURCE_SCOPED_DIRS = [
+        %w[node entity], %w[node entry], %w[node legal-instrument],
+        %w[node group], %w[node document-type], %w[node organization],
+        %w[by-list]
+      ].freeze
 
       # snake_case citation keys accepted from data repos and older caches
       CITATION_KEY_ALIASES = {
@@ -127,6 +137,11 @@ module Ammitto
         @loaded_instruments = {}
         @instrument_slugs = {}
         @regime_codes = {}
+        @written_paths = Set.new
+        @held_back_sources = Set.new
+        @complete_sources = Set.new
+        @supporting_input_complete = true
+        @export_complete = false
 
         # Statistics tracking
         @stats = {
@@ -153,9 +168,16 @@ module Ammitto
       # @return [void]
       def load_legal_instruments
         @instruments_dirs.each do |dir|
-          next unless Dir.exist?(dir)
+          unless Utils::InputDirectory.directory?(dir)
+            @supporting_input_complete = false
+            next
+          end
+          Utils::InputDirectory.verify_tree!(dir)
 
           instrument_files(dir).each { |file| load_instrument_file(file) }
+        rescue StandardError => e
+          @supporting_input_complete = false
+          warn "Warning: Could not inspect instrument directory #{dir}: #{e.message}"
         end
       end
 
@@ -179,13 +201,17 @@ module Ammitto
         id = data['id'] if data.is_a?(Hash)
         # Without an id the instrument cannot be stored or linked, so it is
         # left out; report that the same way an unreadable file is reported.
-        return warn("Warning: Could not load instrument #{file}: no id") unless id
+        unless usable_identifier?(id)
+          @supporting_input_complete = false
+          return warn("Warning: Could not load instrument #{file}: no id")
+        end
 
         # Store by the ID (e.g., "cn/mofcom-unreliable-entity-list-provisions")
         claim(@loaded_instruments, id, data, 'Legal instrument', file)
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.
+        @supporting_input_complete = false
         warn "Warning: Could not load instrument #{file}: #{e.message}"
       end
 
@@ -194,7 +220,11 @@ module Ammitto
       # @return [void]
       def load_supporting_data
         @supporting_dirs.each do |dir|
-          next unless Dir.exist?(dir)
+          unless Utils::InputDirectory.directory?(dir)
+            @supporting_input_complete = false
+            next
+          end
+          Utils::InputDirectory.verify_tree!(dir)
 
           # Load document types
           doc_types_file = File.join(dir, 'document-types.yml')
@@ -203,6 +233,9 @@ module Ammitto
           # Load organizations
           orgs_file = File.join(dir, 'organizations.yml')
           load_organizations_file(orgs_file) if File.exist?(orgs_file)
+        rescue StandardError => e
+          @supporting_input_complete = false
+          warn "Warning: Could not inspect supporting directory #{dir}: #{e.message}"
         end
       end
 
@@ -240,10 +273,8 @@ module Ammitto
       # @return [void]
       def load_document_types_file(file)
         data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
-        return unless data && data['document_types']
-
-        data['document_types'].each do |type_data|
-          next unless type_data['id']
+        supporting_rows(data, 'document_types', file).each do |type_data|
+          next unless usable_supporting_row?(type_data, file)
 
           type_id = type_data['id']
           iri = "#{BASE_URI}/document-type/#{type_id}"
@@ -282,6 +313,7 @@ module Ammitto
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.
+        @supporting_input_complete = false
         warn "Warning: Could not load document types #{file}: #{e.message}"
       end
 
@@ -290,10 +322,8 @@ module Ammitto
       # @return [void]
       def load_organizations_file(file)
         data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
-        return unless data && data['organizations']
-
-        data['organizations'].each do |org_data|
-          next unless org_data['id']
+        supporting_rows(data, 'organizations', file).each do |org_data|
+          next unless usable_supporting_row?(org_data, file)
 
           org_id = org_data['id']
           iri = "#{BASE_URI}/organization/#{org_id}"
@@ -335,6 +365,7 @@ module Ammitto
       rescue StandardError => e
         # stderr: this reports input omitted from an otherwise successful
         # export. Continuing is right; putting it on stdout is not.
+        @supporting_input_complete = false
         warn "Warning: Could not load organizations #{file}: #{e.message}"
       end
 
@@ -387,9 +418,16 @@ module Ammitto
       # @param entry [Hash] entry hash
       # @param source [Symbol] source code
       def add_node(entity:, entry:, source:)
-        return unless entity && entry
-
         source_code = source.to_s.downcase
+        if exportable_pair?(entity, entry, source_code)
+          @complete_sources << source_code
+        else
+          hold_back(source_code)
+        end
+        return unless entity.is_a?(Hash) && entry.is_a?(Hash)
+        return unless [entity['@id'] || entity['id'], entry['@id'] || entry['id']].all? do |id|
+          id.nil? || id.is_a?(String)
+        end
 
         # Store entity (count only first-seen ids so stats match the graph)
         entity_id = entity['@id'] || entity['id']
@@ -549,7 +587,9 @@ module Ammitto
 
       # Export all nodes to files
       # @return [void]
-      def export
+      def export(cleanup: true)
+        @export_complete = false
+        @written_paths.clear
         create_directories
 
         export_authority_nodes
@@ -567,6 +607,9 @@ module Ammitto
         export_stats
         copy_context_file
 
+        @export_complete = true
+        cleanup_stale_nodes if cleanup
+
         return unless Ammitto.configuration.verbose
 
         puts "Exported #{@entities.length} entities, #{@entries.length} entries, " \
@@ -574,7 +617,134 @@ module Ammitto
              "#{@authorities.length} authorities, #{@groups.length} groups"
       end
 
+      # Keep a source's earlier output out of the stale-file cleanup. A
+      # source that lost records to per-file errors would otherwise look
+      # like a source that dropped them, and its published nodes would go
+      # with the files that failed.
+      # @param code [Symbol, String] source code
+      # @return [void]
+      def hold_back(code)
+        @held_back_sources << code.to_s.downcase
+      end
+
+      # The command writes other artifacts after the graph. It calls this
+      # only when those writes and its health gates have succeeded.
+      # @return [void]
+      def cleanup_stale_nodes
+        return unless @export_complete && @supporting_input_complete
+
+        remove_stale_source_files
+      end
+
+      # Only pairs which can actually produce both node files establish a
+      # complete source; a stats key alone may represent unusable input.
+      # @return [Boolean]
+      def exportable_pair?(entity, entry, source)
+        source = source.to_s.downcase
+        return false unless usable_identifier?(source) && !source.match?(/[[:cntrl:]]/) &&
+                            !unusable_path_component?(source)
+        return false unless entity.is_a?(Hash) && entry.is_a?(Hash)
+
+        exportable_node_id?(entity['@id'] || entity['id'], 'entity', source, 1) &&
+          exportable_node_id?(entry['@id'] || entry['id'], 'entry', source, 2)
+      end
+
       private
+
+      # Invalid supporting input cannot reliably be attributed to a source,
+      # so an omission suppresses deletion for the complete export.
+      def supporting_rows(data, key, file)
+        return data[key] if data.is_a?(Hash) && data[key].is_a?(Array)
+
+        @supporting_input_complete = false
+        warn "Warning: Could not load #{file}: expected #{key} array"
+        []
+      end
+
+      def usable_supporting_row?(row, file)
+        return true if row.is_a?(Hash) && usable_identifier?(row['id'])
+
+        @supporting_input_complete = false
+        warn "Warning: Could not load row in #{file}: no usable id"
+        false
+      end
+
+      def usable_identifier?(id)
+        id.is_a?(String) && !id.match?(/\A[[:space:]]*\z/)
+      end
+
+      def exportable_node_id?(id, kind, source, minimum_parts)
+        return false unless usable_identifier?(id)
+
+        prefix = "#{BASE_URI}/#{kind}/#{source}/"
+        return false unless id.start_with?(prefix)
+
+        parts = id.delete_prefix(prefix).split('/', -1)
+        reference = kind == 'entity' ? extract_ref_from_id(id, kind) : extract_entry_ref_from_id(id)
+        reference && parts.length >= minimum_parts && parts.none? do |part|
+          unusable_path_component?(part) || !usable_identifier?(part) || part.match?(/[[:cntrl:]]/)
+        end
+      end
+
+      # Delete files an earlier export left under the source directories
+      # this run rebuilt, so a record removed upstream stops being served.
+      #
+      # Runs after the owning caller completes its writes and health gates.
+      # The scope is the sources that contributed complete nodes to this run, which is
+      # what keeps a single-source export from touching the others, and
+      # keeps a source that failed or came back empty from wiping what it
+      # published before. Files the run wrote itself are never removed.
+      #
+      # Directories keyed by something other than a source (regime,
+      # authority and the by-authority, by-regime, by-status, by-type,
+      # by-organization and by-document-type slices) cannot be attributed
+      # to one source and are left as they are.
+      # @return [void]
+      def remove_stale_source_files
+        sources = @complete_sources.reject do |code|
+          unusable_path_component?(code) || @held_back_sources.include?(code)
+        end
+
+        root = File.realpath(@output_dir)
+        sources.each do |source|
+          SOURCE_SCOPED_DIRS.each do |parts|
+            dir = File.join(@output_dir, *parts, source)
+            next unless File.directory?(dir) && !File.symlink?(dir)
+            # A non-symlink source directory can still sit beneath a linked
+            # ancestor. Resolve the root separately so a configured output
+            # alias is supported without pruning another physical tree.
+            next unless File.realpath(dir) == File.join(root, *parts, source)
+
+            prune_unwritten(dir)
+          end
+        end
+      end
+
+      # Remove every regular file below +dir+ this run did not write, then
+      # any directory that emptied as a result.
+      # @param dir [String] a source-scoped directory
+      # @return [void]
+      def prune_unwritten(dir)
+        entries = Dir.glob('**/*', File::FNM_DOTMATCH, base: dir)
+                     .reject { |rel| %w[. ..].include?(File.basename(rel)) }
+
+        entries.each do |rel|
+          path = File.join(dir, rel)
+          next unless File.file?(path) || File.symlink?(path)
+          next if @written_paths.include?(File.expand_path(path))
+
+          File.delete(path)
+        end
+
+        entries.sort_by { |rel| -rel.length }.each do |rel|
+          path = File.join(dir, rel)
+          next if File.symlink?(path) || !File.directory?(path)
+
+          Dir.rmdir(path) if Dir.empty?(path)
+        end
+
+        Dir.rmdir(dir) if Dir.empty?(dir)
+      end
 
       # Create the directory structure for node files
       # @return [void]
@@ -1873,6 +2043,7 @@ module Ammitto
       def write_json(path, data)
         FileUtils.mkdir_p(File.dirname(path))
         File.write(path, JSON.pretty_generate(data))
+        @written_paths << File.expand_path(path)
       end
     end
   end

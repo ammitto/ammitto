@@ -2,6 +2,7 @@
 
 # BaseTransformer is loaded by transformers/registry.rb
 require_relative '../../parse_failure_visibility'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -27,6 +28,14 @@ module Ammitto
       # — or none, where Turkey published none.
       #
       class Transformer < Ammitto::Transformers::BaseTransformer
+        # Month names as Turkey writes them in a birth date, with the Turkish
+        # letters folded to ASCII so "EKİM" and "Ekim" read the same
+        TURKISH_MONTHS = {
+          'ocak' => 1, 'subat' => 2, 'mart' => 3, 'nisan' => 4,
+          'mayis' => 5, 'haziran' => 6, 'temmuz' => 7, 'agustos' => 8,
+          'eylul' => 9, 'ekim' => 10, 'kasim' => 11, 'aralik' => 12
+        }.freeze
+
         def initialize
           super(:tr)
         end
@@ -65,6 +74,11 @@ module Ammitto
             entity.id = generate_entity_id(source.local_id)
             entity.entity_type = 'person'
             entity.names = build_names(source)
+            entity.birth_info = build_birth_info(source)
+            entity.nationalities = [presence(source.nationality)].compact
+            entity.addresses = build_addresses(source)
+            entity.position = presence(source.title)
+            entity.remarks = presence(source.remarks)
             entity.source_references = build_source_references(source)
           end
         end
@@ -77,6 +91,8 @@ module Ammitto
             entity.id = generate_entity_id(source.local_id)
             entity.entity_type = 'organization'
             entity.names = build_names(source)
+            entity.addresses = build_addresses(source)
+            entity.remarks = presence(source.remarks)
             entity.source_references = build_source_references(source)
           end
         end
@@ -88,8 +104,123 @@ module Ammitto
           names = []
 
           names << create_name_variant(full_name: source.name, is_primary: true) if source.name
+          alias_names(source.aliases, person: map_entity_type(source) == 'person').each do |alias_name|
+            next if alias_name.casecmp?(source.name.to_s)
+
+            names << create_name_variant(full_name: alias_name)
+          end
 
           names
+        end
+
+        # Turkey lists aliases in one cell as "a) X" and "b) Y", sometimes
+        # on one line, and wraps long names onto the next line. Pieces are
+        # cut at letter markers so wrapped names stay whole. Personal
+        # alternatives also use commas; organization names keep their commas.
+        # @param text [String, nil] the aliases cell
+        # @param person [Boolean] whether commas delimit personal alternatives
+        # @return [Array<String>]
+        def alias_names(text, person:)
+          plain = text.to_s.gsub(/<[^>]*>/, ' ')
+          separator = person ? /(?:\A|\s)[a-z]\)\s+|,/i : /(?:\A|\s)[a-z]\)\s+/i
+          plain.split(separator)
+               .map { |piece| piece.gsub(/\s+/, ' ').strip.sub(/\s*;\z/, '') }
+               .reject(&:empty?)
+               .uniq(&:downcase)
+        end
+
+        # Turkey writes birth dates as ISO dates, bare years, year spans,
+        # "D Month YYYY" in Turkish, or several of those marked "a)" and
+        # "b)". Only a value that reads unambiguously becomes a date; a
+        # value with a typo ("6 Mayısl969") is reported and left out,
+        # because the general date reader would turn it into year 969.
+        # @param source [Object] source model
+        # @return [Array<BirthInfo>]
+        def build_birth_info(source)
+          place = presence(source.place_of_birth)
+          city, country = place_parts(place)
+          births = birth_date_values(source.date_of_birth).map do |value|
+            create_birth_info(city: city, country: country, **value)
+          end
+          return births unless births.empty? && place
+
+          [create_birth_info(city: city, country: country)]
+        end
+
+        # @param text [String, nil] the date of birth cell
+        # @return [Array<Hash>] create_birth_info keywords, one per date
+        def birth_date_values(text)
+          return [] if presence(text).nil?
+
+          text.to_s.split(/(?:\A|\s)[a-z]\)\s*/i).map(&:strip).reject(&:empty?)
+              .filter_map { |part| birth_date_value(part) }
+        end
+
+        # @param part [String] one date as written
+        # @return [Hash, nil] nil, after a report, when it reads no date
+        def birth_date_value(part)
+          case part
+          when /\A(\d{4})-(\d{2})-(\d{2})\z/
+            year, month, day = Regexp.last_match.captures
+            day_month_year(day, month.to_i, year) || unreadable_birth_date(part)
+          when /\A\d{4}\z/ then { year: part.to_i }
+          when /\A(\d{4})\s*-\s*(\d{4})\z/
+            from, to = Regexp.last_match.captures.map(&:to_i)
+            # a backwards span is a typo; create_birth_info would raise and
+            # fail the whole harmonize run
+            from <= to ? { year_range_from: from, year_range_to: to } : unreadable_birth_date(part)
+          when /\A(\d{1,2})\s+(\p{L}+)\s+(\d{4})\z/
+            day, month, year = Regexp.last_match.captures
+            day_month_year(day, TURKISH_MONTHS[month.unicode_normalize(:nfd).gsub(/\p{Mn}/, '').downcase.tr('ı', 'i')], year) ||
+              unreadable_birth_date(part)
+          when /\A(\d{1,2})\.(\d{1,2})\.(\d{4})\z/
+            day, month, year = Regexp.last_match.captures
+            day_month_year(day, month.to_i, year) || unreadable_birth_date(part)
+          else unreadable_birth_date(part)
+          end
+        end
+
+        # @return [Hash, nil] nil when the numbers name no calendar day
+        def day_month_year(day, month, year)
+          return nil unless month && Date.valid_date?(year.to_i, month, day.to_i)
+
+          { date: Date.new(year.to_i, month, day.to_i).iso8601 }
+        end
+
+        # @param part [String]
+        # @return [nil]
+        def unreadable_birth_date(part)
+          Ammitto::ParseFailureVisibility.report(
+            source: :tr, field: :date_of_birth, value: part,
+            error: ArgumentError.new('not a date Turkey writes unambiguously')
+          )
+          nil
+        end
+
+        # "Ardebil, İran" is a city and a country; one word is a city.
+        # @param place [String, nil]
+        # @return [Array<String, nil>] city, country
+        def place_parts(place)
+          return [nil, nil] if place.nil?
+
+          city, country = place.split(',', 2).map(&:strip)
+          [city, Ammitto::Utils::Presence.presence(country)]
+        end
+
+        # @param source [Object] source model
+        # @return [Array<Address>]
+        def build_addresses(source)
+          street = presence(source.address&.gsub(/<[^>]*>/, ' ')&.gsub(/[ \t]+/, ' '))
+          # Some rows carry a passport number and its expiry in this column
+          return [] if street.nil? || street.match?(/\A\d+ \(.*tarih/i)
+
+          [create_address(street: street)]
+        end
+
+        # @param value [String, nil]
+        # @return [String, nil] nil for a blank value
+        def presence(value)
+          Ammitto::Utils::Presence.presence(value&.strip)
         end
 
         # Build source references

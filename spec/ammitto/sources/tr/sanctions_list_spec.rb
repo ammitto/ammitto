@@ -104,6 +104,28 @@ RSpec.describe Ammitto::Sources::Tr::SanctionsList do
     end
   end
 
+  describe '.from_xlsx on row 1 of List D (Yun Ho-jin)' do
+    # Row 1 as published 2026-10-13: an alias and a position, and no
+    # "Diğer Bilgiler" cell.
+    let(:row) do
+      [1, 'YUN HO-JIN', nil, nil, 'Yun Ho-chin', nil,
+       'Namchongang Trading Corporation Müdürü',
+       "Pyongyang, Kore Demokratik Halk\nCumhuriyeti",
+       'KORE DEMOKRATİK HALK CUMHURİYETİ', '2009-07-16', nil, nil, nil, nil,
+       '1944-10-13', nil, '24.02.2021-31405', '24.2.2021/ 3578']
+    end
+    let(:record) { parse(LIVE_HEADERS, [row]).entities.first }
+
+    it 'keeps the alias in aliases, not in remarks' do
+      expect(record.aliases).to eq('Yun Ho-chin')
+      expect(record.remarks).to be_nil
+    end
+
+    it 'keeps the position in title, not in remarks' do
+      expect(record.title).to eq('Namchongang Trading Corporation Müdürü')
+    end
+  end
+
   describe '.from_xlsx' do
     it 'refuses a sheet whose columns collapse onto one field' do
       headers = ['Sıra No', 'Gerçek Kişi Soyadı', 'Listeye Alınma Tarihi',

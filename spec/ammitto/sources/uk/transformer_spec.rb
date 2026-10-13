@@ -25,7 +25,9 @@ RSpec.describe Ammitto::Sources::Uk::Transformer do
   # ("00/00/1975"), which the model normalizes to "1975-00-00".
   describe '#transform_birth_info' do
     def birth_for(dob)
-      details = Ammitto::Sources::Uk::IndividualDetails.new(dobs: [dob])
+      details = Ammitto::Sources::Uk::IndividualDetails.new(
+        individual: Ammitto::Sources::Uk::Individual.new(dobs: [dob])
+      )
       transformer.send(:transform_birth_info, details).first
     end
 
@@ -65,8 +67,62 @@ RSpec.describe Ammitto::Sources::Uk::Transformer do
     end
 
     it 'skips dd/mm placeholders entirely' do
-      details = Ammitto::Sources::Uk::IndividualDetails.new(dobs: ['dd/mm/yyyy'])
+      details = Ammitto::Sources::Uk::IndividualDetails.new(
+        individual: Ammitto::Sources::Uk::Individual.new(dobs: ['dd/mm/yyyy'])
+      )
       expect(transformer.send(:transform_birth_info, details)).to eq([])
+    end
+  end
+
+  # The fixture holds three real OFSI records: an individual (AFG0006), a
+  # ship (DPR0075) and an entity (BEL0164).
+  describe '#transform on parsed OFSI records' do
+    let(:results) do
+      %w[AFG0006 DPR0075 BEL0164].to_h do |id|
+        [id, transformer.transform(UkExcerpt.designation(id))]
+      end
+    end
+
+    it 'publishes the person facts the detail blocks carry' do
+      person = results['AFG0006'][:entity]
+
+      expect(person.nationalities).to eq(['Afghanistan'])
+      expect(person.title).to eq('Mullah, Haji')
+      expect(person.position).to start_with('First Deputy')
+      expect(person.birth_info.map(&:country)).to eq(['Afghanistan'])
+      expect(person.birth_info.first.city).to include('Pashmul')
+    end
+
+    it 'publishes a passport once, however often OFSI repeats it' do
+      person = results['AFG0006'][:entity]
+
+      expect(person.identifications.map { |i| [i.type, i.number] })
+        .to eq([%w[Passport P04581926]])
+      expect(person.identifications.first.note).to include('Kandahar')
+    end
+
+    it 'publishes a ship as a vessel with its IMO number' do
+      vessel = results['DPR0075'][:entity]
+
+      expect(vessel).to be_a(Ammitto::VesselEntity)
+      expect(vessel.imo_number).to eq('9562233')
+      expect(vessel.flag_state).to eq('Comoros')
+      expect(vessel.previous_flags).to eq(['India'])
+      expect(vessel.vessel_type).to eq('Bulk Carrier')
+      expect(vessel.build_year).to eq(2011)
+    end
+
+    it 'publishes the port entry ban of a ship' do
+      effects = results['DPR0075'][:entry].effects
+
+      expect(effects.map(&:effect_type)).to eq(['entry_ban'])
+    end
+
+    it 'keeps an entity an organization with its id unchanged' do
+      org = results['BEL0164'][:entity]
+
+      expect(org).to be_a(Ammitto::OrganizationEntity)
+      expect(org.id).to end_with('bel0164')
     end
   end
 

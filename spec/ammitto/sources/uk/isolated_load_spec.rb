@@ -42,7 +42,7 @@ RSpec.describe 'Ammitto::Sources::Uk model files' do
   # Fails when a model is added without coverage rather than letting the
   # sweep silently shrink to whatever happens to be on disk.
   it 'covers every model-bearing file in the directory' do
-    expect(files.length).to eq(12)
+    expect(files.length).to eq(22)
   end
 
   files.each do |name|
@@ -60,14 +60,14 @@ RSpec.describe 'Ammitto::Sources::Uk model files' do
   # call raises.
   #
   # These examples also cover a gap the sweep leaves. `designation.rb`
-  # requires `date_normalizer` directly, but `individual_details` supplies
+  # requires `date_normalizer` directly, but `individual` supplies
   # it transitively, so deleting that require breaks nothing here. What is
   # under test is that `normalize_date` reaches the caller, not which file
   # declared the dependency.
   #
   # So the call has to ENTER the method. Reading the attribute back is what
   # does it: `Designation#last_updated`, `Designations#date_generated` and
-  # `IndividualDetails#dobs` are all overrides, not plain readers.
+  # `Individual#dobs` are all overrides, not plain readers.
   #
   # The arguments are chosen to reach the conversion rather than return
   # early: `normalized_dobs` returns [] when @dobs is nil, which would
@@ -79,8 +79,8 @@ RSpec.describe 'Ammitto::Sources::Uk model files' do
     'designations' =>
       'raise "not normalized" unless Ammitto::Sources::Uk::Designations' \
       '.new(date_generated: "01/01/2020").date_generated == "2020-01-01"',
-    'individual_details' =>
-      'raise "not normalized" unless Ammitto::Sources::Uk::IndividualDetails' \
+    'individual' =>
+      'raise "not normalized" unless Ammitto::Sources::Uk::Individual' \
       '.new(dobs: ["01/01/2020"]).dobs == ["2020-01-01"]'
   }.each do |name, call|
     it "#{name} normalizes dates through DateNormalizer, loaded alone" do

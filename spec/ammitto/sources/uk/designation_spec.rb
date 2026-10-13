@@ -22,4 +22,31 @@ RSpec.describe Ammitto::Sources::Uk::Designation do
       expect(described_class.new(unique_id: '   ').identifier).to be_nil
     end
   end
+
+  describe 'detail blocks' do
+    it 'keeps the titles of an individual' do
+      expect(UkExcerpt.designation('AFG0006').titles).to eq(%w[Mullah Haji])
+    end
+
+    it 'keeps the ship details' do
+      ship = UkExcerpt.designation('DPR0075').ship_details.ship
+
+      expect(ship.imo_numbers).to eq(['IMO9562233'])
+      expect(ship.current_owner_operators).to eq(['Global United Shipping India'])
+      expect(ship.current_believed_flags).to eq(['Comoros'])
+      expect(ship.types_of_ship).to eq(['Bulk Carrier'])
+      expect(ship.tonnages).to eq(['7078'])
+      expect(ship.years_built).to eq(['2011'])
+    end
+
+    it 'keeps the entity details and contact lists' do
+      designation = UkExcerpt.designation('BEL0164')
+
+      expect(designation.entity_details.business_registration_numbers)
+        .to eq(['Belarusian tax number: 400085002'])
+      expect(designation.phone_numbers).to eq(['+375232509720'])
+      expect(designation.websites).to eq(['https://stankogomel.by/'])
+      expect(designation.email_addresses).to eq(['Stankogomel@stankogomel.by'])
+    end
+  end
 end

@@ -32,7 +32,7 @@ module Ammitto
 
         # Transport sanctions
         attribute :travel_ban, :boolean
-        attribute :prevention_of_port_entry, :boolean
+        attribute :prohibition_of_port_entry, :boolean
         attribute :chartering_of_ships, :boolean
         attribute :crew_servicing_of_ships_and_aircraft, :boolean
         attribute :prevention_of_chartering_of_ships_and_aircraft, :boolean
@@ -68,7 +68,7 @@ module Ammitto
 
           # Transport
           map_element 'TravelBan', to: :travel_ban
-          map_element 'PreventionOfPortEntry', to: :prevention_of_port_entry
+          map_element 'ProhibitionOfPortEntry', to: :prohibition_of_port_entry
           map_element 'CharteringOfShips', to: :chartering_of_ships
           map_element 'CrewServicingOfShipsAndAircraft',
                       to: :crew_servicing_of_ships_and_aircraft
@@ -108,7 +108,7 @@ module Ammitto
 
           # Transport
           map 'travel_ban', to: :travel_ban
-          map 'prevention_of_port_entry', to: :prevention_of_port_entry
+          map 'prohibition_of_port_entry', to: :prohibition_of_port_entry
           map 'chartering_of_ships', to: :chartering_of_ships
           map 'crew_servicing_of_ships_and_aircraft',
               to: :crew_servicing_of_ships_and_aircraft
@@ -147,7 +147,7 @@ module Ammitto
           effects << { type: 'financial_restriction', scope: 'full' } if financial_market_prohibitions
           effects << { type: 'debarment', scope: 'full' } if director_disqualification_sanction
           effects << { type: 'service_restriction', scope: 'full' } if prevention_of_business_arrangements
-          effects << { type: 'entry_ban', scope: 'full' } if prevention_of_port_entry
+          effects << { type: 'entry_ban', scope: 'full' } if prohibition_of_port_entry
           effects << { type: 'technology_restriction', scope: 'full' } if technical_assistance_related_to_aircraft
 
           effects
@@ -161,7 +161,7 @@ module Ammitto
             arms_embargo targeted_arms_embargo trade_sanctions
             import_sanctions export_sanctions
             technical_assistance_related_to_aircraft
-            travel_ban prevention_of_port_entry
+            travel_ban prohibition_of_port_entry
             chartering_of_ships crew_servicing_of_ships_and_aircraft
             prevention_of_chartering_of_ships_and_aircraft
             prevention_of_business_arrangements

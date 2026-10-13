@@ -7,6 +7,9 @@ require_relative 'non_latin_names_wrapper'
 require_relative 'addresses_wrapper'
 require_relative 'sanctions_indicators'
 require_relative 'individual_details'
+require_relative 'entity_details'
+require_relative 'ship_details'
+require_relative 'xml_text_list'
 require_relative '../../utils/presence'
 
 module Ammitto
@@ -24,6 +27,7 @@ module Ammitto
       #   designation.names.each { |n| puts n.name6 }
       #
       class Designation < Lutaml::Model::Serializable
+        extend XmlTextList
         include DateNormalizer
 
         attribute :last_updated, :string
@@ -41,7 +45,18 @@ module Ammitto
         attribute :other_information, :string
         attribute :uk_statement_of_reasons, :string
         attribute :addresses_wrapper, AddressesWrapper
+        attribute :titles, :string, collection: true
+        attribute :phone_numbers, :string, collection: true
+        attribute :email_addresses, :string, collection: true
+        attribute :websites, :string, collection: true
         attribute :individual_details, IndividualDetails
+        attribute :entity_details, EntityDetails
+        attribute :ship_details, ShipDetails
+
+        text_list :titles, 'Title'
+        text_list :phone_numbers, 'PhoneNumber'
+        text_list :email_addresses, 'EmailAddress'
+        text_list :websites, 'Website'
 
         xml do
           root 'Designation'
@@ -61,7 +76,17 @@ module Ammitto
           map_element 'OtherInformation', to: :other_information
           map_element 'UKStatementofReasons', to: :uk_statement_of_reasons
           map_element 'Addresses', to: :addresses_wrapper
+          map_element 'Titles', to: :titles,
+                                **XmlTextList.handlers(:titles)
+          map_element 'PhoneNumbers', to: :phone_numbers,
+                                      **XmlTextList.handlers(:phone_numbers)
+          map_element 'EmailAddresses', to: :email_addresses,
+                                        **XmlTextList.handlers(:email_addresses)
+          map_element 'Websites', to: :websites,
+                                  **XmlTextList.handlers(:websites)
           map_element 'IndividualDetails', to: :individual_details
+          map_element 'EntityDetails', to: :entity_details
+          map_element 'ShipDetails', to: :ship_details
         end
 
         # One mapping for every key-value format so from_hash — the
@@ -86,7 +111,13 @@ module Ammitto
           map 'other_information', to: :other_information
           map 'uk_statement_of_reasons', to: :uk_statement_of_reasons
           map 'addresses', to: :addresses_wrapper
+          map 'titles', to: :titles
+          map 'phone_numbers', to: :phone_numbers
+          map 'email_addresses', to: :email_addresses
+          map 'websites', to: :websites
           map 'individual_details', to: :individual_details
+          map 'entity_details', to: :entity_details
+          map 'ship_details', to: :ship_details
         end
 
         # Get all names (from wrapper)
@@ -117,6 +148,12 @@ module Ammitto
         # @return [Boolean]
         def entity?
           individual_entity_ship == 'Entity'
+        end
+
+        # Check if this designation is for a ship
+        # @return [Boolean]
+        def ship?
+          individual_entity_ship == 'Ship'
         end
 
         # Get primary name

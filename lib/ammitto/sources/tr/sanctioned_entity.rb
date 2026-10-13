@@ -21,6 +21,11 @@ module Ammitto
         attribute :entity_type, :string
         attribute :program, :string
         attribute :remarks, :string
+        # The "Kullandığı Diğer İsimler" cell as Turkey wrote it
+        # ("a) X" / "b) Y" on separate lines); Transformer splits it.
+        attribute :aliases, :string
+        # The "Görevi" (position) cell
+        attribute :title, :string
         attribute :listed_date, :string
         attribute :reference_number, :string
 
@@ -48,6 +53,8 @@ module Ammitto
           map 'entity_type', to: :entity_type
           map 'program', to: :program
           map 'remarks', to: :remarks
+          map 'aliases', to: :aliases
+          map 'title', to: :title
           map 'listed_date', to: :listed_date
           map 'reference_number', to: :reference_number
           map 'date_of_birth', to: :date_of_birth

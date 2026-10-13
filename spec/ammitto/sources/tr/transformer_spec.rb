@@ -334,4 +334,125 @@ RSpec.describe Ammitto::Sources::Tr::Transformer do
 
     it_behaves_like 'a reported parse failure', source: :tr, field: :listed_date
   end
+
+  # processed/tr-1.yaml as fetched 2026-10-13: it had a date of birth, a
+  # nationality and an address, and the published node had none of them.
+  describe 'a person record (Yun Ho-jin, row 1)' do
+    let(:entity) do
+      transform(
+        Ammitto::Sources::Tr::SanctionedEntity.new(
+          name: 'YUN HO-JIN', entity_type: 'person',
+          program: 'Law No. 7262, Articles 3.A/3.B',
+          aliases: 'Yun Ho-chin',
+          title: 'Namchongang Trading Corporation Müdürü',
+          listed_date: '2009-07-16', reference_number: '1',
+          date_of_birth: '1944-10-13',
+          nationality: 'KORE DEMOKRATİK HALK CUMHURİYETİ',
+          address: "Pyongyang, Kore Demokratik Halk\nCumhuriyeti"
+        )
+      )[:entity]
+    end
+
+    it 'publishes the date of birth' do
+      expect(entity.birth_info.map { |b| b.date.to_s }).to eq(['1944-10-13'])
+    end
+
+    it 'publishes the nationality' do
+      expect(entity.nationalities).to eq(['KORE DEMOKRATİK HALK CUMHURİYETİ'])
+    end
+
+    it 'publishes the address' do
+      expect(entity.addresses.map(&:street))
+        .to eq(["Pyongyang, Kore Demokratik Halk\nCumhuriyeti"])
+    end
+
+    it 'publishes the alias as a second name' do
+      expect(entity.names.map(&:full_name)).to eq(['YUN HO-JIN', 'Yun Ho-chin'])
+      expect(entity.names.map(&:is_primary)).to eq([true, false])
+    end
+
+    it 'publishes the position' do
+      expect(entity.position).to eq('Namchongang Trading Corporation Müdürü')
+    end
+  end
+
+  describe 'birth dates as Turkey writes them' do
+    let(:births) do
+      lambda do |text|
+        transform(source(name: 'X', entity_type: 'person', reference_number: '9',
+                         date_of_birth: text))[:entity].birth_info
+      end
+    end
+
+    it 'keeps both dates of an "a) / b)" cell' do
+      expect(births.call('a) 26 Mart 1968 b) 15 Ekim 1970').map { |b| b.date.to_s })
+        .to eq(%w[1968-03-26 1970-10-15])
+    end
+
+    it 'keeps a span of years as a span' do
+      expect(births.call('1967-1969').map { |b| [b.year_range_from, b.year_range_to] })
+        .to eq([[1967, 1969]])
+    end
+
+    it 'omits a backwards year span instead of failing the run' do
+      expect(births.call('1969-1967')).to eq([])
+    end
+
+    it 'omits an ISO date that is not on the calendar' do
+      expect(births.call('1944-13-45')).to eq([])
+    end
+
+    it 'reads a month name whatever its Turkish letters or case' do
+      expect(births.call('1 EKIM 1950').map { |b| b.date.to_s }).to eq(['1950-10-01'])
+    end
+
+    it 'does not turn a mistyped date into a wrong year' do
+      expect(births.call('6 Mayısl969')).to eq([])
+    end
+  end
+
+  describe 'alias cells as Turkey writes them' do
+    let(:names_for) do
+      lambda do |aliases, entity_type = 'person'|
+        transform(source(name: 'X', entity_type: entity_type, reference_number: '9',
+                         aliases: aliases))[:entity].names.map(&:full_name)
+      end
+    end
+
+    it 'splits the comma-separated personal aliases stated for Haleh Bakhtiar' do
+      aliases = 'Halen Bakhtiar, Haleh Bakhtiari, Haleh Bakhtiyar'
+
+      expect(names_for.call(aliases)).to eq(['X', 'Halen Bakhtiar', 'Haleh Bakhtiari', 'Haleh Bakhtiyar'])
+    end
+
+    it 'keeps commas inside an organization alias' do
+      expect(names_for.call('a) Example Trading, Ltd. b) Other Trading, Inc.', 'organization'))
+        .to eq(['X', 'Example Trading, Ltd.', 'Other Trading, Inc.'])
+    end
+
+    it 'drops a comma-separated repeat of the primary name' do
+      expect(names_for.call('Y, x, y')).to eq(%w[X Y])
+    end
+
+    it 'keeps a wrapped name whole' do
+      expect(names_for.call("a) NAM CHON GANG\nCORPORATION")).to eq(['X', 'NAM CHON GANG CORPORATION'])
+    end
+
+    it 'splits markers written on one line' do
+      expect(names_for.call('a) Kim Chin-So   b) Kim Tong-Myong')).to eq(['X', 'Kim Chin-So', 'Kim Tong-Myong'])
+    end
+
+    it 'drops markup and repeats of the primary name' do
+      expect(names_for.call('a) <b>Y</b> b) x')).to eq(%w[X Y])
+    end
+  end
+
+  describe 'an address cell that holds a passport expiry' do
+    it 'is not published as an address' do
+      address = '745420176 (19 Ekim 2020 tarihinde geçerliliği sonlanmaktadır)'
+      entity = transform(source(name: 'X', entity_type: 'person', reference_number: '9',
+                                address: address))[:entity]
+      expect(entity.addresses).to eq([])
+    end
+  end
 end

@@ -50,4 +50,44 @@ RSpec.describe Ammitto::Sources::Wb::Transformer do
       expect(run.count(:wb)).to eq(1)
     end
   end
+
+  describe '#transform with register and creation fields' do
+    include_context 'with World Bank fixture firms'
+
+    # Harmonize reads the processed YAML, so the firms take that route.
+    let(:results) do
+      firms.transform_values do |firm|
+        transformer.transform(Ammitto::Sources::Wb::SanctionedFirm.from_yaml(firm.to_yaml))
+      end
+    end
+
+    it 'publishes REGISTER_ID as an identification on an organization' do
+      ids = results[407_985][:entity].identifications
+      expect(ids.map { |i| [i.type, i.number] }).to eq([['Register ID', '0102133351']])
+    end
+
+    it 'publishes REGISTER_ID as stated on an individual' do
+      ids = results[666_304][:entity].identifications
+      expect(ids.map(&:number)).to eq(['00018161'])
+    end
+
+    it 'publishes no identification when REGISTER_ID is empty' do
+      expect(results[573_628][:entity].identifications).to eq([])
+    end
+
+    it 'does not present the record creation date as a listing date' do
+      expect(results[407_985][:entry].period.listed_date).to be_nil
+      expect(results[407_985][:entry].period.effective_date).to eq(Date.new(2019, 8, 2))
+    end
+
+    it 'keeps the fields without an ontology home in the raw source data' do
+      fields = results[407_985][:entry].raw_source_data.source_specific_fields
+      expect(fields).to include(
+        'wb:parent' => 'N', 'wb:rechkInd' => 'N', 'wb:createUser' => '9000060495',
+        'wb:createUserName' => 'Ho Quang Phuc', 'wb:createDate' => '2021-08-03T00:00:00.000Z'
+      )
+      expect(results[939_357][:entry].raw_source_data.source_specific_fields['wb:register']).to eq('Y')
+      expect(results[311_048][:entry].raw_source_data.source_specific_fields['wb:amlEntrInd']).to eq('S')
+    end
+  end
 end

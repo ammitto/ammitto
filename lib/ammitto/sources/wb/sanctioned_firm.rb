@@ -36,7 +36,20 @@ module Ammitto
         attribute :crpd_stat, :string
         attribute :elig_stat, :string
         attribute :ineligibly_status, :string
+        attribute :aml_entr_ind, :string
+        attribute :register, :string
+        attribute :register_id, :string
+        attribute :parent, :string
+        attribute :rechk_ind, :string
+        attribute :create_user, :string
+        attribute :create_user_name, :string
+        attribute :create_date, :string
+        attribute :create_time, :string
 
+        # UPD_* and LAST_REFRESH_DATE are deliberately not mapped: the API
+        # stamps every record with the export moment and an integration
+        # user, so keeping them would rewrite every processed file on every
+        # run and add nothing about the firm.
         json do
           map 'MANDT', to: :mandt
           map 'SUPP_ID', to: :supp_id
@@ -65,6 +78,15 @@ module Ammitto
           map 'CRPD_STAT', to: :crpd_stat
           map 'ELIG_STAT', to: :elig_stat
           map 'INELIGIBLY_STATUS', to: :ineligibly_status
+          map 'AML_ENTR_IND', to: :aml_entr_ind
+          map 'REGISTER', to: :register
+          map 'REGISTER_ID', to: :register_id
+          map 'PARENT', to: :parent
+          map 'RECHK_IND', to: :rechk_ind
+          map 'CREATE_USER', to: :create_user
+          map 'CREATE_USER_NAME', to: :create_user_name
+          map 'CREATE_DATE', to: :create_date
+          map 'CREATE_TIME', to: :create_time
         end
 
         yaml do
@@ -96,6 +118,15 @@ module Ammitto
           map 'crpd_stat', to: :crpd_stat
           map 'elig_stat', to: :elig_stat
           map 'ineligibly_status', to: :ineligibly_status
+          map 'aml_entr_ind', to: :aml_entr_ind
+          map 'register', to: :register
+          map 'register_id', to: :register_id
+          map 'parent', to: :parent
+          map 'rechk_ind', to: :rechk_ind
+          map 'create_user', to: :create_user
+          map 'create_user_name', to: :create_user_name
+          map 'create_date', to: :create_date
+          map 'create_time', to: :create_time
         end
 
         # Helper methods

@@ -2,6 +2,7 @@
 
 require_relative '../../transformers/base_transformer'
 require_relative '../../parse_failure_visibility'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -73,6 +74,7 @@ module Ammitto
             entity_type: 'person',
             names: [create_name_variant(full_name: firm.supp_name, is_primary: true)],
             addresses: create_address_from_firm(firm) ? [create_address_from_firm(firm)] : [],
+            identifications: transform_identifications(firm),
             remarks: firm.add_supp_info
           )
         end
@@ -86,8 +88,21 @@ module Ammitto
             entity_type: 'organization',
             names: [create_name_variant(full_name: firm.supp_name, is_primary: true)],
             addresses: create_address_from_firm(firm) ? [create_address_from_firm(firm)] : [],
+            identifications: transform_identifications(firm),
             remarks: firm.add_supp_info
           )
+        end
+
+        # The register number the World Bank holds for a firm. Its
+        # REGISTER flag and the register itself are not stated, so the
+        # number is published as given and without an issuing country.
+        # @param firm [Ammitto::Sources::Wb::SanctionedFirm]
+        # @return [Array<Identification>]
+        def transform_identifications(firm)
+          number = Ammitto::Utils::Presence.presence(firm.register_id)
+          return [] unless number
+
+          [create_identification(type: 'Register ID', number: number)]
         end
 
         # Create a SanctionEntry from a WB sanctioned firm
@@ -125,7 +140,15 @@ module Ammitto
                 'wb:crossDebarmentStatus' => firm.crpd_stat,
                 'wb:eligStatus' => firm.elig_stat,
                 'wb:suppEligStat' => firm.supp_elig_stat,
-                'wb:ineligiblyStatus' => firm.ineligibly_status
+                'wb:ineligiblyStatus' => firm.ineligibly_status,
+                'wb:register' => firm.register,
+                'wb:parent' => firm.parent,
+                'wb:amlEntrInd' => firm.aml_entr_ind,
+                'wb:rechkInd' => firm.rechk_ind,
+                'wb:createUser' => firm.create_user,
+                'wb:createUserName' => firm.create_user_name,
+                'wb:createDate' => firm.create_date,
+                'wb:createTime' => firm.create_time
               }
             )
           )

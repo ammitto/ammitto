@@ -129,10 +129,14 @@ module Ammitto
             effects: create_default_effects,
             # legal_bases above already reports an unreadable publication_date
             # for every regulation, so it is parsed here without reporting
-            # to keep one bad cell at one failure.
+            # to keep one bad cell at one failure. The date the entity was
+            # designated is the listing date where the source states one
+            # (as UK does); the regulation date is only the fallback.
             period: create_period(
               source: :eu,
-              listed_date: parse_date(regulation&.publication_date),
+              listed_date: parse_date(
+                entity.designation_date, source: :eu, field: :designation_date
+              ) || parse_date(regulation&.publication_date),
               effective_date: regulation&.entry_into_force_date
             ),
             status: 'active',
@@ -181,7 +185,8 @@ module Ammitto
               state: addr.region,
               country: addr.country_description,
               country_iso_code: addr.country_iso2_code,
-              postal_code: addr.zip_code
+              postal_code: addr.zip_code,
+              po_box: Ammitto::Utils::Presence.presence(addr.po_box)
             )
           end
         end
@@ -223,7 +228,9 @@ module Ammitto
             create_identification(
               type: normalize_id_type(id.identification_type_code),
               number: id.number,
-              issuing_country: id.country_iso2_code
+              issuing_country: id.country_iso2_code,
+              issue_date: parse_date(id.issue_date, source: :eu, field: :issue_date),
+              expiry_date: parse_date(id.valid_to, source: :eu, field: :valid_to)
             )
           end
         end

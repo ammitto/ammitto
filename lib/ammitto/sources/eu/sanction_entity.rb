@@ -33,6 +33,7 @@ module Ammitto
         attribute :logical_id, :string
         attribute :designation_details, :string
         attribute :united_nation_id, :string
+        attribute :designation_date, :string
         attribute :remark, :string
         attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :regulations, Regulation, collection: true
@@ -51,6 +52,7 @@ module Ammitto
           map_attribute 'logicalId', to: :logical_id
           map_attribute 'designationDetails', to: :designation_details
           map_attribute 'unitedNationId', to: :united_nation_id
+          map_attribute 'designationDate', to: :designation_date
           map_element 'remark', to: :remark
           map_element 'regulation', to: :regulations
           map_element 'subjectType', to: :subject_type
@@ -66,6 +68,7 @@ module Ammitto
           map 'logical_id', to: :logical_id
           map 'designation_details', to: :designation_details
           map 'united_nation_id', to: :united_nation_id
+          map 'designation_date', to: :designation_date
           map 'entity_type', to: :entity_type
           map 'remark', to: :remark
           map 'regulations', to: :regulations

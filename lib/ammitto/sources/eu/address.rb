@@ -3,6 +3,7 @@
 require 'lutaml/model'
 
 require_relative 'export_namespace'
+require_relative 'contact_info'
 require_relative 'regulation_summary'
 
 module Ammitto
@@ -14,6 +15,7 @@ module Ammitto
       # <address street="123 Main St" city="Vienna" region=""
       #          countryIso2Code="AT" countryDescription="AUSTRIA"
       #          zipCode="1010" regulationLanguage="en" logicalId="1">
+      #   <contactInfo key="PHONE" value="262 38 18-19"/>
       #   <regulationSummary .../>
       # </address>
       class Address < Lutaml::Model::Serializable
@@ -25,6 +27,9 @@ module Ammitto
         attribute :zip_code, :string
         attribute :regulation_language, :string
         attribute :logical_id, :string
+        attribute :place, :string
+        attribute :po_box, :string
+        attribute :contact_infos, ContactInfo, collection: true
         attribute :regulation_summaries, RegulationSummary, collection: true
 
         xml do
@@ -39,6 +44,9 @@ module Ammitto
           map_attribute 'zipCode', to: :zip_code
           map_attribute 'regulationLanguage', to: :regulation_language
           map_attribute 'logicalId', to: :logical_id
+          map_attribute 'place', to: :place
+          map_attribute 'poBox', to: :po_box
+          map_element 'contactInfo', to: :contact_infos
           map_element 'regulationSummary', to: :regulation_summaries
         end
 
@@ -51,6 +59,9 @@ module Ammitto
           map 'zip_code', to: :zip_code
           map 'regulation_language', to: :regulation_language
           map 'logical_id', to: :logical_id
+          map 'place', to: :place
+          map 'po_box', to: :po_box
+          map 'contact_infos', to: :contact_infos
           map 'regulation_summaries', to: :regulation_summaries
         end
       end

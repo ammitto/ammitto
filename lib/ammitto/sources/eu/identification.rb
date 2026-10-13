@@ -21,6 +21,9 @@ module Ammitto
         attribute :country_iso2_code, :string
         attribute :regulation_language, :string
         attribute :logical_id, :string
+        attribute :valid_to, :string
+        attribute :issue_date, :string
+        attribute :issued_by, :string
         attribute :regulation_summaries, RegulationSummary, collection: true
 
         xml do
@@ -32,6 +35,9 @@ module Ammitto
           map_attribute 'countryIso2Code', to: :country_iso2_code
           map_attribute 'regulationLanguage', to: :regulation_language
           map_attribute 'logicalId', to: :logical_id
+          map_attribute 'validTo', to: :valid_to
+          map_attribute 'issueDate', to: :issue_date
+          map_attribute 'issuedBy', to: :issued_by
           map_element 'regulationSummary', to: :regulation_summaries
         end
 
@@ -41,6 +47,9 @@ module Ammitto
           map 'country_iso2_code', to: :country_iso2_code
           map 'regulation_language', to: :regulation_language
           map 'logical_id', to: :logical_id
+          map 'valid_to', to: :valid_to
+          map 'issue_date', to: :issue_date
+          map 'issued_by', to: :issued_by
           map 'regulation_summaries', to: :regulation_summaries
         end
       end

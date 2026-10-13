@@ -7,13 +7,14 @@ module Ammitto
     module Un
       # Wrapper for VALUE elements
       #
-      # Many UN elements have nested VALUE elements
+      # Many UN elements have nested VALUE elements. The mapping is on the
+      # inner <VALUE>: reading the content of the outer element (LIST_TYPE,
+      # LAST_DAY_UPDATED) returns only the whitespace around it.
       class ValueWrapper < Lutaml::Model::Serializable
         attribute :value, :string, collection: true
 
         xml do
-          root 'VALUE'
-          map_content to: :value
+          map_element 'VALUE', to: :value
         end
 
         yaml do

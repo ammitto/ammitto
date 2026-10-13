@@ -280,32 +280,37 @@ module Ammitto
         # @param individual [Ammitto::Sources::Un::Individual]
         # @return [Array<BirthInfo>]
         def transform_birth_info(individual)
-          birth_infos = []
+          dobs = Array(individual.date_of_birth)
+          pobs = Array(individual.place_of_birth)
 
-          dob = individual.date_of_birth
-          pob = individual.place_of_birth
+          # One date and one place describe one birth. With several of
+          # either, the source does not say which place goes with which
+          # date, so each is kept on its own instead of being paired by
+          # position.
+          if dobs.size <= 1 && pobs.size <= 1
+            return [] if dobs.empty? && pobs.empty?
 
-          if dob
-            # A year-only record keeps its year — it is not padded into
-            # an invented January 1 date
-            birth_infos << create_birth_info(
-              date: dob.date,
-              circa: dob.type_of_date&.include?('APPROXIMATELY'),
-              year: dob.year,
-              city: pob&.city,
-              region: pob&.state_province,
-              country: pob&.country
-            )
-          elsif pob
-            # No DOB but has POB
-            birth_infos << create_birth_info(
-              city: pob.city,
-              region: pob.state_province,
-              country: pob.country
-            )
+            return [birth_info_from(dobs.first, pobs.first)]
           end
 
-          birth_infos
+          dobs.map { |dob| birth_info_from(dob, nil) } +
+            pobs.map { |pob| birth_info_from(nil, pob) }
+        end
+
+        # @param dob [IndividualDateOfBirth, nil]
+        # @param pob [IndividualPlaceOfBirth, nil]
+        # @return [BirthInfo]
+        def birth_info_from(dob, pob)
+          # A year-only record keeps its year: it is not padded into an
+          # invented January 1 date
+          create_birth_info(
+            date: dob&.date,
+            circa: dob ? dob.type_of_date&.include?('APPROXIMATELY') : false,
+            year: dob&.year,
+            city: pob&.city,
+            region: pob&.state_province,
+            country: pob&.country
+          )
         end
 
         # Transform UN documents to Identification objects

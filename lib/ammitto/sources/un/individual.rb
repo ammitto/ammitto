@@ -44,8 +44,8 @@ module Ammitto
         attribute :last_day_updated, ValueWrapper
         attribute :aliases, IndividualAlias, collection: true
         attribute :addresses, IndividualAddress, collection: true
-        attribute :date_of_birth, IndividualDateOfBirth
-        attribute :place_of_birth, IndividualPlaceOfBirth
+        attribute :date_of_birth, IndividualDateOfBirth, collection: true
+        attribute :place_of_birth, IndividualPlaceOfBirth, collection: true
         attribute :documents, IndividualDocument, collection: true
         attribute :sort_key, :string
         attribute :sort_key_last_mod, :string
@@ -121,7 +121,7 @@ module Ammitto
         # The identifier ItemMapper names this record's file after.
         # @return [String, nil]
         def identifier
-          Ammitto::Utils::Presence.presence(reference_number)
+          Ammitto::Utils::Presence.presence(reference_number&.strip)
         end
       end
     end

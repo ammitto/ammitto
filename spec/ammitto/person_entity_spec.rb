@@ -48,6 +48,28 @@ RSpec.describe Ammitto::PersonEntity do
     expect(subject.birth_country).to eq('United States')
   end
 
+  describe '#birth_country with independent birth records' do
+    it 'finds the country after date-only records' do
+      subject.birth_info = [Ammitto::BirthInfo.new(year: 1980), birth_info]
+      expect(subject.birth_country).to eq('United States')
+    end
+
+    it 'skips nil and blank country records' do
+      subject.birth_info = [nil, Ammitto::BirthInfo.new(country: '  '), birth_info]
+      expect(subject.birth_country).to eq('United States')
+    end
+
+    it 'retains the first stated country' do
+      subject.birth_info = [birth_info, Ammitto::BirthInfo.new(country: 'Canada')]
+      expect(subject.birth_country).to eq('United States')
+    end
+
+    it 'returns nil when no country is stated' do
+      subject.birth_info = [nil, Ammitto::BirthInfo.new(year: 1980)]
+      expect(subject.birth_country).to be_nil
+    end
+  end
+
   it 'matches search term in names' do
     expect(subject.matches?('John')).to be true
     expect(subject.matches?('Doe')).to be true

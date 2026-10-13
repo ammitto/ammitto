@@ -74,7 +74,7 @@ module Ammitto
         # The identifier ItemMapper names this record's file after.
         # @return [String, nil]
         def identifier
-          Ammitto::Utils::Presence.presence(reference_number)
+          Ammitto::Utils::Presence.presence(reference_number&.strip)
         end
       end
     end

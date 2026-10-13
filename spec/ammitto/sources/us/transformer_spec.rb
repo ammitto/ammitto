@@ -145,4 +145,89 @@ RSpec.describe Ammitto::Sources::Us::Transformer do
       expect(birth_for('28 Feb 1962').date).to eq(Date.new(1962, 2, 28))
     end
   end
+
+  describe '#transform with nationality, citizenship and vessel info' do
+    include_context 'with OFAC SDN excerpt'
+
+    # Harmonize reads the processed YAML, so the entries take that route.
+    let(:results) do
+      Ammitto::Sources::Us::SdnList.from_xml(fixture).entries.to_h do |entry|
+        processed = Ammitto::Sources::Us::SdnEntry.from_yaml(entry.to_yaml)
+        [entry.uid, transformer.transform(processed)]
+      end
+    end
+
+    it 'publishes nationality and citizenship as the person nationalities, without repeats' do
+      expect(results['7006'][:entity].nationalities).to eq(['Somalia'])
+      expect(results['6946'][:entity].nationalities).to eq(%w[Tunisia Ireland])
+      expect(results['6924'][:entity].nationalities).to eq(%w[Egypt Kenya])
+    end
+
+    it 'keeps nationality and citizenship apart in the raw source data' do
+      fields = results['7006'][:entry].raw_source_data.source_specific_fields
+      expect(fields).to include('us:nationalities' => ['Somalia'], 'us:citizenships' => ['Somalia'])
+    end
+
+    it 'publishes the vessel type, flag and gross registered tonnage' do
+      vessel = results['4243'][:entity]
+      expect(vessel.vessel_type).to eq('General Cargo')
+      expect(vessel.flag_state).to eq('Panama')
+      expect(vessel.tonnage.gross_register_tonnage).to eq(1865)
+    end
+
+    it 'keeps the unlabelled tonnage in the raw source data, not under a measure' do
+      vessel = results['4243'][:entity]
+      expect(vessel.gross_tonnage).to be_nil
+      expect(vessel.deadweight_tonnage).to be_nil
+      fields = results['4243'][:entry].raw_source_data.source_specific_fields
+      expect(fields['us:vesselTonnage']).to eq('2595')
+    end
+
+    it 'publishes the call sign and the owner name' do
+      vessel = results['4238'][:entity]
+      expect(vessel.call_sign).to eq('CL2192')
+      expect(vessel.owner.target_name).to eq('Samir de Navegacion S.A.')
+      expect(vessel.owner.relationship).to eq('owned_by')
+    end
+
+    it 'adds no new raw fields to an entry without them' do
+      fields = results['4238'][:entry].raw_source_data.source_specific_fields
+      expect(fields.keys).to eq(%w[us:sdnType us:programs us:title])
+    end
+  end
+
+  describe 'a vessel with unusual vesselInfo' do
+    let(:xml) do
+      <<~XML
+        <sdnList xmlns="https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/XML">
+          <sdnEntry><uid>1</uid><lastName>TEST</lastName><sdnType>Vessel</sdnType>#{extra}</sdnEntry>
+        </sdnList>
+      XML
+    end
+    let(:result) do
+      entry = Ammitto::Sources::Us::SdnList.from_xml(xml).entries.first
+      transformer.transform(Ammitto::Sources::Us::SdnEntry.from_yaml(entry.to_yaml))
+    end
+
+    context 'when the gross registered tonnage is not a plain integer' do
+      let(:extra) { '<vesselInfo><grossRegisteredTonnage>1,865</grossRegisteredTonnage></vesselInfo>' }
+
+      it 'keeps the stated text in the raw data and publishes no tonnage' do
+        fields = result[:entry].raw_source_data.source_specific_fields
+        expect(result[:entity].tonnage).to be_nil
+        expect(fields['us:vesselGrossRegisteredTonnage']).to eq('1,865')
+      end
+    end
+
+    context 'when vesselInfo states no flag' do
+      let(:extra) do
+        '<vesselInfo><vesselType>Tug</vesselType></vesselInfo>' \
+          '<addressList><address><uid>2</uid><country>Cuba</country></address></addressList>'
+      end
+
+      it 'falls back to the address country' do
+        expect(result[:entity].flag_state).to eq('Cuba')
+      end
+    end
+  end
 end

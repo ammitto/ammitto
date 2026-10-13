@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../transformers/base_transformer'
+require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
@@ -113,6 +114,7 @@ module Ammitto
             birth_info: transform_birth_info(sdn_entry),
             identifications: transform_identifications(sdn_entry.identifications),
             title: sdn_entry.title,
+            nationalities: (sdn_entry.nationalities + sdn_entry.citizenships).uniq,
             remarks: sdn_entry.remarks
           )
         end
@@ -137,7 +139,9 @@ module Ammitto
           # Extract vessel-specific data from identifications
           vessel_ids = sdn_entry.identifications.select { |id| vessel_id_type?(id.id_type) }
           imo = vessel_ids.find { |id| id.id_type&.downcase&.include?('imo') }
-          flag = extract_flag_from_addresses(sdn_entry.addresses)
+          info = sdn_entry.vessel_info
+          flag = Ammitto::Utils::Presence.presence(info&.vessel_flag) ||
+                 extract_flag_from_addresses(sdn_entry.addresses)
 
           Ammitto::VesselEntity.new(
             id: generate_entity_id(sdn_entry.uid),
@@ -145,8 +149,38 @@ module Ammitto
             names: transform_sdn_names(sdn_entry),
             imo_number: imo&.id_number,
             flag_state: flag,
+            vessel_type: Ammitto::Utils::Presence.presence(info&.vessel_type),
+            call_sign: Ammitto::Utils::Presence.presence(info&.call_sign),
+            tonnage: transform_tonnage(info),
+            owner: transform_vessel_owner(info),
             remarks: sdn_entry.remarks
           )
+        end
+
+        # OFAC's grossRegisteredTonnage is the only tonnage element that
+        # names its measure. The bare <tonnage> element does not, so it is
+        # kept in raw_source_data instead of being filed under a measure
+        # the source never stated.
+        # @param info [Ammitto::Sources::Us::VesselInfo, nil]
+        # @return [Tonnage, nil]
+        def transform_tonnage(info)
+          grt = parse_tonnage(info&.gross_registered_tonnage)
+          return nil unless grt
+
+          Ammitto::Tonnage.new(gross_register_tonnage: grt)
+        end
+
+        # @param value [String, nil]
+        # @return [Integer, nil] nil when absent or not a plain integer
+        def parse_tonnage(value)
+          value.to_s.strip.match?(/\A\d+\z/) ? value.to_i : nil
+        end
+
+        # @param info [Ammitto::Sources::Us::VesselInfo, nil]
+        # @return [EntityLink, nil] a named owner; OFAC gives no entity to link
+        def transform_vessel_owner(info)
+          name = Ammitto::Utils::Presence.presence(info&.vessel_owner)
+          name && Ammitto::EntityLink.new(relationship: 'owned_by', target_name: name)
         end
 
         # Create an AircraftEntity from an SDN entry
@@ -190,9 +224,33 @@ module Ammitto
                 'us:sdnType' => sdn_entry.sdn_type,
                 'us:programs' => programs,
                 'us:title' => sdn_entry.title
-              }
+              }.merge(unpublished_fields(sdn_entry))
             )
           )
+        end
+
+        # Source values with no ontology field of their own. Nationality and
+        # citizenship are published together as PersonEntity#nationalities;
+        # keeping them apart here preserves which one the source stated.
+        # @param sdn_entry [Ammitto::Sources::Us::SdnEntry]
+        # @return [Hash{String => Object}]
+        def unpublished_fields(sdn_entry)
+          info = sdn_entry.vessel_info
+          {
+            'us:nationalities' => sdn_entry.nationalities,
+            'us:citizenships' => sdn_entry.citizenships,
+            'us:vesselTonnage' => info&.tonnage,
+            'us:vesselGrossRegisteredTonnage' => unparsed_tonnage(info)
+          }.reject { |_, value| value.nil? || value == [] || value.to_s.strip.empty? }
+        end
+
+        # A grossRegisteredTonnage that is not a plain integer cannot be
+        # published as a number; the stated text survives here instead.
+        # @param info [Ammitto::Sources::Us::VesselInfo, nil]
+        # @return [String, nil]
+        def unparsed_tonnage(info)
+          value = info&.gross_registered_tonnage
+          value if value && parse_tonnage(value).nil?
         end
 
         # Transform SDN names to NameVariant objects

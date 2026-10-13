@@ -1,0 +1,387 @@
+<?xml version="1.0" standalone="yes"?>
+<sdnList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/XML">
+  <publshInformation>
+    <Publish_Date>10/09/2026</Publish_Date>
+    <Record_Count>19416</Record_Count>
+  </publshInformation>
+  <sdnEntry>
+    <uid>7006</uid>
+    <firstName>Hassan Dahir</firstName>
+    <lastName>AWEYS</lastName>
+    <sdnType>Individual</sdnType>
+    <programList>
+      <program>SDGT</program>
+      <program>SOMALIA</program>
+    </programList>
+    <idList>
+      <id>
+        <uid>185896</uid>
+        <idType>Secondary sanctions risk:</idType>
+        <idNumber>section 1(b) of Executive Order 13224, as amended by Executive Order 13886</idNumber>
+      </id>
+      <id>
+        <uid>199156</uid>
+        <idType>Gender</idType>
+        <idNumber>Male</idNumber>
+      </id>
+    </idList>
+    <akaList>
+      <aka>
+        <uid>4980</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>ALI</lastName>
+        <firstName>Sheikh Hassan Dahir Aweys</firstName>
+      </aka>
+      <aka>
+        <uid>4981</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AWES</lastName>
+        <firstName>Shaykh Hassan Dahir</firstName>
+      </aka>
+      <aka>
+        <uid>89719</uid>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>AWES, Hassan Dahir</lastName>
+      </aka>
+      <aka>
+        <uid>89720</uid>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>UWAYS, Hassan Tahir</lastName>
+      </aka>
+    </akaList>
+    <addressList>
+      <address>
+        <uid>89053</uid>
+        <country>Somalia</country>
+      </address>
+      <address>
+        <uid>89054</uid>
+        <country>Eritrea</country>
+      </address>
+    </addressList>
+    <nationalityList>
+      <nationality>
+        <uid>99155</uid>
+        <country>Somalia</country>
+        <mainEntry>true</mainEntry>
+      </nationality>
+    </nationalityList>
+    <citizenshipList>
+      <citizenship>
+        <uid>1307</uid>
+        <country>Somalia</country>
+        <mainEntry>true</mainEntry>
+      </citizenship>
+    </citizenshipList>
+    <dateOfBirthList>
+      <dateOfBirthItem>
+        <uid>1306</uid>
+        <dateOfBirth>1935</dateOfBirth>
+        <mainEntry>true</mainEntry>
+      </dateOfBirthItem>
+    </dateOfBirthList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>4243</uid>
+    <lastName>EBANO</lastName>
+    <sdnType>Vessel</sdnType>
+    <programList>
+      <program>CUBA</program>
+    </programList>
+    <idList>
+      <id>
+        <uid>22133</uid>
+        <idType>Vessel Registration Identification</idType>
+        <idNumber>IMO 7406784</idNumber>
+      </id>
+    </idList>
+    <akaList>
+      <aka>
+        <uid>3408</uid>
+        <type>f.k.a.</type>
+        <category>weak</category>
+        <lastName>ANA I</lastName>
+      </aka>
+      <aka>
+        <uid>50788</uid>
+        <type>f.k.a.</type>
+        <category>weak</category>
+        <lastName>SAND SWAN</lastName>
+      </aka>
+    </akaList>
+    <vesselInfo>
+      <vesselType>General Cargo</vesselType>
+      <vesselFlag>Panama</vesselFlag>
+      <tonnage>2595</tonnage>
+      <grossRegisteredTonnage>1865</grossRegisteredTonnage>
+    </vesselInfo>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>6946</uid>
+    <firstName>Ayadi Chafiq</firstName>
+    <lastName>BIN MUHAMMAD</lastName>
+    <sdnType>Individual</sdnType>
+    <remarks>(Linked To: AL QA'IDA)</remarks>
+    <programList>
+      <program>SDGT</program>
+    </programList>
+    <idList>
+      <id>
+        <uid>185892</uid>
+        <idType>Secondary sanctions risk:</idType>
+        <idNumber>section 1(b) of Executive Order 13224, as amended by Executive Order 13886</idNumber>
+      </id>
+      <id>
+        <uid>198324</uid>
+        <idType>Gender</idType>
+        <idNumber>Male</idNumber>
+      </id>
+    </idList>
+    <akaList>
+      <aka>
+        <uid>4931</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AYADI SHAFIQ</lastName>
+        <firstName>Ben Muhammad</firstName>
+      </aka>
+      <aka>
+        <uid>4932</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AYADI CHAFIK</lastName>
+        <firstName>Ben Muhammad</firstName>
+      </aka>
+      <aka>
+        <uid>4933</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AIADI</lastName>
+        <firstName>Ben Muhammad</firstName>
+      </aka>
+      <aka>
+        <uid>4934</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AIADY</lastName>
+        <firstName>Ben Muhammad</firstName>
+      </aka>
+    </akaList>
+    <addressList>
+      <address>
+        <uid>4983</uid>
+        <address1>Helene Meyer Ring 10-1415-80809</address1>
+        <city>Munich</city>
+        <country>Germany</country>
+      </address>
+      <address>
+        <uid>4984</uid>
+        <address1>129 Park Road, NW8</address1>
+        <city>London</city>
+        <country>United Kingdom</country>
+      </address>
+      <address>
+        <uid>4985</uid>
+        <address1>28 Chaussee de Lille</address1>
+        <city>Mouscron</city>
+        <country>Belgium</country>
+      </address>
+      <address>
+        <uid>4986</uid>
+        <address1>Darvingasse 1/2/58-60</address1>
+        <city>Vienna</city>
+        <country>Austria</country>
+      </address>
+      <address>
+        <uid>4987</uid>
+        <country>Tunisia</country>
+      </address>
+    </addressList>
+    <nationalityList>
+      <nationality>
+        <uid>98325</uid>
+        <country>Tunisia</country>
+        <mainEntry>true</mainEntry>
+      </nationality>
+      <nationality>
+        <uid>98326</uid>
+        <country>Ireland</country>
+        <mainEntry>false</mainEntry>
+      </nationality>
+    </nationalityList>
+    <dateOfBirthList>
+      <dateOfBirthItem>
+        <uid>1286</uid>
+        <dateOfBirth>21 Jan 1963</dateOfBirth>
+        <mainEntry>true</mainEntry>
+      </dateOfBirthItem>
+    </dateOfBirthList>
+    <placeOfBirthList>
+      <placeOfBirthItem>
+        <uid>1287</uid>
+        <placeOfBirth>Safais (Sfax), Tunisia</placeOfBirth>
+        <mainEntry>true</mainEntry>
+      </placeOfBirthItem>
+    </placeOfBirthList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>6924</uid>
+    <firstName>Mustafa Mohamed</firstName>
+    <lastName>FADHIL</lastName>
+    <sdnType>Individual</sdnType>
+    <programList>
+      <program>SDGT</program>
+    </programList>
+    <idList>
+      <id>
+        <uid>3331</uid>
+        <idType>Serial No.</idType>
+        <idNumber>201735161</idNumber>
+      </id>
+      <id>
+        <uid>3332</uid>
+        <idType>Kenyan ID No.</idType>
+        <idNumber>12773667</idNumber>
+      </id>
+      <id>
+        <uid>185876</uid>
+        <idType>Secondary sanctions risk:</idType>
+        <idNumber>section 1(b) of Executive Order 13224, as amended by Executive Order 13886</idNumber>
+      </id>
+    </idList>
+    <akaList>
+      <aka>
+        <uid>4833</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>ELBISHY</lastName>
+        <firstName>Moustafa Ali</firstName>
+      </aka>
+      <aka>
+        <uid>4834</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>MOHAMMED</lastName>
+        <firstName>Mustafa</firstName>
+      </aka>
+      <aka>
+        <uid>4835</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>FAZUL</lastName>
+        <firstName>Mustafa</firstName>
+      </aka>
+      <aka>
+        <uid>4836</uid>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>HUSSEIN</lastName>
+      </aka>
+      <aka>
+        <uid>4838</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>FADIL</lastName>
+        <firstName>Mustafa Muhamad</firstName>
+      </aka>
+      <aka>
+        <uid>4839</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AL MASRI</lastName>
+        <firstName>Abd Al Wakil</firstName>
+      </aka>
+      <aka>
+        <uid>4840</uid>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>ANIS, Abu</lastName>
+      </aka>
+      <aka>
+        <uid>4841</uid>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>YUSSRR, Abu</lastName>
+      </aka>
+      <aka>
+        <uid>4842</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>ALI</lastName>
+        <firstName>Hassan</firstName>
+      </aka>
+      <aka>
+        <uid>4843</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>MAN</lastName>
+        <firstName>Nu</firstName>
+      </aka>
+      <aka>
+        <uid>4844</uid>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>KHALID</lastName>
+      </aka>
+      <aka>
+        <uid>4845</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>JIHAD</lastName>
+        <firstName>Abu</firstName>
+      </aka>
+      <aka>
+        <uid>4846</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>AL-NUBI</lastName>
+        <firstName>Abu</firstName>
+      </aka>
+    </akaList>
+    <citizenshipList>
+      <citizenship>
+        <uid>1247</uid>
+        <country>Egypt</country>
+        <mainEntry>true</mainEntry>
+      </citizenship>
+      <citizenship>
+        <uid>1248</uid>
+        <country>Kenya</country>
+        <mainEntry>false</mainEntry>
+      </citizenship>
+    </citizenshipList>
+    <dateOfBirthList>
+      <dateOfBirthItem>
+        <uid>1245</uid>
+        <dateOfBirth>23 Jun 1976</dateOfBirth>
+        <mainEntry>true</mainEntry>
+      </dateOfBirthItem>
+    </dateOfBirthList>
+    <placeOfBirthList>
+      <placeOfBirthItem>
+        <uid>1246</uid>
+        <placeOfBirth>Cairo, Egypt</placeOfBirth>
+        <mainEntry>true</mainEntry>
+      </placeOfBirthItem>
+    </placeOfBirthList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>4238</uid>
+    <lastName>MAR AZUL</lastName>
+    <sdnType>Vessel</sdnType>
+    <programList>
+      <program>CUBA</program>
+    </programList>
+    <vesselInfo>
+      <callSign>CL2192</callSign>
+      <vesselType>Tug</vesselType>
+      <vesselFlag>Cuba</vesselFlag>
+      <vesselOwner>Samir de Navegacion S.A.</vesselOwner>
+      <grossRegisteredTonnage>212</grossRegisteredTonnage>
+    </vesselInfo>
+  </sdnEntry>
+</sdnList>

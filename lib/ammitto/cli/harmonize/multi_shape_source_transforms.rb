@@ -83,7 +83,7 @@ module Ammitto
         def ch_target_shape?(data)
           return false unless data.is_a?(Hash)
 
-          data.key?('individual') || data.key?('entity') ||
+          data.key?('individual') || data.key?('entity') || data.key?('object') ||
             data.key?('sanctions_set_id')
         end
 

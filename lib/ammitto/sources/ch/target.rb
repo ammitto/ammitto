@@ -3,18 +3,20 @@
 require 'lutaml/model'
 require_relative 'entity'
 require_relative 'individual'
+require_relative 'sanctioned_object'
 require_relative '../../utils/presence'
 
 module Ammitto
   module Sources
     module Ch
-      # Target in Swiss sanctions list (contains individual or entity)
+      # Target in Swiss sanctions list (individual, organization or object)
       class Target < Lutaml::Model::Serializable
         attribute :ssid, :string
         attribute :sanctions_set_id, :string
         attribute :entity_type, :string # Serialized for proper entity type detection
         attribute :individual, Individual
         attribute :entity, Entity
+        attribute :object, SanctionedObject
 
         xml do
           root 'target'
@@ -22,6 +24,7 @@ module Ammitto
           map_element 'sanctions-set-id', to: :sanctions_set_id
           map_element 'individual', to: :individual
           map_element 'entity', to: :entity
+          map_element 'object', to: :object
         end
 
         yaml do
@@ -30,10 +33,11 @@ module Ammitto
           map 'entity_type', to: :entity_type
           map 'individual', to: :individual
           map 'entity', to: :entity
+          map 'object', to: :object
         end
 
         def identity
-          individual&.identity || entity&.identity
+          individual&.identity || entity&.identity || object&.identity
         end
 
         def full_name
@@ -43,6 +47,7 @@ module Ammitto
         # Compute entity_type if not set
         def entity_type
           return @entity_type if @entity_type && !@entity_type.empty?
+          return object.object_type if object
 
           individual ? 'person' : 'organization'
         end

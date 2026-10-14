@@ -1,0 +1,165 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/un/hte001",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "GRAN GRIF",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "GRAN GRIF DE SAVIEN",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "SAVIEN GANG",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "BAZ GRAN GRIF",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/un/consolidated-list/hte001"
+        ],
+        "remarks": "Luckson Elan (HTi.007) is the leader of the Gran Grif gang.  INTERPOL-UN Security Council Special Notice:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Entities",
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "country": "Haiti"
+          }
+        ],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/un/consolidated-list/hte001",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/un/hte001",
+        "authority": {
+          "@type": "Authority",
+          "id": "un",
+          "name": "United Nations",
+          "countryCode": "UN"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Haiti",
+          "code": "HAITI"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "travel_ban",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2025-07-08",
+          "effectiveDate": "2025-07-08",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "HTe.001",
+        "remarks": "Luckson Elan (HTi.007) is the leader of the Gran Grif gang.  INTERPOL-UN Security Council Special Notice:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Entities",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "un:dataId": "6909349",
+            "un:versionNum": "1",
+            "un:entityType": "entity"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.names[3].@type": "String",
+    "$.output.entity.names[3].fullName": "String",
+    "$.output.entity.names[3].script": "String",
+    "$.output.entity.names[3].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:dataId": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:versionNum": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:entityType": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 4,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/name_variant'
+
 module Ammitto
   # NameVariant represents a name with various components and metadata
   #
   # Supports full names, split names, multiple scripts and languages,
   # and additional attributes like title and function.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::NameVariant (see Ontology::Contracts).
   #
   # @example Creating a name variant
   #   NameVariant.new(
@@ -16,15 +22,7 @@ module Ammitto
   #   )
   #
   class NameVariant < Lutaml::Model::Serializable
-    attribute :full_name, :string
-    attribute :first_name, :string
-    attribute :middle_name, :string
-    attribute :last_name, :string
-    attribute :script, :string         # Latn, Cyrl, Arab, Hani, etc.
-    attribute :language, :string       # ISO 639-1 code
-    attribute :is_primary, :boolean, default: false
-    attribute :title, :string          # Mr., Dr., Prof., etc.
-    attribute :function, :string       # Role or position
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     # JSON mapping - supports both snake_case (harmonized) and camelCase (legacy)
     json do
@@ -42,6 +40,7 @@ module Ammitto
       map 'isPrimary', to: :is_primary # backward compatibility
       map 'title', to: :title
       map 'function', to: :function
+      map 'is_strong', to: :is_strong
     end
 
     # @return [String] the display name

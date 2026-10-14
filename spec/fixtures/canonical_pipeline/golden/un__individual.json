@@ -1,0 +1,182 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/un/cdi004",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "INNOCENT KAINA",
+            "firstName": "INNOCENT",
+            "middleName": "KAINA",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Colonel Innocent KAINA",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "India Queen",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/un/consolidated-list/cdi004"
+        ],
+        "remarks": ": Became M23 deputy commander after the flight of Bosco Taganda’s faction to Rwanda in March 2013. Fled to Uganda in November 2013. In Uganda as of early 2016.  INTERPOL-UN Security Council Special Notice:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Individuals",
+        "birthInfo": [
+          {
+            "@type": "BirthInfo",
+            "circa": false,
+            "city": "Bunagana",
+            "region": "Rutshuru territory",
+            "country": "Democratic Republic of the Congo"
+          }
+        ],
+        "nationalities": [],
+        "gender": "Male",
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "country": "Uganda"
+          }
+        ],
+        "position": "Former M23 Deputy Commander "
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/un/consolidated-list/cdi004",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/un/cdi004",
+        "authority": {
+          "@type": "Authority",
+          "id": "un",
+          "name": "United Nations",
+          "countryCode": "UN"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Democratic Republic of the Congo",
+          "code": "DRC"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "travel_ban",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2012-11-30",
+          "effectiveDate": "2012-11-30",
+          "isIndefinite": true,
+          "lastUpdated": "2016-10-13"
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "CDi.004",
+        "remarks": ": Became M23 deputy commander after the flight of Bosco Taganda’s faction to Rwanda in March 2013. Fled to Uganda in November 2013. In Uganda as of early 2016.  INTERPOL-UN Security Council Special Notice:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Individuals",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "un:dataId": "6907996",
+            "un:versionNum": "1",
+            "un:gender": "Male",
+            "un:entityType": "individual"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].firstName": "String",
+    "$.output.entity.names[0].middleName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.birthInfo[0].@type": "String",
+    "$.output.entity.birthInfo[0].circa": "FalseClass",
+    "$.output.entity.birthInfo[0].city": "String",
+    "$.output.entity.birthInfo[0].region": "String",
+    "$.output.entity.birthInfo[0].country": "String",
+    "$.output.entity.gender": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entity.position": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.period.lastUpdated": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:dataId": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:versionNum": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:gender": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.un:entityType": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::BirthInfo": 1,
+    "Ammitto::NameVariant": 3,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../neo4j_adapter'
 
 module Ammitto
@@ -19,7 +20,7 @@ module Ammitto
       #     fetched_at: "2024-01-15T10:30:00Z"
       #   )
       #
-      class SourceReference < Lutaml::Model::Serializable
+      class SourceReferenceModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for SourceReference
@@ -75,6 +76,11 @@ module Ammitto
           map 'url', to: :url
           map 'fetched_at', to: :fetched_at
         end
+      end
+      private_constant :SourceReferenceModel
+
+      class SourceReference < SourceReferenceModel
+        include Immutable
       end
     end
   end

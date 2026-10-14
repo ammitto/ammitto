@@ -1,0 +1,199 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/jp_meti/1",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Al Qa'ida/Islamic Army",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Al Qaeda",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "The Base",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [
+          {
+            "@type": "SourceReference",
+            "sourceCode": "jp_meti",
+            "referenceNumber": "1",
+            "url": "https://www.meti.go.jp/policy/anpo/20250929_4.xlsx"
+          }
+        ],
+        "linkedEntities": [],
+        "remarks": "WMD concerns: Biological weapons (生物兵器), Chemical weapons (化学兵器), Missiles (ミサイル), Nuclear weapons (核兵器)",
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "country": "Islamic Republic of Afghanistan",
+            "countryIsoCode": "AF"
+          }
+        ],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/jp_meti/foreign-user-list/1",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/jp_meti/1",
+        "authority": {
+          "@type": "Authority",
+          "id": "jp_meti",
+          "name": "Japan METI (Ministry of Economy, Trade and Industry)",
+          "countryCode": "JP"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Japan Meti Foreign User List",
+          "code": "JP-Meti-FUL"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "export_restriction",
+            "scope": "full",
+            "description": "Subject to export license requirements under FEFTA"
+          }
+        ],
+        "reasons": [
+          {
+            "@type": "SanctionReason",
+            "category": "wmd_proliferation",
+            "description": [
+              {
+                "value": "Involved in development or proliferation of biological weapons",
+                "lang": "en",
+                "is_primary": true
+              }
+            ]
+          },
+          {
+            "@type": "SanctionReason",
+            "category": "wmd_proliferation",
+            "description": [
+              {
+                "value": "Involved in development or proliferation of chemical weapons",
+                "lang": "en",
+                "is_primary": true
+              }
+            ]
+          },
+          {
+            "@type": "SanctionReason",
+            "category": "wmd_proliferation",
+            "description": [
+              {
+                "value": "Involved in development or proliferation of missiles",
+                "lang": "en",
+                "is_primary": true
+              }
+            ]
+          },
+          {
+            "@type": "SanctionReason",
+            "category": "wmd_proliferation",
+            "description": [
+              {
+                "value": "Involved in development or proliferation of nuclear weapons",
+                "lang": "en",
+                "is_primary": true
+              }
+            ]
+          }
+        ],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2025-09-29",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": [],
+        "remarks": "Meti Foreign User List - Export Control"
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.sourceReferences[0].@type": "String",
+    "$.output.entity.sourceReferences[0].sourceCode": "String",
+    "$.output.entity.sourceReferences[0].referenceNumber": "String",
+    "$.output.entity.sourceReferences[0].url": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entity.addresses[0].countryIsoCode": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[0].description": "String",
+    "$.output.entry.reasons[0].@type": "String",
+    "$.output.entry.reasons[0].category": "String",
+    "$.output.entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output.entry.reasons[1].@type": "String",
+    "$.output.entry.reasons[1].category": "String",
+    "$.output.entry.reasons[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output.entry.reasons[2].@type": "String",
+    "$.output.entry.reasons[2].category": "String",
+    "$.output.entry.reasons[2].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output.entry.reasons[3].@type": "String",
+    "$.output.entry.reasons[3].category": "String",
+    "$.output.entry.reasons[3].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.remarks": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 3,
+    "Ammitto::Ontology::ValueObjects::LocalizedString": 4,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionReason": 4,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::SourceReference": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

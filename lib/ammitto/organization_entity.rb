@@ -5,9 +5,16 @@ require_relative 'address'
 require_relative 'contact_info'
 require_relative 'entity_link'
 require_relative 'identification'
+require_relative 'ontology/contracts'
+require_relative 'ontology/entities/organization_entity'
 
 module Ammitto
   # OrganizationEntity represents a sanctioned organization or company
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Entities::OrganizationEntity (see Ontology::Contracts). Here
+  # +beneficial_owners+ are EntityLinks (canonical +beneficial_owner_links+);
+  # the canonical name strings are +beneficial_owner_names+.
   #
   # @example Creating an organization entity
   #   OrganizationEntity.new(
@@ -18,22 +25,7 @@ module Ammitto
   #   )
   #
   class OrganizationEntity < Entity
-    attribute :entity_type, :string, default: 'organization'
-    attribute :registration_number, :string
-    attribute :incorporation_date, :date
-    attribute :dissolution_date, :date
-    attribute :legal_form, :string            # Corporation, LLC, Partnership, etc.
-    attribute :country, :string               # Country of incorporation
-    attribute :country_iso_code, :string      # ISO 3166-1 alpha-2
-    attribute :identifications, Identification, collection: true
-    attribute :addresses, Address, collection: true
-    attribute :contact_info, ContactInfo
-    attribute :beneficial_owners, EntityLink, collection: true
-    attribute :directors, EntityLink, collection: true
-    attribute :parent_organization, EntityLink
-    attribute :subsidiaries, EntityLink, collection: true
-    attribute :website, :string
-    attribute :sector, :string                # Industry sector
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'entityType', to: :entity_type
@@ -52,6 +44,10 @@ module Ammitto
       map 'subsidiaries', to: :subsidiaries
       map 'website', to: :website
       map 'sector', to: :sector
+      map 'organizationType', to: :organization_type
+      map 'incorporationCountry', to: :incorporation_country
+      map 'industry', to: :industry
+      map 'beneficialOwnerNames', to: :beneficial_owner_names
     end
 
     # @return [Boolean] whether the organization is dissolved

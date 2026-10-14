@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../value_objects/immutable'
 require_relative '../value_objects/legal_citation'
 
 module Ammitto
@@ -33,7 +34,7 @@ module Ammitto
       #     announcement: { 'id' => 'https://www.ammitto.org/announcement/cn/2025-015' }
       #   )
       #
-      class SanctionPeriodModification < Lutaml::Model::Serializable
+      class SanctionPeriodModificationModel < Lutaml::Model::Serializable
         # Unique IRI identifier
         # @return [String, nil]
         attribute :id, :string
@@ -172,6 +173,11 @@ module Ammitto
           map 'legalCitations', to: :legal_citations
           map 'notes', to: :notes
         end
+      end
+      private_constant :SanctionPeriodModificationModel
+
+      class SanctionPeriodModification < SanctionPeriodModificationModel
+        include ValueObjects::Immutable
       end
     end
   end

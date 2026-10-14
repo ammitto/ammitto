@@ -1,13 +1,18 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'ontology/contracts'
 require_relative 'ontology/value_objects/legal_citation'
 require_relative 'ontology/sanction/sanction_period_modification'
+require_relative 'ontology/sanction/official_announcement'
 
 module Ammitto
   # OfficialAnnouncement represents the official announcement of a sanction
   #
   # Links to the original publication with metadata.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::OfficialAnnouncement (see Ontology::Contracts).
   #
   # @example Creating an official announcement
   #   OfficialAnnouncement.new(
@@ -18,35 +23,7 @@ module Ammitto
   #   )
   #
   class OfficialAnnouncement < Lutaml::Model::Serializable
-    attribute :id, :string # Unique IRI identifier
-    attribute :title, :string
-    attribute :url, :string
-    attribute :publish_date, :date
-    attribute :publish_time, :string        # Time of publication (HH:MM)
-    attribute :author, :string              # Who authored/published it
-    attribute :author_date, :date           # Date of authorship
-    attribute :document_type, :string       # press release, regulation, decision
-    attribute :document_id, :string         # Official document ID (e.g., "第4号")
-    attribute :signatory, :string           # Person who signed the announcement
-    attribute :signatory_title, :string     # Title of the signatory
-    attribute :publisher, :string           # Publisher of the announcement
-    attribute :authority, :string           # Authority issuing the announcement
-    attribute :content, :string             # Full text content of the announcement
-    attribute :language, :string            # ISO 639-1 code
-
-    # IDs of SanctionGroup objects created by this announcement
-    # @return [Array<String>, nil]
-    attribute :sanction_group_ids, :string, collection: true
-
-    # Modifications announced by this announcement
-    # @return [Array<SanctionPeriodModification>, nil]
-    attribute :modifications, Ontology::Sanction::SanctionPeriodModification,
-              collection: true
-
-    # Legal citations from this announcement
-    # @return [Array<LegalCitation>, nil]
-    attribute :legal_citations, Ontology::ValueObjects::LegalCitation,
-              collection: true
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     key_value do
       map :title, to: :title

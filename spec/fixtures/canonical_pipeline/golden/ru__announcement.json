@@ -1,0 +1,434 @@
+{
+  "json": {
+    "output": [
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/ru/703-17-04-2024-2002-2023",
+          "@type": "PersonEntity",
+          "entityType": "person",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "с 2002 по 2023 гг.",
+              "script": "Cyrl",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "c 2018 г. по настоящее время)\n\n2.\n\nDaniel Andrews\tДэниел Эндрюс\nчлен законодательного собрания штата Виктория",
+              "script": "Cyrl",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-2002-2023"
+          ],
+          "remarks": "List: черного списка; Title: без должности; Nationality: AU",
+          "birthInfo": [],
+          "nationalities": [
+            "AU"
+          ],
+          "identifications": [],
+          "addresses": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-2002-2023",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/ru/703-17-04-2024-2002-2023",
+          "authority": {
+            "@type": "Authority",
+            "id": "ru",
+            "name": "Russia (MID/CBR)",
+            "countryCode": "RU"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "Стоп-лист (Stop-list)",
+            "code": "RU_STOP_LIST"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "entry_ban",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "Запрещен въезд в Российскую Федерацию.",
+                  "lang": "ru",
+                  "script": "Cyrl",
+                  "is_primary": true
+                },
+                {
+                  "value": "Entry into the Russian Federation is prohibited.",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "За участие в антироссийской деятельности австралийского правительства.",
+                  "lang": "ru",
+                  "script": "Cyrl",
+                  "is_primary": true
+                },
+                {
+                  "value": "For participation in anti-Russian activities of the Australian government.",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2024-04-17",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [],
+          "referenceNumber": "703-17-04-2024-2002-2023",
+          "groupId": "https://www.ammitto.org/group/ru/703-17-04-2024",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/ru/federal-law-114",
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "Заявление МИД России в связи с введением персональных санкций в отношении муниципальных депутатов Австралии",
+            "url": "https://mid.ru/en/foreign_policy/news/1944697/",
+            "publishDate": "2024-04-17",
+            "publishTime": "11:23",
+            "documentType": "ru/ministry-of-foreign-affairs-announcement",
+            "documentId": "703-17-04-2024",
+            "signatory": "ru/ministry-of-foreign-affairs",
+            "publisher": "ru/ministry-of-foreign-affairs",
+            "authority": "ru/ministry-of-foreign-affairs",
+            "content": "В ответ на политически мотивированные санкции против российских физических и юридических лиц со стороны правительства Австралии, вводимые в рамках русофобской кампании «коллективного Запада», въезд в нашу страну на бессрочной основе закрывается дополнительно для 235 австралийцев из числа депутатов муниципальных собраний, формирующих в этой стране антироссийскую повестку дня (ниже следует поименный перечень).\n\nС учетом того, что официальная Канберра не намерена отказываться от антироссийского курса и продолжает вводить новые санкционные меры, работа над актуализацией российского «стоп-листа» будет продолжена.\n\n№ п/п\tИмя, фамилия\tИмя, фамилия на русском языке\tМесто работы/ Должность\n\n<list>\n",
+            "language": "ru"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "ru:list_type": "stop_list",
+              "ru:sanction_list": "черного списка",
+              "ru:russian_name": "c 2018 г. по настоящее время)\n\n2.\n\nDaniel Andrews\tДэниел Эндрюс\nчлен законодательного собрания штата Виктория",
+              "ru:english_name": "с 2002 по 2023 гг.",
+              "ru:nationality": "AU"
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/ru/703-17-04-2024-2012",
+          "@type": "PersonEntity",
+          "entityType": "person",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "с 2012 г. по настоящее время",
+              "script": "Cyrl",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "с 2022 г. по настоящее время)\n\n\nSteven Marshall\n\nСтивен Маршалл\n\nчлен палаты собраний штата Южная Австралия",
+              "script": "Cyrl",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-2012"
+          ],
+          "remarks": "List: черного списка; Title: без должности; Nationality: AU",
+          "birthInfo": [],
+          "nationalities": [
+            "AU"
+          ],
+          "identifications": [],
+          "addresses": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-2012",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/ru/703-17-04-2024-2012",
+          "authority": {
+            "@type": "Authority",
+            "id": "ru",
+            "name": "Russia (MID/CBR)",
+            "countryCode": "RU"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "Стоп-лист (Stop-list)",
+            "code": "RU_STOP_LIST"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "entry_ban",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "Запрещен въезд в Российскую Федерацию.",
+                  "lang": "ru",
+                  "script": "Cyrl",
+                  "is_primary": true
+                },
+                {
+                  "value": "Entry into the Russian Federation is prohibited.",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "За участие в антироссийской деятельности австралийского правительства.",
+                  "lang": "ru",
+                  "script": "Cyrl",
+                  "is_primary": true
+                },
+                {
+                  "value": "For participation in anti-Russian activities of the Australian government.",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2024-04-17",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [],
+          "referenceNumber": "703-17-04-2024-2012",
+          "groupId": "https://www.ammitto.org/group/ru/703-17-04-2024",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/ru/federal-law-114",
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "Заявление МИД России в связи с введением персональных санкций в отношении муниципальных депутатов Австралии",
+            "url": "https://mid.ru/en/foreign_policy/news/1944697/",
+            "publishDate": "2024-04-17",
+            "publishTime": "11:23",
+            "documentType": "ru/ministry-of-foreign-affairs-announcement",
+            "documentId": "703-17-04-2024",
+            "signatory": "ru/ministry-of-foreign-affairs",
+            "publisher": "ru/ministry-of-foreign-affairs",
+            "authority": "ru/ministry-of-foreign-affairs",
+            "content": "В ответ на политически мотивированные санкции против российских физических и юридических лиц со стороны правительства Австралии, вводимые в рамках русофобской кампании «коллективного Запада», въезд в нашу страну на бессрочной основе закрывается дополнительно для 235 австралийцев из числа депутатов муниципальных собраний, формирующих в этой стране антироссийскую повестку дня (ниже следует поименный перечень).\n\nС учетом того, что официальная Канберра не намерена отказываться от антироссийского курса и продолжает вводить новые санкционные меры, работа над актуализацией российского «стоп-листа» будет продолжена.\n\n№ п/п\tИмя, фамилия\tИмя, фамилия на русском языке\tМесто работы/ Должность\n\n<list>\n",
+            "language": "ru"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "ru:list_type": "stop_list",
+              "ru:sanction_list": "черного списка",
+              "ru:russian_name": "с 2022 г. по настоящее время)\n\n\nSteven Marshall\n\nСтивен Маршалл\n\nчлен палаты собраний штата Южная Австралия",
+              "ru:english_name": "с 2012 г. по настоящее время",
+              "ru:nationality": "AU"
+            }
+          }
+        }
+      }
+    ],
+    "groups": [
+      {
+        "source": "ru",
+        "group": {
+          "id": "https://www.ammitto.org/group/ru/703-17-04-2024",
+          "announcement_id": "https://www.ammitto.org/announcement/ru/703-17-04-2024",
+          "announcement_title": "Заявление МИД России в связи с введением персональных санкций в отношении муниципальных депутатов Австралии",
+          "entry_ids": [
+            "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-2002-2023",
+            "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-2012"
+          ],
+          "effective_date": "2024-04-17",
+          "entity_count": 2,
+          "notes": "Group of 2 entities sanctioned together"
+        }
+      }
+    ]
+  },
+  "leaf_types": {
+    "$.output[0].entity.@id": "String",
+    "$.output[0].entity.@type": "String",
+    "$.output[0].entity.entityType": "String",
+    "$.output[0].entity.names[0].@type": "String",
+    "$.output[0].entity.names[0].fullName": "String",
+    "$.output[0].entity.names[0].script": "String",
+    "$.output[0].entity.names[0].isPrimary": "TrueClass",
+    "$.output[0].entity.names[1].@type": "String",
+    "$.output[0].entity.names[1].fullName": "String",
+    "$.output[0].entity.names[1].script": "String",
+    "$.output[0].entity.names[1].isPrimary": "FalseClass",
+    "$.output[0].entity.hasSanctionEntry[0]": "String",
+    "$.output[0].entity.remarks": "String",
+    "$.output[0].entity.nationalities[0]": "String",
+    "$.output[0].entry.@id": "String",
+    "$.output[0].entry.@type": "String",
+    "$.output[0].entry.entityId": "String",
+    "$.output[0].entry.authority.@type": "String",
+    "$.output[0].entry.authority.id": "String",
+    "$.output[0].entry.authority.name": "String",
+    "$.output[0].entry.authority.countryCode": "String",
+    "$.output[0].entry.regime.@type": "String",
+    "$.output[0].entry.regime.name": "String",
+    "$.output[0].entry.regime.code": "String",
+    "$.output[0].entry.effects[0].@type": "String",
+    "$.output[0].entry.effects[0].effectType": "String",
+    "$.output[0].entry.effects[0].scope": "String",
+    "$.output[0].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.reasons[0].@type": "String",
+    "$.output[0].entry.reasons[0].category": "String",
+    "$.output[0].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.period.@type": "String",
+    "$.output[0].entry.period.effectiveDate": "Date",
+    "$.output[0].entry.period.isIndefinite": "TrueClass",
+    "$.output[0].entry.status": "String",
+    "$.output[0].entry.referenceNumber": "String",
+    "$.output[0].entry.groupId": "String",
+    "$.output[0].entry.legalCitations[0].@type": "String",
+    "$.output[0].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[0].entry.legalCitations[0].citationType": "String",
+    "$.output[0].entry.announcement.@type": "String",
+    "$.output[0].entry.announcement.title": "String",
+    "$.output[0].entry.announcement.url": "String",
+    "$.output[0].entry.announcement.publishDate": "Date",
+    "$.output[0].entry.announcement.publishTime": "String",
+    "$.output[0].entry.announcement.documentType": "String",
+    "$.output[0].entry.announcement.documentId": "String",
+    "$.output[0].entry.announcement.signatory": "String",
+    "$.output[0].entry.announcement.publisher": "String",
+    "$.output[0].entry.announcement.authority": "String",
+    "$.output[0].entry.announcement.content": "String",
+    "$.output[0].entry.announcement.language": "String",
+    "$.output[0].entry.rawSourceData.@type": "String",
+    "$.output[0].entry.rawSourceData.sourceFormat": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.ru:list_type": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.ru:sanction_list": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.ru:russian_name": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.ru:english_name": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.ru:nationality": "String",
+    "$.output[1].entity.@id": "String",
+    "$.output[1].entity.@type": "String",
+    "$.output[1].entity.entityType": "String",
+    "$.output[1].entity.names[0].@type": "String",
+    "$.output[1].entity.names[0].fullName": "String",
+    "$.output[1].entity.names[0].script": "String",
+    "$.output[1].entity.names[0].isPrimary": "TrueClass",
+    "$.output[1].entity.names[1].@type": "String",
+    "$.output[1].entity.names[1].fullName": "String",
+    "$.output[1].entity.names[1].script": "String",
+    "$.output[1].entity.names[1].isPrimary": "FalseClass",
+    "$.output[1].entity.hasSanctionEntry[0]": "String",
+    "$.output[1].entity.remarks": "String",
+    "$.output[1].entity.nationalities[0]": "String",
+    "$.output[1].entry.@id": "String",
+    "$.output[1].entry.@type": "String",
+    "$.output[1].entry.entityId": "String",
+    "$.output[1].entry.authority.@type": "String",
+    "$.output[1].entry.authority.id": "String",
+    "$.output[1].entry.authority.name": "String",
+    "$.output[1].entry.authority.countryCode": "String",
+    "$.output[1].entry.regime.@type": "String",
+    "$.output[1].entry.regime.name": "String",
+    "$.output[1].entry.regime.code": "String",
+    "$.output[1].entry.effects[0].@type": "String",
+    "$.output[1].entry.effects[0].effectType": "String",
+    "$.output[1].entry.effects[0].scope": "String",
+    "$.output[1].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.reasons[0].@type": "String",
+    "$.output[1].entry.reasons[0].category": "String",
+    "$.output[1].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.period.@type": "String",
+    "$.output[1].entry.period.effectiveDate": "Date",
+    "$.output[1].entry.period.isIndefinite": "TrueClass",
+    "$.output[1].entry.status": "String",
+    "$.output[1].entry.referenceNumber": "String",
+    "$.output[1].entry.groupId": "String",
+    "$.output[1].entry.legalCitations[0].@type": "String",
+    "$.output[1].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[1].entry.legalCitations[0].citationType": "String",
+    "$.output[1].entry.announcement.@type": "String",
+    "$.output[1].entry.announcement.title": "String",
+    "$.output[1].entry.announcement.url": "String",
+    "$.output[1].entry.announcement.publishDate": "Date",
+    "$.output[1].entry.announcement.publishTime": "String",
+    "$.output[1].entry.announcement.documentType": "String",
+    "$.output[1].entry.announcement.documentId": "String",
+    "$.output[1].entry.announcement.signatory": "String",
+    "$.output[1].entry.announcement.publisher": "String",
+    "$.output[1].entry.announcement.authority": "String",
+    "$.output[1].entry.announcement.content": "String",
+    "$.output[1].entry.announcement.language": "String",
+    "$.output[1].entry.rawSourceData.@type": "String",
+    "$.output[1].entry.rawSourceData.sourceFormat": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.ru:list_type": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.ru:sanction_list": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.ru:russian_name": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.ru:english_name": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.ru:nationality": "String",
+    "$.groups[0].source": "String",
+    "$.groups[0].group.id": "String",
+    "$.groups[0].group.announcement_id": "String",
+    "$.groups[0].group.announcement_title": "String",
+    "$.groups[0].group.entry_ids[0]": "String",
+    "$.groups[0].group.entry_ids[1]": "String",
+    "$.groups[0].group.effective_date": "Date",
+    "$.groups[0].group.entity_count": "Integer",
+    "$.groups[0].group.notes": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 4,
+    "Ammitto::OfficialAnnouncement": 2,
+    "Ammitto::Ontology::ValueObjects::LegalCitation": 1,
+    "Ammitto::Ontology::ValueObjects::LocalizedString": 8,
+    "Ammitto::PersonEntity": 2,
+    "Ammitto::RawSourceData": 2,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 2,
+    "Ammitto::SanctionReason": 2,
+    "Ammitto::SanctionRegime": 2,
+    "Ammitto::TemporalPeriod": 2
+  }
+}

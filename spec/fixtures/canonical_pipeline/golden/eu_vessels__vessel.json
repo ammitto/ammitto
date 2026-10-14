@@ -1,0 +1,135 @@
+{
+  "json": {
+    "output": [
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/eu_vessels/1031537",
+          "@type": "VesselEntity",
+          "entityType": "vessel",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Lady Jasmine",
+              "isPrimary": true
+            }
+          ],
+          "sourceReferences": [
+            {
+              "@type": "SourceReference",
+              "sourceCode": "eu_vessels",
+              "referenceNumber": "1031537",
+              "retrievedAt": "2026-10-14T12:00:00Z"
+            }
+          ],
+          "linkedEntities": [],
+          "imoNumber": "1031537",
+          "previousNames": [],
+          "previousFlags": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/eu_vessels/vessel-sanctions-list/1031537",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/eu_vessels/1031537",
+          "authority": {
+            "@type": "Authority",
+            "id": "eu_vessels",
+            "name": "EU Designated Vessels (via Denmark DMA)",
+            "countryCode": "EU"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "Russia/Ukraine",
+            "code": "RUSSIA"
+          },
+          "legalBases": [
+            {
+              "@type": "LegalInstrument",
+              "type": "regulation",
+              "identifier": "Council Regulation (EU) No 833/2014",
+              "title": "Council Regulation (EU) No 833/2014",
+              "issuingBody": "Council of the European Union",
+              "url": "https://eur-lex.europa.eu/eli/reg/2014/833/oj"
+            }
+          ],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "entry_ban",
+              "scope": "full",
+              "description": "Access to ports and locks prohibited (Article 3s, Annex XLII)"
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "service_prohibition",
+              "scope": "full",
+              "description": "Provision of services to the vessel prohibited (Article 3s, Annex XLII)"
+            }
+          ],
+          "reasons": [],
+          "period": {
+            "@type": "TemporalPeriod",
+            "listedDate": "2026-07-24",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [],
+          "remarks": "Article 3s (Council Regulation 833/2014)"
+        }
+      }
+    ],
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output[0].entity.@id": "String",
+    "$.output[0].entity.@type": "String",
+    "$.output[0].entity.entityType": "String",
+    "$.output[0].entity.names[0].@type": "String",
+    "$.output[0].entity.names[0].fullName": "String",
+    "$.output[0].entity.names[0].isPrimary": "TrueClass",
+    "$.output[0].entity.sourceReferences[0].@type": "String",
+    "$.output[0].entity.sourceReferences[0].sourceCode": "String",
+    "$.output[0].entity.sourceReferences[0].referenceNumber": "String",
+    "$.output[0].entity.sourceReferences[0].retrievedAt": "String",
+    "$.output[0].entity.imoNumber": "String",
+    "$.output[0].entry.@id": "String",
+    "$.output[0].entry.@type": "String",
+    "$.output[0].entry.entityId": "String",
+    "$.output[0].entry.authority.@type": "String",
+    "$.output[0].entry.authority.id": "String",
+    "$.output[0].entry.authority.name": "String",
+    "$.output[0].entry.authority.countryCode": "String",
+    "$.output[0].entry.regime.@type": "String",
+    "$.output[0].entry.regime.name": "String",
+    "$.output[0].entry.regime.code": "String",
+    "$.output[0].entry.legalBases[0].@type": "String",
+    "$.output[0].entry.legalBases[0].type": "String",
+    "$.output[0].entry.legalBases[0].identifier": "String",
+    "$.output[0].entry.legalBases[0].title": "String",
+    "$.output[0].entry.legalBases[0].issuingBody": "String",
+    "$.output[0].entry.legalBases[0].url": "String",
+    "$.output[0].entry.effects[0].@type": "String",
+    "$.output[0].entry.effects[0].effectType": "String",
+    "$.output[0].entry.effects[0].scope": "String",
+    "$.output[0].entry.effects[0].description": "String",
+    "$.output[0].entry.effects[1].@type": "String",
+    "$.output[0].entry.effects[1].effectType": "String",
+    "$.output[0].entry.effects[1].scope": "String",
+    "$.output[0].entry.effects[1].description": "String",
+    "$.output[0].entry.period.@type": "String",
+    "$.output[0].entry.period.listedDate": "Date",
+    "$.output[0].entry.period.isIndefinite": "TrueClass",
+    "$.output[0].entry.status": "String",
+    "$.output[0].entry.remarks": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::LegalInstrument": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::SourceReference": 1,
+    "Ammitto::TemporalPeriod": 1,
+    "Ammitto::VesselEntity": 1
+  }
+}

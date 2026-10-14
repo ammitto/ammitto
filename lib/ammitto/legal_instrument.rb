@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/legal_instrument'
+
 module Ammitto
   # LegalInstrument represents a legal basis for sanctions
   #
   # Documents the legal instrument (regulation, executive order, law, etc.)
   # that provides the legal basis for a sanction.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::LegalInstrument (see Ontology::Contracts).
   #
   # @example Creating a legal instrument
   #   LegalInstrument.new(
@@ -30,13 +36,7 @@ module Ammitto
       order
     ].freeze
 
-    attribute :type, :string          # Type of instrument
-    attribute :identifier, :string    # E.g., "E.O. 14024", "Regulation 269/2014"
-    attribute :title, :string         # Full title
-    attribute :issuing_body, :string  # Who issued it
-    attribute :publish_date, :date    # When it was published
-    attribute :url, :string           # Link to the instrument
-    attribute :lang, :string          # Language code (e.g., "zh-Hans", "en")
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'type', to: :type
@@ -46,6 +46,8 @@ module Ammitto
       map 'publishDate', to: :publish_date
       map 'url', to: :url
       map 'lang', to: :lang
+      map 'effectiveDate', to: :effective_date
+      map 'programme', to: :programme
     end
 
     # @return [String] formatted display string

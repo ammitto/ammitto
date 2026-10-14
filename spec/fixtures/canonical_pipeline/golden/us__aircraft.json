@@ -1,0 +1,113 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/us/24493",
+        "@type": "AircraftEntity",
+        "entityType": "aircraft",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "EP-MOM",
+            "lastName": "EP-MOM",
+            "script": "Latn",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/us/sdn-list/24493"
+        ],
+        "remarks": "(Linked To: MAHAN AIR)"
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/us/sdn-list/24493",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/us/24493",
+        "authority": {
+          "@type": "Authority",
+          "id": "us",
+          "name": "United States (OFAC)",
+          "countryCode": "US"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "IFSR",
+          "code": "IFSR"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "24493",
+        "remarks": "(Linked To: MAHAN AIR)",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "us:sdnType": "Aircraft",
+            "us:programs": [
+              "IFSR",
+              "SDGT",
+              "NPWMD"
+            ],
+            "us:title": null
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].lastName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:sdnType": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:programs[0]": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:programs[1]": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:programs[2]": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:title": "NilClass"
+  },
+  "base_model_classes": {
+    "Ammitto::AircraftEntity": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1
+  }
+}

@@ -57,6 +57,10 @@ module Ammitto
         # @return [String, nil]
         attribute :flag_state, :string
 
+        # ISO 3166-1 alpha-2 code of the flag state
+        # @return [String, nil]
+        attribute :flag_state_iso_code, :string
+
         # Previous flag states
         # @return [Array<String>, nil]
         attribute :previous_flags, :string, collection: true
@@ -64,6 +68,10 @@ module Ammitto
         # Vessel type (tanker, cargo, etc.)
         # @return [String, nil]
         attribute :vessel_type, :string
+
+        # Standardized vessel type code
+        # @return [String, nil]
+        attribute :vessel_type_code, :string
 
         # Tonnage measurements (GT, DWT, NT, GRT)
         # @return [ValueObjects::Tonnage, nil]
@@ -98,6 +106,24 @@ module Ammitto
         # Manager/operator
         # @return [String, nil]
         attribute :manager, :string
+
+        # Owning company as a link to its entity. The +_link+ fields carry
+        # what a name string cannot (target IRI, type, dates, note) and
+        # stay out of the Neo4j property list, which holds scalars only.
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :owner_link, ValueObjects::EntityLink
+
+        # Operating company
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :operator_link, ValueObjects::EntityLink
+
+        # Registered owner as a link to its entity
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :registered_owner_link, ValueObjects::EntityLink
+
+        # Technical management company
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :technical_manager, ValueObjects::EntityLink
 
         # Length in meters
         # @return [Float, nil]
@@ -155,8 +181,10 @@ module Ammitto
           hash[:mmsi_number] = mmsi_number if mmsi_number
           hash[:call_sign] = call_sign if call_sign
           hash[:flag_state] = flag_state if flag_state
+          hash[:flag_state_iso_code] = flag_state_iso_code if flag_state_iso_code
           hash[:previous_flags] = previous_flags if previous_flags&.any?
           hash[:vessel_type] = vessel_type if vessel_type
+          hash[:vessel_type_code] = vessel_type_code if vessel_type_code
           hash[:tonnage] = tonnage.to_hash if tonnage&.present?
           hash[:build_year] = build_year if build_year
           hash[:builder] = builder if builder
@@ -164,6 +192,9 @@ module Ammitto
           hash[:registered_owner] = registered_owner if registered_owner
           hash[:manager] = manager if manager
           hash[:length] = length if length
+          { owner_link:, operator_link:, registered_owner_link:, technical_manager: }.each do |key, link|
+            hash[key] = link.to_hash if link
+          end
           hash
         end
 
@@ -172,13 +203,16 @@ module Ammitto
           map :id, to: :id
           map :entity_type, to: :entity_type
           map :name, to: :name
+          map :names, to: :names
           map :previous_names, to: :previous_names
           map :imo_number, to: :imo_number
           map :mmsi_number, to: :mmsi_number
           map :call_sign, to: :call_sign
           map :flag_state, to: :flag_state
+          map :flag_state_iso_code, to: :flag_state_iso_code
           map :previous_flags, to: :previous_flags
           map :vessel_type, to: :vessel_type
+          map :vessel_type_code, to: :vessel_type_code
           map :tonnage, to: :tonnage
           map :gross_tonnage, to: :gross_tonnage
           map :deadweight, to: :deadweight
@@ -187,10 +221,16 @@ module Ammitto
           map :port_of_registry, to: :port_of_registry
           map :registered_owner, to: :registered_owner
           map :manager, to: :manager
+          map :owner_link, to: :owner_link
+          map :operator_link, to: :operator_link
+          map :registered_owner_link, to: :registered_owner_link
+          map :technical_manager, to: :technical_manager
           map :length, to: :length
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
 
         # YAML mapping
@@ -198,13 +238,16 @@ module Ammitto
           map :id, to: :id
           map :entity_type, to: :entity_type
           map :name, to: :name
+          map :names, to: :names
           map :previous_names, to: :previous_names
           map :imo_number, to: :imo_number
           map :mmsi_number, to: :mmsi_number
           map :call_sign, to: :call_sign
           map :flag_state, to: :flag_state
+          map :flag_state_iso_code, to: :flag_state_iso_code
           map :previous_flags, to: :previous_flags
           map :vessel_type, to: :vessel_type
+          map :vessel_type_code, to: :vessel_type_code
           map :tonnage, to: :tonnage
           map :gross_tonnage, to: :gross_tonnage
           map :deadweight, to: :deadweight
@@ -213,10 +256,16 @@ module Ammitto
           map :port_of_registry, to: :port_of_registry
           map :registered_owner, to: :registered_owner
           map :manager, to: :manager
+          map :owner_link, to: :owner_link
+          map :operator_link, to: :operator_link
+          map :registered_owner_link, to: :registered_owner_link
+          map :technical_manager, to: :technical_manager
           map :length, to: :length
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
       end
     end

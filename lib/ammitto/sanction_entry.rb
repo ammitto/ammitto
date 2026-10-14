@@ -14,6 +14,8 @@ require_relative 'official_announcement'
 require_relative 'raw_source_data'
 require_relative 'ontology/value_objects/legal_citation'
 require_relative 'ontology/sanction/sanction_period_modification'
+require_relative 'ontology/contracts'
+require_relative 'ontology/sanction/sanction_entry'
 
 module Ammitto
   # SanctionEntry represents a single sanction entry
@@ -22,6 +24,13 @@ module Ammitto
   # the act of sanctioning an entity by a specific authority.
   #
   # One entity can have multiple sanction entries from different authorities.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::SanctionEntry (see Ontology::Contracts). Here the
+  # structured +list_type+, +reasons+, +announcement+ and +raw_source_data+
+  # are the canonical +*_detail(s)+ fields; the canonical scalars are
+  # +list_type_code+, +reason_texts+, +announcement_text+ and
+  # +raw_source_hash+.
   #
   # @example Creating a sanction entry
   #   SanctionEntry.new(
@@ -37,24 +46,7 @@ module Ammitto
     # Sanction status values
     STATUSES = StatusChange::STATUSES
 
-    attribute :id, :string                        # URI identifier
-    attribute :entity_id, :string                 # Reference to Entity
-    attribute :authority, Authority               # Issuing authority
-    attribute :regime, SanctionRegime             # Sanctions regime
-    attribute :list_type, ListType                # Type of list
-    attribute :legal_bases, LegalInstrument, collection: true
-    attribute :effects, SanctionEffect, collection: true
-    attribute :reasons, SanctionReason, collection: true
-    attribute :period, TemporalPeriod             # Time period
-    attribute :status, :string, default: 'active' # Current status
-    attribute :status_history, StatusChange, collection: true
-    attribute :modifications, Ontology::Sanction::SanctionPeriodModification, collection: true
-    attribute :reference_number, :string          # Authority's ID
-    attribute :remarks, :string                   # Additional remarks
-    attribute :announcement, OfficialAnnouncement # Official announcement
-    attribute :group_id, :string                  # Reference to SanctionGroup
-    attribute :legal_citations, Ontology::ValueObjects::LegalCitation, collection: true
-    attribute :raw_source_data, RawSourceData     # Original source data
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'id', to: :id
@@ -75,6 +67,10 @@ module Ammitto
       map 'groupId', to: :group_id
       map 'legalCitations', to: :legal_citations
       map 'rawSourceData', to: :raw_source_data
+      map 'listTypeCode', to: :list_type_code
+      map 'reasonTexts', to: :reason_texts
+      map 'announcementText', to: :announcement_text
+      map 'rawSourceHash', to: :raw_source_hash
     end
 
     # @return [Boolean] whether the sanction is currently active

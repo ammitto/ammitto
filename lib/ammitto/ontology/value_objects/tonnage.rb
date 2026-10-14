@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 
 module Ammitto
   module Ontology
@@ -17,7 +18,7 @@ module Ammitto
       #     nt: 3500
       #   )
       #
-      class Tonnage < Lutaml::Model::Serializable
+      class TonnageModel < Lutaml::Model::Serializable
         # Gross Tonnage (GT) - modern measurement
         # @return [Integer, nil]
         attribute :gt, :integer
@@ -65,6 +66,11 @@ module Ammitto
           map 'nt', to: :nt
           map 'grt', to: :grt
         end
+      end
+      private_constant :TonnageModel
+
+      class Tonnage < TonnageModel
+        include Immutable
       end
     end
   end

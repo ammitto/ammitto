@@ -31,6 +31,7 @@ module Ammitto
             entry: entry
           }
         end
+        canonical_entrypoints :transform
 
         private
 
@@ -38,16 +39,15 @@ module Ammitto
         # @param vessel [Ammitto::Sources::UnVessels::Vessel]
         # @return [VesselEntity]
         def create_entity(vessel)
-          Ammitto::VesselEntity.new.tap do |entity|
-            entity.id = generate_entity_id(vessel.local_id)
-            entity.entity_type = 'vessel'
-            entity.names = build_names(vessel)
-            entity.imo_number = vessel.imo_number
-            entity.flag_state = vessel.flag_state
-            entity.build_year = vessel.build_year
-            entity.gross_tonnage = vessel.tonnage
-            entity.source_references = build_source_references(vessel)
-          end
+          build_model(Ammitto::VesselEntity,
+                      id: generate_entity_id(vessel.local_id),
+                      entity_type: 'vessel',
+                      names: build_names(vessel),
+                      imo_number: vessel.imo_number,
+                      flag_state: vessel.flag_state,
+                      build_year: vessel.build_year,
+                      gross_tonnage: vessel.tonnage,
+                      source_references: build_source_references(vessel))
         end
 
         # Build names array
@@ -71,17 +71,13 @@ module Ammitto
         # @param vessel [Ammitto::Sources::UnVessels::Vessel]
         # @return [Array<SourceReference>]
         def build_source_references(vessel)
-          ref = Ammitto::SourceReference.new(
-            source_code: 'un_vessels',
-            reference_number: vessel.local_id,
-            retrieved_at: Time.now.utc.iso8601
-          )
-          # SourceReference (models layer) has no resolution attribute yet —
-          # that field belongs to the ontology contract (A4 step 5). Guard the
-          # write; the resolution is preserved via the entry's regime and
-          # raw source data.
-          ref.resolution = vessel.resolution if vessel.resolution && ref.respond_to?(:resolution=)
-          [ref]
+          # The resolution is part of the reference (the shared contract
+          # gives both facades the field), so the reference is built whole
+          # rather than written after construction.
+          attributes = { source_code: 'un_vessels', reference_number: vessel.local_id,
+                         retrieved_at: Time.now.utc.iso8601 }
+          attributes[:resolution] = vessel.resolution if vessel.resolution
+          [build_model(Ammitto::SourceReference, **attributes)]
         end
 
         # Create sanction entry
@@ -89,15 +85,14 @@ module Ammitto
         # @param entity [VesselEntity] harmonized entity
         # @return [SanctionEntry]
         def create_entry(vessel, entity)
-          Ammitto::SanctionEntry.new.tap do |entry|
-            entry.id = generate_entry_id(vessel.local_id)
-            entry.entity_id = entity.id
-            entry.authority = authority
-            entry.regime = create_regime(vessel)
-            entry.status = 'active'
-            entry.effects = build_effects
-            entry.period = create_period(vessel)
-          end
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(vessel.local_id),
+                      entity_id: entity.id,
+                      authority: authority,
+                      regime: create_regime(vessel),
+                      status: 'active',
+                      effects: build_effects,
+                      period: create_period(vessel))
         end
 
         # Create regime based on UN resolution
@@ -113,10 +108,9 @@ module Ammitto
                  else 'UN'
                  end
 
-          Ammitto::SanctionRegime.new(
-            name: "UN Security Council - #{resolution}",
-            code: code
-          )
+          build_model(Ammitto::SanctionRegime,
+                      name: "UN Security Council - #{resolution}",
+                      code: code)
         end
 
         # Build effects
@@ -132,10 +126,9 @@ module Ammitto
         # @param vessel [Ammitto::Sources::UnVessels::Vessel]
         # @return [TemporalPeriod]
         def create_period(vessel)
-          Ammitto::TemporalPeriod.new(
-            listed_date: vessel.designation_date,
-            is_indefinite: true
-          )
+          build_model(Ammitto::TemporalPeriod,
+                      listed_date: vessel.designation_date,
+                      is_indefinite: true)
         end
       end
     end

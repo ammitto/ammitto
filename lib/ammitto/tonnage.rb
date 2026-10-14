@@ -1,7 +1,14 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/tonnage'
+
 module Ammitto
   # Tonnage represents vessel tonnage measurements
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::Tonnage (see Ontology::Contracts), under the
+  # long names (gross_tonnage is the canonical gt, and so on).
   #
   # @example Creating tonnage info
   #   Tonnage.new(
@@ -10,10 +17,7 @@ module Ammitto
   #   )
   #
   class Tonnage < Lutaml::Model::Serializable
-    attribute :gross_register_tonnage, :integer  # GRT
-    attribute :gross_tonnage, :integer           # GT
-    attribute :deadweight_tonnage, :integer      # DWT
-    attribute :net_tonnage, :integer             # NT
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'grossRegisterTonnage', to: :gross_register_tonnage

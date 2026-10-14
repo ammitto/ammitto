@@ -48,7 +48,7 @@ module Ammitto
           entry = create_entry_from_individual(individual)
 
           # Link entity to entry
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           {
             entity: entity,
@@ -64,7 +64,7 @@ module Ammitto
           entry = create_entry_from_entity(entity)
 
           # Link entity to entry
-          ont_entity.add_sanction_entry(entry)
+          link_entry(ont_entity, entry)
 
           {
             entity: ont_entity,
@@ -86,38 +86,38 @@ module Ammitto
           end
         end
 
+        canonical_entrypoints :transform_individual, :transform_entity, :transform
+
         private
 
         # Create a PersonEntity from a UN Individual
         # @param individual [Ammitto::Sources::Un::Individual]
         # @return [PersonEntity]
         def create_person_entity(individual)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(individual.reference_number),
-            entity_type: 'person',
-            names: transform_individual_names(individual),
-            addresses: transform_individual_addresses(individual.addresses),
-            birth_info: transform_birth_info(individual),
-            nationalities: individual.nationality_values,
-            gender: individual.gender,
-            identifications: transform_documents(individual.documents),
-            title: extract_title(individual.designation_values),
-            position: individual.designation_values.first,
-            remarks: individual.comments1
-          )
+          build_model(Ammitto::PersonEntity,
+                      id: generate_entity_id(individual.reference_number),
+                      entity_type: 'person',
+                      names: transform_individual_names(individual),
+                      addresses: transform_individual_addresses(individual.addresses),
+                      birth_info: transform_birth_info(individual),
+                      nationalities: individual.nationality_values,
+                      gender: individual.gender,
+                      identifications: transform_documents(individual.documents),
+                      title: extract_title(individual.designation_values),
+                      position: individual.designation_values.first,
+                      remarks: individual.comments1)
         end
 
         # Create an OrganizationEntity from a UN Entity
         # @param entity [Ammitto::Sources::Un::Entity]
         # @return [OrganizationEntity]
         def create_organization_entity(entity)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(entity.reference_number),
-            entity_type: 'organization',
-            names: transform_entity_names(entity),
-            addresses: transform_entity_addresses(entity.addresses),
-            remarks: entity.comments1
-          )
+          build_model(Ammitto::OrganizationEntity,
+                      id: generate_entity_id(entity.reference_number),
+                      entity_type: 'organization',
+                      names: transform_entity_names(entity),
+                      addresses: transform_entity_addresses(entity.addresses),
+                      remarks: entity.comments1)
         end
 
         # Create a SanctionEntry from a UN Individual
@@ -161,26 +161,25 @@ module Ammitto
         # @return [SanctionEntry]
         def create_sanction_entry(reference_number:, regime_code:, listed_on:,
                                   last_updated:, remarks:, source_specific_fields:)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(reference_number),
-            entity_id: generate_entity_id(reference_number),
-            authority: authority,
-            regime: transform_regime(regime_code),
-            effects: create_default_effects,
-            period: create_period(
-              source: :un,
-              listed_date: listed_on,
-              effective_date: listed_on,
-              last_updated: last_updated
-            ),
-            status: 'active',
-            reference_number: reference_number,
-            remarks: remarks,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: source_specific_fields
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(reference_number),
+                      entity_id: generate_entity_id(reference_number),
+                      authority: authority,
+                      regime: transform_regime(regime_code),
+                      effects: create_default_effects,
+                      period: create_period(
+                        source: :un,
+                        listed_date: listed_on,
+                        effective_date: listed_on,
+                        last_updated: last_updated
+                      ),
+                      status: 'active',
+                      reference_number: reference_number,
+                      remarks: remarks,
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'xml',
+                        source_specific_fields: source_specific_fields
+                      ))
         end
 
         # Transform UN individual names to NameVariant objects

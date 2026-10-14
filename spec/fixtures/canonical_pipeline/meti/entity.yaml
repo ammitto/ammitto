@@ -1,0 +1,24 @@
+# SYNTHETIC for this suite: the METI transformer reads Meti::Entity rows
+# parsed from the METI workbook, which was not fetched, and no such row is
+# published (see manifest.yml). These values are the repository's own test
+# record, source_entity in spec/ammitto/data/japan/meti/transformer_spec.rb:
+# a shortened form of row 1 of the published list.
+---
+id: jp.meti.ful.1
+name_en: Al Qa'ida/Islamic Army
+country_code: AF
+country_ja: アフガニスタン
+country_en: Islamic Republic of Afghanistan
+wmd_types:
+- B
+- C
+- M
+- N
+aliases:
+- Al Qaeda
+- The Base
+entity_type: organization
+source_file: 20250929_4.xlsx
+source_url: https://www.meti.go.jp/policy/anpo/20250929_4.xlsx
+list_date: '2025-09-29'
+row_number: 1

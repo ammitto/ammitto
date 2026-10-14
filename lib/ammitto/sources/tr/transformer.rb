@@ -49,6 +49,7 @@ module Ammitto
 
           { entity: entity, entry: entry }
         end
+        canonical_entrypoints :transform
 
         private
 
@@ -70,9 +71,8 @@ module Ammitto
         # @param source [Object] source model
         # @return [PersonEntity]
         def create_person_entity(source)
-          Ammitto::PersonEntity.new.tap do |entity|
+          build_model(Ammitto::PersonEntity, entity_type: 'person').tap do |entity|
             entity.id = generate_entity_id(source.local_id)
-            entity.entity_type = 'person'
             entity.names = build_names(source)
             entity.birth_info = build_birth_info(source)
             entity.nationalities = [presence(source.nationality)].compact
@@ -87,9 +87,8 @@ module Ammitto
         # @param source [Object] source model
         # @return [OrganizationEntity]
         def create_organization_entity(source)
-          Ammitto::OrganizationEntity.new.tap do |entity|
+          build_model(Ammitto::OrganizationEntity, entity_type: 'organization').tap do |entity|
             entity.id = generate_entity_id(source.local_id)
-            entity.entity_type = 'organization'
             entity.names = build_names(source)
             entity.addresses = build_addresses(source)
             entity.remarks = presence(source.remarks)
@@ -227,11 +226,10 @@ module Ammitto
         # @param source [Object] source model
         # @return [Array<SourceReference>]
         def build_source_references(source)
-          [Ammitto::SourceReference.new(
-            source_code: 'tr',
-            reference_number: source.reference_number,
-            retrieved_at: Time.now.utc.iso8601
-          )]
+          [build_model(Ammitto::SourceReference,
+                       source_code: 'tr',
+                       reference_number: source.reference_number,
+                       retrieved_at: Time.now.utc.iso8601)]
         end
 
         # Map entity type
@@ -246,7 +244,7 @@ module Ammitto
         # @param entity [Entity] harmonized entity
         # @return [SanctionEntry]
         def create_entry(source, entity)
-          Ammitto::SanctionEntry.new.tap do |entry|
+          build_model(Ammitto::SanctionEntry).tap do |entry|
             entry.id = generate_entry_id(source.local_id)
             entry.entity_id = entity.id
             entry.authority = authority
@@ -269,10 +267,9 @@ module Ammitto
                  else 'TR'
                  end
 
-          Ammitto::SanctionRegime.new(
-            name: "Turkey #{program || 'Sanctions'}",
-            code: code
-          )
+          build_model(Ammitto::SanctionRegime,
+                      name: "Turkey #{program || 'Sanctions'}",
+                      code: code)
         end
 
         # Build effects
@@ -290,10 +287,9 @@ module Ammitto
         # @param source [Object] source model
         # @return [TemporalPeriod]
         def create_period(source)
-          Ammitto::TemporalPeriod.new(
-            listed_date: parse_listed_date(source.listed_date),
-            is_indefinite: true
-          )
+          build_model(Ammitto::TemporalPeriod,
+                      listed_date: parse_listed_date(source.listed_date),
+                      is_indefinite: true)
         end
 
         # A listing date Turkey writes that Date.parse cannot read

@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/contact_info'
+
 module Ammitto
   # ContactInfo represents contact information
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::ContactInfo (see Ontology::Contracts).
   #
   # @example Creating contact info
   #   ContactInfo.new(
@@ -11,11 +17,7 @@ module Ammitto
   #   )
   #
   class ContactInfo < Lutaml::Model::Serializable
-    attribute :phone, :string
-    attribute :fax, :string
-    attribute :email, :string
-    attribute :website, :string
-    attribute :note, :string
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'phone', to: :phone

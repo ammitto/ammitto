@@ -6,8 +6,12 @@ require_relative 'authority'
 require_relative 'sanction_regime'
 require_relative 'sanction_period_modification'
 require_relative 'status_history'
+require_relative 'sanction_reason'
+require_relative 'list_type'
+require_relative 'official_announcement'
 require_relative '../value_objects'
 require_relative '../value_objects/legal_citation'
+require_relative '../value_objects/raw_source_data'
 
 module Ammitto
   module Ontology
@@ -49,6 +53,10 @@ module Ammitto
         # @return [String, nil]
         attribute :list_type, :string
 
+        # Descriptor of the list (name, localized names, category)
+        # @return [ListType, nil]
+        attribute :list_type_detail, ListType
+
         # Legal instruments (regulations, laws) as basis
         # @return [Array<LegalInstrument>, nil]
         attribute :legal_bases, ValueObjects::LegalInstrument, collection: true
@@ -60,6 +68,11 @@ module Ammitto
         # Reasons for sanction (free text)
         # @return [Array<String>, nil]
         attribute :reasons, :string, collection: true
+
+        # Structured reasons: category, localized descriptions, cited
+        # provisions
+        # @return [Array<SanctionReason>, nil]
+        attribute :reason_details, SanctionReason, collection: true
 
         # Temporal period (listing/effective/expiry dates)
         # @return [TemporalPeriod, nil]
@@ -85,9 +98,19 @@ module Ammitto
         # @return [String, nil]
         attribute :announcement, :string
 
+        # The official announcement itself, with its metadata, citations and
+        # modifications
+        # @return [OfficialAnnouncement, nil]
+        attribute :announcement_detail, OfficialAnnouncement
+
         # Raw source data reference
         # @return [RawSourceData, nil]
         attribute :raw_source_data, :hash
+
+        # The original source record (file, format, XPath, verbatim
+        # content, source-specific fields)
+        # @return [ValueObjects::RawSourceData, nil]
+        attribute :raw_source_detail, ValueObjects::RawSourceData
 
         # Reference to SanctionGroup (if part of collective sanction)
         # @return [String, nil]
@@ -149,16 +172,20 @@ module Ammitto
           map :authority, to: :authority
           map :regime, to: :regime
           map :list_type, to: :list_type
+          map :list_type_detail, to: :list_type_detail
           map :legal_bases, to: :legal_bases
           map :effects, to: :effects
           map :reasons, to: :reasons
+          map :reason_details, to: :reason_details
           map :period, to: :period
           map :status, to: :status
           map :status_history, to: :status_history
           map :reference_number, to: :reference_number
           map :remarks, to: :remarks
           map :announcement, to: :announcement
+          map :announcement_detail, to: :announcement_detail
           map :raw_source_data, to: :raw_source_data
+          map :raw_source_detail, to: :raw_source_detail
           map :group_id, to: :group_id
           map :modifications, to: :modifications
           map :legal_citations, to: :legal_citations

@@ -58,6 +58,7 @@ module Ammitto
         def transform_all(source_models)
           source_models.flat_map { |model| transform(model) }
         end
+        canonical_entrypoints :transform, :transform_all
 
         private
 
@@ -87,9 +88,8 @@ module Ammitto
         # @param vessel [Ammitto::Sources::EuVessels::Vessel]
         # @return [VesselEntity]
         def create_entity(vessel)
-          Ammitto::VesselEntity.new.tap do |entity|
+          build_model(Ammitto::VesselEntity, entity_type: 'vessel').tap do |entity|
             entity.id = generate_entity_id(vessel.local_id)
-            entity.entity_type = 'vessel'
             entity.names = build_names(vessel)
             entity.imo_number = vessel.imo_number
             entity.source_references = build_source_references(vessel)
@@ -111,11 +111,10 @@ module Ammitto
         # @param vessel [Ammitto::Sources::EuVessels::Vessel]
         # @return [Array<SourceReference>]
         def build_source_references(vessel)
-          [Ammitto::SourceReference.new(
-            source_code: 'eu_vessels',
-            reference_number: vessel.imo_number,
-            retrieved_at: Time.now.utc.iso8601
-          )]
+          [build_model(Ammitto::SourceReference,
+                       source_code: 'eu_vessels',
+                       reference_number: vessel.imo_number,
+                       retrieved_at: Time.now.utc.iso8601)]
         end
 
         # Create the sanction entry for one designation
@@ -127,15 +126,14 @@ module Ammitto
         def create_entry(vessel, entity, designation, first:)
           subject_to = designation.subject_to && SubjectTo.parse(designation.subject_to)
 
-          Ammitto::SanctionEntry.new.tap do |entry|
+          build_model(Ammitto::SanctionEntry).tap do |entry|
             entry.id = generate_entry_id(entry_local_id(vessel, designation, subject_to, first: first))
             entry.entity_id = entity.id
             entry.authority = authority
             entry.status = 'active'
-            entry.period = Ammitto::TemporalPeriod.new(
-              listed_date: designation.date_of_application,
-              is_indefinite: true
-            )
+            entry.period = build_model(Ammitto::TemporalPeriod,
+                                       listed_date: designation.date_of_application,
+                                       is_indefinite: true)
             state_measure(entry, subject_to, designation) if subject_to
           end
         end
@@ -143,7 +141,7 @@ module Ammitto
         # A designation read from a file that predates the Subject to
         # column states no regime or measure, so its entry carries none.
         def state_measure(entry, subject_to, designation)
-          entry.regime = Ammitto::SanctionRegime.new(**subject_to.regime)
+          entry.regime = build_model(Ammitto::SanctionRegime, **subject_to.regime)
           entry.legal_bases = [create_legal_basis(subject_to)]
           entry.effects = subject_to.effects.map { |effect| create_effect(**effect) }
           entry.remarks = designation.subject_to
@@ -160,13 +158,12 @@ module Ammitto
         # @param subject_to [SubjectTo]
         # @return [LegalInstrument]
         def create_legal_basis(subject_to)
-          Ammitto::LegalInstrument.new(
-            type: 'regulation',
-            identifier: subject_to.instrument[:identifier],
-            title: subject_to.instrument[:identifier],
-            issuing_body: 'Council of the European Union',
-            url: subject_to.instrument[:url]
-          )
+          build_model(Ammitto::LegalInstrument,
+                      type: 'regulation',
+                      identifier: subject_to.instrument[:identifier],
+                      title: subject_to.instrument[:identifier],
+                      issuing_body: 'Council of the European Union',
+                      url: subject_to.instrument[:url])
         end
       end
     end

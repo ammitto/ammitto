@@ -65,7 +65,7 @@ module Ammitto
           entity = create_person_entity(individual)
           entry = create_entry(individual, entity.id)
 
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -77,7 +77,7 @@ module Ammitto
           entity = create_organization_entity(organization)
           entry = create_entry(organization, entity.id)
 
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -89,7 +89,7 @@ module Ammitto
           entity = create_vessel_entity(vessel)
           entry = create_entry(vessel, entity.id)
 
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -103,15 +103,14 @@ module Ammitto
         # @param generic_entity [Ammitto::Sources::Au::GenericEntity]
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
         def transform_generic_entity(generic_entity)
-          entity = Ammitto::Entity.new(
-            id: generate_entity_id(generic_entity.reference),
-            entity_type: 'organization',
-            names: transform_names(generic_entity.names),
-            remarks: build_remarks(generic_entity)
-          )
+          entity = build_model(Ammitto::Entity,
+                               id: generate_entity_id(generic_entity.reference),
+                               entity_type: 'organization',
+                               names: transform_names(generic_entity.names),
+                               remarks: build_remarks(generic_entity))
           entry = create_entry(generic_entity, entity.id)
 
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -163,38 +162,38 @@ module Ammitto
           transform(source)
         end
 
+        canonical_entrypoints :transform_individual, :transform_organization, :transform_vessel, :transform_generic_entity, :transform,
+                              :transform_from_hash
+
         private
 
         def create_person_entity(individual)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(individual.reference),
-            entity_type: 'person',
-            names: transform_names(individual.names),
-            addresses: transform_address(individual.address),
-            birth_info: transform_birth_info(individual),
-            nationalities: individual.citizenships,
-            remarks: build_remarks(individual)
-          )
+          build_model(Ammitto::PersonEntity,
+                      id: generate_entity_id(individual.reference),
+                      entity_type: 'person',
+                      names: transform_names(individual.names),
+                      addresses: transform_address(individual.address),
+                      birth_info: transform_birth_info(individual),
+                      nationalities: individual.citizenships,
+                      remarks: build_remarks(individual))
         end
 
         def create_organization_entity(organization)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(organization.reference),
-            entity_type: 'organization',
-            names: transform_names(organization.names),
-            addresses: transform_address(organization.address),
-            remarks: build_remarks(organization)
-          )
+          build_model(Ammitto::OrganizationEntity,
+                      id: generate_entity_id(organization.reference),
+                      entity_type: 'organization',
+                      names: transform_names(organization.names),
+                      addresses: transform_address(organization.address),
+                      remarks: build_remarks(organization))
         end
 
         def create_vessel_entity(vessel)
-          Ammitto::VesselEntity.new(
-            id: generate_entity_id(vessel.reference),
-            entity_type: 'vessel',
-            names: transform_vessel_names(vessel),
-            imo_number: vessel.imo_number,
-            remarks: build_remarks(vessel)
-          )
+          build_model(Ammitto::VesselEntity,
+                      id: generate_entity_id(vessel.reference),
+                      entity_type: 'vessel',
+                      names: transform_vessel_names(vessel),
+                      imo_number: vessel.imo_number,
+                      remarks: build_remarks(vessel))
         end
 
         def create_entry(source, entity_id)
@@ -211,21 +210,20 @@ module Ammitto
             source_specific_fields['au:address'] = source.address
           end
 
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(source.reference),
-            entity_id: entity_id,
-            authority: authority,
-            regime: transform_regime(sanction&.committees),
-            effects: transform_effects(sanction),
-            status: 'active',
-            reference_number: source.reference,
-            period: create_period(source: :au, listed_date: parse_control_date(sanction&.control_date)),
-            legal_bases: transform_legal_instrument(sanction&.instrument),
-            raw_source_data: create_raw_source_data(
-              source_format: 'csv',
-              source_specific_fields: source_specific_fields
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(source.reference),
+                      entity_id: entity_id,
+                      authority: authority,
+                      regime: transform_regime(sanction&.committees),
+                      effects: transform_effects(sanction),
+                      status: 'active',
+                      reference_number: source.reference,
+                      period: create_period(source: :au, listed_date: parse_control_date(sanction&.control_date)),
+                      legal_bases: transform_legal_instrument(sanction&.instrument),
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'csv',
+                        source_specific_fields: source_specific_fields
+                      ))
         end
 
         def transform_names(name_variants)
@@ -343,11 +341,10 @@ module Ammitto
         def transform_legal_instrument(instrument_str)
           return [] if instrument_str.nil? || instrument_str.empty?
 
-          [Ammitto::LegalInstrument.new(
-            type: detect_instrument_type(instrument_str),
-            identifier: instrument_str,
-            title: instrument_str
-          )]
+          [build_model(Ammitto::LegalInstrument,
+                       type: detect_instrument_type(instrument_str),
+                       identifier: instrument_str,
+                       title: instrument_str)]
         end
 
         def detect_instrument_type(instrument_str)

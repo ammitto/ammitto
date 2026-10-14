@@ -1,0 +1,25 @@
+---
+mandt: '300'
+supp_id: 1043835
+supp_name: CM-4 LLC DUSHANBESTROY
+supp_type_code: F
+entity_type: organization
+land1: TJ
+country_name: Tajikistan
+supp_city: DUSHANBE CITY
+supp_addr: BORDAD STR., 34
+legacy_flg: N
+un_supp_flg: N
+inelig_flg: X
+debar_from_date: '2025-12-08'
+debar_to_date: '2031-04-25'
+debar_reason: 'Cross Debarment: ADB'
+add_supp_info: OOO иC-4 «ДушанбесоxтMOH»
+supp_elig_stat: X-DEBARRED
+crpd_match: N
+crpd_stat: CLEARED
+elig_stat: X-DEBARRED
+rechk_ind: N
+create_user: WB630956
+create_date: '2025-12-08T00:00:00.000Z'
+create_time: '1900-01-01T11:52:18.000Z'

@@ -91,15 +91,18 @@ module Ammitto
 
           nested = AnnouncementTransformer.new
           nested.iri_collision_registry = @iri_collision_registry
-          nested.transform_announcement(announcement)
+          nested.canonical_transform_announcement(announcement)
         end
+
+        canonical_entrypoints :transform, :transform_announcement
 
         private
 
         def transform_person(source_entity)
           birth_date = analyze_birth_date(source_entity.date_of_birth)
 
-          entity = Ammitto::PersonEntity.new(
+          entity = build_model(
+            Ammitto::PersonEntity,
             id: generate_entity_id(create_reference(source_entity)),
             entity_type: 'person',
             names: transform_names(source_entity),
@@ -114,21 +117,20 @@ module Ammitto
           )
 
           entry = create_entry(source_entity, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
 
         def transform_organization(source_entity)
-          entity = Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(create_reference(source_entity)),
-            entity_type: 'organization',
-            names: transform_names(source_entity),
-            remarks: build_remarks(source_entity)
-          )
+          entity = build_model(Ammitto::OrganizationEntity,
+                               id: generate_entity_id(create_reference(source_entity)),
+                               entity_type: 'organization',
+                               names: transform_names(source_entity),
+                               remarks: build_remarks(source_entity))
 
           entry = create_entry(source_entity, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -171,7 +173,8 @@ module Ammitto
             description: nil
           }
 
-          Ammitto::SanctionEntry.new(
+          build_model(
+            Ammitto::SanctionEntry,
             id: generate_entry_id(create_reference(source_entity)),
             entity_id: entity_id,
             authority: authority,
@@ -227,12 +230,11 @@ module Ammitto
         def create_announcement(source_entity)
           return nil unless source_entity.source_url
 
-          Ammitto::OfficialAnnouncement.new(
-            title: "Announcement #{source_entity.announcement_number}",
-            url: source_entity.source_url,
-            publish_date: parse_announcement_date(source_entity.announcement_date),
-            language: 'ru'
-          )
+          build_model(Ammitto::OfficialAnnouncement,
+                      title: "Announcement #{source_entity.announcement_number}",
+                      url: source_entity.source_url,
+                      publish_date: parse_announcement_date(source_entity.announcement_date),
+                      language: 'ru')
         end
 
         # An announcement date Russia writes that Date.parse cannot read

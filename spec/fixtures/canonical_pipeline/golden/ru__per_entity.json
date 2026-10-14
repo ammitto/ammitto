@@ -1,0 +1,155 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/ru/703-17-04-2024-synthetic-person",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Синтетическое Лицо",
+            "script": "Cyrl",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Synthetic Person",
+            "script": "Latn",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-synthetic-person"
+        ],
+        "remarks": "List: stop_list; Reason: For participation in anti-Russian activities of the Australian government.; Title: no title",
+        "birthInfo": [
+          {
+            "@type": "BirthInfo",
+            "circa": false,
+            "country": "AU"
+          }
+        ],
+        "nationalities": [
+          "AU"
+        ],
+        "identifications": [],
+        "addresses": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/ru/stop-list/703-17-04-2024-synthetic-person",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/ru/703-17-04-2024-synthetic-person",
+        "authority": {
+          "@type": "Authority",
+          "id": "ru",
+          "name": "Russia (MID/CBR)",
+          "countryCode": "RU"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Стоп-лист (Stop-list)",
+          "code": "RU_STOP_LIST"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "sectoral_sanction",
+            "scope": "full",
+            "description": "Entry into the Russian Federation is prohibited."
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "703-17-04-2024-synthetic-person",
+        "announcement": {
+          "@type": "OfficialAnnouncement",
+          "title": "Announcement 703-17-04-2024",
+          "url": "https://mid.ru/en/foreign_policy/news/1944697/",
+          "publishDate": "2024-04-17",
+          "language": "ru"
+        },
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "html",
+          "sourceSpecificFields": {
+            "ru:list_type": "stop_list",
+            "ru:announcement_number": "703-17-04-2024",
+            "ru:announcement_date": "2024-04-17",
+            "ru:russian_name": "Синтетическое Лицо",
+            "ru:title": "no title",
+            "ru:affiliation": null,
+            "ru:country": null,
+            "ru:industry": null
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "FalseClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.birthInfo[0].@type": "String",
+    "$.output.entity.birthInfo[0].circa": "FalseClass",
+    "$.output.entity.birthInfo[0].country": "String",
+    "$.output.entity.nationalities[0]": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[0].description": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.announcement.@type": "String",
+    "$.output.entry.announcement.title": "String",
+    "$.output.entry.announcement.url": "String",
+    "$.output.entry.announcement.publishDate": "Date",
+    "$.output.entry.announcement.language": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:list_type": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:announcement_number": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:announcement_date": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:russian_name": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:title": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:affiliation": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:country": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ru:industry": "NilClass"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::BirthInfo": 1,
+    "Ammitto::NameVariant": 2,
+    "Ammitto::OfficialAnnouncement": 1,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1
+  }
+}

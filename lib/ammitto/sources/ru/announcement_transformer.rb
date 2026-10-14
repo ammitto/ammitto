@@ -90,6 +90,8 @@ module Ammitto
           }
         end
 
+        canonical_entrypoints :transform_announcement
+
         private
 
         def transform_announcement_entity(entity, reference, citations,
@@ -111,14 +113,13 @@ module Ammitto
 
           # MID states nationality and never gender, so the field CN fills
           # with gender stays empty here rather than being guessed at.
-          person = Ammitto::PersonEntity.new(
-            id: entity_id,
-            entity_type: 'person',
-            names: announcement_names(entity),
-            nationalities: [entity.nationality].compact,
-            remarks: announcement_entity_remarks(entity)
-          )
-          person.add_sanction_entry(entry)
+          person = build_model(Ammitto::PersonEntity,
+                               id: entity_id,
+                               entity_type: 'person',
+                               names: announcement_names(entity),
+                               nationalities: [entity.nationality].compact,
+                               remarks: announcement_entity_remarks(entity))
+          link_entry(person, entry)
 
           { entity: person, entry: entry }
         end
@@ -129,13 +130,12 @@ module Ammitto
           entry = create_announcement_entry(entity, reference, entity_id,
                                             citations, announcement)
 
-          organization = Ammitto::OrganizationEntity.new(
-            id: entity_id,
-            entity_type: 'organization',
-            names: announcement_names(entity),
-            remarks: announcement_entity_remarks(entity)
-          )
-          organization.add_sanction_entry(entry)
+          organization = build_model(Ammitto::OrganizationEntity,
+                                     id: entity_id,
+                                     entity_type: 'organization',
+                                     names: announcement_names(entity),
+                                     remarks: announcement_entity_remarks(entity))
+          link_entry(organization, entry)
 
           { entity: organization, entry: entry }
         end
@@ -246,7 +246,8 @@ module Ammitto
                                       citations, announcement)
           list_info = announcement_list_info(entity)
 
-          Ammitto::SanctionEntry.new(
+          build_model(
+            Ammitto::SanctionEntry,
             id: generate_entry_id(reference,
                                   entry_list_type: list_info[:list_slug]),
             entity_id: entity_id,
@@ -302,8 +303,8 @@ module Ammitto
             descriptions = localized_announcement_strings(reason)
             next if descriptions.empty?
 
-            Ammitto::SanctionReason.new(category: 'other',
-                                        description: descriptions)
+            build_model(Ammitto::SanctionReason, category: 'other',
+                                                 description: descriptions)
           end
         end
 
@@ -385,7 +386,8 @@ module Ammitto
         def official_announcement_from(block, report_failures: true)
           report_as = report_failures ? { source: :ru, field: :publish_date } : {}
 
-          Ammitto::OfficialAnnouncement.new(
+          build_model(
+            Ammitto::OfficialAnnouncement,
             id: generate_announcement_id(
               document_reference(block.document_id)
             ),

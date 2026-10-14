@@ -1,0 +1,115 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/ch/100173",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Aghazadeh Reza",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/ch/consolidated-list/100173"
+        ],
+        "remarks": "Reza Aghazadeh is an Iranian national, member of the Expediency Discernment Council. He served as Head of the Atomic Energy Organization between 1997 and 2009. His positions have led him to be at the forefront of the development of Iran’s nuclear programme. He is still consulted by his AEOI colleagues on nuclear issues. Reza Aghazadeh is therefore responsible for directly participating in Iran’s nuclear programme and nuclear escalation.",
+        "birthInfo": [
+          {
+            "@type": "BirthInfo",
+            "date": "1949-03-14",
+            "circa": false,
+            "year": 1949
+          }
+        ],
+        "nationalities": [],
+        "identifications": [],
+        "addresses": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/ch/consolidated-list/100173",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/ch/100173",
+        "authority": {
+          "@type": "Authority",
+          "id": "ch",
+          "name": "Switzerland (SECO)",
+          "countryCode": "CH"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Switzerland SECO Sanctions",
+          "code": "CH_SECO"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "100173",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "ch:ssid": "100173",
+            "ch:sanctions_set_id": "8174"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.birthInfo[0].@type": "String",
+    "$.output.entity.birthInfo[0].date": "Date",
+    "$.output.entity.birthInfo[0].circa": "FalseClass",
+    "$.output.entity.birthInfo[0].year": "Integer",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ch:ssid": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ch:sanctions_set_id": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::BirthInfo": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1
+  }
+}

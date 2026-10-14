@@ -1,0 +1,232 @@
+{
+  "json": {
+    "output": [
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/jp/jp-jpmofarussia560",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Alfa Machinery Group LLC Company AMG; Kompaniya AMG",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "アルファ・マシナリー・グループ",
+              "script": "Jpan",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [
+            {
+              "@type": "SourceReference",
+              "sourceCode": "jp",
+              "referenceNumber": "JP-jp.mofa.russia.560",
+              "retrievedAt": "2026-10-14T12:00:00Z"
+            }
+          ],
+          "linkedEntities": [],
+          "identifications": [],
+          "addresses": [
+            {
+              "@type": "Address",
+              "street": "ul. Kuskovskaya, d. 20A, pom. XIIA, komn. 114, Moscow 111141, Russia"
+            }
+          ],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/jp/end-user-list/jp-jpmofarussia560",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/jp/jp-jpmofarussia560",
+          "authority": {
+            "@type": "Authority",
+            "id": "jp",
+            "name": "Japan (METI End-User List)",
+            "countryCode": "JP"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "Japan End-User List (METI)",
+            "code": "JP-EUL"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "export_restriction",
+              "scope": "full",
+              "description": "Subject to export license requirements"
+            }
+          ],
+          "reasons": [],
+          "period": {
+            "@type": "TemporalPeriod",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [],
+          "remarks": "Japan End-User List - Export Control"
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/jp/jp-jpmofarussia561",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "LLC Vneshekostil",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "有限会社ヴネシュエコスティル",
+              "script": "Jpan",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [
+            {
+              "@type": "SourceReference",
+              "sourceCode": "jp",
+              "referenceNumber": "JP-jp.mofa.russia.561",
+              "retrievedAt": "2026-10-14T12:00:00Z"
+            }
+          ],
+          "linkedEntities": [],
+          "identifications": [],
+          "addresses": [
+            {
+              "@type": "Address",
+              "street": "Room. 19, fl.1, pom. I, Building 5, Kashirskoye shosse, 55, Moscow 115211, Russia"
+            }
+          ],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/jp/end-user-list/jp-jpmofarussia561",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/jp/jp-jpmofarussia561",
+          "authority": {
+            "@type": "Authority",
+            "id": "jp",
+            "name": "Japan (METI End-User List)",
+            "countryCode": "JP"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "Japan End-User List (METI)",
+            "code": "JP-EUL"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "export_restriction",
+              "scope": "full",
+              "description": "Subject to export license requirements"
+            }
+          ],
+          "reasons": [],
+          "period": {
+            "@type": "TemporalPeriod",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [],
+          "remarks": "Japan End-User List - Export Control"
+        }
+      }
+    ],
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output[0].entity.@id": "String",
+    "$.output[0].entity.@type": "String",
+    "$.output[0].entity.entityType": "String",
+    "$.output[0].entity.names[0].@type": "String",
+    "$.output[0].entity.names[0].fullName": "String",
+    "$.output[0].entity.names[0].script": "String",
+    "$.output[0].entity.names[0].isPrimary": "TrueClass",
+    "$.output[0].entity.names[1].@type": "String",
+    "$.output[0].entity.names[1].fullName": "String",
+    "$.output[0].entity.names[1].script": "String",
+    "$.output[0].entity.names[1].isPrimary": "FalseClass",
+    "$.output[0].entity.sourceReferences[0].@type": "String",
+    "$.output[0].entity.sourceReferences[0].sourceCode": "String",
+    "$.output[0].entity.sourceReferences[0].referenceNumber": "String",
+    "$.output[0].entity.sourceReferences[0].retrievedAt": "String",
+    "$.output[0].entity.addresses[0].@type": "String",
+    "$.output[0].entity.addresses[0].street": "String",
+    "$.output[0].entry.@id": "String",
+    "$.output[0].entry.@type": "String",
+    "$.output[0].entry.entityId": "String",
+    "$.output[0].entry.authority.@type": "String",
+    "$.output[0].entry.authority.id": "String",
+    "$.output[0].entry.authority.name": "String",
+    "$.output[0].entry.authority.countryCode": "String",
+    "$.output[0].entry.regime.@type": "String",
+    "$.output[0].entry.regime.name": "String",
+    "$.output[0].entry.regime.code": "String",
+    "$.output[0].entry.effects[0].@type": "String",
+    "$.output[0].entry.effects[0].effectType": "String",
+    "$.output[0].entry.effects[0].scope": "String",
+    "$.output[0].entry.effects[0].description": "String",
+    "$.output[0].entry.period.@type": "String",
+    "$.output[0].entry.period.isIndefinite": "TrueClass",
+    "$.output[0].entry.status": "String",
+    "$.output[0].entry.remarks": "String",
+    "$.output[1].entity.@id": "String",
+    "$.output[1].entity.@type": "String",
+    "$.output[1].entity.entityType": "String",
+    "$.output[1].entity.names[0].@type": "String",
+    "$.output[1].entity.names[0].fullName": "String",
+    "$.output[1].entity.names[0].script": "String",
+    "$.output[1].entity.names[0].isPrimary": "TrueClass",
+    "$.output[1].entity.names[1].@type": "String",
+    "$.output[1].entity.names[1].fullName": "String",
+    "$.output[1].entity.names[1].script": "String",
+    "$.output[1].entity.names[1].isPrimary": "FalseClass",
+    "$.output[1].entity.sourceReferences[0].@type": "String",
+    "$.output[1].entity.sourceReferences[0].sourceCode": "String",
+    "$.output[1].entity.sourceReferences[0].referenceNumber": "String",
+    "$.output[1].entity.sourceReferences[0].retrievedAt": "String",
+    "$.output[1].entity.addresses[0].@type": "String",
+    "$.output[1].entity.addresses[0].street": "String",
+    "$.output[1].entry.@id": "String",
+    "$.output[1].entry.@type": "String",
+    "$.output[1].entry.entityId": "String",
+    "$.output[1].entry.authority.@type": "String",
+    "$.output[1].entry.authority.id": "String",
+    "$.output[1].entry.authority.name": "String",
+    "$.output[1].entry.authority.countryCode": "String",
+    "$.output[1].entry.regime.@type": "String",
+    "$.output[1].entry.regime.name": "String",
+    "$.output[1].entry.regime.code": "String",
+    "$.output[1].entry.effects[0].@type": "String",
+    "$.output[1].entry.effects[0].effectType": "String",
+    "$.output[1].entry.effects[0].scope": "String",
+    "$.output[1].entry.effects[0].description": "String",
+    "$.output[1].entry.period.@type": "String",
+    "$.output[1].entry.period.isIndefinite": "TrueClass",
+    "$.output[1].entry.status": "String",
+    "$.output[1].entry.remarks": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 2,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 4,
+    "Ammitto::OrganizationEntity": 2,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 2,
+    "Ammitto::SanctionRegime": 2,
+    "Ammitto::SourceReference": 2,
+    "Ammitto::TemporalPeriod": 2
+  }
+}

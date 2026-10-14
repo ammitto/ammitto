@@ -1,12 +1,19 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'ontology/contracts'
 require_relative 'ontology/value_objects/localized_string'
+require_relative 'ontology/sanction/sanction_reason'
 
 module Ammitto
   # SanctionReason represents the reason for a sanction
   #
   # Documents why an entity was sanctioned.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::SanctionReason (see Ontology::Contracts). Here
+  # +description+ is the LocalizedString collection (canonical
+  # +localized_descriptions+); the canonical scalar is +description_text+.
   #
   # @example Creating a sanction reason
   #   SanctionReason.new(
@@ -34,14 +41,13 @@ module Ammitto
       other
     ].freeze
 
-    attribute :category, :string
-    attribute :description, Ontology::ValueObjects::LocalizedString, collection: true
-    attribute :cited_provisions, :string, collection: true
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'category', to: :category
       map 'description', to: :description
       map 'cited_provisions', to: :cited_provisions
+      map 'description_text', to: :description_text
     end
 
     # Get description by language

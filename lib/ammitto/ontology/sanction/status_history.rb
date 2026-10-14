@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../value_objects/immutable'
 require_relative '../value_objects'
+require_relative '../value_objects/notice_reference'
 
 module Ammitto
   module Ontology
@@ -16,7 +18,7 @@ module Ammitto
       #     reason: "Delisted following court order"
       #   )
       #
-      class StatusHistory < Lutaml::Model::Serializable
+      class StatusHistoryModel < Lutaml::Model::Serializable
         # Previous status (for transitions)
         # @return [String, nil]
         attribute :from_status, :string
@@ -33,9 +35,18 @@ module Ammitto
         # @return [Date, nil]
         attribute :date, :date
 
+        # When the change happened, exactly as the source wrote it (ISO
+        # 8601, time and zone included); date cannot hold the time
+        # @return [String, nil]
+        attribute :timestamp, :string
+
         # Reason for status change
         # @return [String, nil]
         attribute :reason, :string
+
+        # The official notice that made the change
+        # @return [ValueObjects::NoticeReference, nil]
+        attribute :notice_reference, ValueObjects::NoticeReference
 
         # End date if status is suspended
         # @return [Date, nil]
@@ -54,7 +65,9 @@ module Ammitto
           hash[:from_status] = from_status if from_status
           hash[:to_status] = to_status || status
           hash[:date] = date.to_s if date
+          hash[:timestamp] = timestamp if timestamp
           hash[:reason] = reason if reason
+          hash[:notice_reference] = notice_reference.to_hash if notice_reference
           hash[:suspension_end_date] = suspension_end_date.to_s if suspension_end_date
           hash
         end
@@ -65,7 +78,9 @@ module Ammitto
           map 'toStatus', to: :to_status
           map 'status', to: :status
           map 'date', to: :date
+          map 'timestamp', to: :timestamp
           map 'reason', to: :reason
+          map 'noticeReference', to: :notice_reference
           map 'suspensionEndDate', to: :suspension_end_date
         end
 
@@ -75,9 +90,16 @@ module Ammitto
           map 'to_status', to: :to_status
           map 'status', to: :status
           map 'date', to: :date
+          map 'timestamp', to: :timestamp
           map 'reason', to: :reason
+          map 'notice_reference', to: :notice_reference
           map 'suspension_end_date', to: :suspension_end_date
         end
+      end
+      private_constant :StatusHistoryModel
+
+      class StatusHistory < StatusHistoryModel
+        include ValueObjects::Immutable
       end
     end
   end

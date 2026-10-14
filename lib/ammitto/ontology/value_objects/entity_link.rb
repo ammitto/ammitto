@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../neo4j_adapter'
 
 module Ammitto
@@ -18,7 +19,7 @@ module Ammitto
       #     target_name: "ABC Corp"
       #   )
       #
-      class EntityLink < Lutaml::Model::Serializable
+      class EntityLinkModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for EntityLink
@@ -119,6 +120,11 @@ module Ammitto
           map 'to_date', to: :to_date
           map 'note', to: :note
         end
+      end
+      private_constant :EntityLinkModel
+
+      class EntityLink < EntityLinkModel
+        include Immutable
       end
     end
   end

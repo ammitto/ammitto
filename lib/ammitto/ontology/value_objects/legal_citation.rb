@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative 'localized_string'
 
 module Ammitto
@@ -31,7 +32,7 @@ module Ammitto
       #     ]
       #   )
       #
-      class LegalCitation < Lutaml::Model::Serializable
+      class LegalCitationModel < Lutaml::Model::Serializable
         # Unique identifier (IRI)
         # @return [String, nil]
         attribute :id, :string
@@ -108,6 +109,11 @@ module Ammitto
           map :context, to: :context
           map :quoted_text, to: :quoted_text
         end
+      end
+      private_constant :LegalCitationModel
+
+      class LegalCitation < LegalCitationModel
+        include Immutable
       end
     end
   end

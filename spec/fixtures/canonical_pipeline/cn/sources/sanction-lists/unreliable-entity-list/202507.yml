@@ -1,0 +1,143 @@
+# yaml-language-server: $schema=../../../schemas/cn-announcement.yml
+---
+announcement:
+  title:
+  - zh-Hans: 不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告
+    en: Announcement on Adding Skydio Inc. and Ten Other U.S. Companies to the Unreliable Entity List
+  url: https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html
+  lang: zh-Hans
+  publish_date: '2025-04-04'
+  publish_time: "18:00"
+  authority: cn/unreliable-entity-list-working-mechanism
+  publisher: cn/ministry-of-commerce-industry-security-and-import-export-control
+  type: cn/unreliable-entity-list-working-mechanism-announcement
+  document_id: 〔2025〕7号
+  signatory: cn/unreliable-entity-list-working-mechanism
+  content: |
+    为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：
+
+    一、禁止上述企业从事与中国有关的进出口活动；
+    二、禁止上述企业在中国境内新增投资。
+
+    本公告未尽事宜，按《不可靠实体清单规定》执行。
+    本公告自公布之日起实施。
+
+sanction_details:
+  instruments:
+    - id: cn/npc-foreign-trade-law-2025
+    - id: cn/npc-national-security-law-2015
+    - id: cn/npc-anti-foreign-sanctions-law
+    - id: cn/mofcom-unreliable-entity-list-provisions
+      articles:
+      - 第二条
+      - 第八条
+      - 第十条
+  entities:
+    - name:
+        zh-Hans: 斯凯迪奥公司
+        en: Skydio Inc.
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: &reason
+        - zh-Hans: 为维护国家主权、安全和发展利益
+          en: To safeguard national sovereignty, security and development interests
+      measures: &measures
+        - type:
+          - prohibit_import_export
+          zh-Hans: 禁止上述企业从事与中国有关的进出口活动
+          en: Prohibit import and export activities related to China
+        - type:
+          - prohibit_investment_new
+          zh-Hans: 禁止上述企业在中国境内新增投资
+          en: Prohibit new investment activities in China
+
+    - name:
+        zh-Hans: BRINC无人机公司
+        en: BRINC Drones, Inc.
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 红色六方案公司
+        en: Red Six Solutions
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 赛尼克斯公司
+        en: SYNEXXUS, Inc.
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 火风暴实验室公司
+        en: Firestorm Labs, Inc.
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 奎托斯无人机系统公司
+        en: Kratos Unmanned Aerial Systems, Inc.
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 浩劫人工智能公司
+        en: HavocAI
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 尼罗斯科技公司
+        en: Neros Technologies
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 多莫战术通信公司
+        en: Domo Tactical Communications
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 急速飞行公司
+        en: Rapid Flight LLC
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures
+
+    - name:
+        zh-Hans: 英斯图公司
+        en: Insitu, Inc.
+      type: organization
+      effective_date: '2025-04-04'
+      sanction_list: cn/unreliable-entity-list
+      reason: *reason
+      measures: *measures

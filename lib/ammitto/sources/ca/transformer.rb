@@ -45,51 +45,50 @@ module Ammitto
           end
         end
 
+        canonical_entrypoints :transform
+
         private
 
         def transform_individual(record)
-          entity = Ammitto::PersonEntity.new(
-            id: generate_entity_id(record.generate_id),
-            entity_type: 'person',
-            names: transform_names(record),
-            birth_info: transform_birth_info(record),
-            title: record.english_title_or_ship_type,
-            remarks: build_remarks(record)
-          )
+          entity = build_model(Ammitto::PersonEntity,
+                               id: generate_entity_id(record.generate_id),
+                               entity_type: 'person',
+                               names: transform_names(record),
+                               birth_info: transform_birth_info(record),
+                               title: record.english_title_or_ship_type,
+                               remarks: build_remarks(record))
 
           entry = create_entry(record, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
 
         def transform_vessel(record)
-          entity = Ammitto::VesselEntity.new(
-            id: generate_entity_id(record.generate_id),
-            entity_type: 'vessel',
-            names: transform_names(record),
-            imo_number: record.imo_number,
-            vessel_type: record.english_title_or_ship_type,
-            build_year: build_year(record),
-            remarks: build_remarks(record)
-          )
+          entity = build_model(Ammitto::VesselEntity,
+                               id: generate_entity_id(record.generate_id),
+                               entity_type: 'vessel',
+                               names: transform_names(record),
+                               imo_number: record.imo_number,
+                               vessel_type: record.english_title_or_ship_type,
+                               build_year: build_year(record),
+                               remarks: build_remarks(record))
 
           entry = create_entry(record, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
 
         def transform_organization(record)
-          entity = Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(record.generate_id),
-            entity_type: 'organization',
-            names: transform_names(record),
-            remarks: build_remarks(record)
-          )
+          entity = build_model(Ammitto::OrganizationEntity,
+                               id: generate_entity_id(record.generate_id),
+                               entity_type: 'organization',
+                               names: transform_names(record),
+                               remarks: build_remarks(record))
 
           entry = create_entry(record, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -138,25 +137,24 @@ module Ammitto
         end
 
         def create_entry(record, entity_id)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(record.generate_id),
-            entity_id: entity_id,
-            authority: authority,
-            regime: transform_regime(record.country),
-            effects: create_default_effects,
-            status: 'active',
-            reference_number: record.generate_id,
-            remarks: "Schedule: #{record.schedule}, Item: #{record.item}",
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'ca:country' => record.country,
-                'ca:schedule' => record.schedule,
-                'ca:item' => record.item,
-                'ca:date_of_listing' => record.date_of_listing
-              }
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(record.generate_id),
+                      entity_id: entity_id,
+                      authority: authority,
+                      regime: transform_regime(record.country),
+                      effects: create_default_effects,
+                      status: 'active',
+                      reference_number: record.generate_id,
+                      remarks: "Schedule: #{record.schedule}, Item: #{record.item}",
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'xml',
+                        source_specific_fields: {
+                          'ca:country' => record.country,
+                          'ca:schedule' => record.schedule,
+                          'ca:item' => record.item,
+                          'ca:date_of_listing' => record.date_of_listing
+                        }
+                      ))
         end
 
         def transform_regime(country)

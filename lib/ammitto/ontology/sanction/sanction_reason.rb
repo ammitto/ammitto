@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative '../value_objects/immutable'
 require_relative '../../utils/presence'
+require_relative '../value_objects/localized_string'
 
 module Ammitto
   module Ontology
@@ -18,7 +20,7 @@ module Ammitto
       #     cited_provisions: ["UNSCR 1718 (2006)", "UNSCR 1874 (2009)"]
       #   )
       #
-      class SanctionReason < Lutaml::Model::Serializable
+      class SanctionReasonModel < Lutaml::Model::Serializable
         # Categories of sanctions reasons
         # @return [Array<String>]
         CATEGORIES = %w[
@@ -45,6 +47,11 @@ module Ammitto
         # Detailed description of the reason
         # @return [String, nil]
         attribute :description, :string
+
+        # The source's descriptions per language/script, with their
+        # metadata; kept apart from the scalar description
+        # @return [Array<ValueObjects::LocalizedString>, nil]
+        attribute :localized_descriptions, ValueObjects::LocalizedString, collection: true
 
         # Legal provisions cited as basis for the sanction
         # @return [Array<String>, nil]
@@ -95,6 +102,7 @@ module Ammitto
           hash = {}
           hash[:category] = category if category
           hash[:description] = description if description
+          hash[:localized_descriptions] = localized_descriptions.map(&:to_hash) if localized_descriptions&.any?
           hash[:cited_provisions] = cited_provisions if cited_provisions&.any?
           hash
         end
@@ -103,6 +111,7 @@ module Ammitto
         json do
           map 'category', to: :category
           map 'description', to: :description
+          map 'localizedDescriptions', to: :localized_descriptions
           map 'citedProvisions', to: :cited_provisions
         end
 
@@ -110,8 +119,14 @@ module Ammitto
         yaml do
           map 'category', to: :category
           map 'description', to: :description
+          map 'localized_descriptions', to: :localized_descriptions
           map 'cited_provisions', to: :cited_provisions
         end
+      end
+      private_constant :SanctionReasonModel
+
+      class SanctionReason < SanctionReasonModel
+        include ValueObjects::Immutable
       end
     end
   end

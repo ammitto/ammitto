@@ -1,0 +1,205 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/au/1060",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "FELICIANO SEMBORIO DELOS REYES JR",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Abubakar Abdillah ",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Abdul Abdillah",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "فلسيانو سمبوريو ديلوس رييس الإبن",
+            "script": "Arab",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/au/consolidated-list/1060"
+        ],
+        "remarks": "Member of the Rajah Solaiman Movement (QDe.128). Fathers name is Feliciano Delos Reyes Sr. Mothers name is Aurea Semborio. In detention in the Philippines as of May 2011. Review pursuant to Security Council resolution 1822 (2008) was concluded on 13 May 2010. Review pursuant to Security Council resolution 2368 (2017) was concluded on 4 Dec. 2019. Review pursuant to Security Council resolution 2610 (2021) was concluded on 30 October 2023.; Listing: Resolution 1735 (2006) Listed on: 4 June. 2008 (amended 3 June 2009, 13 Dec. 201, 6 Dec 2019)",
+        "birthInfo": [
+          {
+            "@type": "BirthInfo",
+            "date": "1963-11-04",
+            "circa": false,
+            "year": 1963,
+            "country": "Arco"
+          }
+        ],
+        "nationalities": [
+          "Philippines"
+        ],
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "street": "Philippines",
+            "country": "Philippines"
+          }
+        ]
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/au/consolidated-list/1060",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/au/1060",
+        "authority": {
+          "@type": "Authority",
+          "id": "au",
+          "name": "Australia (DFAT)",
+          "countryCode": "AU"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "ISIL (Da'esh) and Al-Qaida",
+          "code": "AU_ISIL"
+        },
+        "legalBases": [
+          {
+            "@type": "LegalInstrument",
+            "type": "regulation",
+            "identifier": "Charter of the United Nations (Sanctions—ISIL (Da’esh) and Al-Qaida) Regulations 2008",
+            "title": "Charter of the United Nations (Sanctions—ISIL (Da’esh) and Al-Qaida) Regulations 2008"
+          }
+        ],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "travel_ban",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "arms_embargo",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2026-02-20",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "1060",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "csv",
+          "sourceSpecificFields": {
+            "au:reference": "1060",
+            "au:committees": "1267 (ISIL (Da'esh) and Al-Qaida)",
+            "au:control_date": "2026-02-20",
+            "au:instrument": "Charter of the United Nations (Sanctions—ISIL (Da’esh) and Al-Qaida) Regulations 2008",
+            "au:listing_info": "Resolution 1735 (2006) Listed on: 4 June. 2008 (amended 3 June 2009, 13 Dec. 201, 6 Dec 2019)"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.names[3].@type": "String",
+    "$.output.entity.names[3].fullName": "String",
+    "$.output.entity.names[3].script": "String",
+    "$.output.entity.names[3].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.birthInfo[0].@type": "String",
+    "$.output.entity.birthInfo[0].date": "Date",
+    "$.output.entity.birthInfo[0].circa": "FalseClass",
+    "$.output.entity.birthInfo[0].year": "Integer",
+    "$.output.entity.birthInfo[0].country": "String",
+    "$.output.entity.nationalities[0]": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].street": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.legalBases[0].@type": "String",
+    "$.output.entry.legalBases[0].type": "String",
+    "$.output.entry.legalBases[0].identifier": "String",
+    "$.output.entry.legalBases[0].title": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.effects[2].@type": "String",
+    "$.output.entry.effects[2].effectType": "String",
+    "$.output.entry.effects[2].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:reference": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:committees": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:control_date": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:instrument": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:listing_info": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::BirthInfo": 1,
+    "Ammitto::LegalInstrument": 1,
+    "Ammitto::NameVariant": 4,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 3,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

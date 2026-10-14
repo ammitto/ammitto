@@ -1,0 +1,111 @@
+---
+eu_reference_number: EU.12036.8
+logical_id: '168344'
+designation_date: '2024-07-15'
+regulations:
+- regulation_type: amendment
+  organisation_type: council
+  publication_date: '2024-07-15'
+  entry_into_force_date: '2024-07-15'
+  number_title: 2024/1960 (OJ L15072024)
+  programme: HR
+  logical_id: '199185'
+  publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+subject_type:
+  code: enterprise
+  classification_code: E
+name_aliases:
+- whole_name: Zvi farm
+  name_language: ET
+  strong: true
+  regulation_language: en
+  logical_id: '168350'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: Zviho farma
+  name_language: CS
+  strong: true
+  regulation_language: en
+  logical_id: '168349'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: החווה של צב
+  name_language: HE
+  strong: true
+  regulation_language: en
+  logical_id: '168348'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: Zviho farma
+  name_language: SK
+  strong: true
+  regulation_language: en
+  logical_id: '168347'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: gospodarstwo Zviego
+  name_language: PL
+  strong: true
+  regulation_language: en
+  logical_id: '168346'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: Zvi gazdasága
+  name_language: HU
+  strong: true
+  regulation_language: en
+  logical_id: '168351'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: Zvi's Farm
+  function: An illegal, unauthorized farming outpost close to Halamish, in the West
+    Bank.
+  name_language: EN
+  strong: true
+  regulation_language: en
+  logical_id: '168353'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+- whole_name: Ferma lui Zvi
+  name_language: RO
+  strong: true
+  regulation_language: en
+  logical_id: '168352'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960
+addresses:
+- region: West Bank
+  country_iso2_code: PS
+  country_description: PALESTINIAN TERRITORY, Occupied
+  regulation_language: en
+  logical_id: '168345'
+  place: Halamish
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2024-07-15'
+    number_title: 2024/1960 (OJ L15072024)
+    publication_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401960

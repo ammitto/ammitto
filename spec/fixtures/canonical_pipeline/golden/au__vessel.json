@@ -1,0 +1,134 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/au/8283",
+        "@type": "VesselEntity",
+        "entityType": "vessel",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "JALDHARA",
+            "script": "Latn",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/au/consolidated-list/8283"
+        ],
+        "remarks": "Listing: Designated as a sanctioned vessel in the Autonomous Sanctions (Sanctioned Vessels – Russia) Designation 2025",
+        "imoNumber": "9304825",
+        "previousNames": [],
+        "previousFlags": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/au/consolidated-list/8283",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/au/8283",
+        "authority": {
+          "@type": "Authority",
+          "id": "au",
+          "name": "Australia (DFAT)",
+          "countryCode": "AU"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Russia Vessels (Autonomous)",
+          "code": "AU_VESSELS"
+        },
+        "legalBases": [
+          {
+            "@type": "LegalInstrument",
+            "type": "regulation",
+            "identifier": "Autonomous Sanctions (Sanctioned Vessels – Russia) Designation 2025",
+            "title": "Autonomous Sanctions (Sanctioned Vessels – Russia) Designation 2025"
+          }
+        ],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "sectoral_sanction",
+            "scope": "full",
+            "description": "Maritime restriction"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2025-06-18",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "8283",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "csv",
+          "sourceSpecificFields": {
+            "au:reference": "8283",
+            "au:committees": "Autonomous (Vessels)",
+            "au:control_date": "2025-06-18",
+            "au:instrument": "Autonomous Sanctions (Sanctioned Vessels – Russia) Designation 2025",
+            "au:listing_info": "Designated as a sanctioned vessel in the Autonomous Sanctions (Sanctioned Vessels – Russia) Designation 2025"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.imoNumber": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.legalBases[0].@type": "String",
+    "$.output.entry.legalBases[0].type": "String",
+    "$.output.entry.legalBases[0].identifier": "String",
+    "$.output.entry.legalBases[0].title": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[0].description": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:reference": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:committees": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:control_date": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:instrument": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:listing_info": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::LegalInstrument": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1,
+    "Ammitto::VesselEntity": 1
+  }
+}

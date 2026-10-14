@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/sanction/list_type'
+
 module Ammitto
   # ListType represents a type of sanctions list
   #
   # Different authorities have different list types, such as SDN List,
   # Unreliable Entity List, etc.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::ListType (see Ontology::Contracts).
   #
   # @example Creating a list type
   #   ListType.new(
@@ -24,10 +30,7 @@ module Ammitto
       financial # Financial restrictions
     ].freeze
 
-    attribute :name, :string # List name
-    attribute :localized_name, :string, collection: true # Non-English names
-    attribute :category, :string          # List category
-    attribute :description, :string       # Description
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'name', to: :name

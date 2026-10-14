@@ -1,0 +1,156 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/us/10416",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "AL-QARD AL-HASSAN ASSOCIATION",
+            "lastName": "AL-QARD AL-HASSAN ASSOCIATION",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "AL-QUARDH AL-HASSAN ASSOCIATION",
+            "lastName": "AL-QUARDH AL-HASSAN ASSOCIATION",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "AL-QUARD AL-HASSAN ASSOCIATION",
+            "lastName": "AL-QUARD AL-HASSAN ASSOCIATION",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "KARADH AL-HASSAN",
+            "lastName": "KARADH AL-HASSAN",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/us/sdn-list/10416"
+        ],
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "street": "",
+            "city": "Beirut",
+            "country": "Lebanon"
+          }
+        ],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/us/sdn-list/10416",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/us/10416",
+        "authority": {
+          "@type": "Authority",
+          "id": "us",
+          "name": "United States (OFAC)",
+          "countryCode": "US"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Specially Designated Global Terrorist",
+          "code": "SDGT"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "10416",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "us:sdnType": "Entity",
+            "us:programs": [
+              "SDGT"
+            ],
+            "us:title": null
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].lastName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].lastName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].lastName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.names[3].@type": "String",
+    "$.output.entity.names[3].fullName": "String",
+    "$.output.entity.names[3].lastName": "String",
+    "$.output.entity.names[3].script": "String",
+    "$.output.entity.names[3].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].street": "String",
+    "$.output.entity.addresses[0].city": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:sdnType": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:programs[0]": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:title": "NilClass"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 4,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1
+  }
+}

@@ -1,0 +1,3809 @@
+{
+  "json": {
+    "output": [
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-skydio-inc",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Skydio Inc.",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "斯凯迪奥公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-skydio-inc"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-skydio-inc",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-skydio-inc",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-skydio-inc",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "斯凯迪奥公司",
+              "cn:english_name": "Skydio Inc."
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-brinc-drones-inc",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "BRINC Drones, Inc.",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "BRINC无人机公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-brinc-drones-inc"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-brinc-drones-inc",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-brinc-drones-inc",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-brinc-drones-inc",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "BRINC无人机公司",
+              "cn:english_name": "BRINC Drones, Inc."
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-red-six-solutions",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Red Six Solutions",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "红色六方案公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-red-six-solutions"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-red-six-solutions",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-red-six-solutions",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-red-six-solutions",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "红色六方案公司",
+              "cn:english_name": "Red Six Solutions"
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-synexxus-inc",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "SYNEXXUS, Inc.",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "赛尼克斯公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-synexxus-inc"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-synexxus-inc",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-synexxus-inc",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-synexxus-inc",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "赛尼克斯公司",
+              "cn:english_name": "SYNEXXUS, Inc."
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-firestorm-labs-inc",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Firestorm Labs, Inc.",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "火风暴实验室公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-firestorm-labs-inc"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-firestorm-labs-inc",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-firestorm-labs-inc",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-firestorm-labs-inc",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "火风暴实验室公司",
+              "cn:english_name": "Firestorm Labs, Inc."
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-kratos-unmanned-aerial-systems",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Kratos Unmanned Aerial Systems, Inc.",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "奎托斯无人机系统公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-kratos-unmanned-aerial-systems"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-kratos-unmanned-aerial-systems",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-kratos-unmanned-aerial-systems",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-kratos-unmanned-aerial-systems",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "奎托斯无人机系统公司",
+              "cn:english_name": "Kratos Unmanned Aerial Systems, Inc."
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-havocai",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "HavocAI",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "浩劫人工智能公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-havocai"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-havocai",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-havocai",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-havocai",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "浩劫人工智能公司",
+              "cn:english_name": "HavocAI"
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-neros-technologies",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Neros Technologies",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "尼罗斯科技公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-neros-technologies"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-neros-technologies",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-neros-technologies",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-neros-technologies",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "尼罗斯科技公司",
+              "cn:english_name": "Neros Technologies"
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-domo-tactical-communications",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Domo Tactical Communications",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "多莫战术通信公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-domo-tactical-communications"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-domo-tactical-communications",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-domo-tactical-communications",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-domo-tactical-communications",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "多莫战术通信公司",
+              "cn:english_name": "Domo Tactical Communications"
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-rapid-flight-llc",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Rapid Flight LLC",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "急速飞行公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-rapid-flight-llc"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-rapid-flight-llc",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-rapid-flight-llc",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-rapid-flight-llc",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "急速飞行公司",
+              "cn:english_name": "Rapid Flight LLC"
+            }
+          }
+        }
+      },
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/cn/20257-insitu-inc",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "Insitu, Inc.",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "英斯图公司",
+              "script": "Hani",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [],
+          "linkedEntities": [],
+          "hasSanctionEntry": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-insitu-inc"
+          ],
+          "remarks": "List: cn/unreliable-entity-list",
+          "identifications": [],
+          "addresses": [],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-insitu-inc",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/cn/20257-insitu-inc",
+          "authority": {
+            "@type": "Authority",
+            "id": "cn",
+            "name": "China (MOFCOM/MFA)",
+            "countryCode": "CN"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "不可靠实体清单 (Unreliable Entity List)",
+            "code": "CN_UNRELIABLE_ENTITY"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_import_export",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业从事与中国有关的进出口活动",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit import and export activities related to China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            },
+            {
+              "@type": "SanctionEffect",
+              "effectType": "prohibit_investment_new",
+              "scope": "full",
+              "description": [
+                {
+                  "value": "禁止上述企业在中国境内新增投资",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "Prohibit new investment activities in China",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "reasons": [
+            {
+              "@type": "SanctionReason",
+              "category": "other",
+              "description": [
+                {
+                  "value": "为维护国家主权、安全和发展利益",
+                  "lang": "zh",
+                  "script": "Hani",
+                  "is_primary": true
+                },
+                {
+                  "value": "To safeguard national sovereignty, security and development interests",
+                  "lang": "en",
+                  "script": "Latn",
+                  "is_primary": false
+                }
+              ]
+            }
+          ],
+          "period": {
+            "@type": "TemporalPeriod",
+            "effectiveDate": "2025-04-04",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [
+            {
+              "@type": "StatusChange",
+              "date": "2025-05-14",
+              "fromStatus": "active",
+              "toStatus": "suspended",
+              "noticeReference": {
+                "@type": "NoticeReference",
+                "noticeNumber": "2025-05-14-22-00",
+                "noticeDate": "2025-05-14",
+                "noticeTitle": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "noticeUrl": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html"
+              },
+              "suspensionEndDate": "2025-08-12"
+            }
+          ],
+          "modifications": [
+            {
+              "@id": "https://www.ammitto.org/modification/cn/2025-05-14-22-00-20257",
+              "@type": "SanctionPeriodModification",
+              "targetType": "announcement",
+              "targetAnnouncementId": "https://www.ammitto.org/announcement/cn/20257",
+              "targetAnnouncementDocumentId": "〔2025〕7号",
+              "targetAnnouncementDate": "2025-04-04",
+              "action": "suspend",
+              "effectiveDate": "2025-05-14",
+              "untilDate": "2025-08-12",
+              "announcement": {
+                "@type": "OfficialAnnouncement",
+                "@id": "https://www.ammitto.org/announcement/cn/2025-05-14-22-00",
+                "title": "商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问",
+                "url": "https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html",
+                "publishDate": "2025-05-14",
+                "publishTime": "22:00",
+                "documentType": "cn/ministry-of-commerce-spokesperson-speech",
+                "documentId": "2025-05-14-22-00",
+                "signatory": "cn/ministry-of-commerce",
+                "publisher": "cn/ministry-of-commerce-information-office",
+                "authority": "cn/ministry-of-commerce",
+                "content": "有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？\n\n答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。\n",
+                "language": "zh-CN"
+              },
+              "affectedEntityCount": 0,
+              "legalCitations": [
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+                  "citationType": "legal_basis"
+                },
+                {
+                  "@type": "LegalCitation",
+                  "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+                  "citationType": "legal_basis"
+                }
+              ],
+              "notes": "暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天"
+            }
+          ],
+          "referenceNumber": "20257-insitu-inc",
+          "groupId": "https://www.ammitto.org/group/cn/20257",
+          "legalCitations": [
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-foreign-trade-law-2025",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-national-security-law-2015",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/npc-anti-foreign-sanctions-law",
+              "citationType": "legal_basis"
+            },
+            {
+              "@type": "LegalCitation",
+              "legalInstrumentId": "https://www.ammitto.org/legal_instrument/cn/mofcom-unreliable-entity-list-provisions",
+              "articles": [
+                "第二条",
+                "第八条",
+                "第十条"
+              ],
+              "citationType": "legal_basis"
+            }
+          ],
+          "announcement": {
+            "@type": "OfficialAnnouncement",
+            "title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+            "url": "https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_e4f474d3aeba4672913db1042d845d78.html",
+            "publishDate": "2025-04-04",
+            "publishTime": "18:00",
+            "documentType": "cn/unreliable-entity-list-working-mechanism-announcement",
+            "documentId": "〔2025〕7号",
+            "signatory": "cn/unreliable-entity-list-working-mechanism",
+            "publisher": "cn/ministry-of-commerce-industry-security-and-import-export-control",
+            "authority": "cn/unreliable-entity-list-working-mechanism",
+            "content": "为维护国家主权、安全和发展利益，根据《中华人民共和国对外贸易法》《中华人民共和国国家安全法》《中华人民共和国反外国制裁法》等有关法律，不可靠实体清单工作机制依据《不可靠实体清单规定》第二条、第八条和第十条等有关规定，决定将斯凯迪奥公司等11家实体列入不可靠实体清单，并采取以下处理措施：\n\n一、禁止上述企业从事与中国有关的进出口活动；\n二、禁止上述企业在中国境内新增投资。\n\n本公告未尽事宜，按《不可靠实体清单规定》执行。\n本公告自公布之日起实施。\n",
+            "language": "zh-CN"
+          },
+          "rawSourceData": {
+            "@type": "RawSourceData",
+            "sourceFormat": "yaml",
+            "sourceSpecificFields": {
+              "cn:list_type": "unreliable_entity",
+              "cn:sanction_list": "cn/unreliable-entity-list",
+              "cn:chinese_name": "英斯图公司",
+              "cn:english_name": "Insitu, Inc."
+            }
+          }
+        }
+      }
+    ],
+    "groups": [
+      {
+        "source": "cn",
+        "group": {
+          "id": "https://www.ammitto.org/group/cn/20257",
+          "announcement_id": "https://www.ammitto.org/announcement/cn/20257",
+          "announcement_title": "不可靠实体清单工作机制关于将斯凯迪奥公司等11家美国企业列入不可靠实体清单的公告",
+          "entry_ids": [
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-skydio-inc",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-brinc-drones-inc",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-red-six-solutions",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-synexxus-inc",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-firestorm-labs-inc",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-kratos-unmanned-aerial-systems",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-havocai",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-neros-technologies",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-domo-tactical-communications",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-rapid-flight-llc",
+            "https://www.ammitto.org/entry/cn/unreliable-entity-list/20257-insitu-inc"
+          ],
+          "effective_date": "2025-04-04",
+          "entity_count": 11,
+          "notes": "Group of 11 entities sanctioned together"
+        }
+      }
+    ]
+  },
+  "leaf_types": {
+    "$.output[0].entity.@id": "String",
+    "$.output[0].entity.@type": "String",
+    "$.output[0].entity.entityType": "String",
+    "$.output[0].entity.names[0].@type": "String",
+    "$.output[0].entity.names[0].fullName": "String",
+    "$.output[0].entity.names[0].script": "String",
+    "$.output[0].entity.names[0].isPrimary": "TrueClass",
+    "$.output[0].entity.names[1].@type": "String",
+    "$.output[0].entity.names[1].fullName": "String",
+    "$.output[0].entity.names[1].script": "String",
+    "$.output[0].entity.names[1].isPrimary": "FalseClass",
+    "$.output[0].entity.hasSanctionEntry[0]": "String",
+    "$.output[0].entity.remarks": "String",
+    "$.output[0].entry.@id": "String",
+    "$.output[0].entry.@type": "String",
+    "$.output[0].entry.entityId": "String",
+    "$.output[0].entry.authority.@type": "String",
+    "$.output[0].entry.authority.id": "String",
+    "$.output[0].entry.authority.name": "String",
+    "$.output[0].entry.authority.countryCode": "String",
+    "$.output[0].entry.regime.@type": "String",
+    "$.output[0].entry.regime.name": "String",
+    "$.output[0].entry.regime.code": "String",
+    "$.output[0].entry.effects[0].@type": "String",
+    "$.output[0].entry.effects[0].effectType": "String",
+    "$.output[0].entry.effects[0].scope": "String",
+    "$.output[0].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.effects[1].@type": "String",
+    "$.output[0].entry.effects[1].effectType": "String",
+    "$.output[0].entry.effects[1].scope": "String",
+    "$.output[0].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.reasons[0].@type": "String",
+    "$.output[0].entry.reasons[0].category": "String",
+    "$.output[0].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[0].entry.period.@type": "String",
+    "$.output[0].entry.period.effectiveDate": "Date",
+    "$.output[0].entry.period.isIndefinite": "TrueClass",
+    "$.output[0].entry.status": "String",
+    "$.output[0].entry.statusHistory[0].@type": "String",
+    "$.output[0].entry.statusHistory[0].date": "String",
+    "$.output[0].entry.statusHistory[0].fromStatus": "String",
+    "$.output[0].entry.statusHistory[0].toStatus": "String",
+    "$.output[0].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[0].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[0].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[0].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[0].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[0].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[0].entry.modifications[0].@id": "String",
+    "$.output[0].entry.modifications[0].@type": "String",
+    "$.output[0].entry.modifications[0].targetType": "String",
+    "$.output[0].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[0].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[0].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[0].entry.modifications[0].action": "String",
+    "$.output[0].entry.modifications[0].effectiveDate": "Date",
+    "$.output[0].entry.modifications[0].untilDate": "Date",
+    "$.output[0].entry.modifications[0].announcement.@type": "String",
+    "$.output[0].entry.modifications[0].announcement.@id": "String",
+    "$.output[0].entry.modifications[0].announcement.title": "String",
+    "$.output[0].entry.modifications[0].announcement.url": "String",
+    "$.output[0].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[0].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[0].entry.modifications[0].announcement.documentType": "String",
+    "$.output[0].entry.modifications[0].announcement.documentId": "String",
+    "$.output[0].entry.modifications[0].announcement.signatory": "String",
+    "$.output[0].entry.modifications[0].announcement.publisher": "String",
+    "$.output[0].entry.modifications[0].announcement.authority": "String",
+    "$.output[0].entry.modifications[0].announcement.content": "String",
+    "$.output[0].entry.modifications[0].announcement.language": "String",
+    "$.output[0].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[0].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[0].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[0].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[0].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[0].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[0].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[0].entry.modifications[0].notes": "String",
+    "$.output[0].entry.referenceNumber": "String",
+    "$.output[0].entry.groupId": "String",
+    "$.output[0].entry.legalCitations[0].@type": "String",
+    "$.output[0].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[0].entry.legalCitations[0].citationType": "String",
+    "$.output[0].entry.legalCitations[1].@type": "String",
+    "$.output[0].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[0].entry.legalCitations[1].citationType": "String",
+    "$.output[0].entry.legalCitations[2].@type": "String",
+    "$.output[0].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[0].entry.legalCitations[2].citationType": "String",
+    "$.output[0].entry.legalCitations[3].@type": "String",
+    "$.output[0].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[0].entry.legalCitations[3].articles[0]": "String",
+    "$.output[0].entry.legalCitations[3].articles[1]": "String",
+    "$.output[0].entry.legalCitations[3].articles[2]": "String",
+    "$.output[0].entry.legalCitations[3].citationType": "String",
+    "$.output[0].entry.announcement.@type": "String",
+    "$.output[0].entry.announcement.title": "String",
+    "$.output[0].entry.announcement.url": "String",
+    "$.output[0].entry.announcement.publishDate": "Date",
+    "$.output[0].entry.announcement.publishTime": "String",
+    "$.output[0].entry.announcement.documentType": "String",
+    "$.output[0].entry.announcement.documentId": "String",
+    "$.output[0].entry.announcement.signatory": "String",
+    "$.output[0].entry.announcement.publisher": "String",
+    "$.output[0].entry.announcement.authority": "String",
+    "$.output[0].entry.announcement.content": "String",
+    "$.output[0].entry.announcement.language": "String",
+    "$.output[0].entry.rawSourceData.@type": "String",
+    "$.output[0].entry.rawSourceData.sourceFormat": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[0].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[1].entity.@id": "String",
+    "$.output[1].entity.@type": "String",
+    "$.output[1].entity.entityType": "String",
+    "$.output[1].entity.names[0].@type": "String",
+    "$.output[1].entity.names[0].fullName": "String",
+    "$.output[1].entity.names[0].script": "String",
+    "$.output[1].entity.names[0].isPrimary": "TrueClass",
+    "$.output[1].entity.names[1].@type": "String",
+    "$.output[1].entity.names[1].fullName": "String",
+    "$.output[1].entity.names[1].script": "String",
+    "$.output[1].entity.names[1].isPrimary": "FalseClass",
+    "$.output[1].entity.hasSanctionEntry[0]": "String",
+    "$.output[1].entity.remarks": "String",
+    "$.output[1].entry.@id": "String",
+    "$.output[1].entry.@type": "String",
+    "$.output[1].entry.entityId": "String",
+    "$.output[1].entry.authority.@type": "String",
+    "$.output[1].entry.authority.id": "String",
+    "$.output[1].entry.authority.name": "String",
+    "$.output[1].entry.authority.countryCode": "String",
+    "$.output[1].entry.regime.@type": "String",
+    "$.output[1].entry.regime.name": "String",
+    "$.output[1].entry.regime.code": "String",
+    "$.output[1].entry.effects[0].@type": "String",
+    "$.output[1].entry.effects[0].effectType": "String",
+    "$.output[1].entry.effects[0].scope": "String",
+    "$.output[1].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.effects[1].@type": "String",
+    "$.output[1].entry.effects[1].effectType": "String",
+    "$.output[1].entry.effects[1].scope": "String",
+    "$.output[1].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.reasons[0].@type": "String",
+    "$.output[1].entry.reasons[0].category": "String",
+    "$.output[1].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[1].entry.period.@type": "String",
+    "$.output[1].entry.period.effectiveDate": "Date",
+    "$.output[1].entry.period.isIndefinite": "TrueClass",
+    "$.output[1].entry.status": "String",
+    "$.output[1].entry.statusHistory[0].@type": "String",
+    "$.output[1].entry.statusHistory[0].date": "String",
+    "$.output[1].entry.statusHistory[0].fromStatus": "String",
+    "$.output[1].entry.statusHistory[0].toStatus": "String",
+    "$.output[1].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[1].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[1].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[1].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[1].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[1].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[1].entry.modifications[0].@id": "String",
+    "$.output[1].entry.modifications[0].@type": "String",
+    "$.output[1].entry.modifications[0].targetType": "String",
+    "$.output[1].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[1].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[1].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[1].entry.modifications[0].action": "String",
+    "$.output[1].entry.modifications[0].effectiveDate": "Date",
+    "$.output[1].entry.modifications[0].untilDate": "Date",
+    "$.output[1].entry.modifications[0].announcement.@type": "String",
+    "$.output[1].entry.modifications[0].announcement.@id": "String",
+    "$.output[1].entry.modifications[0].announcement.title": "String",
+    "$.output[1].entry.modifications[0].announcement.url": "String",
+    "$.output[1].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[1].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[1].entry.modifications[0].announcement.documentType": "String",
+    "$.output[1].entry.modifications[0].announcement.documentId": "String",
+    "$.output[1].entry.modifications[0].announcement.signatory": "String",
+    "$.output[1].entry.modifications[0].announcement.publisher": "String",
+    "$.output[1].entry.modifications[0].announcement.authority": "String",
+    "$.output[1].entry.modifications[0].announcement.content": "String",
+    "$.output[1].entry.modifications[0].announcement.language": "String",
+    "$.output[1].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[1].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[1].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[1].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[1].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[1].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[1].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[1].entry.modifications[0].notes": "String",
+    "$.output[1].entry.referenceNumber": "String",
+    "$.output[1].entry.groupId": "String",
+    "$.output[1].entry.legalCitations[0].@type": "String",
+    "$.output[1].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[1].entry.legalCitations[0].citationType": "String",
+    "$.output[1].entry.legalCitations[1].@type": "String",
+    "$.output[1].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[1].entry.legalCitations[1].citationType": "String",
+    "$.output[1].entry.legalCitations[2].@type": "String",
+    "$.output[1].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[1].entry.legalCitations[2].citationType": "String",
+    "$.output[1].entry.legalCitations[3].@type": "String",
+    "$.output[1].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[1].entry.legalCitations[3].articles[0]": "String",
+    "$.output[1].entry.legalCitations[3].articles[1]": "String",
+    "$.output[1].entry.legalCitations[3].articles[2]": "String",
+    "$.output[1].entry.legalCitations[3].citationType": "String",
+    "$.output[1].entry.announcement.@type": "String",
+    "$.output[1].entry.announcement.title": "String",
+    "$.output[1].entry.announcement.url": "String",
+    "$.output[1].entry.announcement.publishDate": "Date",
+    "$.output[1].entry.announcement.publishTime": "String",
+    "$.output[1].entry.announcement.documentType": "String",
+    "$.output[1].entry.announcement.documentId": "String",
+    "$.output[1].entry.announcement.signatory": "String",
+    "$.output[1].entry.announcement.publisher": "String",
+    "$.output[1].entry.announcement.authority": "String",
+    "$.output[1].entry.announcement.content": "String",
+    "$.output[1].entry.announcement.language": "String",
+    "$.output[1].entry.rawSourceData.@type": "String",
+    "$.output[1].entry.rawSourceData.sourceFormat": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[1].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[2].entity.@id": "String",
+    "$.output[2].entity.@type": "String",
+    "$.output[2].entity.entityType": "String",
+    "$.output[2].entity.names[0].@type": "String",
+    "$.output[2].entity.names[0].fullName": "String",
+    "$.output[2].entity.names[0].script": "String",
+    "$.output[2].entity.names[0].isPrimary": "TrueClass",
+    "$.output[2].entity.names[1].@type": "String",
+    "$.output[2].entity.names[1].fullName": "String",
+    "$.output[2].entity.names[1].script": "String",
+    "$.output[2].entity.names[1].isPrimary": "FalseClass",
+    "$.output[2].entity.hasSanctionEntry[0]": "String",
+    "$.output[2].entity.remarks": "String",
+    "$.output[2].entry.@id": "String",
+    "$.output[2].entry.@type": "String",
+    "$.output[2].entry.entityId": "String",
+    "$.output[2].entry.authority.@type": "String",
+    "$.output[2].entry.authority.id": "String",
+    "$.output[2].entry.authority.name": "String",
+    "$.output[2].entry.authority.countryCode": "String",
+    "$.output[2].entry.regime.@type": "String",
+    "$.output[2].entry.regime.name": "String",
+    "$.output[2].entry.regime.code": "String",
+    "$.output[2].entry.effects[0].@type": "String",
+    "$.output[2].entry.effects[0].effectType": "String",
+    "$.output[2].entry.effects[0].scope": "String",
+    "$.output[2].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[2].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[2].entry.effects[1].@type": "String",
+    "$.output[2].entry.effects[1].effectType": "String",
+    "$.output[2].entry.effects[1].scope": "String",
+    "$.output[2].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[2].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[2].entry.reasons[0].@type": "String",
+    "$.output[2].entry.reasons[0].category": "String",
+    "$.output[2].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[2].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[2].entry.period.@type": "String",
+    "$.output[2].entry.period.effectiveDate": "Date",
+    "$.output[2].entry.period.isIndefinite": "TrueClass",
+    "$.output[2].entry.status": "String",
+    "$.output[2].entry.statusHistory[0].@type": "String",
+    "$.output[2].entry.statusHistory[0].date": "String",
+    "$.output[2].entry.statusHistory[0].fromStatus": "String",
+    "$.output[2].entry.statusHistory[0].toStatus": "String",
+    "$.output[2].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[2].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[2].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[2].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[2].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[2].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[2].entry.modifications[0].@id": "String",
+    "$.output[2].entry.modifications[0].@type": "String",
+    "$.output[2].entry.modifications[0].targetType": "String",
+    "$.output[2].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[2].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[2].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[2].entry.modifications[0].action": "String",
+    "$.output[2].entry.modifications[0].effectiveDate": "Date",
+    "$.output[2].entry.modifications[0].untilDate": "Date",
+    "$.output[2].entry.modifications[0].announcement.@type": "String",
+    "$.output[2].entry.modifications[0].announcement.@id": "String",
+    "$.output[2].entry.modifications[0].announcement.title": "String",
+    "$.output[2].entry.modifications[0].announcement.url": "String",
+    "$.output[2].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[2].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[2].entry.modifications[0].announcement.documentType": "String",
+    "$.output[2].entry.modifications[0].announcement.documentId": "String",
+    "$.output[2].entry.modifications[0].announcement.signatory": "String",
+    "$.output[2].entry.modifications[0].announcement.publisher": "String",
+    "$.output[2].entry.modifications[0].announcement.authority": "String",
+    "$.output[2].entry.modifications[0].announcement.content": "String",
+    "$.output[2].entry.modifications[0].announcement.language": "String",
+    "$.output[2].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[2].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[2].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[2].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[2].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[2].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[2].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[2].entry.modifications[0].notes": "String",
+    "$.output[2].entry.referenceNumber": "String",
+    "$.output[2].entry.groupId": "String",
+    "$.output[2].entry.legalCitations[0].@type": "String",
+    "$.output[2].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[2].entry.legalCitations[0].citationType": "String",
+    "$.output[2].entry.legalCitations[1].@type": "String",
+    "$.output[2].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[2].entry.legalCitations[1].citationType": "String",
+    "$.output[2].entry.legalCitations[2].@type": "String",
+    "$.output[2].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[2].entry.legalCitations[2].citationType": "String",
+    "$.output[2].entry.legalCitations[3].@type": "String",
+    "$.output[2].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[2].entry.legalCitations[3].articles[0]": "String",
+    "$.output[2].entry.legalCitations[3].articles[1]": "String",
+    "$.output[2].entry.legalCitations[3].articles[2]": "String",
+    "$.output[2].entry.legalCitations[3].citationType": "String",
+    "$.output[2].entry.announcement.@type": "String",
+    "$.output[2].entry.announcement.title": "String",
+    "$.output[2].entry.announcement.url": "String",
+    "$.output[2].entry.announcement.publishDate": "Date",
+    "$.output[2].entry.announcement.publishTime": "String",
+    "$.output[2].entry.announcement.documentType": "String",
+    "$.output[2].entry.announcement.documentId": "String",
+    "$.output[2].entry.announcement.signatory": "String",
+    "$.output[2].entry.announcement.publisher": "String",
+    "$.output[2].entry.announcement.authority": "String",
+    "$.output[2].entry.announcement.content": "String",
+    "$.output[2].entry.announcement.language": "String",
+    "$.output[2].entry.rawSourceData.@type": "String",
+    "$.output[2].entry.rawSourceData.sourceFormat": "String",
+    "$.output[2].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[2].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[2].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[2].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[3].entity.@id": "String",
+    "$.output[3].entity.@type": "String",
+    "$.output[3].entity.entityType": "String",
+    "$.output[3].entity.names[0].@type": "String",
+    "$.output[3].entity.names[0].fullName": "String",
+    "$.output[3].entity.names[0].script": "String",
+    "$.output[3].entity.names[0].isPrimary": "TrueClass",
+    "$.output[3].entity.names[1].@type": "String",
+    "$.output[3].entity.names[1].fullName": "String",
+    "$.output[3].entity.names[1].script": "String",
+    "$.output[3].entity.names[1].isPrimary": "FalseClass",
+    "$.output[3].entity.hasSanctionEntry[0]": "String",
+    "$.output[3].entity.remarks": "String",
+    "$.output[3].entry.@id": "String",
+    "$.output[3].entry.@type": "String",
+    "$.output[3].entry.entityId": "String",
+    "$.output[3].entry.authority.@type": "String",
+    "$.output[3].entry.authority.id": "String",
+    "$.output[3].entry.authority.name": "String",
+    "$.output[3].entry.authority.countryCode": "String",
+    "$.output[3].entry.regime.@type": "String",
+    "$.output[3].entry.regime.name": "String",
+    "$.output[3].entry.regime.code": "String",
+    "$.output[3].entry.effects[0].@type": "String",
+    "$.output[3].entry.effects[0].effectType": "String",
+    "$.output[3].entry.effects[0].scope": "String",
+    "$.output[3].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[3].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[3].entry.effects[1].@type": "String",
+    "$.output[3].entry.effects[1].effectType": "String",
+    "$.output[3].entry.effects[1].scope": "String",
+    "$.output[3].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[3].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[3].entry.reasons[0].@type": "String",
+    "$.output[3].entry.reasons[0].category": "String",
+    "$.output[3].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[3].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[3].entry.period.@type": "String",
+    "$.output[3].entry.period.effectiveDate": "Date",
+    "$.output[3].entry.period.isIndefinite": "TrueClass",
+    "$.output[3].entry.status": "String",
+    "$.output[3].entry.statusHistory[0].@type": "String",
+    "$.output[3].entry.statusHistory[0].date": "String",
+    "$.output[3].entry.statusHistory[0].fromStatus": "String",
+    "$.output[3].entry.statusHistory[0].toStatus": "String",
+    "$.output[3].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[3].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[3].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[3].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[3].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[3].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[3].entry.modifications[0].@id": "String",
+    "$.output[3].entry.modifications[0].@type": "String",
+    "$.output[3].entry.modifications[0].targetType": "String",
+    "$.output[3].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[3].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[3].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[3].entry.modifications[0].action": "String",
+    "$.output[3].entry.modifications[0].effectiveDate": "Date",
+    "$.output[3].entry.modifications[0].untilDate": "Date",
+    "$.output[3].entry.modifications[0].announcement.@type": "String",
+    "$.output[3].entry.modifications[0].announcement.@id": "String",
+    "$.output[3].entry.modifications[0].announcement.title": "String",
+    "$.output[3].entry.modifications[0].announcement.url": "String",
+    "$.output[3].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[3].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[3].entry.modifications[0].announcement.documentType": "String",
+    "$.output[3].entry.modifications[0].announcement.documentId": "String",
+    "$.output[3].entry.modifications[0].announcement.signatory": "String",
+    "$.output[3].entry.modifications[0].announcement.publisher": "String",
+    "$.output[3].entry.modifications[0].announcement.authority": "String",
+    "$.output[3].entry.modifications[0].announcement.content": "String",
+    "$.output[3].entry.modifications[0].announcement.language": "String",
+    "$.output[3].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[3].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[3].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[3].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[3].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[3].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[3].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[3].entry.modifications[0].notes": "String",
+    "$.output[3].entry.referenceNumber": "String",
+    "$.output[3].entry.groupId": "String",
+    "$.output[3].entry.legalCitations[0].@type": "String",
+    "$.output[3].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[3].entry.legalCitations[0].citationType": "String",
+    "$.output[3].entry.legalCitations[1].@type": "String",
+    "$.output[3].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[3].entry.legalCitations[1].citationType": "String",
+    "$.output[3].entry.legalCitations[2].@type": "String",
+    "$.output[3].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[3].entry.legalCitations[2].citationType": "String",
+    "$.output[3].entry.legalCitations[3].@type": "String",
+    "$.output[3].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[3].entry.legalCitations[3].articles[0]": "String",
+    "$.output[3].entry.legalCitations[3].articles[1]": "String",
+    "$.output[3].entry.legalCitations[3].articles[2]": "String",
+    "$.output[3].entry.legalCitations[3].citationType": "String",
+    "$.output[3].entry.announcement.@type": "String",
+    "$.output[3].entry.announcement.title": "String",
+    "$.output[3].entry.announcement.url": "String",
+    "$.output[3].entry.announcement.publishDate": "Date",
+    "$.output[3].entry.announcement.publishTime": "String",
+    "$.output[3].entry.announcement.documentType": "String",
+    "$.output[3].entry.announcement.documentId": "String",
+    "$.output[3].entry.announcement.signatory": "String",
+    "$.output[3].entry.announcement.publisher": "String",
+    "$.output[3].entry.announcement.authority": "String",
+    "$.output[3].entry.announcement.content": "String",
+    "$.output[3].entry.announcement.language": "String",
+    "$.output[3].entry.rawSourceData.@type": "String",
+    "$.output[3].entry.rawSourceData.sourceFormat": "String",
+    "$.output[3].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[3].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[3].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[3].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[4].entity.@id": "String",
+    "$.output[4].entity.@type": "String",
+    "$.output[4].entity.entityType": "String",
+    "$.output[4].entity.names[0].@type": "String",
+    "$.output[4].entity.names[0].fullName": "String",
+    "$.output[4].entity.names[0].script": "String",
+    "$.output[4].entity.names[0].isPrimary": "TrueClass",
+    "$.output[4].entity.names[1].@type": "String",
+    "$.output[4].entity.names[1].fullName": "String",
+    "$.output[4].entity.names[1].script": "String",
+    "$.output[4].entity.names[1].isPrimary": "FalseClass",
+    "$.output[4].entity.hasSanctionEntry[0]": "String",
+    "$.output[4].entity.remarks": "String",
+    "$.output[4].entry.@id": "String",
+    "$.output[4].entry.@type": "String",
+    "$.output[4].entry.entityId": "String",
+    "$.output[4].entry.authority.@type": "String",
+    "$.output[4].entry.authority.id": "String",
+    "$.output[4].entry.authority.name": "String",
+    "$.output[4].entry.authority.countryCode": "String",
+    "$.output[4].entry.regime.@type": "String",
+    "$.output[4].entry.regime.name": "String",
+    "$.output[4].entry.regime.code": "String",
+    "$.output[4].entry.effects[0].@type": "String",
+    "$.output[4].entry.effects[0].effectType": "String",
+    "$.output[4].entry.effects[0].scope": "String",
+    "$.output[4].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[4].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[4].entry.effects[1].@type": "String",
+    "$.output[4].entry.effects[1].effectType": "String",
+    "$.output[4].entry.effects[1].scope": "String",
+    "$.output[4].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[4].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[4].entry.reasons[0].@type": "String",
+    "$.output[4].entry.reasons[0].category": "String",
+    "$.output[4].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[4].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[4].entry.period.@type": "String",
+    "$.output[4].entry.period.effectiveDate": "Date",
+    "$.output[4].entry.period.isIndefinite": "TrueClass",
+    "$.output[4].entry.status": "String",
+    "$.output[4].entry.statusHistory[0].@type": "String",
+    "$.output[4].entry.statusHistory[0].date": "String",
+    "$.output[4].entry.statusHistory[0].fromStatus": "String",
+    "$.output[4].entry.statusHistory[0].toStatus": "String",
+    "$.output[4].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[4].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[4].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[4].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[4].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[4].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[4].entry.modifications[0].@id": "String",
+    "$.output[4].entry.modifications[0].@type": "String",
+    "$.output[4].entry.modifications[0].targetType": "String",
+    "$.output[4].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[4].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[4].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[4].entry.modifications[0].action": "String",
+    "$.output[4].entry.modifications[0].effectiveDate": "Date",
+    "$.output[4].entry.modifications[0].untilDate": "Date",
+    "$.output[4].entry.modifications[0].announcement.@type": "String",
+    "$.output[4].entry.modifications[0].announcement.@id": "String",
+    "$.output[4].entry.modifications[0].announcement.title": "String",
+    "$.output[4].entry.modifications[0].announcement.url": "String",
+    "$.output[4].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[4].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[4].entry.modifications[0].announcement.documentType": "String",
+    "$.output[4].entry.modifications[0].announcement.documentId": "String",
+    "$.output[4].entry.modifications[0].announcement.signatory": "String",
+    "$.output[4].entry.modifications[0].announcement.publisher": "String",
+    "$.output[4].entry.modifications[0].announcement.authority": "String",
+    "$.output[4].entry.modifications[0].announcement.content": "String",
+    "$.output[4].entry.modifications[0].announcement.language": "String",
+    "$.output[4].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[4].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[4].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[4].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[4].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[4].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[4].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[4].entry.modifications[0].notes": "String",
+    "$.output[4].entry.referenceNumber": "String",
+    "$.output[4].entry.groupId": "String",
+    "$.output[4].entry.legalCitations[0].@type": "String",
+    "$.output[4].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[4].entry.legalCitations[0].citationType": "String",
+    "$.output[4].entry.legalCitations[1].@type": "String",
+    "$.output[4].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[4].entry.legalCitations[1].citationType": "String",
+    "$.output[4].entry.legalCitations[2].@type": "String",
+    "$.output[4].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[4].entry.legalCitations[2].citationType": "String",
+    "$.output[4].entry.legalCitations[3].@type": "String",
+    "$.output[4].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[4].entry.legalCitations[3].articles[0]": "String",
+    "$.output[4].entry.legalCitations[3].articles[1]": "String",
+    "$.output[4].entry.legalCitations[3].articles[2]": "String",
+    "$.output[4].entry.legalCitations[3].citationType": "String",
+    "$.output[4].entry.announcement.@type": "String",
+    "$.output[4].entry.announcement.title": "String",
+    "$.output[4].entry.announcement.url": "String",
+    "$.output[4].entry.announcement.publishDate": "Date",
+    "$.output[4].entry.announcement.publishTime": "String",
+    "$.output[4].entry.announcement.documentType": "String",
+    "$.output[4].entry.announcement.documentId": "String",
+    "$.output[4].entry.announcement.signatory": "String",
+    "$.output[4].entry.announcement.publisher": "String",
+    "$.output[4].entry.announcement.authority": "String",
+    "$.output[4].entry.announcement.content": "String",
+    "$.output[4].entry.announcement.language": "String",
+    "$.output[4].entry.rawSourceData.@type": "String",
+    "$.output[4].entry.rawSourceData.sourceFormat": "String",
+    "$.output[4].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[4].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[4].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[4].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[5].entity.@id": "String",
+    "$.output[5].entity.@type": "String",
+    "$.output[5].entity.entityType": "String",
+    "$.output[5].entity.names[0].@type": "String",
+    "$.output[5].entity.names[0].fullName": "String",
+    "$.output[5].entity.names[0].script": "String",
+    "$.output[5].entity.names[0].isPrimary": "TrueClass",
+    "$.output[5].entity.names[1].@type": "String",
+    "$.output[5].entity.names[1].fullName": "String",
+    "$.output[5].entity.names[1].script": "String",
+    "$.output[5].entity.names[1].isPrimary": "FalseClass",
+    "$.output[5].entity.hasSanctionEntry[0]": "String",
+    "$.output[5].entity.remarks": "String",
+    "$.output[5].entry.@id": "String",
+    "$.output[5].entry.@type": "String",
+    "$.output[5].entry.entityId": "String",
+    "$.output[5].entry.authority.@type": "String",
+    "$.output[5].entry.authority.id": "String",
+    "$.output[5].entry.authority.name": "String",
+    "$.output[5].entry.authority.countryCode": "String",
+    "$.output[5].entry.regime.@type": "String",
+    "$.output[5].entry.regime.name": "String",
+    "$.output[5].entry.regime.code": "String",
+    "$.output[5].entry.effects[0].@type": "String",
+    "$.output[5].entry.effects[0].effectType": "String",
+    "$.output[5].entry.effects[0].scope": "String",
+    "$.output[5].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[5].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[5].entry.effects[1].@type": "String",
+    "$.output[5].entry.effects[1].effectType": "String",
+    "$.output[5].entry.effects[1].scope": "String",
+    "$.output[5].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[5].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[5].entry.reasons[0].@type": "String",
+    "$.output[5].entry.reasons[0].category": "String",
+    "$.output[5].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[5].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[5].entry.period.@type": "String",
+    "$.output[5].entry.period.effectiveDate": "Date",
+    "$.output[5].entry.period.isIndefinite": "TrueClass",
+    "$.output[5].entry.status": "String",
+    "$.output[5].entry.statusHistory[0].@type": "String",
+    "$.output[5].entry.statusHistory[0].date": "String",
+    "$.output[5].entry.statusHistory[0].fromStatus": "String",
+    "$.output[5].entry.statusHistory[0].toStatus": "String",
+    "$.output[5].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[5].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[5].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[5].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[5].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[5].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[5].entry.modifications[0].@id": "String",
+    "$.output[5].entry.modifications[0].@type": "String",
+    "$.output[5].entry.modifications[0].targetType": "String",
+    "$.output[5].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[5].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[5].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[5].entry.modifications[0].action": "String",
+    "$.output[5].entry.modifications[0].effectiveDate": "Date",
+    "$.output[5].entry.modifications[0].untilDate": "Date",
+    "$.output[5].entry.modifications[0].announcement.@type": "String",
+    "$.output[5].entry.modifications[0].announcement.@id": "String",
+    "$.output[5].entry.modifications[0].announcement.title": "String",
+    "$.output[5].entry.modifications[0].announcement.url": "String",
+    "$.output[5].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[5].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[5].entry.modifications[0].announcement.documentType": "String",
+    "$.output[5].entry.modifications[0].announcement.documentId": "String",
+    "$.output[5].entry.modifications[0].announcement.signatory": "String",
+    "$.output[5].entry.modifications[0].announcement.publisher": "String",
+    "$.output[5].entry.modifications[0].announcement.authority": "String",
+    "$.output[5].entry.modifications[0].announcement.content": "String",
+    "$.output[5].entry.modifications[0].announcement.language": "String",
+    "$.output[5].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[5].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[5].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[5].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[5].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[5].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[5].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[5].entry.modifications[0].notes": "String",
+    "$.output[5].entry.referenceNumber": "String",
+    "$.output[5].entry.groupId": "String",
+    "$.output[5].entry.legalCitations[0].@type": "String",
+    "$.output[5].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[5].entry.legalCitations[0].citationType": "String",
+    "$.output[5].entry.legalCitations[1].@type": "String",
+    "$.output[5].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[5].entry.legalCitations[1].citationType": "String",
+    "$.output[5].entry.legalCitations[2].@type": "String",
+    "$.output[5].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[5].entry.legalCitations[2].citationType": "String",
+    "$.output[5].entry.legalCitations[3].@type": "String",
+    "$.output[5].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[5].entry.legalCitations[3].articles[0]": "String",
+    "$.output[5].entry.legalCitations[3].articles[1]": "String",
+    "$.output[5].entry.legalCitations[3].articles[2]": "String",
+    "$.output[5].entry.legalCitations[3].citationType": "String",
+    "$.output[5].entry.announcement.@type": "String",
+    "$.output[5].entry.announcement.title": "String",
+    "$.output[5].entry.announcement.url": "String",
+    "$.output[5].entry.announcement.publishDate": "Date",
+    "$.output[5].entry.announcement.publishTime": "String",
+    "$.output[5].entry.announcement.documentType": "String",
+    "$.output[5].entry.announcement.documentId": "String",
+    "$.output[5].entry.announcement.signatory": "String",
+    "$.output[5].entry.announcement.publisher": "String",
+    "$.output[5].entry.announcement.authority": "String",
+    "$.output[5].entry.announcement.content": "String",
+    "$.output[5].entry.announcement.language": "String",
+    "$.output[5].entry.rawSourceData.@type": "String",
+    "$.output[5].entry.rawSourceData.sourceFormat": "String",
+    "$.output[5].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[5].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[5].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[5].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[6].entity.@id": "String",
+    "$.output[6].entity.@type": "String",
+    "$.output[6].entity.entityType": "String",
+    "$.output[6].entity.names[0].@type": "String",
+    "$.output[6].entity.names[0].fullName": "String",
+    "$.output[6].entity.names[0].script": "String",
+    "$.output[6].entity.names[0].isPrimary": "TrueClass",
+    "$.output[6].entity.names[1].@type": "String",
+    "$.output[6].entity.names[1].fullName": "String",
+    "$.output[6].entity.names[1].script": "String",
+    "$.output[6].entity.names[1].isPrimary": "FalseClass",
+    "$.output[6].entity.hasSanctionEntry[0]": "String",
+    "$.output[6].entity.remarks": "String",
+    "$.output[6].entry.@id": "String",
+    "$.output[6].entry.@type": "String",
+    "$.output[6].entry.entityId": "String",
+    "$.output[6].entry.authority.@type": "String",
+    "$.output[6].entry.authority.id": "String",
+    "$.output[6].entry.authority.name": "String",
+    "$.output[6].entry.authority.countryCode": "String",
+    "$.output[6].entry.regime.@type": "String",
+    "$.output[6].entry.regime.name": "String",
+    "$.output[6].entry.regime.code": "String",
+    "$.output[6].entry.effects[0].@type": "String",
+    "$.output[6].entry.effects[0].effectType": "String",
+    "$.output[6].entry.effects[0].scope": "String",
+    "$.output[6].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[6].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[6].entry.effects[1].@type": "String",
+    "$.output[6].entry.effects[1].effectType": "String",
+    "$.output[6].entry.effects[1].scope": "String",
+    "$.output[6].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[6].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[6].entry.reasons[0].@type": "String",
+    "$.output[6].entry.reasons[0].category": "String",
+    "$.output[6].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[6].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[6].entry.period.@type": "String",
+    "$.output[6].entry.period.effectiveDate": "Date",
+    "$.output[6].entry.period.isIndefinite": "TrueClass",
+    "$.output[6].entry.status": "String",
+    "$.output[6].entry.statusHistory[0].@type": "String",
+    "$.output[6].entry.statusHistory[0].date": "String",
+    "$.output[6].entry.statusHistory[0].fromStatus": "String",
+    "$.output[6].entry.statusHistory[0].toStatus": "String",
+    "$.output[6].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[6].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[6].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[6].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[6].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[6].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[6].entry.modifications[0].@id": "String",
+    "$.output[6].entry.modifications[0].@type": "String",
+    "$.output[6].entry.modifications[0].targetType": "String",
+    "$.output[6].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[6].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[6].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[6].entry.modifications[0].action": "String",
+    "$.output[6].entry.modifications[0].effectiveDate": "Date",
+    "$.output[6].entry.modifications[0].untilDate": "Date",
+    "$.output[6].entry.modifications[0].announcement.@type": "String",
+    "$.output[6].entry.modifications[0].announcement.@id": "String",
+    "$.output[6].entry.modifications[0].announcement.title": "String",
+    "$.output[6].entry.modifications[0].announcement.url": "String",
+    "$.output[6].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[6].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[6].entry.modifications[0].announcement.documentType": "String",
+    "$.output[6].entry.modifications[0].announcement.documentId": "String",
+    "$.output[6].entry.modifications[0].announcement.signatory": "String",
+    "$.output[6].entry.modifications[0].announcement.publisher": "String",
+    "$.output[6].entry.modifications[0].announcement.authority": "String",
+    "$.output[6].entry.modifications[0].announcement.content": "String",
+    "$.output[6].entry.modifications[0].announcement.language": "String",
+    "$.output[6].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[6].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[6].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[6].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[6].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[6].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[6].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[6].entry.modifications[0].notes": "String",
+    "$.output[6].entry.referenceNumber": "String",
+    "$.output[6].entry.groupId": "String",
+    "$.output[6].entry.legalCitations[0].@type": "String",
+    "$.output[6].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[6].entry.legalCitations[0].citationType": "String",
+    "$.output[6].entry.legalCitations[1].@type": "String",
+    "$.output[6].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[6].entry.legalCitations[1].citationType": "String",
+    "$.output[6].entry.legalCitations[2].@type": "String",
+    "$.output[6].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[6].entry.legalCitations[2].citationType": "String",
+    "$.output[6].entry.legalCitations[3].@type": "String",
+    "$.output[6].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[6].entry.legalCitations[3].articles[0]": "String",
+    "$.output[6].entry.legalCitations[3].articles[1]": "String",
+    "$.output[6].entry.legalCitations[3].articles[2]": "String",
+    "$.output[6].entry.legalCitations[3].citationType": "String",
+    "$.output[6].entry.announcement.@type": "String",
+    "$.output[6].entry.announcement.title": "String",
+    "$.output[6].entry.announcement.url": "String",
+    "$.output[6].entry.announcement.publishDate": "Date",
+    "$.output[6].entry.announcement.publishTime": "String",
+    "$.output[6].entry.announcement.documentType": "String",
+    "$.output[6].entry.announcement.documentId": "String",
+    "$.output[6].entry.announcement.signatory": "String",
+    "$.output[6].entry.announcement.publisher": "String",
+    "$.output[6].entry.announcement.authority": "String",
+    "$.output[6].entry.announcement.content": "String",
+    "$.output[6].entry.announcement.language": "String",
+    "$.output[6].entry.rawSourceData.@type": "String",
+    "$.output[6].entry.rawSourceData.sourceFormat": "String",
+    "$.output[6].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[6].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[6].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[6].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[7].entity.@id": "String",
+    "$.output[7].entity.@type": "String",
+    "$.output[7].entity.entityType": "String",
+    "$.output[7].entity.names[0].@type": "String",
+    "$.output[7].entity.names[0].fullName": "String",
+    "$.output[7].entity.names[0].script": "String",
+    "$.output[7].entity.names[0].isPrimary": "TrueClass",
+    "$.output[7].entity.names[1].@type": "String",
+    "$.output[7].entity.names[1].fullName": "String",
+    "$.output[7].entity.names[1].script": "String",
+    "$.output[7].entity.names[1].isPrimary": "FalseClass",
+    "$.output[7].entity.hasSanctionEntry[0]": "String",
+    "$.output[7].entity.remarks": "String",
+    "$.output[7].entry.@id": "String",
+    "$.output[7].entry.@type": "String",
+    "$.output[7].entry.entityId": "String",
+    "$.output[7].entry.authority.@type": "String",
+    "$.output[7].entry.authority.id": "String",
+    "$.output[7].entry.authority.name": "String",
+    "$.output[7].entry.authority.countryCode": "String",
+    "$.output[7].entry.regime.@type": "String",
+    "$.output[7].entry.regime.name": "String",
+    "$.output[7].entry.regime.code": "String",
+    "$.output[7].entry.effects[0].@type": "String",
+    "$.output[7].entry.effects[0].effectType": "String",
+    "$.output[7].entry.effects[0].scope": "String",
+    "$.output[7].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[7].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[7].entry.effects[1].@type": "String",
+    "$.output[7].entry.effects[1].effectType": "String",
+    "$.output[7].entry.effects[1].scope": "String",
+    "$.output[7].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[7].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[7].entry.reasons[0].@type": "String",
+    "$.output[7].entry.reasons[0].category": "String",
+    "$.output[7].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[7].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[7].entry.period.@type": "String",
+    "$.output[7].entry.period.effectiveDate": "Date",
+    "$.output[7].entry.period.isIndefinite": "TrueClass",
+    "$.output[7].entry.status": "String",
+    "$.output[7].entry.statusHistory[0].@type": "String",
+    "$.output[7].entry.statusHistory[0].date": "String",
+    "$.output[7].entry.statusHistory[0].fromStatus": "String",
+    "$.output[7].entry.statusHistory[0].toStatus": "String",
+    "$.output[7].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[7].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[7].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[7].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[7].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[7].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[7].entry.modifications[0].@id": "String",
+    "$.output[7].entry.modifications[0].@type": "String",
+    "$.output[7].entry.modifications[0].targetType": "String",
+    "$.output[7].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[7].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[7].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[7].entry.modifications[0].action": "String",
+    "$.output[7].entry.modifications[0].effectiveDate": "Date",
+    "$.output[7].entry.modifications[0].untilDate": "Date",
+    "$.output[7].entry.modifications[0].announcement.@type": "String",
+    "$.output[7].entry.modifications[0].announcement.@id": "String",
+    "$.output[7].entry.modifications[0].announcement.title": "String",
+    "$.output[7].entry.modifications[0].announcement.url": "String",
+    "$.output[7].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[7].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[7].entry.modifications[0].announcement.documentType": "String",
+    "$.output[7].entry.modifications[0].announcement.documentId": "String",
+    "$.output[7].entry.modifications[0].announcement.signatory": "String",
+    "$.output[7].entry.modifications[0].announcement.publisher": "String",
+    "$.output[7].entry.modifications[0].announcement.authority": "String",
+    "$.output[7].entry.modifications[0].announcement.content": "String",
+    "$.output[7].entry.modifications[0].announcement.language": "String",
+    "$.output[7].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[7].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[7].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[7].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[7].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[7].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[7].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[7].entry.modifications[0].notes": "String",
+    "$.output[7].entry.referenceNumber": "String",
+    "$.output[7].entry.groupId": "String",
+    "$.output[7].entry.legalCitations[0].@type": "String",
+    "$.output[7].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[7].entry.legalCitations[0].citationType": "String",
+    "$.output[7].entry.legalCitations[1].@type": "String",
+    "$.output[7].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[7].entry.legalCitations[1].citationType": "String",
+    "$.output[7].entry.legalCitations[2].@type": "String",
+    "$.output[7].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[7].entry.legalCitations[2].citationType": "String",
+    "$.output[7].entry.legalCitations[3].@type": "String",
+    "$.output[7].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[7].entry.legalCitations[3].articles[0]": "String",
+    "$.output[7].entry.legalCitations[3].articles[1]": "String",
+    "$.output[7].entry.legalCitations[3].articles[2]": "String",
+    "$.output[7].entry.legalCitations[3].citationType": "String",
+    "$.output[7].entry.announcement.@type": "String",
+    "$.output[7].entry.announcement.title": "String",
+    "$.output[7].entry.announcement.url": "String",
+    "$.output[7].entry.announcement.publishDate": "Date",
+    "$.output[7].entry.announcement.publishTime": "String",
+    "$.output[7].entry.announcement.documentType": "String",
+    "$.output[7].entry.announcement.documentId": "String",
+    "$.output[7].entry.announcement.signatory": "String",
+    "$.output[7].entry.announcement.publisher": "String",
+    "$.output[7].entry.announcement.authority": "String",
+    "$.output[7].entry.announcement.content": "String",
+    "$.output[7].entry.announcement.language": "String",
+    "$.output[7].entry.rawSourceData.@type": "String",
+    "$.output[7].entry.rawSourceData.sourceFormat": "String",
+    "$.output[7].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[7].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[7].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[7].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[8].entity.@id": "String",
+    "$.output[8].entity.@type": "String",
+    "$.output[8].entity.entityType": "String",
+    "$.output[8].entity.names[0].@type": "String",
+    "$.output[8].entity.names[0].fullName": "String",
+    "$.output[8].entity.names[0].script": "String",
+    "$.output[8].entity.names[0].isPrimary": "TrueClass",
+    "$.output[8].entity.names[1].@type": "String",
+    "$.output[8].entity.names[1].fullName": "String",
+    "$.output[8].entity.names[1].script": "String",
+    "$.output[8].entity.names[1].isPrimary": "FalseClass",
+    "$.output[8].entity.hasSanctionEntry[0]": "String",
+    "$.output[8].entity.remarks": "String",
+    "$.output[8].entry.@id": "String",
+    "$.output[8].entry.@type": "String",
+    "$.output[8].entry.entityId": "String",
+    "$.output[8].entry.authority.@type": "String",
+    "$.output[8].entry.authority.id": "String",
+    "$.output[8].entry.authority.name": "String",
+    "$.output[8].entry.authority.countryCode": "String",
+    "$.output[8].entry.regime.@type": "String",
+    "$.output[8].entry.regime.name": "String",
+    "$.output[8].entry.regime.code": "String",
+    "$.output[8].entry.effects[0].@type": "String",
+    "$.output[8].entry.effects[0].effectType": "String",
+    "$.output[8].entry.effects[0].scope": "String",
+    "$.output[8].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[8].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[8].entry.effects[1].@type": "String",
+    "$.output[8].entry.effects[1].effectType": "String",
+    "$.output[8].entry.effects[1].scope": "String",
+    "$.output[8].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[8].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[8].entry.reasons[0].@type": "String",
+    "$.output[8].entry.reasons[0].category": "String",
+    "$.output[8].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[8].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[8].entry.period.@type": "String",
+    "$.output[8].entry.period.effectiveDate": "Date",
+    "$.output[8].entry.period.isIndefinite": "TrueClass",
+    "$.output[8].entry.status": "String",
+    "$.output[8].entry.statusHistory[0].@type": "String",
+    "$.output[8].entry.statusHistory[0].date": "String",
+    "$.output[8].entry.statusHistory[0].fromStatus": "String",
+    "$.output[8].entry.statusHistory[0].toStatus": "String",
+    "$.output[8].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[8].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[8].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[8].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[8].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[8].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[8].entry.modifications[0].@id": "String",
+    "$.output[8].entry.modifications[0].@type": "String",
+    "$.output[8].entry.modifications[0].targetType": "String",
+    "$.output[8].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[8].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[8].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[8].entry.modifications[0].action": "String",
+    "$.output[8].entry.modifications[0].effectiveDate": "Date",
+    "$.output[8].entry.modifications[0].untilDate": "Date",
+    "$.output[8].entry.modifications[0].announcement.@type": "String",
+    "$.output[8].entry.modifications[0].announcement.@id": "String",
+    "$.output[8].entry.modifications[0].announcement.title": "String",
+    "$.output[8].entry.modifications[0].announcement.url": "String",
+    "$.output[8].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[8].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[8].entry.modifications[0].announcement.documentType": "String",
+    "$.output[8].entry.modifications[0].announcement.documentId": "String",
+    "$.output[8].entry.modifications[0].announcement.signatory": "String",
+    "$.output[8].entry.modifications[0].announcement.publisher": "String",
+    "$.output[8].entry.modifications[0].announcement.authority": "String",
+    "$.output[8].entry.modifications[0].announcement.content": "String",
+    "$.output[8].entry.modifications[0].announcement.language": "String",
+    "$.output[8].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[8].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[8].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[8].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[8].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[8].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[8].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[8].entry.modifications[0].notes": "String",
+    "$.output[8].entry.referenceNumber": "String",
+    "$.output[8].entry.groupId": "String",
+    "$.output[8].entry.legalCitations[0].@type": "String",
+    "$.output[8].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[8].entry.legalCitations[0].citationType": "String",
+    "$.output[8].entry.legalCitations[1].@type": "String",
+    "$.output[8].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[8].entry.legalCitations[1].citationType": "String",
+    "$.output[8].entry.legalCitations[2].@type": "String",
+    "$.output[8].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[8].entry.legalCitations[2].citationType": "String",
+    "$.output[8].entry.legalCitations[3].@type": "String",
+    "$.output[8].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[8].entry.legalCitations[3].articles[0]": "String",
+    "$.output[8].entry.legalCitations[3].articles[1]": "String",
+    "$.output[8].entry.legalCitations[3].articles[2]": "String",
+    "$.output[8].entry.legalCitations[3].citationType": "String",
+    "$.output[8].entry.announcement.@type": "String",
+    "$.output[8].entry.announcement.title": "String",
+    "$.output[8].entry.announcement.url": "String",
+    "$.output[8].entry.announcement.publishDate": "Date",
+    "$.output[8].entry.announcement.publishTime": "String",
+    "$.output[8].entry.announcement.documentType": "String",
+    "$.output[8].entry.announcement.documentId": "String",
+    "$.output[8].entry.announcement.signatory": "String",
+    "$.output[8].entry.announcement.publisher": "String",
+    "$.output[8].entry.announcement.authority": "String",
+    "$.output[8].entry.announcement.content": "String",
+    "$.output[8].entry.announcement.language": "String",
+    "$.output[8].entry.rawSourceData.@type": "String",
+    "$.output[8].entry.rawSourceData.sourceFormat": "String",
+    "$.output[8].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[8].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[8].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[8].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[9].entity.@id": "String",
+    "$.output[9].entity.@type": "String",
+    "$.output[9].entity.entityType": "String",
+    "$.output[9].entity.names[0].@type": "String",
+    "$.output[9].entity.names[0].fullName": "String",
+    "$.output[9].entity.names[0].script": "String",
+    "$.output[9].entity.names[0].isPrimary": "TrueClass",
+    "$.output[9].entity.names[1].@type": "String",
+    "$.output[9].entity.names[1].fullName": "String",
+    "$.output[9].entity.names[1].script": "String",
+    "$.output[9].entity.names[1].isPrimary": "FalseClass",
+    "$.output[9].entity.hasSanctionEntry[0]": "String",
+    "$.output[9].entity.remarks": "String",
+    "$.output[9].entry.@id": "String",
+    "$.output[9].entry.@type": "String",
+    "$.output[9].entry.entityId": "String",
+    "$.output[9].entry.authority.@type": "String",
+    "$.output[9].entry.authority.id": "String",
+    "$.output[9].entry.authority.name": "String",
+    "$.output[9].entry.authority.countryCode": "String",
+    "$.output[9].entry.regime.@type": "String",
+    "$.output[9].entry.regime.name": "String",
+    "$.output[9].entry.regime.code": "String",
+    "$.output[9].entry.effects[0].@type": "String",
+    "$.output[9].entry.effects[0].effectType": "String",
+    "$.output[9].entry.effects[0].scope": "String",
+    "$.output[9].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[9].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[9].entry.effects[1].@type": "String",
+    "$.output[9].entry.effects[1].effectType": "String",
+    "$.output[9].entry.effects[1].scope": "String",
+    "$.output[9].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[9].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[9].entry.reasons[0].@type": "String",
+    "$.output[9].entry.reasons[0].category": "String",
+    "$.output[9].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[9].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[9].entry.period.@type": "String",
+    "$.output[9].entry.period.effectiveDate": "Date",
+    "$.output[9].entry.period.isIndefinite": "TrueClass",
+    "$.output[9].entry.status": "String",
+    "$.output[9].entry.statusHistory[0].@type": "String",
+    "$.output[9].entry.statusHistory[0].date": "String",
+    "$.output[9].entry.statusHistory[0].fromStatus": "String",
+    "$.output[9].entry.statusHistory[0].toStatus": "String",
+    "$.output[9].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[9].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[9].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[9].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[9].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[9].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[9].entry.modifications[0].@id": "String",
+    "$.output[9].entry.modifications[0].@type": "String",
+    "$.output[9].entry.modifications[0].targetType": "String",
+    "$.output[9].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[9].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[9].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[9].entry.modifications[0].action": "String",
+    "$.output[9].entry.modifications[0].effectiveDate": "Date",
+    "$.output[9].entry.modifications[0].untilDate": "Date",
+    "$.output[9].entry.modifications[0].announcement.@type": "String",
+    "$.output[9].entry.modifications[0].announcement.@id": "String",
+    "$.output[9].entry.modifications[0].announcement.title": "String",
+    "$.output[9].entry.modifications[0].announcement.url": "String",
+    "$.output[9].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[9].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[9].entry.modifications[0].announcement.documentType": "String",
+    "$.output[9].entry.modifications[0].announcement.documentId": "String",
+    "$.output[9].entry.modifications[0].announcement.signatory": "String",
+    "$.output[9].entry.modifications[0].announcement.publisher": "String",
+    "$.output[9].entry.modifications[0].announcement.authority": "String",
+    "$.output[9].entry.modifications[0].announcement.content": "String",
+    "$.output[9].entry.modifications[0].announcement.language": "String",
+    "$.output[9].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[9].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[9].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[9].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[9].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[9].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[9].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[9].entry.modifications[0].notes": "String",
+    "$.output[9].entry.referenceNumber": "String",
+    "$.output[9].entry.groupId": "String",
+    "$.output[9].entry.legalCitations[0].@type": "String",
+    "$.output[9].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[9].entry.legalCitations[0].citationType": "String",
+    "$.output[9].entry.legalCitations[1].@type": "String",
+    "$.output[9].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[9].entry.legalCitations[1].citationType": "String",
+    "$.output[9].entry.legalCitations[2].@type": "String",
+    "$.output[9].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[9].entry.legalCitations[2].citationType": "String",
+    "$.output[9].entry.legalCitations[3].@type": "String",
+    "$.output[9].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[9].entry.legalCitations[3].articles[0]": "String",
+    "$.output[9].entry.legalCitations[3].articles[1]": "String",
+    "$.output[9].entry.legalCitations[3].articles[2]": "String",
+    "$.output[9].entry.legalCitations[3].citationType": "String",
+    "$.output[9].entry.announcement.@type": "String",
+    "$.output[9].entry.announcement.title": "String",
+    "$.output[9].entry.announcement.url": "String",
+    "$.output[9].entry.announcement.publishDate": "Date",
+    "$.output[9].entry.announcement.publishTime": "String",
+    "$.output[9].entry.announcement.documentType": "String",
+    "$.output[9].entry.announcement.documentId": "String",
+    "$.output[9].entry.announcement.signatory": "String",
+    "$.output[9].entry.announcement.publisher": "String",
+    "$.output[9].entry.announcement.authority": "String",
+    "$.output[9].entry.announcement.content": "String",
+    "$.output[9].entry.announcement.language": "String",
+    "$.output[9].entry.rawSourceData.@type": "String",
+    "$.output[9].entry.rawSourceData.sourceFormat": "String",
+    "$.output[9].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[9].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[9].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[9].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.output[10].entity.@id": "String",
+    "$.output[10].entity.@type": "String",
+    "$.output[10].entity.entityType": "String",
+    "$.output[10].entity.names[0].@type": "String",
+    "$.output[10].entity.names[0].fullName": "String",
+    "$.output[10].entity.names[0].script": "String",
+    "$.output[10].entity.names[0].isPrimary": "TrueClass",
+    "$.output[10].entity.names[1].@type": "String",
+    "$.output[10].entity.names[1].fullName": "String",
+    "$.output[10].entity.names[1].script": "String",
+    "$.output[10].entity.names[1].isPrimary": "FalseClass",
+    "$.output[10].entity.hasSanctionEntry[0]": "String",
+    "$.output[10].entity.remarks": "String",
+    "$.output[10].entry.@id": "String",
+    "$.output[10].entry.@type": "String",
+    "$.output[10].entry.entityId": "String",
+    "$.output[10].entry.authority.@type": "String",
+    "$.output[10].entry.authority.id": "String",
+    "$.output[10].entry.authority.name": "String",
+    "$.output[10].entry.authority.countryCode": "String",
+    "$.output[10].entry.regime.@type": "String",
+    "$.output[10].entry.regime.name": "String",
+    "$.output[10].entry.regime.code": "String",
+    "$.output[10].entry.effects[0].@type": "String",
+    "$.output[10].entry.effects[0].effectType": "String",
+    "$.output[10].entry.effects[0].scope": "String",
+    "$.output[10].entry.effects[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[10].entry.effects[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[10].entry.effects[1].@type": "String",
+    "$.output[10].entry.effects[1].effectType": "String",
+    "$.output[10].entry.effects[1].scope": "String",
+    "$.output[10].entry.effects[1].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[10].entry.effects[1].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[10].entry.reasons[0].@type": "String",
+    "$.output[10].entry.reasons[0].category": "String",
+    "$.output[10].entry.reasons[0].description[0]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[10].entry.reasons[0].description[1]": "Ammitto::Ontology::ValueObjects::LocalizedString",
+    "$.output[10].entry.period.@type": "String",
+    "$.output[10].entry.period.effectiveDate": "Date",
+    "$.output[10].entry.period.isIndefinite": "TrueClass",
+    "$.output[10].entry.status": "String",
+    "$.output[10].entry.statusHistory[0].@type": "String",
+    "$.output[10].entry.statusHistory[0].date": "String",
+    "$.output[10].entry.statusHistory[0].fromStatus": "String",
+    "$.output[10].entry.statusHistory[0].toStatus": "String",
+    "$.output[10].entry.statusHistory[0].noticeReference.@type": "String",
+    "$.output[10].entry.statusHistory[0].noticeReference.noticeNumber": "String",
+    "$.output[10].entry.statusHistory[0].noticeReference.noticeDate": "Date",
+    "$.output[10].entry.statusHistory[0].noticeReference.noticeTitle": "String",
+    "$.output[10].entry.statusHistory[0].noticeReference.noticeUrl": "String",
+    "$.output[10].entry.statusHistory[0].suspensionEndDate": "Date",
+    "$.output[10].entry.modifications[0].@id": "String",
+    "$.output[10].entry.modifications[0].@type": "String",
+    "$.output[10].entry.modifications[0].targetType": "String",
+    "$.output[10].entry.modifications[0].targetAnnouncementId": "String",
+    "$.output[10].entry.modifications[0].targetAnnouncementDocumentId": "String",
+    "$.output[10].entry.modifications[0].targetAnnouncementDate": "Date",
+    "$.output[10].entry.modifications[0].action": "String",
+    "$.output[10].entry.modifications[0].effectiveDate": "Date",
+    "$.output[10].entry.modifications[0].untilDate": "Date",
+    "$.output[10].entry.modifications[0].announcement.@type": "String",
+    "$.output[10].entry.modifications[0].announcement.@id": "String",
+    "$.output[10].entry.modifications[0].announcement.title": "String",
+    "$.output[10].entry.modifications[0].announcement.url": "String",
+    "$.output[10].entry.modifications[0].announcement.publishDate": "Date",
+    "$.output[10].entry.modifications[0].announcement.publishTime": "String",
+    "$.output[10].entry.modifications[0].announcement.documentType": "String",
+    "$.output[10].entry.modifications[0].announcement.documentId": "String",
+    "$.output[10].entry.modifications[0].announcement.signatory": "String",
+    "$.output[10].entry.modifications[0].announcement.publisher": "String",
+    "$.output[10].entry.modifications[0].announcement.authority": "String",
+    "$.output[10].entry.modifications[0].announcement.content": "String",
+    "$.output[10].entry.modifications[0].announcement.language": "String",
+    "$.output[10].entry.modifications[0].affectedEntityCount": "Integer",
+    "$.output[10].entry.modifications[0].legalCitations[0].@type": "String",
+    "$.output[10].entry.modifications[0].legalCitations[0].legalInstrumentId": "String",
+    "$.output[10].entry.modifications[0].legalCitations[0].citationType": "String",
+    "$.output[10].entry.modifications[0].legalCitations[1].@type": "String",
+    "$.output[10].entry.modifications[0].legalCitations[1].legalInstrumentId": "String",
+    "$.output[10].entry.modifications[0].legalCitations[1].citationType": "String",
+    "$.output[10].entry.modifications[0].notes": "String",
+    "$.output[10].entry.referenceNumber": "String",
+    "$.output[10].entry.groupId": "String",
+    "$.output[10].entry.legalCitations[0].@type": "String",
+    "$.output[10].entry.legalCitations[0].legalInstrumentId": "String",
+    "$.output[10].entry.legalCitations[0].citationType": "String",
+    "$.output[10].entry.legalCitations[1].@type": "String",
+    "$.output[10].entry.legalCitations[1].legalInstrumentId": "String",
+    "$.output[10].entry.legalCitations[1].citationType": "String",
+    "$.output[10].entry.legalCitations[2].@type": "String",
+    "$.output[10].entry.legalCitations[2].legalInstrumentId": "String",
+    "$.output[10].entry.legalCitations[2].citationType": "String",
+    "$.output[10].entry.legalCitations[3].@type": "String",
+    "$.output[10].entry.legalCitations[3].legalInstrumentId": "String",
+    "$.output[10].entry.legalCitations[3].articles[0]": "String",
+    "$.output[10].entry.legalCitations[3].articles[1]": "String",
+    "$.output[10].entry.legalCitations[3].articles[2]": "String",
+    "$.output[10].entry.legalCitations[3].citationType": "String",
+    "$.output[10].entry.announcement.@type": "String",
+    "$.output[10].entry.announcement.title": "String",
+    "$.output[10].entry.announcement.url": "String",
+    "$.output[10].entry.announcement.publishDate": "Date",
+    "$.output[10].entry.announcement.publishTime": "String",
+    "$.output[10].entry.announcement.documentType": "String",
+    "$.output[10].entry.announcement.documentId": "String",
+    "$.output[10].entry.announcement.signatory": "String",
+    "$.output[10].entry.announcement.publisher": "String",
+    "$.output[10].entry.announcement.authority": "String",
+    "$.output[10].entry.announcement.content": "String",
+    "$.output[10].entry.announcement.language": "String",
+    "$.output[10].entry.rawSourceData.@type": "String",
+    "$.output[10].entry.rawSourceData.sourceFormat": "String",
+    "$.output[10].entry.rawSourceData.sourceSpecificFields.cn:list_type": "String",
+    "$.output[10].entry.rawSourceData.sourceSpecificFields.cn:sanction_list": "String",
+    "$.output[10].entry.rawSourceData.sourceSpecificFields.cn:chinese_name": "String",
+    "$.output[10].entry.rawSourceData.sourceSpecificFields.cn:english_name": "String",
+    "$.groups[0].source": "String",
+    "$.groups[0].group.id": "String",
+    "$.groups[0].group.announcement_id": "String",
+    "$.groups[0].group.announcement_title": "String",
+    "$.groups[0].group.entry_ids[0]": "String",
+    "$.groups[0].group.entry_ids[1]": "String",
+    "$.groups[0].group.entry_ids[2]": "String",
+    "$.groups[0].group.entry_ids[3]": "String",
+    "$.groups[0].group.entry_ids[4]": "String",
+    "$.groups[0].group.entry_ids[5]": "String",
+    "$.groups[0].group.entry_ids[6]": "String",
+    "$.groups[0].group.entry_ids[7]": "String",
+    "$.groups[0].group.entry_ids[8]": "String",
+    "$.groups[0].group.entry_ids[9]": "String",
+    "$.groups[0].group.entry_ids[10]": "String",
+    "$.groups[0].group.effective_date": "Date",
+    "$.groups[0].group.entity_count": "Integer",
+    "$.groups[0].group.notes": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 22,
+    "Ammitto::NoticeReference": 1,
+    "Ammitto::OfficialAnnouncement": 11,
+    "Ammitto::Ontology::Sanction::SanctionPeriodModification": 1,
+    "Ammitto::Ontology::ValueObjects::LegalCitation": 6,
+    "Ammitto::Ontology::ValueObjects::LocalizedString": 66,
+    "Ammitto::OrganizationEntity": 11,
+    "Ammitto::RawSourceData": 11,
+    "Ammitto::SanctionEffect": 22,
+    "Ammitto::SanctionEntry": 11,
+    "Ammitto::SanctionReason": 11,
+    "Ammitto::SanctionRegime": 11,
+    "Ammitto::StatusChange": 1,
+    "Ammitto::TemporalPeriod": 11
+  }
+}

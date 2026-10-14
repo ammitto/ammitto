@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 
 module Ammitto
   module Ontology
@@ -28,7 +29,7 @@ module Ammitto
       #     transliteration_system: "hepburn"
       #   )
       #
-      class LocalizedString < Lutaml::Model::Serializable
+      class LocalizedStringModel < Lutaml::Model::Serializable
         # The text content
         # @return [String, nil]
         attribute :value, :string
@@ -105,6 +106,11 @@ module Ammitto
           map :is_transliteration, to: :is_transliteration
           map :transliteration_system, to: :transliteration_system
         end
+      end
+      private_constant :LocalizedStringModel
+
+      class LocalizedString < LocalizedStringModel
+        include Immutable
       end
     end
   end

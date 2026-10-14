@@ -241,6 +241,71 @@ RSpec.describe Ammitto::Validation::OutputValidator do
     expect(result.errors.first).to include(path: path)
   end
 
+  it 'does not perform hidden logger device writes while parsing every Turtle statement' do
+    path = File.join(@output_dir, 'all.ttl')
+    File.write(path, '<https://example.org/s> <https://example.org/p> "valid" .')
+    instance = validator
+    writes = 0
+    allow(RDF::Turtle::Reader).to receive(:open).and_wrap_original do |original, *args, **options, &block|
+      expect(options[:validate]).to be true
+      original.call(*args, **options) do |reader|
+        allow(reader).to receive(:each_statement).and_call_original
+        block.call(reader)
+        expect(reader).to have_received(:each_statement).at_least(:once)
+      end
+    end
+    trace = TracePoint.new(:call) do |event|
+      writes += 1 if event.defined_class == Logger::LogDevice && event.method_id == :write
+    end
+    result = trace.enable { instance.validate_files([path]) }
+    expect(result.errors).to eq([])
+    expect(writes).to eq(0)
+  end
+
+  it 'isolates strict Turtle errors across files and repeated calls' do
+    instance = validator
+    bad = File.join(@output_dir, 'all.ttl')
+    good = File.join(@output_dir, 'sources/uk.ttl')
+    FileUtils.mkdir_p(File.dirname(good))
+    File.write(bad, '<https://example.org/s> <https://example.org/p> "unterminated')
+    File.write(good, '<https://example.org/s> <https://example.org/p> "valid" .')
+    result = instance.validate_files([bad, good])
+    expect(result.errors).to contain_exactly(include(path: bad, message: a_string_including('RDF::ReaderError')))
+    expect(instance.validate_files([good]).errors).to eq([])
+    expect(instance.validate_files([bad]).valid?).to be false
+    File.write(bad, File.read(good))
+    expect(instance.validate_files([bad, good]).errors).to eq([])
+  end
+
+  {
+    'invalid escape' => 'ex:s ex:p "bad\P" .',
+    'malformed Unicode escape' => 'ex:s ex:p "\uZZZZ" .',
+    'invalid IRI' => '<https://example.org/a b> ex:p "text" .',
+    'unknown prefix' => 'unknown:s ex:p "text" .',
+    'missing object' => 'ex:s ex:p .',
+    'trailing malformed statement' => 'ex:s ex:p "valid" . ex:s ex:p .',
+    'invalid typed integer' => 'ex:s ex:p "abc"^^xsd:integer .',
+    'invalid typed boolean' => 'ex:s ex:p "maybe"^^xsd:boolean .'
+  }.tap do |malformed|
+    it 'rejects supported strict Turtle malformed inputs without skipping trailing statements' do
+      path = File.join(@output_dir, 'all.ttl')
+      prefix = '@prefix ex: <https://example.org/> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> . '
+      instance = validator
+      malformed.each do |label, text|
+        File.binwrite(path, prefix.b + text.b)
+        result = instance.validate_files([path])
+        expect(result.valid?).to be(false), label
+        expect(result.errors).to contain_exactly(include(path: path, message: a_string_including('RDF::ReaderError')))
+      end
+    end
+  end
+
+  it 'preserves native strict Turtle invalid UTF-8 rejection' do
+    path = File.join(@output_dir, 'all.ttl')
+    File.binwrite(path, "<https://example.org/s> <https://example.org/p> \"\xff\" .".b)
+    expect { validator.validate_files([path]) }.to raise_error(ArgumentError, 'invalid byte sequence in UTF-8')
+  end
+
   it 'accepts source namespaces, partial dates, localized titles, and open birth-year bounds' do
     paths = export_families
     person_path = File.join(@output_dir, 'node/entity/eu/person.jsonld')

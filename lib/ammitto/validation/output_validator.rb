@@ -3,6 +3,7 @@
 require 'json'
 require 'json-schema'
 require 'rdf/turtle'
+require 'logger'
 require 'pathname'
 require 'digest/sha2'
 require_relative 'result'
@@ -99,7 +100,7 @@ module Ammitto
         return [{ path: path, message: 'No output contract registered for artifact' }] unless contract
 
         if contract == 'turtle'
-          RDF::Turtle::Reader.open(path, validate: true, logger: false) do |reader|
+          RDF::Turtle::Reader.open(path, validate: true, logger: ::Logger.new(nil, level: ::Logger::ERROR)) do |reader|
             reader.each_statement.count
           end
           return []

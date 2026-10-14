@@ -7,9 +7,9 @@
       "properties": {
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         }
@@ -24,9 +24,9 @@
       "properties": {
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -80,6 +80,9 @@
       "patternProperties": {
         "^[a-z]{2,3}(-[A-Za-z0-9]+)*$": {
           "type": "string"
+        },
+        "[\\r\\n]": {
+          "not": {}
         }
       },
       "additionalProperties": false
@@ -288,9 +291,9 @@
         },
         "targetId": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -331,9 +334,9 @@
         },
         "url": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -356,17 +359,17 @@
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "legalInstrumentId": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -553,9 +556,9 @@
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -564,9 +567,9 @@
         },
         "url": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -622,9 +625,9 @@
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -633,9 +636,9 @@
         },
         "targetAnnouncementId": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -667,9 +670,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -763,17 +766,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -804,9 +807,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -815,9 +818,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -883,17 +886,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -924,9 +927,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -935,9 +938,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -1006,17 +1009,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1047,9 +1050,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -1058,9 +1061,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -1155,17 +1158,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1196,9 +1199,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -1207,9 +1210,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -1307,17 +1310,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1328,9 +1331,9 @@
         },
         "entityId": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1394,9 +1397,9 @@
         },
         "groupId": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1444,9 +1447,9 @@
         },
         "url": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1491,17 +1494,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1524,9 +1527,9 @@
         },
         "url": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1598,17 +1601,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1625,9 +1628,9 @@
         },
         "url": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         }
@@ -1645,17 +1648,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1687,17 +1690,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1730,17 +1733,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1767,9 +1770,9 @@
         },
         "url": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         }
@@ -1787,9 +1790,9 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1812,9 +1815,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
             "not": {
-              "pattern": "[\\r\\n]",
+              "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
               "type": "string"
             }
           }
@@ -1910,9 +1913,9 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1934,9 +1937,9 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -1964,9 +1967,9 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -2130,6 +2133,9 @@
                 "entries"
               ],
               "additionalProperties": false
+            },
+            "[\\r\\n]": {
+              "not": {}
             }
           },
           "additionalProperties": false
@@ -2748,9 +2754,9 @@
             "properties": {
               "id": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               },
@@ -3084,9 +3090,9 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -3097,9 +3103,9 @@
             "properties": {
               "@id": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               },
@@ -3116,9 +3122,9 @@
               },
               "subClassOf": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               },
@@ -3126,9 +3132,9 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                  "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                   "not": {
-                    "pattern": "[\\r\\n]",
+                    "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                     "type": "string"
                   }
                 }
@@ -3155,9 +3161,9 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -3168,9 +3174,9 @@
             "properties": {
               "@id": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               },
@@ -3187,17 +3193,17 @@
               },
               "domain": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               },
               "range": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               },
@@ -3271,17 +3277,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -3390,17 +3396,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -3491,17 +3497,17 @@
       "properties": {
         "@context": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
         "@id": {
           "type": "string",
-          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
           "not": {
-            "pattern": "[\\r\\n]",
+            "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
             "type": "string"
           }
         },
@@ -3810,9 +3816,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -3830,9 +3836,9 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               }
@@ -3851,9 +3857,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -3895,9 +3901,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -3915,9 +3921,9 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               }
@@ -3936,9 +3942,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -3980,9 +3986,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4000,9 +4006,9 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               }
@@ -4029,9 +4035,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4069,9 +4075,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4114,9 +4120,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4150,9 +4156,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4194,9 +4200,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4230,9 +4236,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4279,9 +4285,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4299,9 +4305,9 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               }
@@ -4320,9 +4326,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4356,9 +4362,9 @@
                   },
                   "groupId": {
                     "type": "string",
-                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                     "not": {
-                      "pattern": "[\\r\\n]",
+                      "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                       "type": "string"
                     }
                   },
@@ -4404,9 +4410,9 @@
                   },
                   "groupId": {
                     "type": "string",
-                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                     "not": {
-                      "pattern": "[\\r\\n]",
+                      "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                       "type": "string"
                     }
                   },
@@ -4452,9 +4458,9 @@
                   },
                   "groupId": {
                     "type": "string",
-                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                     "not": {
-                      "pattern": "[\\r\\n]",
+                      "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                       "type": "string"
                     }
                   },
@@ -4504,9 +4510,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4524,9 +4530,9 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                 "not": {
-                  "pattern": "[\\r\\n]",
+                  "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                   "type": "string"
                 }
               }
@@ -4545,9 +4551,9 @@
           "properties": {
             "@context": {
               "type": "string",
-              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
               "not": {
-                "pattern": "[\\r\\n]",
+                "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                 "type": "string"
               }
             },
@@ -4581,9 +4587,9 @@
                   },
                   "groupId": {
                     "type": "string",
-                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                     "not": {
-                      "pattern": "[\\r\\n]",
+                      "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                       "type": "string"
                     }
                   },
@@ -4619,9 +4625,9 @@
                 "properties": {
                   "@id": {
                     "type": "string",
-                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^<>\"{}|^`\\\\\\u0000-\\u0020\\u007f-\\u009f\\ufdd0-\\ufdef\\ufff0-\\uffff]+$",
                     "not": {
-                      "pattern": "[\\r\\n]",
+                      "pattern": "[\\r\\n]|%(?![0-9A-Fa-f]{2})|\ud83f\udffe|\ud83f\udfff|\ud87f\udffe|\ud87f\udfff|\ud8bf\udffe|\ud8bf\udfff|\ud8ff\udffe|\ud8ff\udfff|\ud93f\udffe|\ud93f\udfff|\ud97f\udffe|\ud97f\udfff|\ud9bf\udffe|\ud9bf\udfff|\ud9ff\udffe|\ud9ff\udfff|\uda3f\udffe|\uda3f\udfff|\uda7f\udffe|\uda7f\udfff|\udabf\udffe|\udabf\udfff|\udaff\udffe|\udaff\udfff|\udb3f\udffe|\udb3f\udfff|\udb7f\udffe|\udb7f\udfff|\udbbf\udffe|\udbbf\udfff|\udbff\udffe|\udbff\udfff",
                       "type": "string"
                     }
                   },

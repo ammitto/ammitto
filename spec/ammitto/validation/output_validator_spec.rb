@@ -89,6 +89,50 @@ RSpec.describe Ammitto::Validation::OutputValidator do
     expect(result.details[:files]).to eq(disk_paths.length)
   end
 
+  it 'rejects newline-bearing language-map keys while preserving valid language tags' do
+    legal = { '@context' => Ammitto::Schema::Context.context_url,
+              '@id' => 'https://www.ammitto.org/legal-instrument/cn/act',
+              '@type' => 'LegalInstrument', 'identifier' => 'act' }
+    instance = validator
+    valid = legal.merge('title' => [{ 'en' => 'Title', 'ja' => '表題', 'zh-Hans' => '标题' }])
+    path = write('node/legal-instrument/cn/act.jsonld', valid)
+    expect(instance.validate_files([path]).valid?).to be true
+    ["en\njunk", "junk\nen", "en\n", "en\r", "en\r\n"].each do |key|
+      File.write(path, JSON.generate(legal.merge('title' => [{ key => 'Title' }])))
+      expect(instance.validate_files([path]).valid?).to be(false), key.inspect
+    end
+  end
+
+  it 'rejects newline-bearing source keys in statistics' do
+    export_families
+    path = File.join(@output_dir, 'stats.json')
+    data = JSON.parse(File.read(path))
+    source = data.fetch('sources').keys.first
+    instance = validator
+    expect(instance.validate_files([path]).valid?).to be true
+    ["eu\nBAD", "BAD\neu", "eu\n", "eu\r", "eu\r\n"].each do |key|
+      changed = JSON.parse(JSON.generate(data))
+      changed['sources'][key] = changed['sources'].delete(source)
+      File.write(path, JSON.generate(changed))
+      expect(instance.validate_files([path]).valid?).to be(false), key.inspect
+    end
+  end
+
+  it 'rejects excluded IRI characters and malformed escapes while preserving valid Unicode' do
+    instance = validator
+    bad = [0x80, 0x85, 0x9f, 0xfdd0, 0xfdef, 0xfff0, 0xfffd, 0xfffe, 0xffff,
+           0x1fffe, 0x1ffff, 0x10fffe, 0x10ffff].map { |point| [point].pack('U') }
+    good = [0xa0, 0x2028, 0x2029, 0xffef, 0x1fffd, 0x1f600].map { |point| [point].pack('U') }
+    (bad + ['%ZZ', '%', '%2']).each do |suffix|
+      path = write('node/entity/eu/person.jsonld', entity.merge('@id' => "https://example.org/#{suffix}"))
+      expect(instance.validate_files([path]).valid?).to be(false), suffix.inspect
+    end
+    (good + ['日本', '%20']).each do |suffix|
+      path = write('node/entity/eu/person.jsonld', entity.merge('@id' => "https://example.org/#{suffix}"))
+      expect(instance.validate_files([path]).valid?).to be(true), suffix.inspect
+    end
+  end
+
   it 'rejects empty objects for every emitted JSON and JSON-LD family' do
     paths = export_families.reject { |path| path.end_with?('.ttl') }
     paths.each { |path| File.write(path, '{}') }

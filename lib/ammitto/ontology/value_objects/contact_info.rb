@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
@@ -19,7 +20,7 @@ module Ammitto
       #     fax: "+1-555-123-4568"
       #   )
       #
-      class ContactInfo < Lutaml::Model::Serializable
+      class ContactInfoModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for ContactInfo
@@ -80,6 +81,11 @@ module Ammitto
           map :website, to: :website
           map :fax, to: :fax
         end
+      end
+      private_constant :ContactInfoModel
+
+      class ContactInfo < ContactInfoModel
+        include Immutable
       end
     end
   end

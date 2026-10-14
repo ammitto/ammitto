@@ -80,4 +80,40 @@ RSpec.describe Ammitto::Ontology::ValueObjects::NameVariant do
       expect(hash[:is_primary]).to be true
     end
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(full_name: 'Before')
+      replacement = original.with(full_name: 'After')
+
+      expect(replacement).to be_frozen
+      expect(replacement.full_name).to eq('After')
+      expect(original.full_name).to eq('Before')
+      expect(original).to be_frozen
+    end
+  end
+
+  describe '#with_detected_script' do
+    it 'returns a Cyrillic replacement without mutating the original' do
+      original = described_class.new(full_name: 'Иван', script: 'Latn')
+      replacement = original.with_detected_script
+
+      expect(replacement.script).to eq('Cyrl')
+      expect(replacement).to be_frozen
+      expect(original.script).to eq('Latn')
+      expect { original.detect_script! }.to raise_error(FrozenError)
+    end
+  end
+
+  [nil, false, true].each do |flag|
+    it "preserves is_strong #{flag.inspect} through every existing export" do
+      value = described_class.new(full_name: 'Metadata', is_strong: flag)
+      expect(described_class.from_json(value.to_json).is_strong).to eq(flag)
+      expect(described_class.from_yaml(value.to_yaml).is_strong).to eq(flag)
+      expect(value.to_hash.key?(:is_strong)).to eq(!flag.nil?)
+      expect(value.to_neo4j_properties.key?(:is_strong)).to eq(!flag.nil?)
+      expect(value.to_hash[:is_strong]).to eq(flag)
+      expect(described_class.from_neo4j_record(value.to_neo4j_properties.transform_keys(&:to_s)).is_strong).to eq(flag)
+    end
+  end
 end

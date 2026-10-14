@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../types'
 
@@ -22,7 +23,7 @@ module Ammitto
       #     url: "https://eur-lex.europa.eu/..."
       #   )
       #
-      class LegalInstrument < Lutaml::Model::Serializable
+      class LegalInstrumentModel < Lutaml::Model::Serializable
         # Type of legal instrument
         # @return [Symbol, String, nil]
         attribute :type, :string
@@ -118,6 +119,11 @@ module Ammitto
           map :programme, to: :programme
           map :lang, to: :lang
         end
+      end
+      private_constant :LegalInstrumentModel
+
+      class LegalInstrument < LegalInstrumentModel
+        include Immutable
       end
     end
   end

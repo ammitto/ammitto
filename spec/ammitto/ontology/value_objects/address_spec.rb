@@ -34,4 +34,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::Address do
     restored = described_class.from_yaml(address.to_yaml)
     expect(restored.to_hash).to eq(address.to_hash)
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(city: 'Before')
+      replacement = original.with(city: 'After')
+
+      expect(replacement).to be_frozen
+      expect(replacement.city).to eq('After')
+      expect(original.city).to eq('Before')
+      expect(original).to be_frozen
+    end
+  end
 end

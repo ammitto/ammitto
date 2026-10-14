@@ -36,4 +36,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::Identification do
     expect(restored.number).to eq('P-123')
     expect(restored.issue_date).to eq(Date.new(2020, 5, 1))
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(number: 'Before')
+      replacement = original.with(number: 'After')
+
+      expect(replacement).to be_frozen
+      expect(replacement.number).to eq('After')
+      expect(original.number).to eq('Before')
+      expect(original).to be_frozen
+    end
+  end
 end

@@ -16,4 +16,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::ContactInfo do
       expect(described_class.new(email: '  ', phone: '')).not_to be_present
     end
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(email: 'before@example.org')
+      replacement = original.with(email: 'after@example.org')
+
+      expect(replacement).to be_frozen
+      expect(replacement.email).to eq('after@example.org')
+      expect(original.email).to eq('before@example.org')
+      expect(original).to be_frozen
+    end
+  end
 end

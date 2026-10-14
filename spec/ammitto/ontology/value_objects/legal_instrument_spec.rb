@@ -38,4 +38,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::LegalInstrument do
     expect(restored.identifier).to eq('R 269/2014')
     expect(restored.publish_date).to eq(Date.new(2014, 3, 17))
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(identifier: 'Before')
+      replacement = original.with(identifier: 'After')
+
+      expect(replacement).to be_frozen
+      expect(replacement.identifier).to eq('After')
+      expect(original.identifier).to eq('Before')
+      expect(original).to be_frozen
+    end
+  end
 end

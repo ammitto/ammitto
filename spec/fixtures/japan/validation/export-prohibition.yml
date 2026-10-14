@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=../../schemas/jp-announcement.yml
+---
+announcement:
+  title:
+  - ja: 輸出等に係る禁止措置の対象となるロシア連邦の特定団体
+  - en: Russia Export Prohibition
+  publish_date: '2025-09-12'
+  authority: jp/mofa
+  type: jp/export-prohibition-announcement
+  source_file: 20250912list_russia_tokutei.pdf
+  source_url: https://www.meti.go.jp/policy/external_economy/trade_control/01_seido/04_seisai/downloadCrimea/20250912list_russia_tokutei.pdf
+entities:
+- id: jp.mofa.russia.560
+  entry_number: 560
+  name:
+    ja: アルファ・マシナリー・グループ
+    en: Alfa Machinery Group LLC Company AMG; Kompaniya AMG
+  type: organization
+  sanction_list: jp/mofa-russia-export-prohibition-list
+  measures:
+  - type:
+    - prohibit_export_dual_use_items
+    ja: 輸出等に係る禁止措置の対象
+    en: Subject to export prohibition measures
+  country_code: RU
+  country_name: &1
+    ja: ロシア連邦
+    en: Russian Federation
+  address: ul. Kuskovskaya, d. 20A, pom. XIIA, komn. 114, Moscow 111141, Russia
+- id: jp.mofa.russia.561
+  entry_number: 561
+  name:
+    ja: 有限会社ヴネシュエコスティル
+    en: LLC Vneshekostil
+  type: organization
+  sanction_list: jp/mofa-russia-export-prohibition-list
+  measures:
+  - type:
+    - prohibit_export_dual_use_items
+    ja: 輸出等に係る禁止措置の対象
+    en: Subject to export prohibition measures
+  country_code: RU
+  country_name: *1
+  address: Room. 19, fl.1, pom. I, Building 5, Kashirskoye shosse, 55, Moscow 115211, Russia

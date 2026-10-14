@@ -1,0 +1,43 @@
+---
+document_types:
+# Japan document types
+- id: jp/act-of-diet
+  name:
+    ja: 法律
+    en: Act of Diet
+- id: jp/cabinet-order
+  name:
+    ja: 政令
+    en: Cabinet Order
+- id: jp/ministerial-ordinance
+  name:
+    ja: 省令
+    en: Ministerial Ordinance
+- id: jp/imperial-order
+  name:
+    ja: 勅令
+    en: Imperial Order
+- id: jp/regulation
+  name:
+    ja: 規則
+    en: Regulation
+- id: jp/public-notice
+  name:
+    ja: 告示
+    en: Public Notice
+- id: jp/notification
+  name:
+    ja: 通達
+    en: Notification
+- id: jp/end-user-list-announcement
+  name:
+    ja: 我が国の平和及び安全の維持のための措置に関するリスト
+    en: List concerning Measures for the Maintenance of Peace and Security of Japan
+- id: jp/asset-freeze-announcement
+  name:
+    ja: 資産凍結等の措置に関するお知らせ
+    en: Announcement concerning Asset Freeze Measures
+- id: jp/export-control-announcement
+  name:
+    ja: 輸出管理に関するお知らせ
+    en: Announcement concerning Export Control

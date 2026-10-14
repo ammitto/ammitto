@@ -168,9 +168,12 @@ RSpec.describe Ammitto::Validation::FileSchemaValidator do
     subject(:validator) { described_class.new(country: :japan) }
 
     it 'reports a graceful error when the schema file is missing' do
-      # 4 of Japan's 5 mapped schema files do not exist; the loader
-      # raises SchemaNotFoundError, which must surface as an error, not
-      # an exception.
+      # A missing installed resource must still be reported gracefully.
+      loader = Ammitto::Data::Japan::SchemaLoader
+      allow(loader).to receive(:load).and_raise(
+        Ammitto::Data::Japan::SchemaNotFoundError,
+        'Schema not found: jp-legal-instrument.yml'
+      )
       path = write_file('legal-instruments/fefta.yml',
                         "title: FEFTA\ncontent: text\n")
       result = validator.validate_file(path)
@@ -182,7 +185,9 @@ RSpec.describe Ammitto::Validation::FileSchemaValidator do
 
     it 'memoizes missing schemas while still reporting them per file' do
       loader = Ammitto::Data::Japan::SchemaLoader
-      allow(loader).to receive(:load).and_call_original
+      allow(loader).to receive(:load).and_raise(
+        Ammitto::Data::Japan::SchemaNotFoundError, 'Schema not found'
+      )
 
       paths = %w[a b].map do |name|
         write_file("legal-instruments/#{name}.yml",
@@ -195,16 +200,13 @@ RSpec.describe Ammitto::Validation::FileSchemaValidator do
       expect(result.errors.length).to eq(2)
     end
 
-    it 'reports the announcement schema draft as a schema error' do
-      # jp-announcement.yml declares JSON Schema draft 2020-12, which
-      # the json-schema gem cannot process; this must surface as a
-      # graceful schema error.
+    it 'rejects a malformed announcement with a data validation error' do
       path = write_file('sanction-lists/entry.yml',
                         "announcement:\n  title: x\nsanction_details: {}\n")
       result = validator.validate_file(path)
 
       expect(result.valid?).to be false
-      expect(result.error_messages.first).to match(/Schema error/)
+      expect(result.error_messages.first).not_to match(/Schema error/)
     end
   end
 

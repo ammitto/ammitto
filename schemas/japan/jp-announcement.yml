@@ -1,9 +1,9 @@
-# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+# yaml-language-server: $schema=http://json-schema.org/draft-04/schema#
 # Schema for Japanese sanction list announcements
 # Used for documents in sources/sanction-lists/
 
-$id: jp-announcement
-$schema: https://json-schema.org/draft/2020-12/schema
+id: jp-announcement
+$schema: http://json-schema.org/draft-04/schema#
 
 title: Japanese Sanction Announcement
 description: |
@@ -14,7 +14,9 @@ type: object
 
 required:
   - announcement
-  - sanction_details
+anyOf:
+  - required: [sanction_details]
+  - required: [entities]
 
 properties:
   announcement:
@@ -26,8 +28,21 @@ properties:
       - authority
     properties:
       title:
-        type: string
+        oneOf:
+          - type: string
+          - type: array
+            minItems: 1
+            items:
+              $ref: "#/definitions/bilingualText"
         description: Japanese title of the announcement
+      lang:
+        type: string
+        enum: [ja, en]
+      source_file:
+        type: string
+      source_url:
+        type: string
+        format: uri
       title_en:
         type: string
         description: English title of the announcement
@@ -57,6 +72,9 @@ properties:
         type: string
         description: Document type
         enum:
+          - jp/export-prohibition-announcement
+          - jp/fefta-end-user-list-announcement
+          - jp/meti-foreign-user-list-announcement
           - jp/end-user-list-announcement
           - jp/asset-freeze-announcement
           - jp/ministerial-announcement
@@ -98,35 +116,100 @@ properties:
         type: array
         description: List of sanctioned entities
         items:
-          $ref: '#/$defs/entity'
+          allOf:
+            - $ref: '#/definitions/entity'
+            - required: [effective_date]
 
-$defs:
+  entities:
+    type: array
+    items:
+      $ref: "#/definitions/entity"
+
+definitions:
+  bilingualText:
+    type: object
+    minProperties: 1
+    properties:
+      ja:
+        type: string
+      en:
+        type: string
+    additionalProperties: false
   entity:
     type: object
     description: Sanctioned entity (person or organization)
     required:
       - name
       - type
-      - effective_date
       - sanction_list
     properties:
+      id:
+        type: string
+      entry_number:
+        type: integer
+      country_code:
+        type: string
+      country_name:
+        $ref: "#/definitions/bilingualText"
+      source_file:
+        type: string
+      source_url:
+        type: string
+        format: uri
+      place_of_birth:
+        type: string
+      nationality:
+        type: string
+      list_date:
+        type: string
+      phones:
+        type: array
+        items:
+          type: string
+      fax:
+        type: array
+        items:
+          type: string
       name:
         type: object
+        minProperties: 1
+        anyOf:
+          - required: [ja]
+            properties:
+              ja:
+                type: string
+                pattern: "\\S"
+          - required: [en]
+            properties:
+              en:
+                type: string
+                pattern: "\\S"
+          - required: [zh-Hans]
+            properties:
+              zh-Hans:
+                type: string
+                pattern: "\\S"
+          - required: [ko]
+            properties:
+              ko:
+                type: string
+                pattern: "\\S"
         description: Entity names in multiple languages
         properties:
           ja:
-            type: string
+            type: [string, "null"]
             description: Japanese name
           en:
-            type: string
+            type: [string, "null"]
             description: English name
           zh-Hans:
-            type: string
+            type: [string, "null"]
             description: Simplified Chinese name
           ko:
-            type: string
+            type: [string, "null"]
             description: Korean name
-        additionalProperties: true
+        additionalProperties:
+          type: [string, "null"]
       type:
         type: string
         description: Entity type
@@ -180,12 +263,25 @@ $defs:
         type: array
         description: Sanction measures imposed
         items:
-          $ref: '#/$defs/measure'
+          $ref: '#/definitions/measure'
       aliases:
-        type: array
-        description: Alternative names
-        items:
-          type: string
+        description: Alternative names, flat or grouped by language
+        oneOf:
+          - type: array
+            items:
+              type: string
+          - type: object
+            minProperties: 1
+            properties:
+              ja:
+                type: array
+                items:
+                  type: string
+              en:
+                type: array
+                items:
+                  type: string
+            additionalProperties: false
       address:
         type: string
         description: Physical address

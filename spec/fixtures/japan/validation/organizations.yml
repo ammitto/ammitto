@@ -1,0 +1,47 @@
+---
+organizations:
+# Japan organizations
+- id: jp/diet
+  name:
+    ja: 国会
+    en: National Diet of Japan
+- id: jp/cabinet
+  name:
+    ja: 内閣
+    en: Cabinet of Japan
+- id: jp/mof
+  name:
+    ja: 財務省
+    en: Ministry of Finance, Japan
+- id: jp/meti
+  name:
+    ja: 経済産業省
+    en: Ministry of Economy, Trade and Industry, Japan
+- id: jp/mofa
+  name:
+    ja: 外務省
+    en: Ministry of Foreign Affairs, Japan
+- id: jp/mhlw
+  name:
+    ja: 厚生労働省
+    en: Ministry of Health, Labour and Welfare, Japan
+- id: jp/mlit
+  name:
+    ja: 国土交通省
+    en: Ministry of Land, Infrastructure, Transport and Tourism, Japan
+- id: jp/maff
+  name:
+    ja: 農林水産省
+    en: Ministry of Agriculture, Forestry and Fisheries, Japan
+- id: jp/npa
+  name:
+    ja: 警察庁
+    en: National Police Agency, Japan
+- id: jp/meti-trade-control-department
+  name:
+    ja: 経済産業省貿易経済協力局
+    en: Trade and Economic Cooperation Bureau, METI
+- id: jp/meti-security-exports-control-office
+  name:
+    ja: 経済産業省貿易管理部安全保障貿易管理課
+    en: Security Export Control Office, Trade Control Department, METI

@@ -39,6 +39,7 @@ RSpec.describe 'Ammitto::Sources::Ch model files' do
     name_part
     sanctions_list
     sanctions_program
+    sanctioned_object
     target
   ]
 

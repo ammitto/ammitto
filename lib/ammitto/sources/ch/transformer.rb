@@ -16,15 +16,16 @@ module Ammitto
         # @param target [Ammitto::Sources::Ch::Target]
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
         def transform(target)
-          # The fetch pipeline saves bare Identity records (SanctionsList
-          # #all_identities); full Target records only occur when parsing the
-          # original SECO XML directly.
+          # Fetch saves Target records; legacy bare Identity YAML remains
+          # supported independently of the target's vessel object wrapper.
           if target.is_a?(Ammitto::Sources::Ch::Identity)
             transform_identity(target)
           elsif target.individual
             transform_individual(target)
           elsif target.entity
             transform_entity(target)
+          elsif target.object
+            transform_object(target)
           else
             # Minimal data - create entity directly
             transform_from_minimal(target)
@@ -32,6 +33,32 @@ module Ammitto
         end
 
         private
+
+        def transform_object(target)
+          object = target.object
+          raise "Unsupported CH object type: #{object.object_type.inspect}" unless object.object_type == 'vessel'
+
+          names = object.identity&.names || []
+          entity = Ammitto::VesselEntity.new(
+            id: generate_entity_id(target.ssid),
+            entity_type: 'vessel',
+            names: names.filter_map do |name|
+              full_name = name.full_name
+              next if full_name.empty?
+
+              create_name_variant(full_name: full_name,
+                                  is_primary: name.name_type == 'primary-name')
+            end,
+            imo_number: object.imo_number,
+            previous_names: names.select { |name| name.name_type == 'formerly-known-as' }.map(&:full_name),
+            remarks: [object.justification, object.other_information].compact.join("\n")
+          )
+
+          entry = create_entry(target, entity.id)
+          entity.add_sanction_entry(entry)
+
+          { entity: entity, entry: entry }
+        end
 
         def transform_individual(target)
           individual = target.individual

@@ -22,6 +22,12 @@ Gem::Specification.new do |spec|
         %w[ammitto.gemspec README.adoc CHANGELOG.adoc LICENSE.txt].include?(f)
     end
   end
+  # The publication gate requires these contracts in every runtime package,
+  # including local builds. Keep the named public entrypoints with the shared
+  # definitions they resolve.
+  spec.files |= %w[outputs entity person organization vessel aircraft sanction-entry enums].map do |name|
+    "schemas/output/v1/#{name}.schema.json"
+  end + ['schemas/output/v1/README.adoc', 'lib/ammitto/validation/output_validator.rb']
   spec.platform      = Gem::Platform::RUBY
   spec.require_paths = ['lib']
   spec.bindir = 'exe'

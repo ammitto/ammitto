@@ -129,11 +129,20 @@ module Ammitto
       # @param output_dir [String] output directory path
       # @return [void]
       def export(output_dir)
+        @output_paths = []
         export_search_index(output_dir)
         export_facets(output_dir)
       end
 
+      # @return [Array<String>] artifact paths written by the last export
+      attr_reader :output_paths
+
       private
+
+      def write_json(path, data)
+        File.write(path, JSON.generate(data))
+        @output_paths << File.expand_path(path)
+      end
 
       # Build one lightweight search row
       # @param entity_id [String] entity id
@@ -685,14 +694,12 @@ module Ammitto
         # overwriting the last and the manifest listing it repeatedly.
         rows_by_shard = rows.group_by { |row| shard_code(row[:authority]) }
         shards = rows_by_shard.map do |code, shard_rows|
-          File.write(
+          write_json(
             File.join(search_index_dir, "#{code}.json"),
-            JSON.generate(
-              search_index_data(
-                shard_rows,
-                generated,
-                shard_rows.filter_map { |row| row[:authority] }.uniq.length
-              )
+            search_index_data(
+              shard_rows,
+              generated,
+              shard_rows.filter_map { |row| row[:authority] }.uniq.length
             )
           )
 
@@ -765,10 +772,7 @@ module Ammitto
           shards: shards.sort_by { |shard| shard[:code] }
         }
 
-        File.write(
-          File.join(dir, 'manifest.json'),
-          JSON.generate(manifest)
-        )
+        write_json(File.join(dir, 'manifest.json'), manifest)
       end
 
       # Export facet files
@@ -799,7 +803,7 @@ module Ammitto
           }
         end.sort_by { |f| -f[:count] }
 
-        File.write(File.join(dir, 'authorities.json'), JSON.generate(facets: facets_data))
+        write_json(File.join(dir, 'authorities.json'), facets: facets_data)
       end
 
       # Export list type facets
@@ -814,7 +818,7 @@ module Ammitto
           }
         end.sort_by { |f| -f[:count] }
 
-        File.write(File.join(dir, 'list_types.json'), JSON.generate(facets: facets_data))
+        write_json(File.join(dir, 'list_types.json'), facets: facets_data)
       end
 
       # Format list type code into display name
@@ -840,7 +844,7 @@ module Ammitto
           }
         end.sort_by { |f| -f[:count] }
 
-        File.write(File.join(dir, 'regimes.json'), JSON.generate(facets: facets_data))
+        write_json(File.join(dir, 'regimes.json'), facets: facets_data)
       end
 
       # Export type facets
@@ -857,7 +861,7 @@ module Ammitto
           }
         end.sort_by { |f| -f[:count] }
 
-        File.write(File.join(dir, 'types.json'), JSON.generate(facets: facets_data))
+        write_json(File.join(dir, 'types.json'), facets: facets_data)
       end
 
       # Export country facets
@@ -871,7 +875,7 @@ module Ammitto
           }
         end.sort_by { |f| -f[:count] }
 
-        File.write(File.join(dir, 'countries.json'), JSON.generate(facets: facets_data))
+        write_json(File.join(dir, 'countries.json'), facets: facets_data)
       end
 
       # Export status facets
@@ -886,7 +890,7 @@ module Ammitto
           }
         end.sort_by { |f| -f[:count] }
 
-        File.write(File.join(dir, 'statuses.json'), JSON.generate(facets: facets_data))
+        write_json(File.join(dir, 'statuses.json'), facets: facets_data)
       end
     end
   end

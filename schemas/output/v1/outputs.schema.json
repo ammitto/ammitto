@@ -1,0 +1,5303 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Ammitto harmonization output contracts v1",
+  "definitions": {
+    "reference": {
+      "type": "object",
+      "properties": {
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@id"
+      ],
+      "additionalProperties": false
+    },
+    "regimeReference": {
+      "type": "object",
+      "properties": {
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@id"
+      ],
+      "additionalProperties": false
+    },
+    "localizedString": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "LocalizedString"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string"
+        },
+        "script": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "transliterationSystem": {
+          "type": "string"
+        },
+        "isPrimary": {
+          "type": "boolean"
+        },
+        "isTransliteration": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "languageMap": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z]{2,3}(-[A-Za-z0-9]+)*$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "localizedText": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/languageMap"
+              },
+              {
+                "$ref": "#/definitions/localizedString"
+              },
+              {
+                "$ref": "#/definitions/modelLocalizedString"
+              }
+            ]
+          }
+        },
+        {
+          "$ref": "#/definitions/languageMap"
+        }
+      ]
+    },
+    "NameVariant": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "NameVariant"
+          ]
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "middleName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "script": {
+          "type": "string",
+          "pattern": "^([A-Z][a-z]{3}|other)$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "language": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "function": {
+          "type": "string"
+        },
+        "isPrimary": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "BirthInfo": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "BirthInfo"
+          ]
+        },
+        "date": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "dateRangeFrom": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "dateRangeTo": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 9999
+        },
+        "yearRangeFrom": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 9999
+        },
+        "yearRangeTo": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 9999
+        },
+        "circa": {
+          "type": "boolean"
+        },
+        "city": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "countryIsoCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "Address": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "Address"
+          ]
+        },
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "countryIsoCode": {
+          "type": "string"
+        },
+        "postalCode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "Identification": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "Identification"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Common CamelCase type or source-specific identification label, preserved by the pipeline normalizers."
+        },
+        "number": {
+          "type": "string"
+        },
+        "issuingCountry": {
+          "type": "string"
+        },
+        "countryIsoCode": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "issueDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "expiryDate": {
+          "$ref": "#/definitions/sourceDate"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "EntityLink": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "EntityLink"
+          ]
+        },
+        "targetId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "relationship": {
+          "type": "string"
+        },
+        "targetName": {
+          "type": "string"
+        },
+        "targetType": {
+          "type": "string"
+        },
+        "fromDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "toDate": {
+          "$ref": "#/definitions/sourceDate"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReference": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "SourceReference"
+          ]
+        },
+        "sourceCode": {
+          "type": "string"
+        },
+        "referenceNumber": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "retrievedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "LegalCitation": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "LegalCitation"
+          ]
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "legalInstrumentId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "paragraphs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "citationType": {
+          "type": "string"
+        },
+        "context": {
+          "type": "string"
+        },
+        "quotedText": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/localizedString"
+          }
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "SanctionEffect": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "SanctionEffect"
+          ]
+        },
+        "effectType": {
+          "$ref": "#/definitions/enum_sanctionEffectType"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/definitions/localizedText"
+        }
+      },
+      "required": [
+        "@type",
+        "effectType"
+      ],
+      "additionalProperties": false
+    },
+    "SanctionReason": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "SanctionReason"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/definitions/localizedText"
+        },
+        "citedProvisions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "TemporalPeriod": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "TemporalPeriod"
+          ]
+        },
+        "listedDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "effectiveDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "expiryDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "lastUpdated": {
+          "$ref": "#/definitions/sourceDateOrTimestamp"
+        },
+        "isIndefinite": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "NoticeReference": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "NoticeReference"
+          ]
+        },
+        "noticeNumber": {
+          "type": "string"
+        },
+        "noticeTitle": {
+          "type": "string"
+        },
+        "noticeUrl": {
+          "type": "string"
+        },
+        "noticeDate": {
+          "$ref": "#/definitions/sourceDate"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "StatusChange": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "StatusChange"
+          ]
+        },
+        "date": {
+          "$ref": "#/definitions/sourceDateOrTimestamp"
+        },
+        "suspensionEndDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "fromStatus": {
+          "$ref": "#/definitions/enum_sanctionStatus"
+        },
+        "toStatus": {
+          "$ref": "#/definitions/enum_sanctionStatus"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "noticeReference": {
+          "$ref": "#/definitions/NoticeReference"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "OfficialAnnouncement": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "OfficialAnnouncement"
+          ]
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "publishTime": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "documentType": {
+          "type": "string"
+        },
+        "documentId": {
+          "type": "string"
+        },
+        "signatory": {
+          "type": "string"
+        },
+        "signatoryTitle": {
+          "type": "string"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "authority": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "publishDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "authorDate": {
+          "$ref": "#/definitions/sourceDate"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "SanctionPeriodModification": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "SanctionPeriodModification"
+          ]
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "targetType": {
+          "type": "string"
+        },
+        "targetAnnouncementId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "targetAnnouncementDocumentId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "effectiveTime": {
+          "type": "string"
+        },
+        "untilTime": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "targetAnnouncementDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "effectiveDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "untilDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "targetId": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "affectedEntityCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "affectedEntityNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "announcement": {
+          "$ref": "#/definitions/OfficialAnnouncement"
+        },
+        "legalCitations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LegalCitation"
+          }
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "RawSourceData": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "RawSourceData"
+          ]
+        },
+        "sourceFile": {
+          "type": "string"
+        },
+        "sourceFormat": {
+          "type": "string"
+        },
+        "sourceXPath": {
+          "type": "string"
+        },
+        "rawContent": {
+          "type": "string"
+        },
+        "sourceSpecificFields": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "Tonnage": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "Tonnage"
+          ]
+        },
+        "grossRegisterTonnage": {
+          "type": "number",
+          "minimum": 0
+        },
+        "grossTonnage": {
+          "type": "number",
+          "minimum": 0
+        },
+        "deadweightTonnage": {
+          "type": "number",
+          "minimum": 0
+        },
+        "netTonnage": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "PersonEntity": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "entityType": {
+          "enum": [
+            "person"
+          ]
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NameVariant"
+          }
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SourceReference"
+          }
+        },
+        "linkedEntities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityLink"
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "sameAs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "@type": {
+          "enum": [
+            "PersonEntity"
+          ]
+        },
+        "identifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identification"
+          }
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Address"
+          }
+        },
+        "birthInfo": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BirthInfo"
+          }
+        },
+        "deathDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "nationalities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gender": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        },
+        "affiliation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "entityType",
+        "names"
+      ],
+      "additionalProperties": false
+    },
+    "OrganizationEntity": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "entityType": {
+          "enum": [
+            "organization"
+          ]
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NameVariant"
+          }
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SourceReference"
+          }
+        },
+        "linkedEntities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityLink"
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "sameAs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "@type": {
+          "enum": [
+            "OrganizationEntity"
+          ]
+        },
+        "identifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identification"
+          }
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Address"
+          }
+        },
+        "registrationNumber": {
+          "type": "string"
+        },
+        "legalForm": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "countryIsoCode": {
+          "type": "string"
+        },
+        "website": {
+          "type": "string"
+        },
+        "sector": {
+          "type": "string"
+        },
+        "incorporationDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "dissolutionDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "beneficialOwners": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityLink"
+          }
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "entityType",
+        "names"
+      ],
+      "additionalProperties": false
+    },
+    "VesselEntity": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "entityType": {
+          "enum": [
+            "vessel"
+          ]
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NameVariant"
+          }
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SourceReference"
+          }
+        },
+        "linkedEntities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityLink"
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "sameAs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "@type": {
+          "enum": [
+            "VesselEntity"
+          ]
+        },
+        "imoNumber": {
+          "type": "string"
+        },
+        "mmsi": {
+          "type": "string"
+        },
+        "callSign": {
+          "type": "string"
+        },
+        "flagState": {
+          "type": "string"
+        },
+        "flagStateIsoCode": {
+          "type": "string"
+        },
+        "vesselType": {
+          "type": "string"
+        },
+        "vesselTypeCode": {
+          "type": "string"
+        },
+        "builder": {
+          "type": "string"
+        },
+        "buildYear": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 9999
+        },
+        "length": {
+          "type": "number",
+          "minimum": 0
+        },
+        "tonnage": {
+          "$ref": "#/definitions/Tonnage"
+        },
+        "grossTonnage": {
+          "type": "number",
+          "minimum": 0
+        },
+        "deadweightTonnage": {
+          "type": "number",
+          "minimum": 0
+        },
+        "owner": {
+          "$ref": "#/definitions/EntityLink"
+        },
+        "operator": {
+          "$ref": "#/definitions/EntityLink"
+        },
+        "registeredOwner": {
+          "$ref": "#/definitions/EntityLink"
+        },
+        "technicalManager": {
+          "$ref": "#/definitions/EntityLink"
+        },
+        "previousNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "previousFlags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "entityType",
+        "names"
+      ],
+      "additionalProperties": false
+    },
+    "AircraftEntity": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "entityType": {
+          "enum": [
+            "aircraft"
+          ]
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NameVariant"
+          }
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SourceReference"
+          }
+        },
+        "linkedEntities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EntityLink"
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "sameAs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "@type": {
+          "enum": [
+            "AircraftEntity"
+          ]
+        },
+        "serialNumber": {
+          "type": "string"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "registrationNumber": {
+          "type": "string"
+        },
+        "flagState": {
+          "type": "string"
+        },
+        "aircraftType": {
+          "type": "string"
+        },
+        "buildYear": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 9999
+        },
+        "owner": {
+          "$ref": "#/definitions/EntityLink"
+        },
+        "operator": {
+          "$ref": "#/definitions/EntityLink"
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "entityType",
+        "names"
+      ],
+      "additionalProperties": false
+    },
+    "entity": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PersonEntity"
+        },
+        {
+          "$ref": "#/definitions/OrganizationEntity"
+        },
+        {
+          "$ref": "#/definitions/VesselEntity"
+        },
+        {
+          "$ref": "#/definitions/AircraftEntity"
+        }
+      ]
+    },
+    "ListType": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "ListType"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "localizedName": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "SanctionEntry": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "SanctionEntry"
+          ]
+        },
+        "entityId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "authority": {
+          "$ref": "#/definitions/reference"
+        },
+        "regime": {
+          "$ref": "#/definitions/regimeReference"
+        },
+        "listType": {
+          "$ref": "#/definitions/ListType"
+        },
+        "legalBases": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/reference"
+              },
+              {
+                "$ref": "#/definitions/inlineInstrument"
+              }
+            ]
+          }
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SanctionEffect"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SanctionReason"
+          }
+        },
+        "period": {
+          "$ref": "#/definitions/TemporalPeriod"
+        },
+        "status": {
+          "$ref": "#/definitions/enum_sanctionStatus"
+        },
+        "statusHistory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StatusChange"
+          }
+        },
+        "modifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SanctionPeriodModification"
+          }
+        },
+        "referenceNumber": {
+          "type": "string"
+        },
+        "remarks": {
+          "type": "string"
+        },
+        "groupId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "legalCitations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LegalCitation"
+          }
+        },
+        "announcement": {
+          "$ref": "#/definitions/OfficialAnnouncement"
+        },
+        "rawSourceData": {
+          "$ref": "#/definitions/RawSourceData"
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "entityId",
+        "authority",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "inlineInstrument": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "enum": [
+            "LegalInstrument"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "issuingBody": {
+          "type": "string"
+        },
+        "issuanceDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentId": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "#/definitions/documentContent"
+        },
+        "citationType": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string"
+        },
+        "title": {
+          "$ref": "#/definitions/localizedText"
+        },
+        "publishDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "effectiveDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "additionalProperties": false
+    },
+    "LegalInstrument": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "LegalInstrument"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "issuingBody": {
+          "type": "string"
+        },
+        "issuanceDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentId": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "#/definitions/documentContent"
+        },
+        "citationType": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string"
+        },
+        "title": {
+          "$ref": "#/definitions/localizedText"
+        },
+        "publishDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "effectiveDate": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "identifier"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "@id": {
+                  "not": {
+                    "pattern": "/legal-instrument/jp/"
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "content": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Japan_contentItem"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Authority": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "Authority"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "countryCode": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "name",
+        "countryCode"
+      ],
+      "additionalProperties": false
+    },
+    "SanctionRegime": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "SanctionRegime"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "name",
+        "code"
+      ],
+      "additionalProperties": false
+    },
+    "DocumentType": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "DocumentType"
+          ]
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/localizedString"
+          }
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "identifier",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "Organization": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "Organization"
+          ]
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/localizedString"
+          }
+        },
+        "type": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "@id",
+        "@type",
+        "identifier",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "group": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "announcement_id": {
+          "type": "string"
+        },
+        "announcement_title": {
+          "type": "string"
+        },
+        "list_id": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "effective_time": {
+          "type": "string"
+        },
+        "entry_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+            "not": {
+              "pattern": "[\\r\\n]",
+              "type": "string"
+            }
+          }
+        },
+        "entity_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effective_date": {
+          "$ref": "#/definitions/sourceDate"
+        },
+        "shared_measures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "effect_type": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "shared_reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "cited_provisions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "node": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SanctionEntry"
+        },
+        {
+          "$ref": "#/definitions/PersonEntity"
+        },
+        {
+          "$ref": "#/definitions/OrganizationEntity"
+        },
+        {
+          "$ref": "#/definitions/VesselEntity"
+        },
+        {
+          "$ref": "#/definitions/AircraftEntity"
+        },
+        {
+          "$ref": "#/definitions/Authority"
+        },
+        {
+          "$ref": "#/definitions/SanctionRegime"
+        },
+        {
+          "$ref": "#/definitions/LegalInstrument"
+        },
+        {
+          "$ref": "#/definitions/DocumentType"
+        },
+        {
+          "$ref": "#/definitions/Organization"
+        }
+      ]
+    },
+    "aggregate": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@graph": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/node"
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@graph"
+      ],
+      "additionalProperties": false
+    },
+    "nodeIndex": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "Index"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/reference"
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@type",
+        "nodes"
+      ],
+      "additionalProperties": false
+    },
+    "catalogue": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@type": {
+          "enum": [
+            "Index"
+          ]
+        },
+        "slice": {
+          "enum": [
+            "catalogue"
+          ]
+        },
+        "generated": {
+          "type": "string",
+          "format": "date-time",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "mediaType": {
+                    "enum": [
+                      "application/ld+json",
+                      "application/json",
+                      "text/turtle"
+                    ]
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "name",
+                  "url",
+                  "description",
+                  "mediaType",
+                  "bytes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "index": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "collections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "url",
+                  "description"
+                ],
+                "additionalProperties": false,
+                "anyOf": [
+                  {
+                    "required": [
+                      "index"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "members"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "collections"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@type",
+        "slice",
+        "generated",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "sources": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z][a-z0-9_-]*$": {
+              "type": "object",
+              "properties": {
+                "entities": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "entries": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "entities",
+                "entries"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "total_entities": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_instruments": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_regimes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_authorities": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_groups": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_document_types": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_organizations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "generated_at",
+        "sources",
+        "total_entities",
+        "total_entries",
+        "total_instruments",
+        "total_regimes",
+        "total_authorities",
+        "total_groups",
+        "total_document_types",
+        "total_organizations"
+      ],
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "enum": [
+            {
+              "@vocab": "https://ammitto.org/schema/v1/",
+              "xsd": "http://www.w3.org/2001/XMLSchema#",
+              "schema": "https://schema.org/",
+              "prov": "http://www.w3.org/ns/prov#",
+              "owl": "http://www.w3.org/2002/07/owl#",
+              "skos": "http://www.w3.org/2004/02/skos/core#",
+              "Entity": {
+                "@id": "Entity"
+              },
+              "PersonEntity": {
+                "@id": "PersonEntity"
+              },
+              "OrganizationEntity": {
+                "@id": "OrganizationEntity"
+              },
+              "VesselEntity": {
+                "@id": "VesselEntity"
+              },
+              "AircraftEntity": {
+                "@id": "AircraftEntity"
+              },
+              "SanctionEntry": {
+                "@id": "SanctionEntry"
+              },
+              "SanctionRegime": {
+                "@id": "SanctionRegime"
+              },
+              "SanctionEffect": {
+                "@id": "SanctionEffect"
+              },
+              "LegalInstrument": {
+                "@id": "LegalInstrument"
+              },
+              "OfficialAnnouncement": {
+                "@id": "OfficialAnnouncement"
+              },
+              "LocalizedString": {
+                "@id": "LocalizedString"
+              },
+              "LegalCitation": {
+                "@id": "LegalCitation"
+              },
+              "SanctionList": {
+                "@id": "SanctionList"
+              },
+              "SanctionGroup": {
+                "@id": "SanctionGroup"
+              },
+              "SanctionPeriodModification": {
+                "@id": "SanctionPeriodModification"
+              },
+              "names": {
+                "@id": "schema:name",
+                "@container": "@set"
+              },
+              "entityType": {
+                "@id": "entityType",
+                "@type": "@vocab"
+              },
+              "hasSanctionEntry": {
+                "@id": "hasSanctionEntry",
+                "@type": "@id",
+                "@container": "@set"
+              },
+              "authority": {
+                "@id": "authority",
+                "@type": "@id"
+              },
+              "regime": {
+                "@id": "regime"
+              },
+              "listType": {
+                "@id": "listType"
+              },
+              "legalBases": {
+                "@id": "legalBasis",
+                "@container": "@set"
+              },
+              "effects": {
+                "@id": "effect",
+                "@container": "@set"
+              },
+              "reasons": {
+                "@id": "reason",
+                "@container": "@set"
+              },
+              "period": {
+                "@id": "period"
+              },
+              "status": {
+                "@id": "status",
+                "@type": "@vocab"
+              },
+              "announcement": {
+                "@id": "announcement"
+              },
+              "effectType": {
+                "@id": "effectType",
+                "@type": "@vocab"
+              },
+              "asset_freeze": "asset_freeze",
+              "travel_ban": "travel_ban",
+              "trade_restriction": "trade_restriction",
+              "debarment": "debarment",
+              "sectoral_sanction": "sectoral_sanction",
+              "reasonCategory": {
+                "@id": "reasonCategory",
+                "@type": "@vocab"
+              },
+              "terrorism": "terrorism",
+              "proliferation": "proliferation",
+              "human_rights_violations": "human_rights_violations",
+              "corruption": "corruption",
+              "aggression": "aggression",
+              "rawSourceData": {
+                "@id": "rawSourceData"
+              },
+              "sourceFile": {
+                "@id": "sourceFile"
+              },
+              "rawContent": {
+                "@id": "rawContent"
+              },
+              "sourceSpecificFields": {
+                "@id": "sourceSpecificFields"
+              },
+              "imoNumber": {
+                "@id": "imoNumber"
+              },
+              "mmsi": {
+                "@id": "mmsi"
+              },
+              "callSign": {
+                "@id": "callSign"
+              },
+              "flagState": {
+                "@id": "flagState"
+              },
+              "vesselType": {
+                "@id": "vesselType"
+              },
+              "owner": {
+                "@id": "owner",
+                "@type": "@id"
+              },
+              "operator": {
+                "@id": "operator",
+                "@type": "@id"
+              },
+              "birthInfo": {
+                "@id": "birthInfo",
+                "@container": "@set"
+              },
+              "nationalities": {
+                "@id": "nationality",
+                "@container": "@set"
+              },
+              "gender": {
+                "@id": "schema:gender"
+              },
+              "identifications": {
+                "@id": "identification",
+                "@container": "@set"
+              },
+              "registrationNumber": {
+                "@id": "registrationNumber"
+              },
+              "incorporationDate": {
+                "@id": "incorporationDate",
+                "@type": "xsd:date"
+              },
+              "legalForm": {
+                "@id": "legalForm"
+              },
+              "beneficialOwners": {
+                "@id": "beneficialOwner",
+                "@type": "@id",
+                "@container": "@set"
+              },
+              "title": {
+                "@id": "schema:title"
+              },
+              "url": {
+                "@id": "schema:url",
+                "@type": "@id"
+              },
+              "publishedDate": {
+                "@id": "schema:datePublished",
+                "@type": "xsd:date"
+              },
+              "author": {
+                "@id": "schema:author"
+              },
+              "sameAs": {
+                "@id": "owl:sameAs",
+                "@type": "@id",
+                "@container": "@set"
+              },
+              "seeAlso": {
+                "@id": "rdfs:seeAlso",
+                "@type": "@id"
+              },
+              "sourceReferences": {
+                "@id": "prov:hadPrimarySource",
+                "@container": "@set"
+              },
+              "linkedEntities": {
+                "@id": "linkedEntity",
+                "@container": "@set"
+              },
+              "sourceCode": {
+                "@id": "sourceCode"
+              },
+              "referenceNumber": {
+                "@id": "referenceNumber"
+              },
+              "resolution": {
+                "@id": "resolution"
+              },
+              "fetchedAt": {
+                "@id": "fetchedAt",
+                "@type": "xsd:dateTime"
+              },
+              "targetId": {
+                "@id": "targetId",
+                "@type": "@id"
+              },
+              "relationshipType": {
+                "@id": "relationshipType",
+                "@type": "@vocab"
+              },
+              "targetName": {
+                "@id": "targetName"
+              },
+              "targetType": {
+                "@id": "targetType"
+              },
+              "gt": {
+                "@id": "grossTonnage",
+                "@type": "xsd:integer"
+              },
+              "dwt": {
+                "@id": "deadweightTonnage",
+                "@type": "xsd:integer"
+              },
+              "nt": {
+                "@id": "netTonnage",
+                "@type": "xsd:integer"
+              },
+              "grt": {
+                "@id": "grossRegisterTonnage",
+                "@type": "xsd:integer"
+              },
+              "tonnage": {
+                "@id": "tonnage"
+              },
+              "birthDate": {
+                "@id": "schema:birthDate",
+                "@type": "xsd:date"
+              },
+              "birthYear": {
+                "@id": "birthYear",
+                "@type": "xsd:gYear"
+              },
+              "year": {
+                "@id": "year",
+                "@type": "xsd:gYear"
+              },
+              "dateRangeFrom": {
+                "@id": "dateRangeFrom",
+                "@type": "xsd:date"
+              },
+              "dateRangeTo": {
+                "@id": "dateRangeTo",
+                "@type": "xsd:date"
+              },
+              "yearRangeFrom": {
+                "@id": "yearRangeFrom",
+                "@type": "xsd:gYear"
+              },
+              "yearRangeTo": {
+                "@id": "yearRangeTo",
+                "@type": "xsd:gYear"
+              },
+              "birthCity": {
+                "@id": "schema:birthPlace"
+              },
+              "birthCountry": {
+                "@id": "birthCountry"
+              },
+              "streetAddress": {
+                "@id": "schema:streetAddress"
+              },
+              "addressLocality": {
+                "@id": "schema:addressLocality"
+              },
+              "addressRegion": {
+                "@id": "schema:addressRegion"
+              },
+              "postalCode": {
+                "@id": "schema:postalCode"
+              },
+              "addressCountry": {
+                "@id": "schema:addressCountry"
+              },
+              "idType": {
+                "@id": "idType",
+                "@type": "@vocab"
+              },
+              "idNumber": {
+                "@id": "idNumber"
+              },
+              "idCountry": {
+                "@id": "idCountry"
+              },
+              "issueDate": {
+                "@id": "issueDate",
+                "@type": "xsd:date"
+              },
+              "expiryDate": {
+                "@id": "expiryDate",
+                "@type": "xsd:date"
+              },
+              "fromStatus": {
+                "@id": "fromStatus",
+                "@type": "@vocab"
+              },
+              "toStatus": {
+                "@id": "toStatus",
+                "@type": "@vocab"
+              },
+              "statusHistory": {
+                "@id": "statusHistory",
+                "@container": "@set"
+              },
+              "suspensionEndDate": {
+                "@id": "suspensionEndDate",
+                "@type": "xsd:date"
+              },
+              "dissolutionDate": {
+                "@id": "dissolutionDate",
+                "@type": "xsd:date"
+              },
+              "country": {
+                "@id": "country"
+              },
+              "countryIsoCode": {
+                "@id": "countryIsoCode"
+              },
+              "sector": {
+                "@id": "sector"
+              },
+              "value": {
+                "@id": "value"
+              },
+              "lang": {
+                "@id": "lang"
+              },
+              "script": {
+                "@id": "script"
+              },
+              "region": {
+                "@id": "region"
+              },
+              "isPrimary": {
+                "@id": "isPrimary",
+                "@type": "xsd:boolean"
+              },
+              "isTransliteration": {
+                "@id": "isTransliteration",
+                "@type": "xsd:boolean"
+              },
+              "transliterationSystem": {
+                "@id": "transliterationSystem"
+              },
+              "legalInstrumentId": {
+                "@id": "legalInstrumentId",
+                "@type": "@id"
+              },
+              "articles": {
+                "@id": "articles",
+                "@container": "@set"
+              },
+              "sections": {
+                "@id": "sections",
+                "@container": "@set"
+              },
+              "paragraphs": {
+                "@id": "paragraphs",
+                "@container": "@set"
+              },
+              "citationType": {
+                "@id": "citationType"
+              },
+              "context": {
+                "@id": "context"
+              },
+              "quotedText": {
+                "@id": "quotedText",
+                "@container": "@set"
+              },
+              "source": {
+                "@id": "source"
+              },
+              "code": {
+                "@id": "code"
+              },
+              "description": {
+                "@id": "description"
+              },
+              "description_zh": {
+                "@id": "description_zh"
+              },
+              "description_en": {
+                "@id": "description_en"
+              },
+              "establishedDate": {
+                "@id": "establishedDate",
+                "@type": "xsd:date"
+              },
+              "metadata": {
+                "@id": "metadata"
+              },
+              "legalCitations": {
+                "@id": "legalCitation",
+                "@container": "@set"
+              },
+              "announcementId": {
+                "@id": "announcementId",
+                "@type": "@id"
+              },
+              "listId": {
+                "@id": "listId",
+                "@type": "@id"
+              },
+              "entryIds": {
+                "@id": "entryId",
+                "@type": "@id",
+                "@container": "@set"
+              },
+              "sharedMeasures": {
+                "@id": "sharedMeasure",
+                "@container": "@set"
+              },
+              "sharedReasons": {
+                "@id": "sharedReason",
+                "@container": "@set"
+              },
+              "effectiveTime": {
+                "@id": "effectiveTime"
+              },
+              "entityCount": {
+                "@id": "entityCount",
+                "@type": "xsd:integer"
+              },
+              "notes": {
+                "@id": "notes"
+              },
+              "targetAnnouncementId": {
+                "@id": "targetAnnouncementId",
+                "@type": "@id"
+              },
+              "targetAnnouncementDocumentId": {
+                "@id": "targetAnnouncementDocumentId"
+              },
+              "targetAnnouncementDate": {
+                "@id": "targetAnnouncementDate",
+                "@type": "xsd:date"
+              },
+              "affectedEntityCount": {
+                "@id": "affectedEntityCount",
+                "@type": "xsd:integer"
+              },
+              "affectedEntityNames": {
+                "@id": "affectedEntityName",
+                "@container": "@set"
+              },
+              "action": {
+                "@id": "action"
+              },
+              "untilDate": {
+                "@id": "untilDate",
+                "@type": "xsd:date"
+              },
+              "effectiveDate": {
+                "@id": "effectiveDate",
+                "@type": "xsd:date"
+              },
+              "untilTime": {
+                "@id": "untilTime"
+              },
+              "durationDays": {
+                "@id": "durationDays",
+                "@type": "xsd:integer"
+              },
+              "durationDescription": {
+                "@id": "durationDescription"
+              },
+              "reason": {
+                "@id": "reason",
+                "@container": "@set"
+              },
+              "sanctionGroupIds": {
+                "@id": "sanctionGroupId",
+                "@type": "@id",
+                "@container": "@set"
+              },
+              "modifications": {
+                "@id": "modification",
+                "@container": "@set"
+              },
+              "groupId": {
+                "@id": "groupId",
+                "@type": "@id"
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "@context"
+      ],
+      "additionalProperties": false
+    },
+    "searchShard": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "generated": {
+              "type": "string",
+              "format": "date-time",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "totalEntities": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sources": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "generated",
+            "totalEntities",
+            "sources"
+          ],
+          "additionalProperties": false
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "enum": [
+                  "person",
+                  "organization",
+                  "vessel",
+                  "aircraft"
+                ]
+              },
+              "names": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "primaryName": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              },
+              "regime": {
+                "type": "string"
+              },
+              "authority": {
+                "type": "string"
+              },
+              "listType": {
+                "type": "string"
+              },
+              "imo": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/definitions/enum_sanctionStatus"
+              },
+              "birthYears": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "enum": [
+                            "year"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "pattern": "^[0-9]{4}$",
+                          "not": {
+                            "pattern": "[\\r\\n]",
+                            "type": "string"
+                          }
+                        },
+                        "circa": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "value",
+                        "circa"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "enum": [
+                            "date_range"
+                          ]
+                        },
+                        "from": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "pattern": "^[0-9]{4}$",
+                          "not": {
+                            "pattern": "[\\r\\n]",
+                            "type": "string"
+                          }
+                        },
+                        "to": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "pattern": "^[0-9]{4}$",
+                          "not": {
+                            "pattern": "[\\r\\n]",
+                            "type": "string"
+                          }
+                        },
+                        "circa": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "circa"
+                      ],
+                      "additionalProperties": false,
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "from": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "from"
+                          ]
+                        },
+                        {
+                          "properties": {
+                            "to": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "to"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "ref",
+              "type",
+              "names",
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "metadata",
+        "entities"
+      ],
+      "additionalProperties": false
+    },
+    "searchManifest": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "generated": {
+              "type": "string",
+              "format": "date-time",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "totalEntities": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sources": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "generated",
+            "totalEntities",
+            "sources"
+          ],
+          "additionalProperties": false
+        },
+        "shards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]*$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "file": {
+                "type": "string",
+                "pattern": "^[a-z0-9_-]+\\.json$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "code",
+              "file",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "metadata",
+        "shards"
+      ],
+      "additionalProperties": false
+    },
+    "facet_countries": {
+      "type": "object",
+      "properties": {
+        "facets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "code",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "facets"
+      ],
+      "additionalProperties": false
+    },
+    "facet_types": {
+      "type": "object",
+      "properties": {
+        "facets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "$ref": "#/definitions/enum_entityType"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "name": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "count",
+              "name",
+              "icon"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "facets"
+      ],
+      "additionalProperties": false
+    },
+    "facet_other": {
+      "type": "object",
+      "properties": {
+        "facets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "count",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "facets"
+      ],
+      "additionalProperties": false
+    },
+    "ontologyClasses": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@graph": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@id": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "@type": {
+                "enum": [
+                  "rdfs:Class"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "subClassOf": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "properties": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                  "not": {
+                    "pattern": "[\\r\\n]",
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "@id",
+              "@type",
+              "label",
+              "comment"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@graph"
+      ],
+      "additionalProperties": false
+    },
+    "ontologyProperties": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@graph": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@id": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "@type": {
+                "enum": [
+                  "rdf:Property"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "range": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "isArray": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "@id",
+              "@type",
+              "label",
+              "comment",
+              "range"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@graph"
+      ],
+      "additionalProperties": false
+    },
+    "hierarchyNode": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": {
+          "type": "string",
+          "minLength": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/hierarchyNode"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "hierarchy": {
+      "$ref": "#/definitions/hierarchyNode"
+    },
+    "example_person": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "enum": [
+                  "Name"
+                ]
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "isPrimary": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "@type",
+              "fullName",
+              "isPrimary"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/reference"
+          }
+        },
+        "@type": {
+          "enum": [
+            "PersonEntity"
+          ]
+        },
+        "entityType": {
+          "enum": [
+            "person"
+          ]
+        },
+        "birthInfo": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "enum": [
+                  "BirthInfo"
+                ]
+              },
+              "date": {
+                "$ref": "#/definitions/sourceDate"
+              },
+              "countryCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "@type",
+              "date",
+              "countryCode"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nationalities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "enum": [
+                  "Nationality"
+                ]
+              },
+              "countryCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "@type",
+              "countryCode"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@id",
+        "names",
+        "hasSanctionEntry",
+        "@type",
+        "entityType",
+        "birthInfo",
+        "nationalities"
+      ],
+      "additionalProperties": false
+    },
+    "example_organization": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "enum": [
+                  "Name"
+                ]
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "isPrimary": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "@type",
+              "fullName",
+              "isPrimary"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/reference"
+          }
+        },
+        "@type": {
+          "enum": [
+            "OrganizationEntity"
+          ]
+        },
+        "entityType": {
+          "enum": [
+            "organization"
+          ]
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "enum": [
+                  "Address"
+                ]
+              },
+              "street": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "countryCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "@type",
+              "street",
+              "city",
+              "countryCode"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "@context",
+        "@id",
+        "names",
+        "hasSanctionEntry",
+        "@type",
+        "entityType",
+        "addresses"
+      ],
+      "additionalProperties": false
+    },
+    "example_vessel": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "@id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "enum": [
+                  "Name"
+                ]
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "isPrimary": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "@type",
+              "fullName",
+              "isPrimary"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hasSanctionEntry": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/reference"
+          }
+        },
+        "@type": {
+          "enum": [
+            "VesselEntity"
+          ]
+        },
+        "entityType": {
+          "enum": [
+            "vessel"
+          ]
+        },
+        "imo": {
+          "type": "string"
+        },
+        "mmsi": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "string"
+        },
+        "callSign": {
+          "type": "string"
+        },
+        "tonnage": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "@context",
+        "@id",
+        "names",
+        "hasSanctionEntry",
+        "@type",
+        "entityType",
+        "imo",
+        "mmsi",
+        "flag",
+        "callSign",
+        "tonnage"
+      ],
+      "additionalProperties": false
+    },
+    "validationResult": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "valid",
+        "files",
+        "errors"
+      ],
+      "additionalProperties": false
+    },
+    "report": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "enum": [
+            "ammitto-harmonize-report/v1"
+          ]
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        },
+        "gates_passed": {
+          "type": "boolean"
+        },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "succeeded": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "exempted": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "succeeded",
+            "failed",
+            "exempted"
+          ],
+          "additionalProperties": false
+        },
+        "totals": {
+          "type": "object",
+          "properties": {
+            "entities": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "entries": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "required": [
+            "entities",
+            "entries"
+          ],
+          "additionalProperties": false
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]*$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              },
+              "status": {
+                "enum": [
+                  "success",
+                  "error"
+                ]
+              },
+              "entities": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "entries": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "parse_failures": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "gate_failures": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "exempted_failures": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "transform_errors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "quality": {
+                "type": "object",
+                "properties": {
+                  "unique_entities": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "named_entities": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "entity_nodes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "unique_id_ratio": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "named_entity_ratio": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "aggregate_invalid": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "code",
+              "status",
+              "entities",
+              "entries",
+              "parse_failures",
+              "error",
+              "gate_failures",
+              "exempted_failures",
+              "transform_errors",
+              "quality"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "output_validation": {
+          "$ref": "#/definitions/validationResult"
+        }
+      },
+      "required": [
+        "schema",
+        "generated_at",
+        "gates_passed",
+        "counts",
+        "totals",
+        "sources"
+      ],
+      "additionalProperties": false
+    },
+    "slice_authority": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-authority"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-authority"
+              ]
+            },
+            "authority": {
+              "$ref": "#/definitions/reference"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/reference"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "authority",
+            "entries"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "slice_regime": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-regime"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-regime"
+              ]
+            },
+            "regime": {
+              "$ref": "#/definitions/reference"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/reference"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "regime",
+            "entries"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "slice_list": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-list"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              }
+            },
+            "source": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]*$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-list"
+              ]
+            },
+            "list": {
+              "$ref": "#/definitions/reference"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/reference"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "list",
+            "entries"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-list"
+              ]
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]*$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "sources"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "slice_status": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-status"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/enum_sanctionStatus"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-status"
+              ]
+            },
+            "status": {
+              "$ref": "#/definitions/enum_sanctionStatus"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/reference"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "status",
+            "entries"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "slice_type": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-type"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/enum_entityType"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-type"
+              ]
+            },
+            "entityType": {
+              "enum": [
+                "person",
+                "organization",
+                "vessel",
+                "aircraft"
+              ]
+            },
+            "entities": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/reference"
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "entityType",
+            "entities"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "slice_organization": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-organization"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-organization"
+              ]
+            },
+            "organization": {
+              "$ref": "#/definitions/reference"
+            },
+            "published": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "documentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "not": {
+                      "pattern": "[\\r\\n]",
+                      "type": "string"
+                    }
+                  },
+                  "publishDate": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/definitions/sourceDate"
+                      },
+                      {
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "entryCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "documentId",
+                  "publishDate",
+                  "entryCount"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "signed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "documentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "not": {
+                      "pattern": "[\\r\\n]",
+                      "type": "string"
+                    }
+                  },
+                  "publishDate": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/definitions/sourceDate"
+                      },
+                      {
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "entryCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "documentId",
+                  "publishDate",
+                  "entryCount"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "authorized": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "documentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "not": {
+                      "pattern": "[\\r\\n]",
+                      "type": "string"
+                    }
+                  },
+                  "publishDate": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/definitions/sourceDate"
+                      },
+                      {
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "entryCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "documentId",
+                  "publishDate",
+                  "entryCount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "organization",
+            "published",
+            "signed",
+            "authorized"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "slice_document-type": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-document-type"
+              ]
+            },
+            "available": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                "not": {
+                  "pattern": "[\\r\\n]",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@context": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+              "not": {
+                "pattern": "[\\r\\n]",
+                "type": "string"
+              }
+            },
+            "@type": {
+              "enum": [
+                "Index"
+              ]
+            },
+            "slice": {
+              "enum": [
+                "by-document-type"
+              ]
+            },
+            "documentType": {
+              "$ref": "#/definitions/reference"
+            },
+            "announcements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "documentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "not": {
+                      "pattern": "[\\r\\n]",
+                      "type": "string"
+                    }
+                  },
+                  "publishDate": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/definitions/sourceDate"
+                      },
+                      {
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ]
+                  },
+                  "entryCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "documentId",
+                  "publishDate",
+                  "entryCount"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "legalInstruments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "@id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>\"{}|^`\\\\\\u0000-\\u001f\\u007f]+$",
+                    "not": {
+                      "pattern": "[\\r\\n]",
+                      "type": "string"
+                    }
+                  },
+                  "identifier": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "$ref": "#/definitions/localizedText"
+                  },
+                  "publishDate": {
+                    "$ref": "#/definitions/sourceDate"
+                  }
+                },
+                "required": [
+                  "@id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "@context",
+            "@type",
+            "slice",
+            "documentType",
+            "announcements",
+            "legalInstruments"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sourceDate": {
+      "type": "string",
+      "description": "A year, year-month, or valid Gregorian calendar date; source precision is preserved.",
+      "pattern": "^(\\d{4}(-(0[1-9]|1[0-2])|-(0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|-(0[469]|11)-(0[1-9]|[12]\\d|30)|-02-(0[1-9]|1\\d|2[0-8]))?|([0-9]{2}(0[48]|[2468][048]|[13579][26])|([02468][048]|[13579][26])00)-02-29)$",
+      "not": {
+        "pattern": "[\\r\\n]",
+        "type": "string"
+      }
+    },
+    "enum_entityType": {
+      "enum": [
+        "person",
+        "organization",
+        "vessel",
+        "aircraft"
+      ]
+    },
+    "enum_identificationType": {
+      "enum": [
+        "Passport",
+        "NationalID",
+        "TaxID",
+        "DriversLicense",
+        "SocialSecurity",
+        "SeafarerID",
+        "MilitaryID",
+        "DiplomaticPassport",
+        "RefugeeID",
+        "Other"
+      ]
+    },
+    "enum_sanctionEffectType": {
+      "enum": [
+        "asset_freeze",
+        "travel_ban",
+        "arms_embargo",
+        "trade_restriction",
+        "financial_prohibition",
+        "service_prohibition",
+        "investment_ban",
+        "technology_transfer_ban",
+        "visa_suspension",
+        "aircraft_ban",
+        "debarment",
+        "entry_ban",
+        "export_restriction",
+        "sectoral_sanction",
+        "transport_sanction",
+        "vessel_ban",
+        "import_ban",
+        "export_ban",
+        "financial_restriction",
+        "service_restriction",
+        "technology_restriction",
+        "transaction_ban",
+        "allow_statement",
+        "cancel_stay_residence",
+        "cancel_work_permit",
+        "cooperate_investigation",
+        "export_license_requirement",
+        "fine",
+        "import_license_requirement",
+        "investigation",
+        "maritime_restriction",
+        "prohibit_cooperation",
+        "prohibit_data_transmission",
+        "prohibit_export_dual_use_items",
+        "prohibit_export_gene_sequencers",
+        "prohibit_export_specific_product",
+        "prohibit_import_export",
+        "prohibit_investment_new",
+        "prohibit_sensitive_information_provision",
+        "prohibit_transactions",
+        "prohibit_transfer_provide_dual_use_items",
+        "provide_information",
+        "report_violation",
+        "unreliable_entity_list",
+        "visa_ban",
+        "other"
+      ]
+    },
+    "enum_sanctionStatus": {
+      "enum": [
+        "active",
+        "suspended",
+        "resumed",
+        "terminated",
+        "delisted",
+        "expired",
+        "deceased"
+      ]
+    },
+    "enum_legalInstrumentType": {
+      "enum": [
+        "regulation",
+        "executive_order",
+        "law",
+        "resolution",
+        "decision",
+        "decree",
+        "directive",
+        "act",
+        "ordinance",
+        "proclamation",
+        "notice",
+        "order"
+      ]
+    },
+    "enum_nameScript": {
+      "enum": [
+        "Latn",
+        "Cyrl",
+        "Arab",
+        "Hani",
+        "Hebr",
+        "Beng",
+        "Deva",
+        "Grek",
+        "Jpan",
+        "Kana",
+        "Hang",
+        "Kore",
+        "Thai",
+        "other"
+      ]
+    },
+    "enum_effectScope": {
+      "enum": [
+        "full",
+        "partial",
+        "limited"
+      ]
+    },
+    "enum_gender": {
+      "enum": [
+        "m",
+        "f",
+        "male",
+        "female",
+        "other",
+        "unknown"
+      ]
+    },
+    "entityFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/entity"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "PersonEntityFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/PersonEntity"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "OrganizationEntityFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/OrganizationEntity"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "VesselEntityFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/VesselEntity"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "AircraftEntityFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AircraftEntity"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "SanctionEntryFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/SanctionEntry"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "AuthorityFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Authority"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "SanctionRegimeFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/SanctionRegime"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "LegalInstrumentFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/LegalInstrument"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "DocumentTypeFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/DocumentType"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "OrganizationFile": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Organization"
+        },
+        {
+          "required": [
+            "@context"
+          ]
+        }
+      ]
+    },
+    "sourceDateOrTimestamp": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/sourceDate"
+        },
+        {
+          "type": "string",
+          "format": "date-time",
+          "not": {
+            "pattern": "[\\r\\n]",
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "modelLocalizedString": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string"
+        },
+        "script": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "transliteration_system": {
+          "type": "string"
+        },
+        "is_primary": {
+          "type": "boolean"
+        },
+        "is_transliteration": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "ContentItem": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "chapter",
+            "clause",
+            "numbered-list",
+            "list-item"
+          ]
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/definitions/ContentItem"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "documentContent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/ContentItem"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Japan_contentItem"
+          }
+        }
+      ]
+    },
+    "Japan_bilingualString": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Plain text (typically Japanese source)"
+        },
+        {
+          "type": "object",
+          "description": "Bilingual text with translations",
+          "properties": {
+            "ja": {
+              "type": "string",
+              "description": "Japanese text"
+            },
+            "en": {
+              "type": "string",
+              "description": "English translation"
+            }
+          },
+          "minProperties": 1,
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Japan_contentItem": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/Japan_chapter"
+        },
+        {
+          "$ref": "#/definitions/Japan_clause"
+        },
+        {
+          "$ref": "#/definitions/Japan_numberedList"
+        },
+        {
+          "$ref": "#/definitions/Japan_listItem"
+        }
+      ]
+    },
+    "Japan_chapter": {
+      "type": "object",
+      "description": "Chapter (章)",
+      "required": [
+        "type",
+        "index",
+        "label",
+        "content"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "chapter",
+            "section",
+            "subsection"
+          ]
+        },
+        "index": {
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "Chapter identifier as a string.\n- Regular chapters: \"1\", \"2\", \"3\"\n- Sub-chapters: \"1-1\", \"1-2\"\nPattern matches the label number for stability.\n"
+        },
+        "label": {
+          "type": "string",
+          "description": "Japanese label (e.g., 第一章)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Chapter title text (Japanese)"
+        },
+        "title_en": {
+          "type": "string",
+          "description": "Chapter title translation (English)"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Japan_contentItem"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Japan_clause": {
+      "type": "object",
+      "description": "Article/Clause (条)",
+      "required": [
+        "type",
+        "index",
+        "label",
+        "content"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "clause"
+          ]
+        },
+        "index": {
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "Article identifier as a string.\n- Regular articles: \"1\", \"2\", \"5\", \"6\"\n- Range articles: \"2-4\" (for deleted articles 2 through 4)\n- Inserted articles: \"2-2\", \"5-3\" (for 第二条の二, 第五条の三)\nStable identifier regardless of document ordering changes.\n"
+        },
+        "label": {
+          "type": "string",
+          "description": "Japanese label (e.g., 第一条)"
+        },
+        "label_en": {
+          "type": "string",
+          "description": "English label (e.g., Article 1)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Article caption in Japanese (e.g., （目的）)"
+        },
+        "title_en": {
+          "type": "string",
+          "description": "Article caption translation (e.g., (Purpose))"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/Japan_bilingualString"
+              },
+              {
+                "$ref": "#/definitions/Japan_numberedList"
+              },
+              {
+                "$ref": "#/definitions/Japan_listItem"
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Japan_numberedList": {
+      "type": "object",
+      "description": "Numbered list (号 list)",
+      "required": [
+        "type",
+        "content"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "numbered-list"
+          ]
+        },
+        "index": {
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "Paragraph number as string (for multi-paragraph articles)"
+        },
+        "label": {
+          "type": "string",
+          "description": "List label (paragraph number in Japanese)"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Japan_listItem"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Japan_listItem": {
+      "type": "object",
+      "description": "Individual list item",
+      "required": [
+        "type",
+        "content"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "list-item"
+          ]
+        },
+        "index": {
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "Item number as string.\n- Regular items: \"1\", \"2\", \"3\"\n- Matches the numeric position in the list\n"
+        },
+        "label": {
+          "type": "string",
+          "description": "Item label in Japanese characters.\n一級: 一, 二, 三, etc.\n二級: イ, ロ, ハ, etc.\n三級: (1), (2), etc.\n"
+        },
+        "label_en": {
+          "type": "string",
+          "description": "English label (e.g., (i), (ii), (a), (b))"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/Japan_bilingualString"
+              },
+              {
+                "$ref": "#/definitions/Japan_numberedList"
+              },
+              {
+                "$ref": "#/definitions/Japan_listItem"
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "facet_statuses": {
+      "type": "object",
+      "properties": {
+        "facets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "$ref": "#/definitions/enum_sanctionStatus"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "count",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "facets"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

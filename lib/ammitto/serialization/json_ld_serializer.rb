@@ -2,6 +2,7 @@
 
 require 'json'
 require_relative '../schema/context'
+require_relative '../utils/presence'
 
 module Ammitto
   module Serialization
@@ -465,7 +466,7 @@ module Ammitto
           'effectiveDate' => period.effective_date,
           'expiryDate' => period.expiry_date,
           'isIndefinite' => period.is_indefinite,
-          'lastUpdated' => period.last_updated
+          'lastUpdated' => Utils::Presence.presence(period.last_updated)
         }.compact
       end
 

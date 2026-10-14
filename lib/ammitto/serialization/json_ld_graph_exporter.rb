@@ -101,6 +101,9 @@ module Ammitto
       # @return [Hash] statistics
       attr_reader :stats
 
+      # @return [Set<String>] artifact paths written by the last export
+      attr_reader :written_paths
+
       # @return [Hash] loaded legal instruments from YAML files
       attr_reader :loaded_instruments
 
@@ -1451,6 +1454,7 @@ module Ammitto
         # Export all.ttl (Turtle format)
         all_ttl_path = File.join(@output_dir, 'all.ttl')
         TurtleExporter.export(jsonld_path: all_jsonld_path, output_path: all_ttl_path)
+        @written_paths << File.expand_path(all_ttl_path)
       end
 
       # Export statistics file
@@ -1938,7 +1942,7 @@ module Ammitto
       # @return [void]
       def copy_context_file
         context_dest = File.join(@output_dir, 'context.jsonld')
-        File.write(context_dest, Ammitto::Schema::Context.to_json)
+        write_json(context_dest, Ammitto::Schema::Context.context)
       end
 
       # Group nodes by source

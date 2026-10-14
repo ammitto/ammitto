@@ -1,0 +1,96 @@
+= Harmonization output contracts, version 1
+
+These Draft 4 JSON Schemas describe the files produced by `ammitto harmonize`.
+They validate the serialized API, including camelCase fields and `@id`/`@type`;
+they are distinct from the country schemas that validate source YAML.
+The gem packages this directory under `schemas/`.
+
+The entity, person, organization, vessel, aircraft, sanction-entry, and enums
+entrypoints provide the semantic contracts named in the harmonization plan.
+The actual layout is `schemas/output/v1/` because these contracts validate
+publication artifacts rather than source models. Shared definitions live in
+`outputs.schema.json`; entrypoints reference those definitions without copying
+or independently maintaining their properties.
+
+== Artifact families
+
+[cols="2,2"]
+|===
+|API path |Definition in `outputs.schema.json`
+
+|`node/entity/**/*.jsonld` |`entityFile` (PersonEntityFile, OrganizationEntityFile, VesselEntityFile, AircraftEntityFile)
+|`node/entry/**/*.jsonld` |`SanctionEntryFile`
+|`node/legal-instrument/**/*.jsonld` |`LegalInstrumentFile`
+|`node/authority/**/*.jsonld`, `node/regime/**/*.jsonld` |`AuthorityFile`, `SanctionRegimeFile`
+|`node/document-type/**/*.jsonld`, `node/organization/**/*.jsonld` |`DocumentTypeFile`, `OrganizationFile`
+|`node/group/**/*.jsonld` |`group` (existing attribute-name model payload)
+|`node/<known-kind>/index.jsonld` |`nodeIndex`
+|`all.jsonld`, `sources/<source>.jsonld` |`aggregate`, with typed `node` definitions
+|`by-<family>/**/*.jsonld` |`slice_authority`, `slice_regime`, `slice_list`, `slice_status`, `slice_type`, `slice_organization`, `slice_document-type`
+|`index.jsonld` |`catalogue`
+|`stats.json`, `context.jsonld` |`stats`, `context`
+|`search-index/manifest.json`, `search-index/<authority>.json` |`searchManifest`, `searchShard`
+|`facets/<family>.json` |`facet_countries`, `facet_types`, `facet_statuses`, `facet_other`
+|`ontology/classes.jsonld`, `ontology/properties.jsonld` |`ontologyClasses`, `ontologyProperties`
+|`ontology/hierarchy.json` |`hierarchy` (recursive hierarchyNode)
+|`ontology/examples/{person,organization,vessel}.jsonld` |`example_person`, `example_organization`, `example_vessel`
+|Optional `--report` JSON file |`report`
+|===
+
+Typed objects reject unknown fields and wrong types. Entity discriminators must
+agree. Sanction status, entity type and effect type use their domain enums.
+Identification labels and gender remain source-preserved strings, matching the
+actual serialized runtime models; source and taxonomy namespaces remain
+source-defined. Dates preserve year-only,
+year-month and complete-date values. Birth-year ranges preserve open endpoints.
+Localized legal-instrument titles accept source language maps or serialized
+LocalizedString values, including native model metadata names. Legal content
+preserves recursive chapter, clause and list structures from the China and
+Japan source contracts. RawSourceData.sourceSpecificFields is intentionally a
+free-form provenance object, rather than a domain object with an invented schema.
+
+Ontology-browser examples retain their established illustrative field names
+(`Name`, `imo`, and reference objects for `hasSanctionEntry`) through separate
+contracts. They do not weaken the entity schemas used for published records.
+The versioned context contract checks all current term coercions and containers.
+Changing the context or output payload requires updating its contract.
+
+== Validation and failure behavior
+
+The command validates bytes at the exact paths its exporters wrote in this run.
+An unknown artifact family, missing file, malformed JSON, or schema defect fails
+closed. Retained output from earlier runs is not treated as newly generated data.
+This gate runs before deferred stale-node cleanup. A source-health failure keeps
+its existing priority; output defects are also recorded in `--report` under
+`output_validation` and make `gates_passed` false. Report bytes are validated
+before a successful run can clean stale nodes.
+
+Reports must be outside the canonical API output directory. Symlinks into that
+directory and existing hardlink aliases to its JSON/JSON-LD/Turtle artifacts,
+including retained artifacts, are rejected before writing. An unavailable or
+invalid packaged contract produces a diagnostic report with failing gates.
+
+Standalone node files require `@context`; aggregate nodes inherit the envelope
+context. Every aggregate node is checked against its complete typed contract.
+Compiled contracts are reused serially. A successful typed payload proof may
+be reused only for the same contract and SHA256 digest of the complete parsed
+JSON payload. Files and envelopes are still read and validated, changed fields
+miss the cache, and failures are never cached.
+
+`all.ttl` and `sources/<source>.ttl` are parsed with the installed RDF Turtle
+reader in strict validation mode, streaming statements without accumulating a
+graph. This establishes Turtle syntax validity. Turtle is not JSON, and this
+check does not claim JSON Schema validation, RDF semantic conformance, graph
+completeness, or cross-artifact referential integrity.
+
+== Standalone use
+
+[source,ruby]
+----
+require 'ammitto/validation/output_validator'
+validator = Ammitto::Validation::OutputValidator.new(output_dir: './api/v1')
+result = validator.validate_files(['./api/v1/all.jsonld'])
+abort result.error_messages.join("\n") unless result.valid?
+----
+
+The JSON Schemas can also be used by a Draft 4 validator independently of Ruby.

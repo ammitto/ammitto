@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Ammitto domain enumeration contracts v1",
+  "definitions": {
+    "entityType": {
+      "$ref": "outputs.schema.json#/definitions/enum_entityType"
+    },
+    "identificationType": {
+      "$ref": "outputs.schema.json#/definitions/enum_identificationType"
+    },
+    "sanctionEffectType": {
+      "$ref": "outputs.schema.json#/definitions/enum_sanctionEffectType"
+    },
+    "sanctionStatus": {
+      "$ref": "outputs.schema.json#/definitions/enum_sanctionStatus"
+    },
+    "legalInstrumentType": {
+      "$ref": "outputs.schema.json#/definitions/enum_legalInstrumentType"
+    },
+    "nameScript": {
+      "$ref": "outputs.schema.json#/definitions/enum_nameScript"
+    },
+    "effectScope": {
+      "$ref": "outputs.schema.json#/definitions/enum_effectScope"
+    },
+    "gender": {
+      "$ref": "outputs.schema.json#/definitions/enum_gender"
+    }
+  }
+}

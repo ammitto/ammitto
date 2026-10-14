@@ -11,6 +11,7 @@ require_relative '../serialization/ontology_exporter'
 require_relative '../serialization/json_ld_serializer'
 require_relative '../serialization/turtle_exporter'
 require_relative 'harmonize/source_transforms'
+require_relative '../validation/output_validator'
 
 module Ammitto
   module Cmd
@@ -121,6 +122,8 @@ module Ammitto
         # Per run, not per source: one entity IRI never spans sources, but a
         # reused command instance must not inherit an earlier run's links
         @entry_ids_by_entity = nil
+        @source_output_paths = []
+        @output_validation = nil
 
         parse_run = ParseFailureVisibility::Run.new
         results = ParseFailureVisibility.with_run(parse_run) do
@@ -159,6 +162,7 @@ module Ammitto
           @exporter.export_manifest
         end
 
+        validate_exported_outputs(output_dir)
         print_summary(results)
         # Written before the gates raise, because a failing run is
         # precisely the one a caller needs the report for. A write that
@@ -173,10 +177,55 @@ module Ammitto
         # outranks a gate saying one source contributed nothing. Only a
         # diagnostic ABOUT the run yields to the run's own verdict.
         report_error = options[:report] ? write_report(results) : nil
+        report_validation = validate_report if options[:report] && !report_error
         enforce_health_gates(results)
+        enforce_output_validation!
         raise Thor::Error, report_error if report_error
 
+        enforce_report_validation!(report_validation) if report_validation
+
         @exporter.cleanup_stale_nodes
+      end
+
+      def validate_exported_outputs(output_dir)
+        paths = @source_output_paths + @exporter.written_paths.to_a +
+                Array(@search_indexer.output_paths) + Array(@ontology_exporter.output_paths)
+        @exported_output_paths = paths
+        @output_validator = nil
+        @output_validator = Validation::OutputValidator.new(output_dir: output_dir)
+        @output_validation = @output_validator.validate_files(paths)
+      rescue StandardError => e
+        @output_validation = output_validator_failure(e, paths)
+      end
+
+      def output_validator_failure(error, paths)
+        Validation::Result.failure(
+          { path: Validation::OutputValidator::SCHEMA_PATH,
+            message: "Output validator failed: #{error.class}: #{error.message}" },
+          details: { files: Array(paths).uniq.length }
+        )
+      end
+
+      def enforce_output_validation!
+        return if @output_validation.valid?
+
+        messages = @output_validation.errors.map { |error| "#{error[:path]}: #{error[:message]}" }
+        raise Thor::Error, "Harmonize output validation failed:\n  #{messages.join("\n  ")}"
+      end
+
+      def validate_report
+        return nil unless @output_validator
+
+        @output_validator.validate_files([options[:report]], report: options[:report])
+      rescue StandardError => e
+        output_validator_failure(e, [options[:report]])
+      end
+
+      def enforce_report_validation!(result)
+        return if result.valid?
+
+        messages = result.errors.map { |error| "#{error[:path]}: #{error[:message]}" }
+        raise Thor::Error, "Harmonize report validation failed:\n  #{messages.join("\n  ")}"
       end
 
       # Health gates: a run that produced no data or swallowed errors must
@@ -434,10 +483,12 @@ module Ammitto
         ttl_path = File.join(sources_dir, "#{source}.ttl")
 
         File.write(jsonld_path, JSON.pretty_generate(document))
+        @source_output_paths << File.expand_path(jsonld_path)
         Serialization::TurtleExporter.export(
           jsonld_path: jsonld_path,
           output_path: ttl_path
         )
+        @source_output_paths << File.expand_path(ttl_path)
       end
 
       # Harmonize a single source
@@ -1014,6 +1065,8 @@ module Ammitto
       # @return [String, nil] failure message, or nil when written
       def write_report(results)
         path = options[:report]
+        validate_report_destination!(path)
+
         FileUtils.mkdir_p(File.dirname(path))
         File.write(path, "#{JSON.pretty_generate(report_payload(results))}\n")
         puts "Wrote report: #{path}" if options[:verbose]
@@ -1038,6 +1091,34 @@ module Ammitto
         message
       end
 
+      # Diagnostics must not replace any current or retained API artifact.
+      # Resolve existing parents for new paths; existing files also need an
+      # inode check because a hard link need not share an API path prefix.
+      def validate_report_destination!(path)
+        output = options[:output_dir] || './api/v1'
+        root = canonical_destination(output)
+        destination = canonical_destination(path)
+        inside = destination == root || destination.start_with?("#{root}/")
+        if !inside && File.exist?(path) && Dir.exist?(output)
+          report_stat = File.stat(path)
+          inside = Dir.glob('**/*.{json,jsonld,ttl}', base: output).any? do |relative|
+            artifact_stat = File.stat(File.join(output, relative))
+            artifact_stat.dev == report_stat.dev && artifact_stat.ino == report_stat.ino
+          end
+        end
+        raise ArgumentError, 'Report path overlaps an exported API artifact; place --report outside the API output directory' if inside
+      end
+
+      def canonical_destination(path)
+        ancestor = File.expand_path(path)
+        missing = []
+        until File.exist?(ancestor) || File.symlink?(ancestor)
+          missing.unshift(File.basename(ancestor))
+          ancestor = File.dirname(ancestor)
+        end
+        File.join(File.realpath(ancestor), *missing)
+      end
+
       # The report body, classified by the same gate evaluation the exit
       # code uses, so the two can never disagree.
       # @param results [Array<Hash>] harmonize results
@@ -1054,13 +1135,18 @@ module Ammitto
           # False means #enforce_health_gates is about to raise, so a
           # caller can act on the outcome without inspecting an exit code
           # it may have lost to a pipe.
-          'gates_passed' => failed.empty?,
+          'gates_passed' => failed.empty? && (@output_validation.nil? || @output_validation.valid?),
           'counts' => { 'succeeded' => clean.length,
                         'failed' => failed.length,
                         'exempted' => exempted.length },
           'totals' => { 'entities' => stats&.dig(:total_entities),
                         'entries' => stats&.dig(:total_entries) },
-          'sources' => results.map { |r| report_source(r) }
+          'sources' => results.map { |r| report_source(r) },
+          'output_validation' => {
+            'valid' => @output_validation.nil? || @output_validation.valid?,
+            'files' => @output_validation&.details&.fetch(:files, 0) || 0,
+            'errors' => @output_validation&.errors || []
+          }
         }
       end
 

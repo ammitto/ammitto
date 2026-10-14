@@ -332,6 +332,7 @@ module Ammitto
       # @param output_dir [String] output directory path
       # @return [void]
       def export(output_dir)
+        @output_paths = []
         ontology_dir = File.join(output_dir, 'ontology')
         FileUtils.mkdir_p(ontology_dir)
 
@@ -343,7 +344,15 @@ module Ammitto
         puts "Exported ontology data to #{ontology_dir}"
       end
 
+      # @return [Array<String>] artifact paths written by the last export
+      attr_reader :output_paths
+
       private
+
+      def write_json(path, data)
+        File.write(path, JSON.pretty_generate(data))
+        @output_paths << File.expand_path(path)
+      end
 
       # Export classes.jsonld
       # @param dir [String] ontology directory
@@ -365,7 +374,7 @@ module Ammitto
           '@graph' => classes_graph
         }
 
-        File.write(File.join(dir, 'classes.jsonld'), JSON.pretty_generate(data))
+        write_json(File.join(dir, 'classes.jsonld'), data)
       end
 
       # Export properties.jsonld
@@ -389,7 +398,7 @@ module Ammitto
           '@graph' => properties_graph
         }
 
-        File.write(File.join(dir, 'properties.jsonld'), JSON.pretty_generate(data))
+        write_json(File.join(dir, 'properties.jsonld'), data)
       end
 
       # Map range type to URI
@@ -437,7 +446,7 @@ module Ammitto
           children: [hierarchy] + supporting.map { |s| s.merge(count: 0) }
         }
 
-        File.write(File.join(dir, 'hierarchy.json'), JSON.pretty_generate(full_hierarchy))
+        write_json(File.join(dir, 'hierarchy.json'), full_hierarchy)
       end
 
       # Build entity type hierarchy with counts
@@ -489,7 +498,7 @@ module Ammitto
           ]
         }
 
-        File.write(File.join(dir, 'person.jsonld'), JSON.pretty_generate(example))
+        write_json(File.join(dir, 'person.jsonld'), example)
       end
 
       # Export organization example
@@ -511,7 +520,7 @@ module Ammitto
           ]
         }
 
-        File.write(File.join(dir, 'organization.jsonld'), JSON.pretty_generate(example))
+        write_json(File.join(dir, 'organization.jsonld'), example)
       end
 
       # Export vessel example
@@ -535,7 +544,7 @@ module Ammitto
           ]
         }
 
-        File.write(File.join(dir, 'vessel.jsonld'), JSON.pretty_generate(example))
+        write_json(File.join(dir, 'vessel.jsonld'), example)
       end
     end
   end

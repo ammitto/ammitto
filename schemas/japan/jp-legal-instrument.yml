@@ -1,0 +1,292 @@
+# yaml-language-server: $schema=http://json-schema.org/draft-04/schema#
+# Schema for Japanese legal instruments (laws, regulations, orders)
+# Supports bilingual (Japanese/English) content
+# Used for documents in sources/legal-instruments/
+
+id: jp-legal-instrument
+$schema: http://json-schema.org/draft-04/schema#
+
+title: Japanese Legal Instrument (Bilingual)
+description: |
+  Schema for Japanese legal instruments including Acts of Diet, Cabinet Orders,
+  Ministerial Ordinances, and other legal documents related to sanctions.
+
+  Supports bilingual content with Japanese (ja) and English (en) translations
+  derived from TMX translation memory files.
+
+type: object
+
+required:
+  - id
+  - title
+  - type
+  - authority
+  - document_id
+  - lang
+  - content
+
+properties:
+  id:
+    type: string
+    description: |
+      Unique identifier for the legal instrument.
+      Format: jp/{short-name}
+      Example: jp/diet-foreign-exchange-and-foreign-trade-act
+    pattern: "^jp/[a-z0-9-]+$"
+    examples:
+      - jp/diet-foreign-exchange-and-foreign-trade-act
+      - jp/cabinet-order-foreign-exchange
+
+  title:
+    type: array
+    description: Array of bilingual title objects
+    minItems: 1
+    items:
+      type: object
+      description: Bilingual title
+      properties:
+        ja:
+          type: string
+          description: Japanese title
+        en:
+          type: string
+          description: English translation
+      minProperties: 1
+      additionalProperties: false
+
+  url:
+    type: string
+    format: uri
+    description: URL to the official Japanese source (e-Gov)
+
+  url_en:
+    type: string
+    format: uri
+    description: URL to the English translation (Japanese Law Translation)
+
+  type:
+    type: string
+    description: Type of legal instrument
+    enum:
+      - jp/act-of-diet
+      - jp/cabinet-order
+      - jp/ministerial-ordinance
+      - jp/imperial-order
+      - jp/regulation
+      - jp/public-notice
+      - jp/notification
+
+  authority:
+    type: string
+    description: Issuing authority
+    enum:
+      - jp/diet
+      - jp/cabinet
+      - jp/mof
+      - jp/meti
+      - jp/mofa
+      - jp/mhlw
+      - jp/mlit
+      - jp/maff
+
+  publisher:
+    type: string
+    description: Publisher of the document
+
+  document_id:
+    type: string
+    description: Official document identifier (Japanese format)
+    examples:
+      - 昭和二十四年法律第二百二十八号
+      - 平成十年政令第三百四十二号
+
+  lang:
+    type: string
+    description: Primary language of the document
+    enum:
+      - ja
+      - en
+
+  publish_date:
+    type: string
+    format: date
+    description: Date of promulgation/publication
+
+  effective_date:
+    type: string
+    format: date
+    description: Date when the law becomes effective
+
+  amendment_date:
+    type: string
+    format: date
+    description: Date of most recent amendment
+
+  approval_history:
+    type: array
+    description: History of amendments and approvals
+    items:
+      type: string
+      description: Amendment description in Japanese
+
+  content:
+    type: array
+    description: Hierarchical content structure
+    items:
+      $ref: '#/definitions/contentItem'
+
+definitions:
+  # Bilingual string - can be either a plain string or an object with ja/en
+  bilingualString:
+    oneOf:
+      - type: string
+        description: Plain text (typically Japanese source)
+      - type: object
+        description: Bilingual text with translations
+        properties:
+          ja:
+            type: string
+            description: Japanese text
+          en:
+            type: string
+            description: English translation
+        minProperties: 1
+        additionalProperties: false
+
+  # Dispatch to concrete structures so nested content is validated too.
+  contentItem:
+    oneOf:
+      - $ref: '#/definitions/chapter'
+      - $ref: '#/definitions/clause'
+      - $ref: '#/definitions/numberedList'
+      - $ref: '#/definitions/listItem'
+
+  # Chapter definition
+  chapter:
+    type: object
+    description: Chapter (章)
+    required:
+      - type
+      - index
+      - label
+      - content
+    properties:
+      type:
+        enum: [chapter, section, subsection]
+      index:
+        type: [string, integer]
+        description: |
+          Chapter identifier as a string.
+          - Regular chapters: "1", "2", "3"
+          - Sub-chapters: "1-1", "1-2"
+          Pattern matches the label number for stability.
+      label:
+        type: string
+        description: Japanese label (e.g., 第一章)
+      title:
+        type: string
+        description: Chapter title text (Japanese)
+      title_en:
+        type: string
+        description: Chapter title translation (English)
+      content:
+        type: array
+        items:
+          $ref: '#/definitions/contentItem'
+
+  # Clause/Article definition
+  clause:
+    type: object
+    description: Article/Clause (条)
+    required:
+      - type
+      - index
+      - label
+      - content
+    properties:
+      type:
+        enum: [clause]
+      index:
+        type: [string, integer]
+        description: |
+          Article identifier as a string.
+          - Regular articles: "1", "2", "5", "6"
+          - Range articles: "2-4" (for deleted articles 2 through 4)
+          - Inserted articles: "2-2", "5-3" (for 第二条の二, 第五条の三)
+          Stable identifier regardless of document ordering changes.
+      label:
+        type: string
+        description: Japanese label (e.g., 第一条)
+      label_en:
+        type: string
+        description: English label (e.g., Article 1)
+      title:
+        type: string
+        description: Article caption in Japanese (e.g., （目的）)
+      title_en:
+        type: string
+        description: Article caption translation (e.g., (Purpose))
+      content:
+        type: array
+        items:
+          oneOf:
+            - $ref: '#/definitions/bilingualString'
+            - $ref: '#/definitions/numberedList'
+            - $ref: '#/definitions/listItem'
+
+  # Numbered list (号 list)
+  numberedList:
+    type: object
+    description: Numbered list (号 list)
+    required:
+      - type
+      - content
+    properties:
+      type:
+        enum: [numbered-list]
+      index:
+        type: [string, integer]
+        description: Paragraph number as string (for multi-paragraph articles)
+      label:
+        type: string
+        description: List label (paragraph number in Japanese)
+      content:
+        type: array
+        items:
+          $ref: '#/definitions/listItem'
+
+  # List item definition
+  listItem:
+    type: object
+    description: Individual list item
+    required:
+      - type
+      - content
+    properties:
+      type:
+        enum: [list-item]
+      index:
+        type: [string, integer]
+        description: |
+          Item number as string.
+          - Regular items: "1", "2", "3"
+          - Matches the numeric position in the list
+      label:
+        type: string
+        description: |
+          Item label in Japanese characters.
+          一級: 一, 二, 三, etc.
+          二級: イ, ロ, ハ, etc.
+          三級: (1), (2), etc.
+      label_en:
+        type: string
+        description: English label (e.g., (i), (ii), (a), (b))
+      content:
+        type: array
+        items:
+          oneOf:
+            - $ref: '#/definitions/bilingualString'
+            - $ref: '#/definitions/numberedList'
+            - $ref: '#/definitions/listItem'
+
+additionalProperties: false

@@ -1,0 +1,57 @@
+# Reduced from ammitto/data-jp source document; see Japan validation spec.
+announcement:
+  title:
+  - ja: 外国ユーザーリスト
+  - en: Foreign User List
+  url: https://www.meti.go.jp/policy/anpo/law00.html
+  lang: ja
+  publish_date: '2025-09-29'
+  authority: jp/meti
+  publisher: jp/meti
+  type: jp/meti-foreign-user-list-announcement
+  source_file: 20250929_4.xlsx
+  source_url: https://www.meti.go.jp/policy/anpo/20250929_4.xlsx
+sanction_details:
+  instruments:
+  - id: jp/diet-foreign-exchange-and-foreign-trade-act
+  - id: jp/cabinet-order-foreign-exchange
+  - id: jp/meti-export-trade-control-order
+  - id: jp/meti-foreign-exchange-order
+  entities:
+  - id: jp.meti.ful.1
+    name:
+      en: Al Qa'ida/Islamic Army
+    type: organization
+    effective_date: '2025-09-29'
+    sanction_list: jp/meti-foreign-user-list
+    reason:
+    - ja: 生物兵器の開発・拡散に関与
+      en: Involved in development or proliferation of biological weapons
+    - ja: 化学兵器の開発・拡散に関与
+      en: Involved in development or proliferation of chemical weapons
+    - ja: ミサイルの開発・拡散に関与
+      en: Involved in development or proliferation of missiles
+    - ja: 核兵器の開発・拡散に関与
+      en: Involved in development or proliferation of nuclear weapons
+    - ja: 通常兵器の開発・拡散に関与
+      en: Involved in development or proliferation of conventional weapons
+    source_file: 20250929_4.xlsx
+    source_url: https://www.meti.go.jp/policy/anpo/20250929_4.xlsx
+    country_code: AF
+    country_name:
+      ja: アフガニスタン
+      en: Islamic Republic of Afghanistan
+    measures:
+    - type:
+      - export_license_requirement
+      ja: 輸出に際して許可が必要
+      en: Export license required
+    aliases:
+    - Al Qaeda
+    - Islamic Salvation Foundation
+    - The Base
+    - The Group for the Preservation of the Holy Sites
+    - The Islamic Army for the Liberation of Holy Places
+    - The World Islamic Front for Jihad against Jews and Crusaders
+    - Usama Bin Laden Network
+    - Usama Bin Laden Organisation

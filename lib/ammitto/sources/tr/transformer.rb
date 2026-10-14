@@ -307,12 +307,29 @@ module Ammitto
         def parse_listed_date(value)
           return nil if value.nil? || value.to_s.strip.empty?
 
+          # The first date in this authority column is the listing date;
+          # dates in its review/amendment note do not replace that date.
+          text = value.to_s.unicode_normalize(:nfd).gsub(/\p{Mn}/, '')
+                      .downcase.tr('ı', 'i').gsub(/\s+/, ' ').strip
+          match = text.match(/\A(\d{1,2}) ([a-z]+) (\d{4})(?:\s*\(([^()]*)\))?\z/)
+          if match && (month = TURKISH_MONTHS[match[2]]) && listing_annotation?(match[4])
+            return Date.new(match[3].to_i, month, match[1].to_i)
+          end
+
           Date.parse(value.to_s)
         rescue ArgumentError => e
           Ammitto::ParseFailureVisibility.report(
             source: :tr, field: :listed_date, value: value, error: e
           )
           nil
+        end
+
+        def listing_annotation?(text)
+          return true if text.nil?
+
+          date = '\d{1,2} [a-z]+ \d{4}'
+          text.match?(/\Adegisiklik #{date}\z/) ||
+            text.match?(/\A#{date}(?: ve #{date})? tarih(?:ler)?inde gozden gecirilmistir\.\z/)
         end
       end
     end

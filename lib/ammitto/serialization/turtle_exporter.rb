@@ -267,7 +267,7 @@ module Ammitto
       # @return [String] escaped string
       def escape_string(str)
         escaped = str.to_s
-                     .gsub('\\', '\\\\')
+                     .gsub('\\') { '\\\\' }
                      .gsub('"', '\\"')
                      .gsub("\n", '\\n')
                      .gsub("\r", '\\r')

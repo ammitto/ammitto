@@ -12,4 +12,12 @@ on:
 
 jobs:
   rake:
-    uses: metanorma/ci/.github/workflows/generic-rake.yml@main
+    uses: metanorma/ci/.github/workflows/generic-rake.yml@083ae028fa7a8cdaaf5e6152ca07acbec092cf52
+    with:
+      # The matrix verifies pull requests. Reserve its post-test repository
+      # dispatch for non-PR events, including manual workflow runs.
+      cascade: ${{ github.event_name != 'pull_request' }}
+    secrets:
+      # The shared workflow's GITHUB_TOKEN is read-only. Supply the existing
+      # dispatch token only for non-PR events.
+      pat_token: ${{ github.event_name != 'pull_request' && secrets.AMMITTO_CI_PAT_TOKEN || '' }}

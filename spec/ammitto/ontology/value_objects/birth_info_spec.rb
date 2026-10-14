@@ -160,4 +160,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::BirthInfo do
       )
     end
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(city: 'Before')
+      replacement = original.with(city: 'After')
+
+      expect(replacement).to be_frozen
+      expect(replacement.city).to eq('After')
+      expect(original.city).to eq('Before')
+      expect(original).to be_frozen
+    end
+  end
 end

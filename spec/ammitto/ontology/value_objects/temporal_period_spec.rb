@@ -45,4 +45,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::TemporalPeriod do
     expect(period.is_indefinite).to be(false)
     expect(period.to_hash).to eq({ listed_date: '2022-01-01' })
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(listed_date: Date.new(2024, 1, 1))
+      replacement = original.with(listed_date: Date.new(2024, 2, 1))
+
+      expect(replacement).to be_frozen
+      expect(replacement.listed_date).to eq(Date.new(2024, 2, 1))
+      expect(original.listed_date).to eq(Date.new(2024, 1, 1))
+      expect(original).to be_frozen
+    end
+  end
 end

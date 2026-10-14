@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
@@ -22,7 +23,7 @@ module Ammitto
       #     postal_code: "123456"
       #   )
       #
-      class Address < Lutaml::Model::Serializable
+      class AddressModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for Address
@@ -119,6 +120,11 @@ module Ammitto
           map :po_box, to: :po_box
           map :address_type, to: :address_type
         end
+      end
+      private_constant :AddressModel
+
+      class Address < AddressModel
+        include Immutable
       end
     end
   end

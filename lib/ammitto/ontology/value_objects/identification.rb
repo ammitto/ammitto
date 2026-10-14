@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../types'
 require_relative '../neo4j_adapter'
@@ -22,7 +23,7 @@ module Ammitto
       #     expiry_date: Date.new(2025, 12, 31)
       #   )
       #
-      class Identification < Lutaml::Model::Serializable
+      class IdentificationModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for Identification
@@ -90,6 +91,11 @@ module Ammitto
           map :expiry_date, to: :expiry_date
           map :issue_date, to: :issue_date
         end
+      end
+      private_constant :IdentificationModel
+
+      class Identification < IdentificationModel
+        include Immutable
       end
     end
   end

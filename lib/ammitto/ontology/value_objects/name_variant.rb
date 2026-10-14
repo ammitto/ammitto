@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../types'
 require_relative '../neo4j_adapter'
 
@@ -23,13 +24,13 @@ module Ammitto
       #     is_primary: true
       #   )
       #
-      class NameVariant < Lutaml::Model::Serializable
+      class NameVariantModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for NameVariant
         neo4j_labels 'Name'
         neo4j_property :full_name, :first_name, :middle_name, :last_name,
-                       :title, :function, :script, :language, :is_primary
+                       :title, :function, :script, :language, :is_primary, :is_strong
 
         # Full name (complete name as a single string)
         # @return [String, nil]
@@ -120,6 +121,7 @@ module Ammitto
           hash[:script] = script if script
           hash[:language] = language if language
           hash[:is_primary] = is_primary if is_primary
+          hash[:is_strong] = is_strong unless is_strong.nil?
           hash
         end
 
@@ -134,6 +136,7 @@ module Ammitto
           map :script, to: :script
           map :language, to: :language
           map :is_primary, to: :is_primary
+          map :is_strong, to: :is_strong
         end
 
         # YAML mapping
@@ -147,6 +150,17 @@ module Ammitto
           map :script, to: :script
           map :language, to: :language
           map :is_primary, to: :is_primary
+          map :is_strong, to: :is_strong
+        end
+      end
+      private_constant :NameVariantModel
+
+      class NameVariant < NameVariantModel
+        include Immutable
+
+        # Return a new value; the canonical name cannot be mutated in place.
+        def with_detected_script
+          full_name ? with(script: Types.detect_script(full_name).to_s) : self
         end
       end
     end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 
 module Ammitto
   module Ontology
@@ -17,7 +18,7 @@ module Ammitto
       #     is_indefinite: true
       #   )
       #
-      class TemporalPeriod < Lutaml::Model::Serializable
+      class TemporalPeriodModel < Lutaml::Model::Serializable
         # Date when entity was listed
         # @return [Date, nil]
         attribute :listed_date, :date
@@ -92,6 +93,11 @@ module Ammitto
           map :is_indefinite, to: :is_indefinite
           map :last_updated, to: :last_updated
         end
+      end
+      private_constant :TemporalPeriodModel
+
+      class TemporalPeriod < TemporalPeriodModel
+        include Immutable
       end
     end
   end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../types'
 
@@ -19,7 +20,7 @@ module Ammitto
       #     description: "All funds and economic resources"
       #   )
       #
-      class SanctionEffect < Lutaml::Model::Serializable
+      class SanctionEffectModel < Lutaml::Model::Serializable
         # Type of sanction effect
         # @return [Symbol, String, nil]
         attribute :effect_type, :string
@@ -93,6 +94,11 @@ module Ammitto
           map :start_date, to: :start_date
           map :end_date, to: :end_date
         end
+      end
+      private_constant :SanctionEffectModel
+
+      class SanctionEffect < SanctionEffectModel
+        include Immutable
       end
     end
   end

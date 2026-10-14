@@ -87,4 +87,16 @@ RSpec.describe Ammitto::Ontology::ValueObjects::SanctionEffect do
       expect(effect.to_hash).to eq({ effect_type: 'asset_freeze', start_date: '2022-03-01' })
     end
   end
+
+  describe '#with' do
+    it 'returns a sealed replacement and retains the original value' do
+      original = described_class.new(description: 'Before')
+      replacement = original.with(description: 'After')
+
+      expect(replacement).to be_frozen
+      expect(replacement.description).to eq('After')
+      expect(original.description).to eq('Before')
+      expect(original).to be_frozen
+    end
+  end
 end

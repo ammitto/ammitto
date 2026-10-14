@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../neo4j_adapter'
 
@@ -49,7 +50,7 @@ module Ammitto
       #   BirthInfo.new(date_range_from: Date.new(1961, 1, 1),
       #                 date_range_to: Date.new(1962, 12, 31))
       #
-      class BirthInfo < Lutaml::Model::Serializable
+      class BirthInfoModel < Lutaml::Model::Serializable
         include Neo4jAdapter
 
         # Neo4j configuration for BirthInfo
@@ -223,6 +224,11 @@ module Ammitto
           map :country, to: :country
           map :country_iso_code, to: :country_iso_code
         end
+      end
+      private_constant :BirthInfoModel
+
+      class BirthInfo < BirthInfoModel
+        include Immutable
       end
     end
   end

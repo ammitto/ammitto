@@ -12,6 +12,7 @@ require_relative '../serialization/json_ld_serializer'
 require_relative '../serialization/turtle_exporter'
 require_relative 'harmonize/source_transforms'
 require_relative '../validation/output_validator'
+require_relative '../services/publication_entity_matcher'
 
 module Ammitto
   module Cmd
@@ -123,6 +124,8 @@ module Ammitto
         # reused command instance must not inherit an earlier run's links
         @entry_ids_by_entity = nil
         @source_output_paths = []
+        @matching_source_graphs = {}
+        @entity_matching = nil
         @output_validation = nil
 
         parse_run = ParseFailureVisibility::Run.new
@@ -147,6 +150,7 @@ module Ammitto
                          result[:gate_failures].any? || result[:exempted_failures].any?
             @exporter.hold_back(result[:code]) if incomplete
           end
+          resolve_cross_source_entities(results)
           @exporter.export(cleanup: false)
 
           puts 'Exporting search index...' if options[:verbose]
@@ -491,6 +495,44 @@ module Ammitto
         @source_output_paths << File.expand_path(ttl_path)
       end
 
+      # Match only complete, healthy current-run sources. Original node IDs,
+      # entries and references remain intact in every serialization surface.
+      def resolve_cross_source_entities(results)
+        healthy = results.select do |result|
+          result[:status] == :success && result[:gate_failures].empty? &&
+            result[:exempted_failures].empty? && result[:parse_failures].to_i.zero?
+        end
+        healthy = healthy.map { |result| result[:code].to_s }
+        records = @exporter.entities.values.filter_map do |node|
+          source = node['@id'].to_s[%r{\Ahttps://www\.ammitto\.org/entity/([^/]+)/}, 1]
+          { node: node, source: source } if healthy.include?(source)
+        end
+        matcher = Services::PublicationEntityMatcher.new
+        matches = matcher.resolve!(records)
+        @entity_matching = {
+          'published_pairs' => matches.length,
+          'matches' => matches.first(1000),
+          'matches_truncated' => matches.length > 1000,
+          'review_candidates' => matcher.review_candidates,
+          'review_candidates_at_limit' => matcher.review_candidates.length == Services::PublicationEntityMatcher::MAX_REVIEW_CANDIDATES,
+          'skipped_blocks' => matcher.skipped_blocks,
+          'review_comparisons' => matcher.review_comparisons,
+          'review_truncated' => matcher.review_truncated
+        }
+        affected = matches.flat_map { |match| match[:ids] }.to_set
+        @matching_source_graphs.each do |source, graph|
+          next unless graph.any? { |node| affected.include?(node['@id']) }
+
+          # Use the exporter's final winner for repeated source entity IDs.
+          linked_graph = graph.map { |node| @exporter.entities.fetch(node['@id'], node) }
+          write_source_aggregate(source, linked_graph)
+        end
+        return unless options[:verbose]
+
+        puts "Cross-source matching: #{matches.length} policy-qualified pairs; " \
+             "#{matcher.review_candidates.length} review candidates (not linked)"
+      end
+
       # Harmonize a single source
       # @param source [Symbol] source code
       # @return [Hash] harmonize result
@@ -523,7 +565,10 @@ module Ammitto
 
         # Per-source aggregate: required by BaseSource downloads and
         # Data::Repository#load_source (artifact-topology contract)
-        write_source_aggregate(source, source_graph) if entities_count.positive?
+        if entities_count.positive?
+          write_source_aggregate(source, source_graph)
+          @matching_source_graphs[source] = source_graph if @matching_source_graphs
+        end
 
         puts "[#{source}] Harmonized #{entities_count} entities" if options[:verbose]
 
@@ -1142,6 +1187,7 @@ module Ammitto
           'totals' => { 'entities' => stats&.dig(:total_entities),
                         'entries' => stats&.dig(:total_entries) },
           'sources' => results.map { |r| report_source(r) },
+          'entity_matching' => @entity_matching,
           'output_validation' => {
             'valid' => @output_validation.nil? || @output_validation.valid?,
             'files' => @output_validation&.details&.fetch(:files, 0) || 0,

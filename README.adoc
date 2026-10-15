@@ -572,6 +572,32 @@ jq '.["@graph"] | length' ./api/v1/sources/uk.jsonld
 * **Missing entities in JSON-LD**: Verify transformers are registered in the Registry
 * **Workflow failures**: Check the GitHub Actions logs for error messages
 
+== Cross-source identity links
+
+Harmonization preserves each source entity and its sanction entries. It adds
+symmetric `owl:sameAs` links only when different sources supply a matching,
+country-qualified identifier (passport, national ID, tax ID), a
+checksum-valid vessel IMO number, or a complete birth date with a conservative
+name match. Names use Unicode normalization, token ordering, and at most one
+character insertion, deletion, or substitution. Short names, approximate or
+partial dates, contradictory dates/identifiers, different entity types, and
+ambiguous groups do not establish automatic identity. Every linked group must
+have compatible evidence between every pair and at most one entity per source.
+These safeguards favor precision over recall; absence of a link is not evidence
+that two records describe different people.
+
+Name similarities remain review leads when automatic identity is unsupported or
+ambiguous, including matching alternative birth dates. Review leads never become
+identity assertions. With `--report PATH`, `entity_matching` records published pair counts,
+a bounded sample of matching evidence, name-similarity review leads, and skipped
+oversized candidate blocks. Both samples are limited to 1,000 pairs, with explicit
+limit indicators. Name-only review sampling stops after 20,000 pair attempts;
+its truncation flag and attempt count are reported independently of the complete
+strong identifier/date candidate pass. Candidate generation uses identifier, full-date, and name-token
+indexes; blocks exceeding 50 records are skipped rather than compared without
+bounds. This is a conservative matching policy, not a measured guarantee of
+real-world identity or exhaustive cross-source deduplication.
+
 == Development
 
 After checking out the repo, run `bin/setup` to install dependencies.

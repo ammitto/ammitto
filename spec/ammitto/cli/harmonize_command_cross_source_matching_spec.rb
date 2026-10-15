@@ -30,7 +30,7 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
       entity = person(source, names_only: names_only)
       entry = Ammitto::SanctionEntry.new(
         id: "https://www.ammitto.org/entry/#{source}/list/one", entity_id: entity.id,
-        authority: Ammitto::Authority.new(id: "https://www.ammitto.org/authority/#{source}", name: source.to_s),
+        authority: Ammitto::Authority.find(source),
         status: 'active'
       )
       { entity: serializer.serialize_entity(entity), entry: serializer.serialize_entry(entry) }
@@ -43,6 +43,7 @@ RSpec.describe Ammitto::Cmd::HarmonizeCommand do
     Dir.mktmpdir('matching-publication') do |root|
       options = run_publication(root, duplicate: true)
       output = options[:output_dir]
+      expect(Dir.children(File.join(output, 'node', 'authority')).sort).to eq(%w[eu.jsonld index.jsonld un.jsonld])
       aggregate = JSON.parse(File.read(File.join(output, 'all.jsonld')))['@graph']
       %w[un eu].each do |source|
         iri = "https://www.ammitto.org/entity/#{source}/one"

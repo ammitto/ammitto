@@ -163,6 +163,8 @@ module Ammitto
           }
         end
 
+        canonical_entrypoints :transform_announcement, :transform_modification
+
         private
 
         # The list a whole notice belongs to: the one it is filed under, or
@@ -212,14 +214,13 @@ module Ammitto
           entity_id = generate_entity_id(ref)
           entry = create_entry(entity, announcement, entity_id, legal_citations, ref, context)
 
-          person = Ammitto::PersonEntity.new(
-            id: entity_id,
-            entity_type: 'person',
-            names: transform_names(entity),
-            gender: entity.gender,
-            remarks: build_remarks(entity),
-            sanction_entry_ids: [entry.id]
-          )
+          person = build_model(Ammitto::PersonEntity,
+                               id: entity_id,
+                               entity_type: 'person',
+                               names: transform_names(entity),
+                               gender: entity.gender,
+                               remarks: build_remarks(entity),
+                               sanction_entry_ids: [entry.id])
 
           { entity: person, entry: entry }
         end
@@ -228,13 +229,12 @@ module Ammitto
           entity_id = generate_entity_id(ref)
           entry = create_entry(entity, announcement, entity_id, legal_citations, ref, context)
 
-          org = Ammitto::OrganizationEntity.new(
-            id: entity_id,
-            entity_type: 'organization',
-            names: transform_names(entity),
-            remarks: build_remarks(entity),
-            sanction_entry_ids: [entry.id]
-          )
+          org = build_model(Ammitto::OrganizationEntity,
+                            id: entity_id,
+                            entity_type: 'organization',
+                            names: transform_names(entity),
+                            remarks: build_remarks(entity),
+                            sanction_entry_ids: [entry.id])
 
           { entity: org, entry: entry }
         end
@@ -324,7 +324,8 @@ module Ammitto
             list_slug: list_code.to_s.gsub('_', '-')
           }
 
-          Ammitto::SanctionEntry.new(
+          build_model(
+            Ammitto::SanctionEntry,
             id: generate_entry_id(ref, entry_list_type: list_info[:list_slug]),
             entity_id: entity_id,
             authority: authority,
@@ -355,10 +356,9 @@ module Ammitto
           return [] if reasons_data.nil? || reasons_data.empty?
 
           reasons_data.map do |reason_hash|
-            Ammitto::SanctionReason.new(
-              category: 'other',
-              description: build_localized_strings_from_hash(reason_hash)
-            )
+            build_model(Ammitto::SanctionReason,
+                        category: 'other',
+                        description: build_localized_strings_from_hash(reason_hash))
           end.compact
         end
 
@@ -415,18 +415,18 @@ module Ammitto
         end
 
         def create_temporal_period(entity)
-          Ammitto::TemporalPeriod.new(
-            effective_date: parse_date(entity.effective_date, source: :cn, field: :effective_date),
-            effective_time: entity.effective_time,
-            is_indefinite: true
-          )
+          build_model(Ammitto::TemporalPeriod,
+                      effective_date: parse_date(entity.effective_date, source: :cn, field: :effective_date),
+                      effective_time: entity.effective_time,
+                      is_indefinite: true)
         end
 
         def create_official_announcement(announcement_block, report_failures: true, list_code: nil)
           id = generate_announcement_id(announcement_local_id(announcement_block&.document_id, list_code))
           report_as = report_failures ? { source: :cn, field: :publish_date } : {}
 
-          Ammitto::OfficialAnnouncement.new(
+          build_model(
+            Ammitto::OfficialAnnouncement,
             id: id,
             title: extract_announcement_title(announcement_block),
             url: announcement_block.url,

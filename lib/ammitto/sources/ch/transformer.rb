@@ -32,6 +32,8 @@ module Ammitto
           end
         end
 
+        canonical_entrypoints :transform
+
         private
 
         def transform_object(target)
@@ -39,23 +41,22 @@ module Ammitto
           raise "Unsupported CH object type: #{object.object_type.inspect}" unless object.object_type == 'vessel'
 
           names = object.identity&.names || []
-          entity = Ammitto::VesselEntity.new(
-            id: generate_entity_id(target.ssid),
-            entity_type: 'vessel',
-            names: names.filter_map do |name|
-              full_name = name.full_name
-              next if full_name.empty?
+          entity = build_model(Ammitto::VesselEntity,
+                               id: generate_entity_id(target.ssid),
+                               entity_type: 'vessel',
+                               names: names.filter_map do |name|
+                                 full_name = name.full_name
+                                 next if full_name.empty?
 
-              create_name_variant(full_name: full_name,
-                                  is_primary: name.name_type == 'primary-name')
-            end,
-            imo_number: object.imo_number,
-            previous_names: names.select { |name| name.name_type == 'formerly-known-as' }.map(&:full_name),
-            remarks: [object.justification, object.other_information].compact.join("\n")
-          )
+                                 create_name_variant(full_name: full_name,
+                                                     is_primary: name.name_type == 'primary-name')
+                               end,
+                               imo_number: object.imo_number,
+                               previous_names: names.select { |name| name.name_type == 'formerly-known-as' }.map(&:full_name),
+                               remarks: [object.justification, object.other_information].compact.join("\n"))
 
           entry = create_entry(target, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -64,16 +65,15 @@ module Ammitto
           individual = target.individual
           identity = individual.identity
 
-          entity = Ammitto::PersonEntity.new(
-            id: generate_entity_id(target.ssid),
-            entity_type: 'person',
-            names: transform_names_from_identity(identity),
-            birth_info: transform_birth_info(identity),
-            remarks: individual.justification
-          )
+          entity = build_model(Ammitto::PersonEntity,
+                               id: generate_entity_id(target.ssid),
+                               entity_type: 'person',
+                               names: transform_names_from_identity(identity),
+                               birth_info: transform_birth_info(identity),
+                               remarks: individual.justification)
 
           entry = create_entry(target, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -82,15 +82,14 @@ module Ammitto
           entity_obj = target.entity
           identity = entity_obj.identity
 
-          entity = Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(target.ssid),
-            entity_type: 'organization',
-            names: transform_names_from_identity(identity),
-            remarks: entity_obj.justification
-          )
+          entity = build_model(Ammitto::OrganizationEntity,
+                               id: generate_entity_id(target.ssid),
+                               entity_type: 'organization',
+                               names: transform_names_from_identity(identity),
+                               remarks: entity_obj.justification)
 
           entry = create_entry(target, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -102,36 +101,33 @@ module Ammitto
         # @return [Hash] { entity: Entity, entry: SanctionEntry }
         def transform_identity(identity)
           entity = if identity.person? || identity.day_month_year
-                     Ammitto::PersonEntity.new(
-                       id: generate_entity_id(identity.ssid),
-                       entity_type: 'person',
-                       names: transform_names_from_identity(identity),
-                       birth_info: transform_birth_info(identity)
-                     )
+                     build_model(Ammitto::PersonEntity,
+                                 id: generate_entity_id(identity.ssid),
+                                 entity_type: 'person',
+                                 names: transform_names_from_identity(identity),
+                                 birth_info: transform_birth_info(identity))
                    else
-                     Ammitto::OrganizationEntity.new(
-                       id: generate_entity_id(identity.ssid),
-                       entity_type: 'organization',
-                       names: transform_names_from_identity(identity)
-                     )
+                     build_model(Ammitto::OrganizationEntity,
+                                 id: generate_entity_id(identity.ssid),
+                                 entity_type: 'organization',
+                                 names: transform_names_from_identity(identity))
                    end
 
           entry = create_entry(identity, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
 
         def transform_from_minimal(target)
-          entity = Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(target.ssid),
-            entity_type: 'organization',
-            names: [create_name_variant(full_name: "Entity #{target.ssid}", is_primary: true)],
-            remarks: "Sanctions Set ID: #{target.sanctions_set_id}"
-          )
+          entity = build_model(Ammitto::OrganizationEntity,
+                               id: generate_entity_id(target.ssid),
+                               entity_type: 'organization',
+                               names: [create_name_variant(full_name: "Entity #{target.ssid}", is_primary: true)],
+                               remarks: "Sanctions Set ID: #{target.sanctions_set_id}")
 
           entry = create_entry(target, entity.id)
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           { entity: entity, entry: entry }
         end
@@ -157,23 +153,22 @@ module Ammitto
         end
 
         def create_entry(target, entity_id)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(target.ssid),
-            entity_id: entity_id,
-            authority: authority,
-            regime: create_regime(code: 'CH_SECO', name: 'Switzerland SECO Sanctions'),
-            effects: [create_effect(effect_type: 'asset_freeze', scope: 'full')],
-            status: 'active',
-            reference_number: target.ssid,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'ch:ssid' => target.ssid,
-                'ch:sanctions_set_id' =>
-                  (target.sanctions_set_id if target.respond_to?(:sanctions_set_id))
-              }.compact
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(target.ssid),
+                      entity_id: entity_id,
+                      authority: authority,
+                      regime: create_regime(code: 'CH_SECO', name: 'Switzerland SECO Sanctions'),
+                      effects: [create_effect(effect_type: 'asset_freeze', scope: 'full')],
+                      status: 'active',
+                      reference_number: target.ssid,
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'xml',
+                        source_specific_fields: {
+                          'ch:ssid' => target.ssid,
+                          'ch:sanctions_set_id' =>
+                            (target.sanctions_set_id if target.respond_to?(:sanctions_set_id))
+                        }.compact
+                      ))
         end
       end
     end

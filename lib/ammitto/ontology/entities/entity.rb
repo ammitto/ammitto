@@ -45,6 +45,11 @@ module Ammitto
         # @return [String]
         attribute :entity_type, :string
 
+        # Name variants. Declared here because every entity kind has
+        # names; vessels and aircraft also keep a single +name+.
+        # @return [Array<NameVariant>, nil]
+        attribute :names, ValueObjects::NameVariant, collection: true
+
         # Source references (which data sources mention this entity)
         # @return [Array<SourceReference>, nil]
         attribute :source_references, ValueObjects::SourceReference, collection: true
@@ -60,6 +65,10 @@ module Ammitto
         # General remarks
         # @return [String, nil]
         attribute :remarks, :string
+
+        # IRIs of the sanction entries naming this entity
+        # @return [Array<String>, nil]
+        attribute :sanction_entry_ids, :string, collection: true
 
         # Sanction entries linked to this entity
         # @return [Array, nil]
@@ -122,6 +131,8 @@ module Ammitto
           hash[:linked_entities] = linked_entities.map(&:to_hash) if linked_entities&.any?
           hash[:same_as] = same_as if same_as&.any?
           hash[:remarks] = remarks if remarks
+          hash[:names] = names.map(&:to_hash) if names&.any?
+          hash[:sanction_entry_ids] = sanction_entry_ids if sanction_entry_ids&.any?
           hash
         end
 
@@ -129,20 +140,24 @@ module Ammitto
         json do
           map :id, to: :id
           map :entity_type, to: :entity_type
+          map :names, to: :names
           map :source_references, to: :source_references
           map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
 
         # YAML mapping
         yaml do
           map :id, to: :id
           map :entity_type, to: :entity_type
+          map :names, to: :names
           map :source_references, to: :source_references
           map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
       end
     end

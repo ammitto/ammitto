@@ -1,0 +1,102 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/ch/100027",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "LLC “Aviation Systems and Complexes”",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/ch/consolidated-list/100027"
+        ],
+        "remarks": "LLC “Aviation Systems and Complexes” is a Russian developer and manufacturer of unmanned aerial vehicles (UAVs). It manufactures the first-person view UAV “ASK X-2” used by the Russian Armed Forces. Therefore, LLC “Aviation Systems and Complexes” is forming part of Russia’s military and industrial complex.",
+        "identifications": [],
+        "addresses": [],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/ch/consolidated-list/100027",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/ch/100027",
+        "authority": {
+          "@type": "Authority",
+          "id": "ch",
+          "name": "Switzerland (SECO)",
+          "countryCode": "CH"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Switzerland SECO Sanctions",
+          "code": "CH_SECO"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "100027",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "ch:ssid": "100027",
+            "ch:sanctions_set_id": "27286"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ch:ssid": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ch:sanctions_set_id": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1
+  }
+}

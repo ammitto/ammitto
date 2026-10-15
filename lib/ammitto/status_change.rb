@@ -2,12 +2,19 @@
 
 require 'lutaml/model'
 require_relative 'notice_reference'
+require_relative 'ontology/contracts'
+require_relative 'ontology/sanction/status_history'
 
 module Ammitto
   # StatusChange represents a change in sanction status
   #
   # Tracks the history of status changes for a sanction entry,
   # including suspensions, terminations, resumptions, etc.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::StatusHistory (see Ontology::Contracts). Here
+  # +date+ is the raw ISO 8601 string (canonical +timestamp+); the
+  # canonical Date is +change_date+.
   #
   # @example Creating a status change
   #   StatusChange.new(
@@ -30,12 +37,7 @@ module Ammitto
       deceased
     ].freeze
 
-    attribute :date, :string # ISO 8601 datetime string
-    attribute :from_status, :string
-    attribute :to_status, :string
-    attribute :reason, :string
-    attribute :notice_reference, NoticeReference
-    attribute :suspension_end_date, :date # For suspended status
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'date', to: :date
@@ -44,6 +46,8 @@ module Ammitto
       map 'reason', to: :reason
       map 'noticeReference', to: :notice_reference
       map 'suspensionEndDate', to: :suspension_end_date
+      map 'status', to: :status
+      map 'changeDate', to: :change_date
     end
 
     # @return [Boolean] whether this is a suspension

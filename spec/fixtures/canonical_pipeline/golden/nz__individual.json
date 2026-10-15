@@ -1,0 +1,127 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/nz/ind-10",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Sergei Yevgenyevich Naryshkin",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [
+          {
+            "@type": "SourceReference",
+            "sourceCode": "nz",
+            "referenceNumber": "IND-10",
+            "retrievedAt": "2026-10-14T12:00:00Z"
+          }
+        ],
+        "linkedEntities": [],
+        "birthInfo": [],
+        "nationalities": [],
+        "identifications": [],
+        "addresses": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/nz/consolidated-list/ind-10",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/nz/ind-10",
+        "authority": {
+          "@type": "Authority",
+          "id": "nz",
+          "name": "New Zealand (MFAT)",
+          "countryCode": "NZ"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "New Zealand Russia Sanctions",
+          "code": "NZ-RU"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "travel_ban",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "vessel_ban",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "aircraft_ban",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2022-03-18",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": []
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.sourceReferences[0].@type": "String",
+    "$.output.entity.sourceReferences[0].sourceCode": "String",
+    "$.output.entity.sourceReferences[0].referenceNumber": "String",
+    "$.output.entity.sourceReferences[0].retrievedAt": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.effects[2].@type": "String",
+    "$.output.entry.effects[2].effectType": "String",
+    "$.output.entry.effects[2].scope": "String",
+    "$.output.entry.effects[3].@type": "String",
+    "$.output.entry.effects[3].effectType": "String",
+    "$.output.entry.effects[3].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::SanctionEffect": 4,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::SourceReference": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

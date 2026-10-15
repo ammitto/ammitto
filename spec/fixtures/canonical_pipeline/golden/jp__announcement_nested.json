@@ -1,0 +1,126 @@
+{
+  "json": {
+    "output": [
+      {
+        "entity": {
+          "@id": "https://www.ammitto.org/entity/jp/jp-jpmofiraq-249",
+          "@type": "OrganizationEntity",
+          "entityType": "organization",
+          "names": [
+            {
+              "@type": "NameVariant",
+              "fullName": "IDLEB COMPANY FOR SPINNING",
+              "script": "Latn",
+              "isPrimary": true
+            },
+            {
+              "@type": "NameVariant",
+              "fullName": "イドリブ紡績会社",
+              "script": "Jpan",
+              "isPrimary": false
+            }
+          ],
+          "sourceReferences": [
+            {
+              "@type": "SourceReference",
+              "sourceCode": "jp",
+              "referenceNumber": "JP-jp.mof.iraq-2.49",
+              "retrievedAt": "2026-10-14T12:00:00Z"
+            }
+          ],
+          "linkedEntities": [],
+          "identifications": [],
+          "addresses": [
+            {
+              "@type": "Address",
+              "street": "イラク、イドリブ、私書箱9号"
+            }
+          ],
+          "beneficialOwners": []
+        },
+        "entry": {
+          "@id": "https://www.ammitto.org/entry/jp/end-user-list/jp-jpmofiraq-249",
+          "@type": "SanctionEntry",
+          "entityId": "https://www.ammitto.org/entity/jp/jp-jpmofiraq-249",
+          "authority": {
+            "@type": "Authority",
+            "id": "jp",
+            "name": "Japan (METI End-User List)",
+            "countryCode": "JP"
+          },
+          "regime": {
+            "@type": "SanctionRegime",
+            "name": "Japan End-User List (METI)",
+            "code": "JP-EUL"
+          },
+          "legalBases": [],
+          "effects": [
+            {
+              "@type": "SanctionEffect",
+              "effectType": "export_restriction",
+              "scope": "full",
+              "description": "Subject to export license requirements"
+            }
+          ],
+          "reasons": [],
+          "period": {
+            "@type": "TemporalPeriod",
+            "isIndefinite": true
+          },
+          "status": "active",
+          "statusHistory": [],
+          "remarks": "Japan End-User List - Export Control"
+        }
+      }
+    ],
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output[0].entity.@id": "String",
+    "$.output[0].entity.@type": "String",
+    "$.output[0].entity.entityType": "String",
+    "$.output[0].entity.names[0].@type": "String",
+    "$.output[0].entity.names[0].fullName": "String",
+    "$.output[0].entity.names[0].script": "String",
+    "$.output[0].entity.names[0].isPrimary": "TrueClass",
+    "$.output[0].entity.names[1].@type": "String",
+    "$.output[0].entity.names[1].fullName": "String",
+    "$.output[0].entity.names[1].script": "String",
+    "$.output[0].entity.names[1].isPrimary": "FalseClass",
+    "$.output[0].entity.sourceReferences[0].@type": "String",
+    "$.output[0].entity.sourceReferences[0].sourceCode": "String",
+    "$.output[0].entity.sourceReferences[0].referenceNumber": "String",
+    "$.output[0].entity.sourceReferences[0].retrievedAt": "String",
+    "$.output[0].entity.addresses[0].@type": "String",
+    "$.output[0].entity.addresses[0].street": "String",
+    "$.output[0].entry.@id": "String",
+    "$.output[0].entry.@type": "String",
+    "$.output[0].entry.entityId": "String",
+    "$.output[0].entry.authority.@type": "String",
+    "$.output[0].entry.authority.id": "String",
+    "$.output[0].entry.authority.name": "String",
+    "$.output[0].entry.authority.countryCode": "String",
+    "$.output[0].entry.regime.@type": "String",
+    "$.output[0].entry.regime.name": "String",
+    "$.output[0].entry.regime.code": "String",
+    "$.output[0].entry.effects[0].@type": "String",
+    "$.output[0].entry.effects[0].effectType": "String",
+    "$.output[0].entry.effects[0].scope": "String",
+    "$.output[0].entry.effects[0].description": "String",
+    "$.output[0].entry.period.@type": "String",
+    "$.output[0].entry.period.isIndefinite": "TrueClass",
+    "$.output[0].entry.status": "String",
+    "$.output[0].entry.remarks": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 2,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::SourceReference": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

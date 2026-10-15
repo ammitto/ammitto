@@ -46,9 +46,11 @@
 
 require_relative 'utils/presence'
 require_relative 'ontology/types'
+require_relative 'ontology/contracts'
 require_relative 'ontology/value_objects'
 require_relative 'ontology/entities'
 require_relative 'ontology/sanction'
+require_relative 'ontology/compatibility'
 require_relative 'ontology/sanctions_list'
 require_relative 'ontology/neo4j_adapter'
 require_relative 'ontology/schema'

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'birth_info'
+require_relative 'canonical_models'
 require_relative '../utils/iri_sanitizer'
 require_relative '../utils/list_types_registry'
 require_relative '../parse_failure_visibility'
@@ -33,6 +34,8 @@ module Ammitto
     #
     class BaseTransformer
       include BirthInfo
+      include CanonicalModels::Building
+      extend CanonicalModels::Entrypoints
 
       attr_reader :source_code, :list_type
       attr_writer :iri_collision_registry
@@ -60,6 +63,33 @@ module Ammitto
       end
 
       protected
+
+      # A model the transformer names by its flat class: the canonical
+      # model, built directly, inside a canonical entrypoint call; the flat
+      # model when a legacy caller reaches a helper outside one.
+      # @param legacy_class [Class] flat facade class
+      # @param attributes [Hash] the flat constructor's keyword arguments
+      # @return [Lutaml::Model::Serializable]
+      def build_model(legacy_class, **attributes)
+        return legacy_class.new(**attributes) unless building_canonical?
+
+        CanonicalModels.build(legacy_class, **attributes)
+      end
+
+      # Attach an entry to its entity. The flat Entity#add_sanction_entry
+      # also records the entry IRI in sanction_entry_ids, which publishes
+      # as hasSanctionEntry; the canonical entity keeps the entry object
+      # only, so the IRI is recorded here. Entities stay mutable identity
+      # objects, so this edits the entity, never a value object.
+      # @param entity [Object] the entity
+      # @param entry [Object] its sanction entry
+      # @return [void]
+      def link_entry(entity, entry)
+        entity.add_sanction_entry(entry)
+        return unless building_canonical? && entry.id
+
+        entity.sanction_entry_ids = [*entity.sanction_entry_ids, entry.id]
+      end
 
       # Generate a unique entity ID (LIST-AGNOSTIC).
       # Entities can appear on multiple lists, so no list_type in IRI.
@@ -158,7 +188,13 @@ module Ammitto
       # Get the authority for this source
       # @return [Authority] the authority object
       def authority
-        @authority ||= Ammitto::Authority.find(source_code.to_s)
+        @authorities ||= {}
+        mode = building_canonical?
+        return @authorities[mode] if @authorities.key?(mode)
+
+        code = source_code.to_s.downcase
+        data = Ammitto::Authority::REGISTRY[code]
+        @authorities[mode] = data && build_model(Ammitto::Authority, id: code, **data)
       end
 
       # Sanitize an ID for use in URIs
@@ -203,14 +239,13 @@ module Ammitto
       # @return [NameVariant] the name variant
       def create_name_variant(full_name: nil, first_name: nil, middle_name: nil,
                               last_name: nil, script: nil, is_primary: false)
-        Ammitto::NameVariant.new(
-          full_name: full_name,
-          first_name: first_name,
-          middle_name: middle_name,
-          last_name: last_name,
-          script: script,
-          is_primary: is_primary
-        )
+        build_model(Ammitto::NameVariant,
+                    full_name: full_name,
+                    first_name: first_name,
+                    middle_name: middle_name,
+                    last_name: last_name,
+                    script: script,
+                    is_primary: is_primary)
       end
 
       # Create an Address from address parts
@@ -224,15 +259,14 @@ module Ammitto
       # @return [Address] the address
       def create_address(street: nil, city: nil, state: nil, country: nil,
                          country_iso_code: nil, postal_code: nil, po_box: nil)
-        Ammitto::Address.new(
-          street: street,
-          city: city,
-          state: state,
-          country: country,
-          country_iso_code: country_iso_code,
-          postal_code: postal_code,
-          po_box: po_box
-        )
+        build_model(Ammitto::Address,
+                    street: street,
+                    city: city,
+                    state: state,
+                    country: country,
+                    country_iso_code: country_iso_code,
+                    postal_code: postal_code,
+                    po_box: po_box)
       end
 
       # Create a SanctionRegime
@@ -241,11 +275,10 @@ module Ammitto
       # @param description [String, nil] regime description
       # @return [SanctionRegime] the regime
       def create_regime(name: nil, code: nil, description: nil)
-        Ammitto::SanctionRegime.new(
-          name: name,
-          code: code,
-          description: description
-        )
+        build_model(Ammitto::SanctionRegime,
+                    name: name,
+                    code: code,
+                    description: description)
       end
 
       # Create a TemporalPeriod
@@ -271,13 +304,12 @@ module Ammitto
 
         expiry = parse_date(expiry_date, source: source, field: :expiry_date)
 
-        Ammitto::TemporalPeriod.new(
-          listed_date: listed,
-          effective_date: effective,
-          expiry_date: expiry,
-          is_indefinite: indefinite_for(expiry_date, expiry),
-          last_updated: last_updated
-        )
+        build_model(Ammitto::TemporalPeriod,
+                    listed_date: listed,
+                    effective_date: effective,
+                    expiry_date: expiry,
+                    is_indefinite: indefinite_for(expiry_date, expiry),
+                    last_updated: last_updated)
       end
 
       # A source that states no expiry lists without end. A stated expiry
@@ -295,16 +327,21 @@ module Ammitto
       end
 
       # Create a SanctionEffect
+      #
+      # A source states an effect's description either as one text or as
+      # one LocalizedString per language. Each has its own typed field
+      # (flat description_text and description), so a text never lands in
+      # the LocalizedString collection, where it would not serialize.
       # @param effect_type [String] the effect type
       # @param scope [String, nil] the scope (full, partial, limited)
-      # @param description [String, nil] description
+      # @param description [String, Array<LocalizedString>, nil] description
       # @return [SanctionEffect] the effect
       def create_effect(effect_type:, scope: 'full', description: nil)
-        Ammitto::SanctionEffect.new(
-          effect_type: effect_type,
-          scope: scope,
-          description: description
-        )
+        field = description.is_a?(String) ? :description_text : :description
+        build_model(Ammitto::SanctionEffect,
+                    effect_type: effect_type,
+                    scope: scope,
+                    field => description)
       end
 
       # Create a SanctionReason
@@ -322,10 +359,9 @@ module Ammitto
           )
         end
 
-        Ammitto::SanctionReason.new(
-          category: category,
-          description: descriptions
-        )
+        build_model(Ammitto::SanctionReason,
+                    category: category,
+                    description: descriptions)
       end
 
       # Create a RawSourceData
@@ -336,12 +372,11 @@ module Ammitto
       # @return [RawSourceData] the raw source data
       def create_raw_source_data(source_file: nil, source_format: 'xml',
                                  raw_content: nil, source_specific_fields: nil)
-        Ammitto::RawSourceData.new(
-          source_file: source_file,
-          source_format: source_format,
-          raw_content: raw_content,
-          source_specific_fields: source_specific_fields || {}
-        )
+        build_model(Ammitto::RawSourceData,
+                    source_file: source_file,
+                    source_format: source_format,
+                    raw_content: raw_content,
+                    source_specific_fields: source_specific_fields || {})
       end
 
       # Create an Identification
@@ -354,14 +389,13 @@ module Ammitto
       # @return [Identification] the identification
       def create_identification(type: nil, number: nil, issuing_country: nil,
                                 note: nil, issue_date: nil, expiry_date: nil)
-        Ammitto::Identification.new(
-          type: type,
-          number: number,
-          issuing_country: issuing_country,
-          note: note,
-          issue_date: issue_date,
-          expiry_date: expiry_date
-        )
+        build_model(Ammitto::Identification,
+                    type: type,
+                    number: number,
+                    issuing_country: issuing_country,
+                    note: note,
+                    issue_date: issue_date,
+                    expiry_date: expiry_date)
       end
     end
   end

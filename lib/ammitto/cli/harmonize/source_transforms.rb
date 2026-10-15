@@ -38,6 +38,21 @@ module Ammitto
 
         private
 
+        # What a transformer entrypoint returns, as the canonical models the
+        # transformer built. There is no converting fallback: an entrypoint
+        # without a canonical form is refused.
+        # @param transformer [Ammitto::Transformers::BaseTransformer]
+        # @param method [Symbol] the transform entrypoint
+        # @return [Object] the entrypoint's result with canonical models
+        # @raise [Ammitto::Error] when the transformer has no canonical form
+        #   of the entrypoint
+        def canonical_result(transformer, method, *, **)
+          canonical = :"canonical_#{method}"
+          raise Ammitto::Error, "#{transformer.source_code} has no canonical #{method}" unless transformer.respond_to?(canonical)
+
+          transformer.public_send(canonical, *, **)
+        end
+
         # Transform data using appropriate transformer
         # @param source [Symbol] source code
         # @param data [Hash] source data
@@ -120,7 +135,7 @@ module Ammitto
           guard_announcement_format!(:uk, data, expected: 'Uk::Designation')
 
           designation = Ammitto::Sources::Uk::Designation.from_hash(data)
-          result = transformer.transform(designation)
+          result = canonical_result(transformer, :transform, designation)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -136,7 +151,7 @@ module Ammitto
           # The fetch pipeline saves Eu::SanctionEntity YAML (one per record);
           # parsing with ProcessedEntity collapsed every EU id and dropped names
           entity = Ammitto::Sources::Eu::SanctionEntity.from_hash(data)
-          result = transformer.transform(entity)
+          result = canonical_result(transformer, :transform, entity)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -160,10 +175,10 @@ module Ammitto
 
           if is_individual
             source = Ammitto::Sources::Un::Individual.from_hash(data)
-            result = transformer.transform_individual(source)
+            result = canonical_result(transformer, :transform_individual, source)
           else
             source = Ammitto::Sources::Un::Entity.from_hash(data)
-            result = transformer.transform_entity(source)
+            result = canonical_result(transformer, :transform_entity, source)
           end
 
           {
@@ -180,7 +195,7 @@ module Ammitto
           guard_announcement_format!(:us, data, expected: 'Us::SdnEntry')
 
           sdn_entry = Ammitto::Sources::Us::SdnEntry.from_hash(data)
-          result = transformer.transform(sdn_entry)
+          result = canonical_result(transformer, :transform, sdn_entry)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -194,7 +209,7 @@ module Ammitto
         # @return [Hash]
         def transform_wb(transformer, data)
           firm = Ammitto::Sources::Wb::SanctionedFirm.from_hash(data)
-          result = transformer.transform(firm)
+          result = canonical_result(transformer, :transform, firm)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -210,7 +225,7 @@ module Ammitto
           # Use Record class - it handles both individuals and entities
           # The YAML has given_name, not first_name
           source = Ammitto::Sources::Ca::Record.from_hash(data)
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -224,7 +239,7 @@ module Ammitto
         # @return [Hash]
         def transform_un_vessels(transformer, data)
           source = Ammitto::Sources::UnVessels::Vessel.from_hash(data)
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),

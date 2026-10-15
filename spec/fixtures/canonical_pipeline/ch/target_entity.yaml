@@ -1,0 +1,33 @@
+---
+ssid: '100027'
+sanctions_set_id: '27286'
+entity:
+  identity:
+    ssid: '100033'
+    main: 'true'
+    names:
+    - name_type: primary-name
+      quality: good
+      lang: eng
+      name_parts:
+      - order: 1
+        name_part_type: whole-name
+        value: LLC “Aviation Systems and Complexes”
+    - name_type: alias
+      quality: good
+      lang: eng
+      name_parts:
+      - order: 1
+        name_part_type: whole-name
+        value: LLC ASK
+    day_month_year:
+      day: 16
+      month: 12
+      year: 2022
+    addresses:
+    - address_details: Mira Avenue, 188b, bldg. 2, floor/office 1/1
+      zip_code: '129128'
+  justification: LLC “Aviation Systems and Complexes” is a Russian developer and manufacturer
+    of unmanned aerial vehicles (UAVs). It manufactures the first-person view UAV
+    “ASK X-2” used by the Russian Armed Forces. Therefore, LLC “Aviation Systems and
+    Complexes” is forming part of Russia’s military and industrial complex.

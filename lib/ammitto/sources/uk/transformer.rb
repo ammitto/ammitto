@@ -65,7 +65,7 @@ module Ammitto
           entry = create_entry(designation)
 
           # Link entity to entry
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           {
             entity: entity,
@@ -74,6 +74,7 @@ module Ammitto
         ensure
           @current_designation = nil
         end
+        canonical_entrypoints :transform
 
         # Create the appropriate entity type based on designation
         # @param designation [Ammitto::Sources::Uk::Designation]
@@ -92,32 +93,30 @@ module Ammitto
         # @param designation [Ammitto::Sources::Uk::Designation]
         # @return [PersonEntity]
         def create_person_entity(designation)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(designation.unique_id),
-            entity_type: 'person',
-            names: transform_names(designation),
-            addresses: transform_addresses(designation.addresses),
-            birth_info: transform_birth_info(designation.individual_details),
-            nationalities: transform_nationalities(designation.individual_details),
-            gender: designation.individual_details&.genders&.first,
-            identifications: transform_identifications(designation.individual_details),
-            title: extract_title(designation),
-            position: extract_position(designation.individual_details),
-            remarks: designation.other_information
-          )
+          build_model(Ammitto::PersonEntity,
+                      id: generate_entity_id(designation.unique_id),
+                      entity_type: 'person',
+                      names: transform_names(designation),
+                      addresses: transform_addresses(designation.addresses),
+                      birth_info: transform_birth_info(designation.individual_details),
+                      nationalities: transform_nationalities(designation.individual_details),
+                      gender: designation.individual_details&.genders&.first,
+                      identifications: transform_identifications(designation.individual_details),
+                      title: extract_title(designation),
+                      position: extract_position(designation.individual_details),
+                      remarks: designation.other_information)
         end
 
         # Create an OrganizationEntity from a UK designation
         # @param designation [Ammitto::Sources::Uk::Designation]
         # @return [OrganizationEntity]
         def create_organization_entity(designation)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(designation.unique_id),
-            entity_type: 'organization',
-            names: transform_names(designation),
-            addresses: transform_addresses(designation.addresses),
-            remarks: designation.other_information
-          )
+          build_model(Ammitto::OrganizationEntity,
+                      id: generate_entity_id(designation.unique_id),
+                      entity_type: 'organization',
+                      names: transform_names(designation),
+                      addresses: transform_addresses(designation.addresses),
+                      remarks: designation.other_information)
         end
 
         # Create a VesselEntity from a UK ship designation
@@ -126,49 +125,47 @@ module Ammitto
         def create_vessel_entity(designation)
           ship = designation.ship_details&.ship
 
-          Ammitto::VesselEntity.new(
-            id: generate_entity_id(designation.unique_id),
-            entity_type: 'vessel',
-            names: transform_names(designation),
-            imo_number: normalize_imo(ship&.imo_numbers&.first),
-            flag_state: ship&.current_believed_flags&.first,
-            previous_flags: ship&.previous_flags || [],
-            vessel_type: ship&.types_of_ship&.first,
-            build_year: parse_build_year(ship&.years_built&.first),
-            remarks: designation.other_information
-          )
+          build_model(Ammitto::VesselEntity,
+                      id: generate_entity_id(designation.unique_id),
+                      entity_type: 'vessel',
+                      names: transform_names(designation),
+                      imo_number: normalize_imo(ship&.imo_numbers&.first),
+                      flag_state: ship&.current_believed_flags&.first,
+                      previous_flags: ship&.previous_flags || [],
+                      vessel_type: ship&.types_of_ship&.first,
+                      build_year: parse_build_year(ship&.years_built&.first),
+                      remarks: designation.other_information)
         end
 
         # Create a SanctionEntry from a UK designation
         # @param designation [Ammitto::Sources::Uk::Designation]
         # @return [SanctionEntry]
         def create_entry(designation)
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(designation.unique_id),
-            entity_id: generate_entity_id(designation.unique_id),
-            authority: authority,
-            regime: transform_regime(designation.regime_name),
-            effects: transform_effects(designation.sanctions_imposed_indicators),
-            period: create_period(
-              source: :uk,
-              listed_date: designation.date_designated,
-              effective_date: designation.date_designated,
-              last_updated: designation.last_updated
-            ),
-            status: 'active',
-            reference_number: designation.unique_id,
-            remarks: designation.uk_statement_of_reasons,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'uk:ofsiGroupId' => designation.ofsi_group_id,
-                'uk:unReferenceNumber' => designation.un_reference_number,
-                'uk:designationSource' => designation.designation_source,
-                'uk:sanctionsImposed' => designation.sanctions_imposed,
-                'uk:entityType' => designation.individual_entity_ship
-              }
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(designation.unique_id),
+                      entity_id: generate_entity_id(designation.unique_id),
+                      authority: authority,
+                      regime: transform_regime(designation.regime_name),
+                      effects: transform_effects(designation.sanctions_imposed_indicators),
+                      period: create_period(
+                        source: :uk,
+                        listed_date: designation.date_designated,
+                        effective_date: designation.date_designated,
+                        last_updated: designation.last_updated
+                      ),
+                      status: 'active',
+                      reference_number: designation.unique_id,
+                      remarks: designation.uk_statement_of_reasons,
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'xml',
+                        source_specific_fields: {
+                          'uk:ofsiGroupId' => designation.ofsi_group_id,
+                          'uk:unReferenceNumber' => designation.un_reference_number,
+                          'uk:designationSource' => designation.designation_source,
+                          'uk:sanctionsImposed' => designation.sanctions_imposed,
+                          'uk:entityType' => designation.individual_entity_ship
+                        }
+                      ))
         end
 
         # Transform UK names to NameVariant objects

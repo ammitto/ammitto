@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../../schemas/cn-measure-modification.yml
+---
+announcement:
+  title:
+  - zh-Hans: 商务部新闻发言人就暂停17家美国实体不可靠实体清单措施答记者问
+    en: Ministry of Commerce Spokesperson Answers Questions on Suspending Measures for 17 U.S. Entities on the Unreliable Entity List
+  url: https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2025/art_53ec1f591dba49a39b65fd89b6d73e6f.html
+  lang: zh-Hans
+  publish_date: '2025-05-14'
+  publish_time: "22:00"
+  authority: cn/ministry-of-commerce
+  publisher: cn/ministry-of-commerce-information-office
+  type: cn/ministry-of-commerce-spokesperson-speech
+  document_id: 2025-05-14-22-00
+  signatory: cn/ministry-of-commerce
+  content: |
+    有记者问：中美日内瓦经贸会谈联合声明中提到中方将暂停或取消自2025年4月2日起针对美国的非关税反制措施，请问在不可靠实体清单方面有什么考虑？
+
+    答： 根据《中华人民共和国反外国制裁法》《不可靠实体清单规定》及有关规定，不可靠实体清单工作机制于2025年4月4日和9日，将17家美国实体列入不可靠实体清单，禁止上述企业从事与中国有关的进出口活动，以及在中国境内新增投资。为落实中美经贸高层会谈共识，自2025年5月14日起，暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天，暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施。根据《不可靠实体清单规定》相关规定，国内企业可申请与上述实体进行交易，不可靠实体清单工作机制将依法进行审核，对符合条件的申请予以批准。
+
+measure_modifications:
+  instruments:
+    - id: cn/npc-anti-foreign-sanctions-law
+    - id: cn/mofcom-unreliable-entity-list-provisions
+  modifications:
+    - action: suspend
+      target_announcement_id: 〔2025〕7号
+      target_announcement_date: '2025-04-04'
+      effective_date: '2025-05-14'
+      until_date: '2025-08-12'
+      notes: 暂停4月4日公告（不可靠实体清单工作机制〔2025〕7号）相关措施90天
+
+    - action: suspend
+      target_announcement_id: 〔2025〕8号
+      target_announcement_date: '2025-04-09'
+      effective_date: '2025-05-14'
+      notes: 暂停4月9日公告（不可靠实体清单工作机制〔2025〕8号）相关措施

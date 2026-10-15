@@ -1,0 +1,165 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/uk/inu0113",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Shakhese Behbud Sanat",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Saman Nur Gosil",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Shakhes Behbood Sanaat",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/uk/consolidated-list/inu0113"
+        ],
+        "remarks": "The Director Disqualification Sanction was imposed on 09/04/2025.",
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "street": "Roshan Dasht Road, kilometer 20",
+            "state": "Isfahan",
+            "country": "Iran"
+          }
+        ],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/uk/consolidated-list/inu0113",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/uk/inu0113",
+        "authority": {
+          "@type": "Authority",
+          "id": "uk",
+          "name": "United Kingdom (OFSI)",
+          "countryCode": "GB"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "The Iran (Sanctions) (Nuclear) (EU Exit) Regulations 2019",
+          "code": "THE_IRAN_SANCTIONS_NUCLEAR_EU_EXIT_REGULATIONS_2019"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "debarment",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2020-12-31",
+          "effectiveDate": "2020-12-31",
+          "isIndefinite": true,
+          "lastUpdated": "2025-04-09"
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "INU0113",
+        "remarks": "\nInvolved in the production of equipment and parts for the nuclear fuel cycle.",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "uk:ofsiGroupId": "11220",
+            "uk:unReferenceNumber": null,
+            "uk:designationSource": "UK",
+            "uk:sanctionsImposed": "Asset freeze|Director Disqualification Sanction",
+            "uk:entityType": "Entity"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "FalseClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].street": "String",
+    "$.output.entity.addresses[0].state": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.period.lastUpdated": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:ofsiGroupId": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:unReferenceNumber": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:designationSource": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:sanctionsImposed": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:entityType": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 3,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

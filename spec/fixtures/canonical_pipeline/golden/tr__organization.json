@@ -1,0 +1,110 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/tr/187",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "DEFENSE TECHNOLOGY AND SCIENCE RESEARCH ÇENTER (DTSRC)",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [
+          {
+            "@type": "SourceReference",
+            "sourceCode": "tr",
+            "referenceNumber": "187",
+            "retrievedAt": "2026-10-14T12:00:00Z"
+          }
+        ],
+        "linkedEntities": [],
+        "identifications": [],
+        "addresses": [],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/tr/consolidated-list/187",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/tr/187",
+        "authority": {
+          "@type": "Authority",
+          "id": "tr",
+          "name": "Turkey (Ministry of Treasury and Finance)",
+          "countryCode": "TR"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Turkey Law No. 7262, Articles 3.A/3.B",
+          "code": "TR-D"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "entry_ban",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2020-07-19",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": []
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.sourceReferences[0].@type": "String",
+    "$.output.entity.sourceReferences[0].sourceCode": "String",
+    "$.output.entity.sourceReferences[0].referenceNumber": "String",
+    "$.output.entity.sourceReferences[0].retrievedAt": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::SourceReference": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

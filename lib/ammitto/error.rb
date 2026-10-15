@@ -242,6 +242,9 @@ module Ammitto
     end
   end
 
+  # Conversion cannot preserve a value in the destination model.
+  class CompatibilityConflictError < Error; end
+
   # Error raised for configuration-related failures
   #
   # @example

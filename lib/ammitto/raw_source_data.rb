@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/raw_source_data'
+
 module Ammitto
   # RawSourceData preserves the original source data
   #
   # Stores the original XML/JSON/HTML and source-specific fields
   # for audit, verification, and future field extraction.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::RawSourceData (see Ontology::Contracts).
   #
   # @example Creating raw source data
   #   RawSourceData.new(
@@ -18,11 +24,7 @@ module Ammitto
     # Source formats
     FORMATS = %w[xml json csv html].freeze
 
-    attribute :source_file, :string           # Original file name
-    attribute :source_format, :string         # xml, json, csv, html
-    attribute :source_xpath, :string          # XPath for XML sources
-    attribute :raw_content, :string           # Original content snippet
-    attribute :source_specific_fields, :hash  # Source-specific fields
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'sourceFile', to: :source_file

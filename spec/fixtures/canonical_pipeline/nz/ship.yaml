@@ -1,0 +1,9 @@
+---
+type: Ship
+unique_identifier: SHP-108
+imo_number: '9379052'
+name: Ocean Autumn
+date_of_sanction: '2025-10-30'
+alias_alternate_names: Nova
+sanction_status: Sanctioned
+ship_ban: 'Yes'

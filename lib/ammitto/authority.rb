@@ -2,9 +2,14 @@
 
 require 'lutaml/model'
 require_relative 'utils/iri_sanitizer'
+require_relative 'ontology/contracts'
+require_relative 'ontology/sanction/authority'
 
 module Ammitto
   # Authority represents a sanctions-issuing authority
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::Authority (see Ontology::Contracts).
   #
   # @example Creating an authority
   #   Authority.new(
@@ -39,10 +44,7 @@ module Ammitto
     CODE = /\A[A-Za-z0-9][A-Za-z0-9_-]*\z/
     AUTHORITY_IRI = %r{\A#{Regexp.escape(Utils::IriSanitizer::BASE_URI)}/authority/([^/]+)/?\z}
 
-    attribute :id, :string                   # Authority identifier
-    attribute :name, :string                 # Full name
-    attribute :country_code, :string         # ISO 3166-1 alpha-2 (or custom)
-    attribute :url, :string                  # Authority website
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'id', to: :id

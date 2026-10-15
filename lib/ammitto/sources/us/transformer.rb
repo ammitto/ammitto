@@ -74,7 +74,7 @@ module Ammitto
           entry = create_entry(sdn_entry)
 
           # Link entity to entry
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           {
             entity: entity,
@@ -83,6 +83,7 @@ module Ammitto
         ensure
           @current_sdn = nil
         end
+        canonical_entrypoints :transform
 
         private
 
@@ -106,30 +107,28 @@ module Ammitto
         # @param sdn_entry [Ammitto::Sources::Us::SdnEntry]
         # @return [PersonEntity]
         def create_person_entity(sdn_entry)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(sdn_entry.uid),
-            entity_type: 'person',
-            names: transform_sdn_names(sdn_entry),
-            addresses: transform_addresses(sdn_entry.addresses),
-            birth_info: transform_birth_info(sdn_entry),
-            identifications: transform_identifications(sdn_entry.identifications),
-            title: sdn_entry.title,
-            nationalities: (sdn_entry.nationalities + sdn_entry.citizenships).uniq,
-            remarks: sdn_entry.remarks
-          )
+          build_model(Ammitto::PersonEntity,
+                      id: generate_entity_id(sdn_entry.uid),
+                      entity_type: 'person',
+                      names: transform_sdn_names(sdn_entry),
+                      addresses: transform_addresses(sdn_entry.addresses),
+                      birth_info: transform_birth_info(sdn_entry),
+                      identifications: transform_identifications(sdn_entry.identifications),
+                      title: sdn_entry.title,
+                      nationalities: (sdn_entry.nationalities + sdn_entry.citizenships).uniq,
+                      remarks: sdn_entry.remarks)
         end
 
         # Create an OrganizationEntity from an SDN entry
         # @param sdn_entry [Ammitto::Sources::Us::SdnEntry]
         # @return [OrganizationEntity]
         def create_organization_entity(sdn_entry)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(sdn_entry.uid),
-            entity_type: 'organization',
-            names: transform_sdn_names(sdn_entry),
-            addresses: transform_addresses(sdn_entry.addresses),
-            remarks: sdn_entry.remarks
-          )
+          build_model(Ammitto::OrganizationEntity,
+                      id: generate_entity_id(sdn_entry.uid),
+                      entity_type: 'organization',
+                      names: transform_sdn_names(sdn_entry),
+                      addresses: transform_addresses(sdn_entry.addresses),
+                      remarks: sdn_entry.remarks)
         end
 
         # Create a VesselEntity from an SDN entry
@@ -143,18 +142,17 @@ module Ammitto
           flag = Ammitto::Utils::Presence.presence(info&.vessel_flag) ||
                  extract_flag_from_addresses(sdn_entry.addresses)
 
-          Ammitto::VesselEntity.new(
-            id: generate_entity_id(sdn_entry.uid),
-            entity_type: 'vessel',
-            names: transform_sdn_names(sdn_entry),
-            imo_number: imo&.id_number,
-            flag_state: flag,
-            vessel_type: Ammitto::Utils::Presence.presence(info&.vessel_type),
-            call_sign: Ammitto::Utils::Presence.presence(info&.call_sign),
-            tonnage: transform_tonnage(info),
-            owner: transform_vessel_owner(info),
-            remarks: sdn_entry.remarks
-          )
+          build_model(Ammitto::VesselEntity,
+                      id: generate_entity_id(sdn_entry.uid),
+                      entity_type: 'vessel',
+                      names: transform_sdn_names(sdn_entry),
+                      imo_number: imo&.id_number,
+                      flag_state: flag,
+                      vessel_type: Ammitto::Utils::Presence.presence(info&.vessel_type),
+                      call_sign: Ammitto::Utils::Presence.presence(info&.call_sign),
+                      tonnage: transform_tonnage(info),
+                      owner: transform_vessel_owner(info),
+                      remarks: sdn_entry.remarks)
         end
 
         # OFAC's grossRegisteredTonnage is the only tonnage element that
@@ -167,7 +165,7 @@ module Ammitto
           grt = parse_tonnage(info&.gross_registered_tonnage)
           return nil unless grt
 
-          Ammitto::Tonnage.new(gross_register_tonnage: grt)
+          build_model(Ammitto::Tonnage, gross_register_tonnage: grt)
         end
 
         # @param value [String, nil]
@@ -180,7 +178,7 @@ module Ammitto
         # @return [EntityLink, nil] a named owner; OFAC gives no entity to link
         def transform_vessel_owner(info)
           name = Ammitto::Utils::Presence.presence(info&.vessel_owner)
-          name && Ammitto::EntityLink.new(relationship: 'owned_by', target_name: name)
+          name && build_model(Ammitto::EntityLink, relationship: 'owned_by', target_name: name)
         end
 
         # Create an AircraftEntity from an SDN entry
@@ -192,14 +190,13 @@ module Ammitto
           reg = aircraft_ids.find { |id| id.id_type&.downcase&.include?('registration') }
           flag = extract_flag_from_addresses(sdn_entry.addresses)
 
-          Ammitto::AircraftEntity.new(
-            id: generate_entity_id(sdn_entry.uid),
-            entity_type: 'aircraft',
-            names: transform_sdn_names(sdn_entry),
-            registration_number: reg&.id_number,
-            flag_state: flag,
-            remarks: sdn_entry.remarks
-          )
+          build_model(Ammitto::AircraftEntity,
+                      id: generate_entity_id(sdn_entry.uid),
+                      entity_type: 'aircraft',
+                      names: transform_sdn_names(sdn_entry),
+                      registration_number: reg&.id_number,
+                      flag_state: flag,
+                      remarks: sdn_entry.remarks)
         end
 
         # Create a SanctionEntry from an SDN entry
@@ -209,24 +206,23 @@ module Ammitto
           programs = sdn_entry.programs
           primary_regime = programs.first
 
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(sdn_entry.uid),
-            entity_id: generate_entity_id(sdn_entry.uid),
-            authority: authority,
-            regime: transform_regime(primary_regime),
-            effects: create_default_effects,
-            status: 'active',
-            reference_number: sdn_entry.uid,
-            remarks: sdn_entry.remarks,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'us:sdnType' => sdn_entry.sdn_type,
-                'us:programs' => programs,
-                'us:title' => sdn_entry.title
-              }.merge(unpublished_fields(sdn_entry))
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(sdn_entry.uid),
+                      entity_id: generate_entity_id(sdn_entry.uid),
+                      authority: authority,
+                      regime: transform_regime(primary_regime),
+                      effects: create_default_effects,
+                      status: 'active',
+                      reference_number: sdn_entry.uid,
+                      remarks: sdn_entry.remarks,
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'xml',
+                        source_specific_fields: {
+                          'us:sdnType' => sdn_entry.sdn_type,
+                          'us:programs' => programs,
+                          'us:title' => sdn_entry.title
+                        }.merge(unpublished_fields(sdn_entry))
+                      ))
         end
 
         # Source values with no ontology field of their own. Nationality and

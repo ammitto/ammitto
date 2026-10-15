@@ -1,0 +1,23 @@
+# SYNTHETIC record, not published data. No actual record for the
+# per-entity (Ru::SanctionedEntity) branch was found: data-ru's processed/
+# directory holds only .gitkeep, and of its 21 sources/announcements files
+# only the one in ru/announcement.yml was read (see manifest.yml).
+# The names are invented
+# placeholders; every other value restates the actual announcement in
+# ru/announcement.yml (ammitto/data-ru@c7c3852f6baf3fcfc89b14a321b6e326a37abdec:
+# sources/announcements/20240417.yml). No date of birth is given because
+# none is stated there.
+---
+russian_name: Синтетическое Лицо
+english_name: Synthetic Person
+entity_type: person
+list_type: stop_list
+announcement_number: 703-17-04-2024
+announcement_date: '2024-04-17'
+effective_date: '2024-04-17'
+reason: For participation in anti-Russian activities of the Australian government.
+measures:
+- Entry into the Russian Federation is prohibited.
+source_url: https://mid.ru/en/foreign_policy/news/1944697/
+nationality: AU
+title: no title

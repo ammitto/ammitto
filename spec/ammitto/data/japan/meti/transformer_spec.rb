@@ -145,7 +145,10 @@ RSpec.describe Ammitto::Data::Japan::Meti::Transformer do
       expect(effects).to be_an(Array)
       export_effect = effects.find { |e| e.effect_type == 'export_restriction' }
       expect(export_effect).not_to be_nil
-      expect(export_effect.description).to include('export license')
+      # One text is the scalar description_text; description holds
+      # LocalizedStrings only
+      expect(export_effect.description_text).to include('export license')
+      expect(Array(export_effect.description)).to eq([])
     end
   end
 

@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/birth_info'
+
 module Ammitto
   # BirthInfo represents birth-related information for a person
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::BirthInfo (see Ontology::Contracts).
   #
   # Supports exact dates, approximate dates, date and year ranges, and
   # location information.
@@ -53,17 +59,7 @@ module Ammitto
   #   )
   #
   class BirthInfo < Lutaml::Model::Serializable
-    attribute :date, :date
-    attribute :circa, :boolean, default: false  # Approximate date
-    attribute :year, :integer                   # Year only if full date unknown
-    attribute :date_range_from, :date           # Lower bound of a date span
-    attribute :date_range_to, :date             # Upper bound of a date span
-    attribute :year_range_from, :integer        # Lower bound of a year span
-    attribute :year_range_to, :integer          # Upper bound of a year span
-    attribute :city, :string
-    attribute :region, :string                  # State, province, etc.
-    attribute :country, :string                 # Country name
-    attribute :country_iso_code, :string        # ISO 3166-1 alpha-2
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'date', to: :date

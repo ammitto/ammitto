@@ -1,0 +1,25 @@
+---
+mandt: '300'
+supp_id: 1079119
+supp_name: MR. ROGER BOKANDENGA
+supp_type_code: I
+entity_type: person
+land1: ZR
+country_name: Congo, Democratic Republic of
+supp_city: KINSHASA
+supp_addr: NO. 5 AVENUE KITENDA, QUARTIER MENENGA, COMMUNE DE NGALIEMA
+legacy_flg: N
+un_supp_flg: N
+inelig_flg: D
+debar_from_date: '2026-04-14'
+debar_to_date: '2028-01-13'
+debar_reason: Corrupt Practice
+add_supp_info: "*719"
+supp_elig_stat: DEBARRED
+crpd_match: N
+crpd_stat: CLEARED
+elig_stat: DEBARRED
+rechk_ind: N
+create_user: WB598563
+create_date: '2026-04-14T00:00:00.000Z'
+create_time: '1900-01-01T11:11:06.000Z'

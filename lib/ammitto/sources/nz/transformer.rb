@@ -22,6 +22,8 @@ module Ammitto
           { entity: entity, entry: entry }
         end
 
+        canonical_entrypoints :transform
+
         private
 
         # Create harmonized entity
@@ -44,9 +46,8 @@ module Ammitto
         # @param source [Individual] source model
         # @return [PersonEntity]
         def create_person_entity(source)
-          Ammitto::PersonEntity.new.tap do |entity|
+          build_model(Ammitto::PersonEntity, entity_type: 'person').tap do |entity|
             entity.id = generate_entity_id(source.unique_identifier || source.reference_number)
-            entity.entity_type = 'person'
             entity.names = build_names(source)
             entity.source_references = build_source_references(source)
           end
@@ -56,9 +57,8 @@ module Ammitto
         # @param source [Entity] source model
         # @return [OrganizationEntity]
         def create_organization_entity(source)
-          Ammitto::OrganizationEntity.new.tap do |entity|
+          build_model(Ammitto::OrganizationEntity, entity_type: 'organization').tap do |entity|
             entity.id = generate_entity_id(source.unique_identifier || source.reference_number)
-            entity.entity_type = 'organization'
             entity.names = build_names(source)
             entity.source_references = build_source_references(source)
           end
@@ -68,9 +68,8 @@ module Ammitto
         # @param source [Ship] source model
         # @return [VesselEntity]
         def create_vessel_entity(source)
-          Ammitto::VesselEntity.new.tap do |entity|
+          build_model(Ammitto::VesselEntity, entity_type: 'vessel').tap do |entity|
             entity.id = generate_entity_id(source.unique_identifier || source.imo_number)
-            entity.entity_type = 'vessel'
             entity.names = build_names(source)
             entity.imo_number = source.imo_number
             entity.source_references = build_source_references(source)
@@ -104,11 +103,10 @@ module Ammitto
         def build_source_references(source)
           ref_num = source.unique_identifier || source.reference_number
 
-          [Ammitto::SourceReference.new(
-            source_code: 'nz',
-            reference_number: ref_num,
-            retrieved_at: Time.now.utc.iso8601
-          )]
+          [build_model(Ammitto::SourceReference,
+                       source_code: 'nz',
+                       reference_number: ref_num,
+                       retrieved_at: Time.now.utc.iso8601)]
         end
 
         # Map entity type
@@ -130,7 +128,7 @@ module Ammitto
         # @param entity [Entity] harmonized entity
         # @return [SanctionEntry]
         def create_entry(source, entity)
-          Ammitto::SanctionEntry.new.tap do |entry|
+          build_model(Ammitto::SanctionEntry).tap do |entry|
             entry.id = generate_entry_id(source.unique_identifier || source.reference_number)
             entry.entity_id = entity.id
             entry.authority = authority
@@ -148,10 +146,9 @@ module Ammitto
         # Create regime
         # @return [SanctionRegime]
         def create_regime
-          Ammitto::SanctionRegime.new(
-            name: 'New Zealand Russia Sanctions',
-            code: 'NZ-RU'
-          )
+          build_model(Ammitto::SanctionRegime,
+                      name: 'New Zealand Russia Sanctions',
+                      code: 'NZ-RU')
         end
 
         # Map status
@@ -196,10 +193,9 @@ module Ammitto
         # @param source [Object] source model
         # @return [TemporalPeriod]
         def create_period(source)
-          Ammitto::TemporalPeriod.new(
-            listed_date: parse_date(source.date_of_sanction),
-            is_indefinite: true
-          )
+          build_model(Ammitto::TemporalPeriod,
+                      listed_date: parse_date(source.date_of_sanction),
+                      is_indefinite: true)
         end
       end
     end

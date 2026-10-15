@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/sanction/sanction_regime'
+
 module Ammitto
   # SanctionRegime represents a sanctions regime/program
   #
   # A regime is the overall sanctions program under which entries are listed,
   # such as "DPRK", "Russia/Ukraine", "Al-Qaida", etc.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Sanction::SanctionRegime (see Ontology::Contracts).
   #
   # @example Creating a sanction regime
   #   SanctionRegime.new(
@@ -14,9 +20,7 @@ module Ammitto
   #   )
   #
   class SanctionRegime < Lutaml::Model::Serializable
-    attribute :name, :string          # Full regime name
-    attribute :code, :string          # Short code (DPRK, RUSSIA, SDGT, etc.)
-    attribute :description, :string   # Description of the regime
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'name', to: :name

@@ -1,9 +1,17 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/temporal_period'
+
 module Ammitto
   # TemporalPeriod represents the time period of a sanction
   #
   # Documents when a sanction was listed, effective, and when it expires.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::TemporalPeriod (see Ontology::Contracts).
+  # Here +last_updated+ is the raw ISO 8601 timestamp (canonical
+  # +last_updated_timestamp+); the canonical Date is +last_updated_date+.
   #
   # @example Creating a temporal period
   #   TemporalPeriod.new(
@@ -13,13 +21,7 @@ module Ammitto
   #   )
   #
   class TemporalPeriod < Lutaml::Model::Serializable
-    attribute :listed_date, :date      # Date entity was listed
-    attribute :listed_time, :string    # Time entity was listed (HH:MM)
-    attribute :effective_date, :date   # Date sanction became effective
-    attribute :effective_time, :string # Time sanction became effective (HH:MM)
-    attribute :expiry_date, :date      # Date sanction expires (if applicable)
-    attribute :is_indefinite, :boolean, default: false
-    attribute :last_updated, :string # Last update timestamp (ISO 8601)
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'listedDate', to: :listed_date
@@ -29,6 +31,7 @@ module Ammitto
       map 'expiryDate', to: :expiry_date
       map 'isIndefinite', to: :is_indefinite
       map 'lastUpdated', to: :last_updated
+      map 'lastUpdatedDate', to: :last_updated_date
     end
 
     # @return [Boolean] whether the sanction is currently active

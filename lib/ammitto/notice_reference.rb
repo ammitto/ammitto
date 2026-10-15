@@ -1,11 +1,16 @@
 # frozen_string_literal: true
 
 require 'lutaml/model'
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/notice_reference'
 
 module Ammitto
   # NoticeReference represents a reference to an official notice
   #
   # Used to track the official document that caused a status change.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::NoticeReference (see Ontology::Contracts).
   #
   # @example Creating a notice reference
   #   NoticeReference.new(
@@ -16,10 +21,7 @@ module Ammitto
   #   )
   #
   class NoticeReference < Lutaml::Model::Serializable
-    attribute :notice_number, :string # E.g., "〔2025〕7號"
-    attribute :notice_date, :date
-    attribute :notice_title, :string
-    attribute :notice_url, :string
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'noticeNumber', to: :notice_number

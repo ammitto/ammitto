@@ -1,0 +1,1096 @@
+{
+  "NameVariant": {
+    "missing": {
+      "fields": {
+        "full_name": null,
+        "first_name": null,
+        "middle_name": null,
+        "last_name": null,
+        "title": null,
+        "function": null,
+        "script": null,
+        "language": null,
+        "is_primary": false,
+        "is_strong": null
+      },
+      "default_flags": {
+        "full_name": false,
+        "first_name": false,
+        "middle_name": false,
+        "last_name": false,
+        "title": false,
+        "function": false,
+        "script": null,
+        "language": false,
+        "is_primary": true,
+        "is_strong": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {
+        "is_primary": false
+      },
+      "neo4j_labels": [
+        "Name"
+      ]
+    },
+    "explicit_nil": {
+      "fields": {
+        "full_name": null,
+        "first_name": null,
+        "middle_name": null,
+        "last_name": null,
+        "title": null,
+        "function": null,
+        "script": null,
+        "language": null,
+        "is_primary": null,
+        "is_strong": null
+      },
+      "default_flags": {
+        "full_name": false,
+        "first_name": false,
+        "middle_name": false,
+        "last_name": false,
+        "title": false,
+        "function": false,
+        "script": null,
+        "language": false,
+        "is_primary": false,
+        "is_strong": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Name"
+      ]
+    },
+    "complete": {
+      "fields": {
+        "full_name": "sentinel_full_name",
+        "first_name": "sentinel_first_name",
+        "middle_name": "sentinel_middle_name",
+        "last_name": "sentinel_last_name",
+        "title": "sentinel_title",
+        "function": "sentinel_function",
+        "script": "sentinel_script",
+        "language": "sentinel_language",
+        "is_primary": true,
+        "is_strong": true
+      },
+      "default_flags": {
+        "full_name": false,
+        "first_name": false,
+        "middle_name": false,
+        "last_name": false,
+        "title": false,
+        "function": false,
+        "script": null,
+        "language": false,
+        "is_primary": false,
+        "is_strong": false
+      },
+      "json": {
+        "full_name": "sentinel_full_name",
+        "first_name": "sentinel_first_name",
+        "middle_name": "sentinel_middle_name",
+        "last_name": "sentinel_last_name",
+        "title": "sentinel_title",
+        "function": "sentinel_function",
+        "script": "sentinel_script",
+        "language": "sentinel_language",
+        "is_primary": true
+      },
+      "yaml": {
+        "full_name": "sentinel_full_name",
+        "first_name": "sentinel_first_name",
+        "middle_name": "sentinel_middle_name",
+        "last_name": "sentinel_last_name",
+        "title": "sentinel_title",
+        "function": "sentinel_function",
+        "script": "sentinel_script",
+        "language": "sentinel_language",
+        "is_primary": true
+      },
+      "hash": {
+        "full_name": "sentinel_full_name",
+        "first_name": "sentinel_first_name",
+        "middle_name": "sentinel_middle_name",
+        "last_name": "sentinel_last_name",
+        "title": "sentinel_title",
+        "function": "sentinel_function",
+        "script": "sentinel_script",
+        "language": "sentinel_language",
+        "is_primary": true
+      },
+      "neo4j": {
+        "full_name": "sentinel_full_name",
+        "first_name": "sentinel_first_name",
+        "middle_name": "sentinel_middle_name",
+        "last_name": "sentinel_last_name",
+        "title": "sentinel_title",
+        "function": "sentinel_function",
+        "script": "sentinel_script",
+        "language": "sentinel_language",
+        "is_primary": true
+      },
+      "neo4j_labels": [
+        "Name"
+      ]
+    },
+    "false_flags": {
+      "fields": {
+        "full_name": null,
+        "first_name": null,
+        "middle_name": null,
+        "last_name": null,
+        "title": null,
+        "function": null,
+        "script": null,
+        "language": null,
+        "is_primary": false,
+        "is_strong": false
+      },
+      "default_flags": {
+        "full_name": false,
+        "first_name": false,
+        "middle_name": false,
+        "last_name": false,
+        "title": false,
+        "function": false,
+        "script": null,
+        "language": false,
+        "is_primary": false,
+        "is_strong": false
+      },
+      "json": {
+        "is_primary": false
+      },
+      "yaml": {
+        "is_primary": false
+      },
+      "hash": {},
+      "neo4j": {
+        "is_primary": false
+      },
+      "neo4j_labels": [
+        "Name"
+      ]
+    }
+  },
+  "Address": {
+    "missing": {
+      "fields": {
+        "street": null,
+        "city": null,
+        "region": null,
+        "country": null,
+        "country_iso_code": null,
+        "postal_code": null,
+        "po_box": null,
+        "address_type": null
+      },
+      "default_flags": {
+        "street": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false,
+        "postal_code": false,
+        "po_box": false,
+        "address_type": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Address"
+      ]
+    },
+    "explicit_nil": {
+      "fields": {
+        "street": null,
+        "city": null,
+        "region": null,
+        "country": null,
+        "country_iso_code": null,
+        "postal_code": null,
+        "po_box": null,
+        "address_type": null
+      },
+      "default_flags": {
+        "street": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false,
+        "postal_code": false,
+        "po_box": false,
+        "address_type": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Address"
+      ]
+    },
+    "complete": {
+      "fields": {
+        "street": "sentinel_street",
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code",
+        "postal_code": "sentinel_postal_code",
+        "po_box": "sentinel_po_box",
+        "address_type": "sentinel_address_type"
+      },
+      "default_flags": {
+        "street": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false,
+        "postal_code": false,
+        "po_box": false,
+        "address_type": false
+      },
+      "json": {
+        "street": "sentinel_street",
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code",
+        "postal_code": "sentinel_postal_code",
+        "po_box": "sentinel_po_box",
+        "address_type": "sentinel_address_type"
+      },
+      "yaml": {
+        "street": "sentinel_street",
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code",
+        "postal_code": "sentinel_postal_code",
+        "po_box": "sentinel_po_box",
+        "address_type": "sentinel_address_type"
+      },
+      "hash": {
+        "street": "sentinel_street",
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code",
+        "postal_code": "sentinel_postal_code",
+        "po_box": "sentinel_po_box",
+        "address_type": "sentinel_address_type"
+      },
+      "neo4j": {
+        "street": "sentinel_street",
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code",
+        "postal_code": "sentinel_postal_code",
+        "po_box": "sentinel_po_box",
+        "address_type": "sentinel_address_type"
+      },
+      "neo4j_labels": [
+        "Address"
+      ]
+    },
+    "false_flags": {
+      "fields": {
+        "street": null,
+        "city": null,
+        "region": null,
+        "country": null,
+        "country_iso_code": null,
+        "postal_code": null,
+        "po_box": null,
+        "address_type": null
+      },
+      "default_flags": {
+        "street": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false,
+        "postal_code": false,
+        "po_box": false,
+        "address_type": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Address"
+      ]
+    }
+  },
+  "Identification": {
+    "missing": {
+      "fields": {
+        "type": null,
+        "number": null,
+        "issuing_country": null,
+        "expiry_date": null,
+        "issue_date": null
+      },
+      "default_flags": {
+        "type": false,
+        "number": false,
+        "issuing_country": false,
+        "expiry_date": false,
+        "issue_date": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Identifier"
+      ]
+    },
+    "explicit_nil": {
+      "fields": {
+        "type": null,
+        "number": null,
+        "issuing_country": null,
+        "expiry_date": null,
+        "issue_date": null
+      },
+      "default_flags": {
+        "type": false,
+        "number": false,
+        "issuing_country": false,
+        "expiry_date": false,
+        "issue_date": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Identifier"
+      ]
+    },
+    "complete": {
+      "fields": {
+        "type": "sentinel_type",
+        "number": "sentinel_number",
+        "issuing_country": "sentinel_issuing_country",
+        "expiry_date": "2024-02-29",
+        "issue_date": "2024-02-29"
+      },
+      "default_flags": {
+        "type": false,
+        "number": false,
+        "issuing_country": false,
+        "expiry_date": false,
+        "issue_date": false
+      },
+      "json": {
+        "type": "sentinel_type",
+        "number": "sentinel_number",
+        "issuing_country": "sentinel_issuing_country",
+        "expiry_date": "2024-02-29",
+        "issue_date": "2024-02-29"
+      },
+      "yaml": {
+        "type": "sentinel_type",
+        "number": "sentinel_number",
+        "issuing_country": "sentinel_issuing_country",
+        "expiry_date": "2024-02-29",
+        "issue_date": "2024-02-29"
+      },
+      "hash": {
+        "type": "sentinel_type",
+        "number": "sentinel_number",
+        "issuing_country": "sentinel_issuing_country",
+        "expiry_date": "2024-02-29",
+        "issue_date": "2024-02-29"
+      },
+      "neo4j": {
+        "type": "sentinel_type",
+        "number": "sentinel_number",
+        "issuing_country": "sentinel_issuing_country",
+        "issue_date": "2024-02-29",
+        "expiry_date": "2024-02-29"
+      },
+      "neo4j_labels": [
+        "Identifier"
+      ]
+    },
+    "false_flags": {
+      "fields": {
+        "type": null,
+        "number": null,
+        "issuing_country": null,
+        "expiry_date": null,
+        "issue_date": null
+      },
+      "default_flags": {
+        "type": false,
+        "number": false,
+        "issuing_country": false,
+        "expiry_date": false,
+        "issue_date": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "Identifier"
+      ]
+    }
+  },
+  "BirthInfo": {
+    "missing": {
+      "fields": {
+        "date": null,
+        "circa": false,
+        "year": null,
+        "date_range_from": null,
+        "date_range_to": null,
+        "year_range_from": null,
+        "year_range_to": null,
+        "city": null,
+        "region": null,
+        "country": null,
+        "country_iso_code": null
+      },
+      "default_flags": {
+        "date": false,
+        "circa": true,
+        "year": false,
+        "date_range_from": false,
+        "date_range_to": false,
+        "year_range_from": false,
+        "year_range_to": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {
+        "circa": false
+      },
+      "neo4j_labels": [
+        "BirthInfo"
+      ]
+    },
+    "explicit_nil": {
+      "fields": {
+        "date": null,
+        "circa": null,
+        "year": null,
+        "date_range_from": null,
+        "date_range_to": null,
+        "year_range_from": null,
+        "year_range_to": null,
+        "city": null,
+        "region": null,
+        "country": null,
+        "country_iso_code": null
+      },
+      "default_flags": {
+        "date": false,
+        "circa": false,
+        "year": false,
+        "date_range_from": false,
+        "date_range_to": false,
+        "year_range_from": false,
+        "year_range_to": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "BirthInfo"
+      ]
+    },
+    "complete": {
+      "fields": {
+        "date": "2024-02-29",
+        "circa": true,
+        "year": 1985,
+        "date_range_from": "2024-02-29",
+        "date_range_to": "2024-02-29",
+        "year_range_from": 1985,
+        "year_range_to": 1985,
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code"
+      },
+      "default_flags": {
+        "date": false,
+        "circa": false,
+        "year": false,
+        "date_range_from": false,
+        "date_range_to": false,
+        "year_range_from": false,
+        "year_range_to": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false
+      },
+      "json": {
+        "date": "2024-02-29",
+        "circa": true,
+        "year": 1985,
+        "date_range_from": "2024-02-29",
+        "date_range_to": "2024-02-29",
+        "year_range_from": 1985,
+        "year_range_to": 1985,
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code"
+      },
+      "yaml": {
+        "date": "2024-02-29",
+        "circa": true,
+        "year": 1985,
+        "date_range_from": "2024-02-29",
+        "date_range_to": "2024-02-29",
+        "year_range_from": 1985,
+        "year_range_to": 1985,
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code"
+      },
+      "hash": {
+        "date": "2024-02-29",
+        "circa": true,
+        "year": 1985,
+        "date_range_from": "2024-02-29",
+        "date_range_to": "2024-02-29",
+        "year_range_from": 1985,
+        "year_range_to": 1985,
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code"
+      },
+      "neo4j": {
+        "date": "2024-02-29",
+        "circa": true,
+        "year": 1985,
+        "date_range_from": "2024-02-29",
+        "date_range_to": "2024-02-29",
+        "year_range_from": 1985,
+        "year_range_to": 1985,
+        "city": "sentinel_city",
+        "region": "sentinel_region",
+        "country": "sentinel_country",
+        "country_iso_code": "sentinel_country_iso_code"
+      },
+      "neo4j_labels": [
+        "BirthInfo"
+      ]
+    },
+    "false_flags": {
+      "fields": {
+        "date": null,
+        "circa": false,
+        "year": null,
+        "date_range_from": null,
+        "date_range_to": null,
+        "year_range_from": null,
+        "year_range_to": null,
+        "city": null,
+        "region": null,
+        "country": null,
+        "country_iso_code": null
+      },
+      "default_flags": {
+        "date": false,
+        "circa": false,
+        "year": false,
+        "date_range_from": false,
+        "date_range_to": false,
+        "year_range_from": false,
+        "year_range_to": false,
+        "city": false,
+        "region": false,
+        "country": false,
+        "country_iso_code": false
+      },
+      "json": {
+        "circa": false
+      },
+      "yaml": {
+        "circa": false
+      },
+      "hash": {},
+      "neo4j": {
+        "circa": false
+      },
+      "neo4j_labels": [
+        "BirthInfo"
+      ]
+    }
+  },
+  "LegalInstrument": {
+    "missing": {
+      "fields": {
+        "type": null,
+        "identifier": null,
+        "title": null,
+        "issuing_body": null,
+        "publish_date": null,
+        "effective_date": null,
+        "url": null,
+        "programme": null,
+        "lang": null
+      },
+      "default_flags": {
+        "type": false,
+        "identifier": false,
+        "title": false,
+        "issuing_body": false,
+        "publish_date": false,
+        "effective_date": false,
+        "url": false,
+        "programme": false,
+        "lang": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    },
+    "explicit_nil": {
+      "fields": {
+        "type": null,
+        "identifier": null,
+        "title": null,
+        "issuing_body": null,
+        "publish_date": null,
+        "effective_date": null,
+        "url": null,
+        "programme": null,
+        "lang": null
+      },
+      "default_flags": {
+        "type": false,
+        "identifier": false,
+        "title": false,
+        "issuing_body": false,
+        "publish_date": false,
+        "effective_date": false,
+        "url": false,
+        "programme": false,
+        "lang": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    },
+    "complete": {
+      "fields": {
+        "type": "sentinel_type",
+        "identifier": "sentinel_identifier",
+        "title": "sentinel_title",
+        "issuing_body": "sentinel_issuing_body",
+        "publish_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "url": "sentinel_url",
+        "programme": "sentinel_programme",
+        "lang": "sentinel_lang"
+      },
+      "default_flags": {
+        "type": false,
+        "identifier": false,
+        "title": false,
+        "issuing_body": false,
+        "publish_date": false,
+        "effective_date": false,
+        "url": false,
+        "programme": false,
+        "lang": false
+      },
+      "json": {
+        "type": "sentinel_type",
+        "identifier": "sentinel_identifier",
+        "title": "sentinel_title",
+        "issuing_body": "sentinel_issuing_body",
+        "publish_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "url": "sentinel_url",
+        "programme": "sentinel_programme",
+        "lang": "sentinel_lang"
+      },
+      "yaml": {
+        "type": "sentinel_type",
+        "identifier": "sentinel_identifier",
+        "title": "sentinel_title",
+        "issuing_body": "sentinel_issuing_body",
+        "publish_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "url": "sentinel_url",
+        "programme": "sentinel_programme",
+        "lang": "sentinel_lang"
+      },
+      "hash": {
+        "type": "sentinel_type",
+        "identifier": "sentinel_identifier",
+        "title": "sentinel_title",
+        "issuing_body": "sentinel_issuing_body",
+        "publish_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "url": "sentinel_url",
+        "programme": "sentinel_programme",
+        "lang": "sentinel_lang"
+      }
+    },
+    "false_flags": {
+      "fields": {
+        "type": null,
+        "identifier": null,
+        "title": null,
+        "issuing_body": null,
+        "publish_date": null,
+        "effective_date": null,
+        "url": null,
+        "programme": null,
+        "lang": null
+      },
+      "default_flags": {
+        "type": false,
+        "identifier": false,
+        "title": false,
+        "issuing_body": false,
+        "publish_date": false,
+        "effective_date": false,
+        "url": false,
+        "programme": false,
+        "lang": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    }
+  },
+  "SanctionEffect": {
+    "missing": {
+      "fields": {
+        "effect_type": null,
+        "scope": null,
+        "description": null,
+        "start_date": null,
+        "end_date": null
+      },
+      "default_flags": {
+        "effect_type": false,
+        "scope": false,
+        "description": false,
+        "start_date": false,
+        "end_date": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    },
+    "explicit_nil": {
+      "fields": {
+        "effect_type": null,
+        "scope": null,
+        "description": null,
+        "start_date": null,
+        "end_date": null
+      },
+      "default_flags": {
+        "effect_type": false,
+        "scope": false,
+        "description": false,
+        "start_date": false,
+        "end_date": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    },
+    "complete": {
+      "fields": {
+        "effect_type": "sentinel_effect_type",
+        "scope": "sentinel_scope",
+        "description": "sentinel_description",
+        "start_date": "2024-02-29",
+        "end_date": "2024-02-29"
+      },
+      "default_flags": {
+        "effect_type": false,
+        "scope": false,
+        "description": false,
+        "start_date": false,
+        "end_date": false
+      },
+      "json": {
+        "effect_type": "sentinel_effect_type",
+        "scope": "sentinel_scope",
+        "description": "sentinel_description",
+        "start_date": "2024-02-29",
+        "end_date": "2024-02-29"
+      },
+      "yaml": {
+        "effect_type": "sentinel_effect_type",
+        "scope": "sentinel_scope",
+        "description": "sentinel_description",
+        "start_date": "2024-02-29",
+        "end_date": "2024-02-29"
+      },
+      "hash": {
+        "effect_type": "sentinel_effect_type",
+        "scope": "sentinel_scope",
+        "description": "sentinel_description",
+        "start_date": "2024-02-29",
+        "end_date": "2024-02-29"
+      }
+    },
+    "false_flags": {
+      "fields": {
+        "effect_type": null,
+        "scope": null,
+        "description": null,
+        "start_date": null,
+        "end_date": null
+      },
+      "default_flags": {
+        "effect_type": false,
+        "scope": false,
+        "description": false,
+        "start_date": false,
+        "end_date": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    }
+  },
+  "TemporalPeriod": {
+    "missing": {
+      "fields": {
+        "listed_date": null,
+        "effective_date": null,
+        "expiry_date": null,
+        "is_indefinite": false,
+        "last_updated": null
+      },
+      "default_flags": {
+        "listed_date": false,
+        "effective_date": false,
+        "expiry_date": false,
+        "is_indefinite": true,
+        "last_updated": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    },
+    "explicit_nil": {
+      "fields": {
+        "listed_date": null,
+        "effective_date": null,
+        "expiry_date": null,
+        "is_indefinite": null,
+        "last_updated": null
+      },
+      "default_flags": {
+        "listed_date": false,
+        "effective_date": false,
+        "expiry_date": false,
+        "is_indefinite": false,
+        "last_updated": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {}
+    },
+    "complete": {
+      "fields": {
+        "listed_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "expiry_date": "2024-02-29",
+        "is_indefinite": true,
+        "last_updated": "2024-02-29"
+      },
+      "default_flags": {
+        "listed_date": false,
+        "effective_date": false,
+        "expiry_date": false,
+        "is_indefinite": false,
+        "last_updated": false
+      },
+      "json": {
+        "listed_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "expiry_date": "2024-02-29",
+        "is_indefinite": true,
+        "last_updated": "2024-02-29"
+      },
+      "yaml": {
+        "listed_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "expiry_date": "2024-02-29",
+        "is_indefinite": true,
+        "last_updated": "2024-02-29"
+      },
+      "hash": {
+        "listed_date": "2024-02-29",
+        "effective_date": "2024-02-29",
+        "expiry_date": "2024-02-29",
+        "is_indefinite": true,
+        "last_updated": "2024-02-29"
+      }
+    },
+    "false_flags": {
+      "fields": {
+        "listed_date": null,
+        "effective_date": null,
+        "expiry_date": null,
+        "is_indefinite": false,
+        "last_updated": null
+      },
+      "default_flags": {
+        "listed_date": false,
+        "effective_date": false,
+        "expiry_date": false,
+        "is_indefinite": false,
+        "last_updated": false
+      },
+      "json": {
+        "is_indefinite": false
+      },
+      "yaml": {
+        "is_indefinite": false
+      },
+      "hash": {}
+    }
+  },
+  "ContactInfo": {
+    "missing": {
+      "fields": {
+        "email": null,
+        "phone": null,
+        "website": null,
+        "fax": null
+      },
+      "default_flags": {
+        "email": false,
+        "phone": false,
+        "website": false,
+        "fax": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "ContactInfo"
+      ]
+    },
+    "explicit_nil": {
+      "fields": {
+        "email": null,
+        "phone": null,
+        "website": null,
+        "fax": null
+      },
+      "default_flags": {
+        "email": false,
+        "phone": false,
+        "website": false,
+        "fax": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "ContactInfo"
+      ]
+    },
+    "complete": {
+      "fields": {
+        "email": "sentinel_email",
+        "phone": "sentinel_phone",
+        "website": "sentinel_website",
+        "fax": "sentinel_fax"
+      },
+      "default_flags": {
+        "email": false,
+        "phone": false,
+        "website": false,
+        "fax": false
+      },
+      "json": {
+        "email": "sentinel_email",
+        "phone": "sentinel_phone",
+        "website": "sentinel_website",
+        "fax": "sentinel_fax"
+      },
+      "yaml": {
+        "email": "sentinel_email",
+        "phone": "sentinel_phone",
+        "website": "sentinel_website",
+        "fax": "sentinel_fax"
+      },
+      "hash": {
+        "email": "sentinel_email",
+        "phone": "sentinel_phone",
+        "website": "sentinel_website",
+        "fax": "sentinel_fax"
+      },
+      "neo4j": {
+        "email": "sentinel_email",
+        "phone": "sentinel_phone",
+        "website": "sentinel_website",
+        "fax": "sentinel_fax"
+      },
+      "neo4j_labels": [
+        "ContactInfo"
+      ]
+    },
+    "false_flags": {
+      "fields": {
+        "email": null,
+        "phone": null,
+        "website": null,
+        "fax": null
+      },
+      "default_flags": {
+        "email": false,
+        "phone": false,
+        "website": false,
+        "fax": false
+      },
+      "json": {},
+      "yaml": {},
+      "hash": {},
+      "neo4j": {},
+      "neo4j_labels": [
+        "ContactInfo"
+      ]
+    }
+  }
+}

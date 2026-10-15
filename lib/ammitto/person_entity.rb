@@ -6,9 +6,14 @@ require_relative 'birth_info'
 require_relative 'contact_info'
 require_relative 'identification'
 require_relative 'utils/presence'
+require_relative 'ontology/contracts'
+require_relative 'ontology/entities/person_entity'
 
 module Ammitto
   # PersonEntity represents a sanctioned individual person
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Entities::PersonEntity (see Ontology::Contracts).
   #
   # @example Creating a person entity
   #   PersonEntity.new(
@@ -19,17 +24,7 @@ module Ammitto
   #   )
   #
   class PersonEntity < Entity
-    attribute :entity_type, :string, default: 'person'
-    attribute :birth_info, BirthInfo, collection: true
-    attribute :death_date, :date
-    attribute :nationalities, :string, collection: true
-    attribute :gender, :string
-    attribute :identifications, Identification, collection: true
-    attribute :addresses, Address, collection: true
-    attribute :contact_info, ContactInfo
-    attribute :title, :string             # Job title or honorific
-    attribute :position, :string          # Position held
-    attribute :affiliation, :string       # Organization affiliation
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'entityType', to: :entity_type

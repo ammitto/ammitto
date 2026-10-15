@@ -1,0 +1,103 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/nz/shp-108",
+        "@type": "VesselEntity",
+        "entityType": "vessel",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Ocean Autumn",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [
+          {
+            "@type": "SourceReference",
+            "sourceCode": "nz",
+            "referenceNumber": "SHP-108",
+            "retrievedAt": "2026-10-14T12:00:00Z"
+          }
+        ],
+        "linkedEntities": [],
+        "imoNumber": "9379052",
+        "previousNames": [],
+        "previousFlags": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/nz/consolidated-list/shp-108",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/nz/shp-108",
+        "authority": {
+          "@type": "Authority",
+          "id": "nz",
+          "name": "New Zealand (MFAT)",
+          "countryCode": "NZ"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "New Zealand Russia Sanctions",
+          "code": "NZ-RU"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "vessel_ban",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2025-10-30",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": []
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.sourceReferences[0].@type": "String",
+    "$.output.entity.sourceReferences[0].sourceCode": "String",
+    "$.output.entity.sourceReferences[0].referenceNumber": "String",
+    "$.output.entity.sourceReferences[0].retrievedAt": "String",
+    "$.output.entity.imoNumber": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::SourceReference": 1,
+    "Ammitto::TemporalPeriod": 1,
+    "Ammitto::VesselEntity": 1
+  }
+}

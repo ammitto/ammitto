@@ -1,0 +1,36 @@
+---
+uid: '10416'
+last_name: AL-QARD AL-HASSAN ASSOCIATION
+sdn_type: Entity
+program_list:
+  programs:
+  - SDGT
+aka_list:
+  items:
+  - uid: '10276'
+    type: a.k.a.
+    category: strong
+    last_name: AL-QUARDH AL-HASSAN ASSOCIATION
+  - uid: '10277'
+    type: a.k.a.
+    category: strong
+    last_name: AL-QUARD AL-HASSAN ASSOCIATION
+  - uid: '10278'
+    type: a.k.a.
+    category: strong
+    last_name: KARADH AL-HASSAN
+address_list:
+  items:
+  - uid: '14248'
+    city: Beirut
+    country: Lebanon
+id_list:
+  items:
+  - uid: '120155'
+    id_type: Additional Sanctions Information -
+    id_number: Subject to Secondary Sanctions Pursuant to the Hizballah Financial
+      Sanctions Regulations
+  - uid: '186321'
+    id_type: 'Secondary sanctions risk:'
+    id_number: section 1(b) of Executive Order 13224, as amended by Executive Order
+      13886

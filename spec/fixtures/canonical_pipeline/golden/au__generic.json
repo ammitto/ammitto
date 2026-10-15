@@ -1,0 +1,152 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/au/2126",
+        "@type": "Entity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "PASSIVE DEFENSE ORGANIZATION",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Permanent Committee for Passive Defense",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "PDO",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/au/consolidated-list/2126"
+        ],
+        "remarks": "Listing: Designated under the Autonomous Sanctions Regulations 2011 on 2 March 2012. Instrument of first designation Autonomous Sanctions (Designated Persons and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly listed on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024."
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/au/consolidated-list/2126",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/au/2126",
+        "authority": {
+          "@type": "Authority",
+          "id": "au",
+          "name": "Australia (DFAT)",
+          "countryCode": "AU"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Iran (Autonomous)",
+          "code": "AU_IRAN_AUTO"
+        },
+        "legalBases": [
+          {
+            "@type": "LegalInstrument",
+            "type": "regulation",
+            "identifier": "Designated under the Autonomous Sanctions Regulations 2011 on 2 March 2012. Instrument of first designation Autonomous Sanctions (Designated Persons and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly listed on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024.",
+            "title": "Designated under the Autonomous Sanctions Regulations 2011 on 2 March 2012. Instrument of first designation Autonomous Sanctions (Designated Persons and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly listed on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024."
+          }
+        ],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2024-01-12",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "2126",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "csv",
+          "sourceSpecificFields": {
+            "au:reference": "2126",
+            "au:committees": "Autonomous (Iran)",
+            "au:control_date": "2024-01-12",
+            "au:instrument": "Designated under the Autonomous Sanctions Regulations 2011 on 2 March 2012. Instrument of first designation Autonomous Sanctions (Designated Persons and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly listed on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024.",
+            "au:listing_info": "Designated under the Autonomous Sanctions Regulations 2011 on 2 March 2012. Instrument of first designation Autonomous Sanctions (Designated Persons and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly listed on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024.",
+            "au:type": "Synthetic unrecognised type",
+            "au:address": null
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.legalBases[0].@type": "String",
+    "$.output.entry.legalBases[0].type": "String",
+    "$.output.entry.legalBases[0].identifier": "String",
+    "$.output.entry.legalBases[0].title": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:reference": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:committees": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:control_date": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:instrument": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:listing_info": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:type": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.au:address": "NilClass"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::Entity": 1,
+    "Ammitto::LegalInstrument": 1,
+    "Ammitto::NameVariant": 3,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

@@ -1,0 +1,31 @@
+---
+uid: '24493'
+last_name: EP-MOM
+sdn_type: Aircraft
+program_list:
+  programs:
+  - IFSR
+  - SDGT
+  - NPWMD
+id_list:
+  items:
+  - uid: '126885'
+    id_type: Aircraft Manufacture Date
+    id_number: 12 May 1990
+  - uid: '126887'
+    id_type: Aircraft Model
+    id_number: BAe 146-300
+  - uid: '126888'
+    id_type: Aircraft Operator
+    id_number: Mahan Air
+  - uid: '126886'
+    id_type: Aircraft Manufacturer's Serial Number (MSN)
+    id_number: '3165'
+  - uid: '126884'
+    id_type: Additional Sanctions Information -
+    id_number: Subject to Secondary Sanctions
+  - uid: '187156'
+    id_type: 'Secondary sanctions risk:'
+    id_number: section 1(b) of Executive Order 13224, as amended by Executive Order
+      13886
+remarks: "(Linked To: MAHAN AIR)"

@@ -53,10 +53,6 @@ module Ammitto
                            target_class: 'Address',
                            target_key: :id
 
-        # Name variants for this person
-        # @return [Array<NameVariant>]
-        attribute :names, ValueObjects::NameVariant, collection: true
-
         # Birth information (may have multiple entries for uncertainty)
         # @return [Array<BirthInfo>]
         attribute :birth_info, ValueObjects::BirthInfo, collection: true
@@ -146,7 +142,6 @@ module Ammitto
         # @return [Hash]
         def to_hash
           hash = super
-          hash[:names] = names.map(&:to_hash) if names&.any?
           hash[:birth_info] = birth_info.map(&:to_hash) if birth_info&.any?
           hash[:death_date] = death_date.to_s if death_date
           hash[:nationalities] = nationalities if nationalities&.any?
@@ -176,8 +171,10 @@ module Ammitto
           map :position, to: :position
           map :affiliation, to: :affiliation
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
 
         # YAML mapping
@@ -196,8 +193,10 @@ module Ammitto
           map :position, to: :position
           map :affiliation, to: :affiliation
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
       end
     end

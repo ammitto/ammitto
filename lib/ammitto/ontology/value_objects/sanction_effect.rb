@@ -4,6 +4,7 @@ require 'lutaml/model'
 require_relative 'immutable'
 require_relative '../../utils/presence'
 require_relative '../types'
+require_relative 'localized_string'
 
 module Ammitto
   module Ontology
@@ -32,6 +33,12 @@ module Ammitto
         # Human-readable description
         # @return [String, nil]
         attribute :description, :string
+
+        # The source's descriptions, one per language/script, each with its
+        # language, script, region and transliteration metadata. Separate
+        # from the scalar description: a collection is never cast to text.
+        # @return [Array<LocalizedString>, nil]
+        attribute :localized_descriptions, LocalizedString, collection: true
 
         # Start date of this effect
         # @return [Date, nil]
@@ -72,6 +79,7 @@ module Ammitto
           hash[:effect_type] = effect_type if effect_type
           hash[:scope] = scope if scope
           hash[:description] = description if description
+          hash[:localized_descriptions] = localized_descriptions.map(&:to_hash) if localized_descriptions&.any?
           hash[:start_date] = start_date.to_s if start_date
           hash[:end_date] = end_date.to_s if end_date
           hash
@@ -82,6 +90,7 @@ module Ammitto
           map :effect_type, to: :effect_type
           map :scope, to: :scope
           map :description, to: :description
+          map :localized_descriptions, to: :localized_descriptions
           map :start_date, to: :start_date
           map :end_date, to: :end_date
         end
@@ -91,6 +100,7 @@ module Ammitto
           map :effect_type, to: :effect_type
           map :scope, to: :scope
           map :description, to: :description
+          map :localized_descriptions, to: :localized_descriptions
           map :start_date, to: :start_date
           map :end_date, to: :end_date
         end

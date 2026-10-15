@@ -1,9 +1,15 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/identification'
+
 module Ammitto
   # Identification represents an identification document
   #
   # Used for passports, national IDs, tax IDs, and other identity documents.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::Identification (see Ontology::Contracts).
   #
   # @example Creating an identification
   #   Identification.new(
@@ -27,13 +33,7 @@ module Ammitto
       Other
     ].freeze
 
-    attribute :type, :string
-    attribute :number, :string
-    attribute :issuing_country, :string
-    attribute :country_iso_code, :string # ISO 3166-1 alpha-2
-    attribute :issue_date, :date
-    attribute :expiry_date, :date
-    attribute :note, :string
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'type', to: :type

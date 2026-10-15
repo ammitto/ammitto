@@ -1,10 +1,17 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/entity_link'
+
 module Ammitto
   # EntityLink represents a relationship between entities
   #
   # Used to link entities to related organizations, beneficial owners,
   # vessels, aircraft, etc.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::EntityLink (see Ontology::Contracts);
+  # +relationship+ is the canonical +relationship_type+.
   #
   # @example Creating an entity link
   #   EntityLink.new(
@@ -30,13 +37,7 @@ module Ammitto
       shareholder_of
     ].freeze
 
-    attribute :target_id, :string         # URI of the target entity
-    attribute :relationship, :string      # Type of relationship
-    attribute :target_name, :string       # Name of target (for display)
-    attribute :target_type, :string       # Entity type of target
-    attribute :from_date, :date           # Relationship start date
-    attribute :to_date, :date             # Relationship end date
-    attribute :note, :string              # Additional notes
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'targetId', to: :target_id
@@ -46,6 +47,7 @@ module Ammitto
       map 'fromDate', to: :from_date
       map 'toDate', to: :to_date
       map 'note', to: :note
+      map 'source', to: :source
     end
 
     # @return [Boolean] whether the relationship is current

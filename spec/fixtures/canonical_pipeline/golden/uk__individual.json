@@ -1,0 +1,227 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/uk/afg0034",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "AWAL SHAH",
+            "firstName": "ABDUL BAQI",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": " HAQQANI ",
+            "firstName": "ABDUL",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Baqi",
+            "firstName": "Abdul",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "عبد الباقي بصير أول شاه",
+            "script": "Arab",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": " حقاني عبدالباقي ",
+            "script": "Arab",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/uk/consolidated-list/afg0034"
+        ],
+        "remarks": "Taliban member responsible for Nangarhar Province as at 2008. Until 7 Sep. 2007 he was also listed under number TAi.048. Height 175 cm. Review pursuant to Security Council resolution 1822 (2008) was concluded on 1 Jun. 2010. Photo available for inclusion in the INTERPOL-UN Security Council Special Notice. INTERPOL-UN Security Council Special Notice web link:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Individuals#2007-47507",
+        "birthInfo": [
+          {
+            "@type": "BirthInfo",
+            "date": "1967-01-01",
+            "circa": false,
+            "year": 1967,
+            "city": "Jalalabad City, Nangarhar Province",
+            "country": "Afghanistan"
+          }
+        ],
+        "nationalities": [
+          "Afghanistan"
+        ],
+        "identifications": [
+          {
+            "@type": "Identification",
+            "type": "Passport",
+            "number": "D0009724",
+            "note": "Afghanistan diplomatic passport issued on 13 Oct. 2021 in Kabul, Afghanistan, expires on 13 Oct. 2026 (Name in Latin script:  Abdul Baqi Haqqani; name in original script: ي حقان عبدالباقي)"
+          }
+        ],
+        "addresses": [
+          {
+            "@type": "Address",
+            "street": "Afshar Main road, Police District 5, near Kabul Education University",
+            "state": "Kabul",
+            "country": "Afghanistan"
+          }
+        ],
+        "title": "Maulavi",
+        "position": "Governor of Khost and Paktika provinces under the Taliban regime  (1996-2001)"
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/uk/consolidated-list/afg0034",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/uk/afg0034",
+        "authority": {
+          "@type": "Authority",
+          "id": "uk",
+          "name": "United Kingdom (OFSI)",
+          "countryCode": "GB"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "The Afghanistan (Sanctions) (EU Exit) Regulations 2020",
+          "code": "THE_AFGHANISTAN_SANCTIONS_EU_EXIT_REGULATIONS_2020"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          },
+          {
+            "@type": "SanctionEffect",
+            "effectType": "travel_ban",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2001-02-23",
+          "effectiveDate": "2001-02-23",
+          "isIndefinite": true,
+          "lastUpdated": "2026-04-29"
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "AFG0034",
+        "remarks": "\n",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "uk:ofsiGroupId": "6904",
+            "uk:unReferenceNumber": "TAi.038",
+            "uk:designationSource": "UN",
+            "uk:sanctionsImposed": "Asset freeze|Travel Ban",
+            "uk:entityType": "Individual"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].firstName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].firstName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].firstName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.names[3].@type": "String",
+    "$.output.entity.names[3].fullName": "String",
+    "$.output.entity.names[3].script": "String",
+    "$.output.entity.names[3].isPrimary": "FalseClass",
+    "$.output.entity.names[4].@type": "String",
+    "$.output.entity.names[4].fullName": "String",
+    "$.output.entity.names[4].script": "String",
+    "$.output.entity.names[4].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.birthInfo[0].@type": "String",
+    "$.output.entity.birthInfo[0].date": "Date",
+    "$.output.entity.birthInfo[0].circa": "FalseClass",
+    "$.output.entity.birthInfo[0].year": "Integer",
+    "$.output.entity.birthInfo[0].city": "String",
+    "$.output.entity.birthInfo[0].country": "String",
+    "$.output.entity.nationalities[0]": "String",
+    "$.output.entity.identifications[0].@type": "String",
+    "$.output.entity.identifications[0].type": "String",
+    "$.output.entity.identifications[0].number": "String",
+    "$.output.entity.identifications[0].note": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].street": "String",
+    "$.output.entity.addresses[0].state": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entity.title": "String",
+    "$.output.entity.position": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[1].@type": "String",
+    "$.output.entry.effects[1].effectType": "String",
+    "$.output.entry.effects[1].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.period.lastUpdated": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:ofsiGroupId": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:unReferenceNumber": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:designationSource": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:sanctionsImposed": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:entityType": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::BirthInfo": 1,
+    "Ammitto::Identification": 1,
+    "Ammitto::NameVariant": 5,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 2,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

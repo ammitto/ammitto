@@ -1,0 +1,169 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/wb/1043835",
+        "@type": "OrganizationEntity",
+        "entityType": "organization",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "CM-4 LLC DUSHANBESTROY",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/wb/debarment-list/1043835"
+        ],
+        "remarks": "OOO иC-4 «ДушанбесоxтMOH»",
+        "identifications": [],
+        "addresses": [
+          {
+            "@type": "Address",
+            "street": "BORDAD STR., 34",
+            "city": "DUSHANBE CITY",
+            "country": "Tajikistan",
+            "countryIsoCode": "TJ"
+          }
+        ],
+        "beneficialOwners": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/wb/debarment-list/1043835",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/wb/1043835",
+        "authority": {
+          "@type": "Authority",
+          "id": "wb",
+          "name": "World Bank",
+          "countryCode": "WB"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "World Bank Debarment",
+          "code": "DEBARMENT"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "debarment",
+            "scope": "full",
+            "description": "Excluded from World Bank-financed contracts"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "effectiveDate": "2025-12-08",
+          "expiryDate": "2031-04-25",
+          "isIndefinite": false
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "1043835",
+        "remarks": "Cross Debarment: ADB",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "json",
+          "sourceSpecificFields": {
+            "wb:suppTypeCode": "F",
+            "wb:debarType": null,
+            "wb:debarTypeDesc": null,
+            "wb:suppPreAcrn": null,
+            "wb:suppPostAcrn": null,
+            "wb:legacyFlag": "N",
+            "wb:unSuppFlag": "N",
+            "wb:ineligFlag": "X",
+            "wb:crossDebarment": "N",
+            "wb:crossDebarmentStatus": "CLEARED",
+            "wb:eligStatus": "X-DEBARRED",
+            "wb:suppEligStat": "X-DEBARRED",
+            "wb:ineligiblyStatus": null,
+            "wb:register": null,
+            "wb:parent": null,
+            "wb:amlEntrInd": null,
+            "wb:rechkInd": "N",
+            "wb:createUser": "WB630956",
+            "wb:createUserName": null,
+            "wb:createDate": "2025-12-08T00:00:00.000Z",
+            "wb:createTime": "1900-01-01T11:52:18.000Z"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.addresses[0].@type": "String",
+    "$.output.entity.addresses[0].street": "String",
+    "$.output.entity.addresses[0].city": "String",
+    "$.output.entity.addresses[0].country": "String",
+    "$.output.entity.addresses[0].countryIsoCode": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.effects[0].description": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.expiryDate": "Date",
+    "$.output.entry.period.isIndefinite": "FalseClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:suppTypeCode": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:debarType": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:debarTypeDesc": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:suppPreAcrn": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:suppPostAcrn": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:legacyFlag": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:unSuppFlag": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:ineligFlag": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:crossDebarment": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:crossDebarmentStatus": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:eligStatus": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:suppEligStat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:ineligiblyStatus": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:register": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:parent": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:amlEntrInd": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:rechkInd": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:createUser": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:createUserName": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:createDate": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.wb:createTime": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Address": 1,
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::OrganizationEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

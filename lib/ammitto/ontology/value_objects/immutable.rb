@@ -75,7 +75,13 @@ module Ammitto
             raise ArgumentError, 'Owned hashes cannot have a mutable default proc' if value.default_proc
 
             copied = value.dup.clear
-            value.each { |key, child| copied[call(key)] = call(child) }
+            value.each do |key, child|
+              owned_key = call(key)
+              # Ordinary Hash insertion duplicates unfrozen String keys and
+              # drops attached state; retain owned metadata before insertion.
+              owned_key.freeze if owned_key.is_a?(String) && !copied.compare_by_identity?
+              copied[owned_key] = call(child)
+            end
             copied.default = call(value.default)
             copy_attached(value, copied)
           end
@@ -109,9 +115,47 @@ module Ammitto
         end
         private_constant :HydrationState
 
+        # Native casting rebuilds containers. Restore owned metadata at the
+        # private hydration boundary, never on shared caller containers.
+        def self.restore_container_state(source, target, seal: false)
+          return target unless (source.is_a?(Array) && target.is_a?(Array)) || (source.is_a?(Hash) && target.is_a?(Hash))
+
+          graph = OwnedGraph.new(seal: seal)
+          target.default = graph.call(source.default) if source.is_a?(Hash)
+          source.instance_variables.each { |key| target.instance_variable_set(key, graph.call(source.instance_variable_get(key))) }
+          target
+        end
+        private_class_method :restore_container_state
+
+        module CollectionState
+          def attr_value(attributes, name, attribute)
+            source = attributes[name] || attributes[name.to_s]
+            Immutable.send(:restore_container_state, source, super)
+          end
+        end
+        private_constant :CollectionState
+
+        def self.install_collection_state(model)
+          model.prepend(CollectionState)
+          setters = Module.new
+          model.attributes.each do |name, attribute|
+            next unless attribute.collection? || attribute.type == Lutaml::Model::Type::Hash
+
+            setters.define_method(:"#{name}=") do |value|
+              copied = OwnedGraph.new(seal: false).call(value)
+              result = super(copied)
+              Immutable.send(:restore_container_state, copied, public_send(name))
+              result
+            end
+          end
+          model.prepend(setters)
+        end
+        private_class_method :install_collection_state
+
         def self.included(base)
           neo4j = base.respond_to?(:from_neo4j_record)
           base.superclass.extend(HydrationState)
+          install_collection_state(base.superclass)
           base.neo4j_labels(*base.superclass.all_neo4j_labels) if neo4j
           base.extend(ClassMethods)
           base.extend(Neo4jClassMethods) if neo4j
@@ -129,11 +173,15 @@ module Ammitto
           end
 
           def of(format, data, options = {})
-            project(hydration_model.of(format, OwnedGraph.new(seal: false).call(data), mapping_options(options)))
+            copied = OwnedGraph.new(seal: false).call(data)
+            value = hydration_model.of(format, copied, mapping_options(options))
+            project(restore_mapped_arrays(value, copied, format))
           end
 
           def apply_mappings(data, format, options = {})
-            project(hydration_model.apply_mappings(OwnedGraph.new(seal: false).call(data), format, mapping_options(options)))
+            copied = OwnedGraph.new(seal: false).call(data)
+            value = hydration_model.apply_mappings(copied, format, mapping_options(options))
+            project(restore_mapped_arrays(value, copied, format))
           end
 
           private
@@ -193,8 +241,29 @@ module Ammitto
             Immutable.send(:transfer, value, target, OwnedGraph.new(seal: false))
           end
 
+          def restore_mapped_arrays(value, data, format)
+            if value.is_a?(Array) && data.is_a?(Array)
+              Immutable.send(:restore_container_state, data, value)
+              value.zip(data).each { |item, source| restore_mapped_arrays(item, source, format) }
+            elsif value.is_a?(Lutaml::Model::Serializable) && data.is_a?(Hash) && !value.frozen?
+              value.class.mappings_for(format, value.lutaml_register).mappings.each do |rule|
+                next unless rule.to && value.respond_to?(rule.to)
+
+                key = Array(rule.name).find { |name| data.key?(name) || data.key?(name.to_s) || data.key?(name.to_sym) }
+                next unless key
+
+                source = Lutaml::Model::Utils.fetch_str_or_sym(data, key, nil)
+                Immutable.send(:restore_container_state, source, value.public_send(rule.to))
+              end
+            end
+            value
+          end
+
           def project(value)
-            return value.map { |item| project(item) }.freeze if value.is_a?(Array)
+            if value.is_a?(Array)
+              result = value.map { |item| project(item) }
+              return Immutable.send(:restore_container_state, value, result, seal: true).freeze
+            end
             return nil if value.nil?
 
             target = allocate

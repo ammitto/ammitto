@@ -273,15 +273,15 @@ RSpec.describe 'Immutable ontology value objects' do
   end
 
   it 'owns real nested Lutaml models in attached state without freezing caller models' do
-    localized = Ammitto::Ontology::ValueObjects::LocalizedString.new(value: 'Quoted', language: 'en')
+    localized = Ammitto::NameVariant.new(full_name: 'Quoted')
     date = Date.new(1964, 2, 29)
     date.instance_variable_set(:@metadata, { 'texts' => [localized] })
     value = Ammitto::Ontology::ValueObjects::BirthInfo.new(date: date)
-    localized.value = 'Caller changed'
+    localized.full_name = 'Caller changed'
     owned = value.date.instance_variable_get(:@metadata)['texts'].first
     expect(owned).to be_frozen
-    expect(owned.value).to eq('Quoted')
-    expect(owned.value).to be_frozen
+    expect(owned.full_name).to eq('Quoted')
+    expect(owned.full_name).to be_frozen
     expect(localized).not_to be_frozen
   end
 

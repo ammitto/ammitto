@@ -25,7 +25,7 @@ module Ammitto
 
         # Neo4j configuration for ContactInfo
         neo4j_labels 'ContactInfo'
-        neo4j_property :email, :phone, :website, :fax
+        neo4j_property :email, :phone, :website, :fax, :note
 
         # Email address
         # @return [String, nil]
@@ -43,10 +43,14 @@ module Ammitto
         # @return [String, nil]
         attribute :fax, :string
 
+        # Free-text note the source attached to the contact details
+        # @return [String, nil]
+        attribute :note, :string
+
         # Check if contact info has meaningful content
         # @return [Boolean]
         def present?
-          [email, phone, website, fax].any? { |v| Utils::Presence.present?(v) }
+          [email, phone, website, fax, note].any? { |v| Utils::Presence.present?(v) }
         end
 
         # Check if contact info is empty
@@ -63,6 +67,7 @@ module Ammitto
           hash[:phone] = phone if phone
           hash[:website] = website if website
           hash[:fax] = fax if fax
+          hash[:note] = note if note
           hash
         end
 
@@ -72,6 +77,7 @@ module Ammitto
           map :phone, to: :phone
           map :website, to: :website
           map :fax, to: :fax
+          map :note, to: :note
         end
 
         # YAML mapping
@@ -80,6 +86,7 @@ module Ammitto
           map :phone, to: :phone
           map :website, to: :website
           map :fax, to: :fax
+          map :note, to: :note
         end
       end
       private_constant :ContactInfoModel

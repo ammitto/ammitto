@@ -1,11 +1,19 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
 require_relative 'ontology/value_objects/localized_string'
+require_relative 'ontology/value_objects/sanction_effect'
 
 module Ammitto
   # SanctionEffect represents the effect of a sanction
   #
   # Documents what the sanction does (asset freeze, travel ban, etc.).
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::SanctionEffect (see Ontology::Contracts).
+  # Here +description+ is the LocalizedString collection (canonical
+  # +localized_descriptions+); the canonical scalar +description+ is
+  # +description_text+.
   #
   # @example Creating a sanction effect
   #   SanctionEffect.new(
@@ -43,14 +51,15 @@ module Ammitto
     # Scopes of effects
     SCOPES = %w[full partial limited].freeze
 
-    attribute :effect_type, :string    # Type of effect
-    attribute :scope, :string          # full, partial, limited
-    attribute :description, Ontology::ValueObjects::LocalizedString, collection: true # Localized descriptions
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'effectType', to: :effect_type
       map 'scope', to: :scope
       map 'description', to: :description
+      map 'descriptionText', to: :description_text
+      map 'startDate', to: :start_date
+      map 'endDate', to: :end_date
     end
 
     # Get description by language

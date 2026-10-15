@@ -47,9 +47,10 @@ module Ammitto
         # @raise [Ammitto::Error] when the transformer has no canonical form
         #   of the entrypoint
         def canonical_result(transformer, method, *, **)
-          raise Ammitto::Error, "#{transformer.source_code} has no canonical #{method}" unless transformer.class.canonical_entrypoint_names.include?(method)
+          canonical = :"canonical_#{method}"
+          raise Ammitto::Error, "#{transformer.source_code} has no canonical #{method}" unless transformer.respond_to?(canonical)
 
-          transformer.public_send(:"canonical_#{method}", *, **)
+          transformer.public_send(canonical, *, **)
         end
 
         # Transform data using appropriate transformer

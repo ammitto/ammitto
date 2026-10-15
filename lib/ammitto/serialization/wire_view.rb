@@ -29,7 +29,8 @@ module Ammitto
         case value
         when Array then value.map { |item| wrap(item) }
         when Lutaml::Model::Serializable
-          Ontology::Contracts.lookup(value.class)&.last == :canonical ? new(value) : value
+          contract = value.class.ancestors.grep(Class).filter_map { |klass| Ontology::Contracts.lookup(klass) }.first
+          contract&.last == :canonical ? new(value) : value
         else value
         end
       end

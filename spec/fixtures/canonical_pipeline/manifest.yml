@@ -2,9 +2,9 @@
 # from the data repository commit named beside it. `derived` entries are
 # the stated subtree or production flattening of an actual record, for the
 # two branches no published file reaches directly. `synthetic` entries are
-# records written for a branch no published record reaches at all; each
-# names what it was made from and carries the evidence (`absence_proof`)
-# that no actual record exists. Golden files hold the JSON-LD the
+# records written for a branch no actual record was found for; each names
+# what it was made from, and `absence_proof` says what was searched and
+# where that search stops short. Golden files hold the JSON-LD the
 # unmodified pipeline (4fab0fa) emitted for each record.
 #
 # input_dir (CN only) is the directory harmonize would resolve, so the

@@ -68,9 +68,9 @@ RSpec.describe 'Canonical transformer pipeline' do
     expect(declared - present.map { |branch| fixtures.label(branch) }).to eq([])
   end
 
-  # A synthetic record stands in only where no published record reaches the
-  # branch, and says so with the evidence; anything new needs an actual one
-  it 'uses an actual record wherever one is published' do
+  # A synthetic record stands in only for the listed branches, each with a
+  # stated search for an actual record; anything new needs an actual one
+  it 'labels every record actual, derived or synthetic, and limits synthetics to the listed branches' do
     records = fixtures.branches + fixtures.extras
     provenance = records.to_h do |record|
       [fixtures.label(record), %w[origin derived synthetic].select { |key| record.key?(key) }]

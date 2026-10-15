@@ -133,7 +133,7 @@ module Ammitto
       private
 
       def type_for_entity(entity)
-        canonical = CANONICAL_ENTITY_TYPES[entity.class.name]
+        canonical = entity.class.ancestors.lazy.filter_map { |ancestor| CANONICAL_ENTITY_TYPES[ancestor.name] }.first
         return canonical if canonical
 
         case entity

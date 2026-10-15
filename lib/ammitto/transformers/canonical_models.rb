@@ -46,7 +46,8 @@ module Ammitto
 
         # @return [Array<Symbol>]
         def canonical_entrypoint_names
-          @canonical_entrypoint_names ||= []
+          inherited = superclass.respond_to?(:canonical_entrypoint_names) ? superclass.canonical_entrypoint_names : []
+          inherited | own_canonical_entrypoint_names
         end
 
         # Turns each named method into canonical_<name>, which runs the one
@@ -66,8 +67,14 @@ module Ammitto
               result = public_send(:"canonical_#{name}", *args, **options, &block)
               building_canonical? ? result : Ontology::Compatibility.legacy(result)
             end
-            canonical_entrypoint_names << name
+            own_canonical_entrypoint_names << name
           end
+        end
+
+        private
+
+        def own_canonical_entrypoint_names
+          @own_canonical_entrypoint_names ||= []
         end
       end
 

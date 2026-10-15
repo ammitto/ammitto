@@ -1,6 +1,8 @@
-# SYNTHETIC record, not published data: data-ru publishes announcement
-# documents only, so no actual record reaches the per-entity
-# (Ru::SanctionedEntity) branch (see manifest.yml). The names are invented
+# SYNTHETIC record, not published data. No actual record for the
+# per-entity (Ru::SanctionedEntity) branch was found: data-ru's processed/
+# directory holds only .gitkeep, and of its 21 sources/announcements files
+# only the one in ru/announcement.yml was read (see manifest.yml).
+# The names are invented
 # placeholders; every other value restates the actual announcement in
 # ru/announcement.yml (ammitto/data-ru@c7c3852f6baf3fcfc89b14a321b6e326a37abdec:
 # sources/announcements/20240417.yml). No date of birth is given because

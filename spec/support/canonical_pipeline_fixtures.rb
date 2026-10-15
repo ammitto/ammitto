@@ -14,9 +14,9 @@ require 'yaml'
 module CanonicalPipelineFixtures
   ROOT = File.expand_path('../fixtures/canonical_pipeline', __dir__)
 
-  # Five transformers stamp retrieved_at with the clock and WB derives a
-  # status from today's date, so goldens are captured and compared at one
-  # pinned instant.
+  # Six transformers (METI included) stamp retrieved_at with the clock and
+  # WB derives a status from today's date, so goldens are captured and
+  # compared at one pinned instant.
   PINNED_TIME = Time.utc(2026, 10, 14, 12, 0, 0)
 
   # Records each model the command hands to JsonLdSerializer. Construction

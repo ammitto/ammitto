@@ -42,10 +42,6 @@ module Ammitto
                            target_class: 'Identifier',
                            target_key: :id
 
-        # Name variants for this organization
-        # @return [Array<NameVariant>]
-        attribute :names, ValueObjects::NameVariant, collection: true
-
         # Addresses (registered, business, etc.)
         # @return [Array<Address>, nil]
         attribute :addresses, ValueObjects::Address, collection: true
@@ -102,6 +98,23 @@ module Ammitto
         # @return [Array<String>, nil]
         attribute :beneficial_owners, :string, collection: true
 
+        # Beneficial owners as links to their entities; a name string
+        # cannot carry the target IRI, type, dates or note
+        # @return [Array<ValueObjects::EntityLink>, nil]
+        attribute :beneficial_owner_links, ValueObjects::EntityLink, collection: true
+
+        # Directors
+        # @return [Array<ValueObjects::EntityLink>, nil]
+        attribute :directors, ValueObjects::EntityLink, collection: true
+
+        # Parent organization
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :parent_organization, ValueObjects::EntityLink
+
+        # Subsidiaries
+        # @return [Array<ValueObjects::EntityLink>, nil]
+        attribute :subsidiaries, ValueObjects::EntityLink, collection: true
+
         # Sector of operation
         # @return [String, nil]
         attribute :sector, :string
@@ -134,7 +147,6 @@ module Ammitto
         # @return [Hash]
         def to_hash
           hash = super
-          hash[:names] = names.map(&:to_hash) if names&.any?
           hash[:addresses] = addresses.map(&:to_hash) if addresses&.any?
           hash[:identifications] = identifications.map(&:to_hash) if identifications&.any?
           hash[:contact_info] = contact_info.to_hash if contact_info&.present?
@@ -149,6 +161,10 @@ module Ammitto
           hash[:country] = country if country
           hash[:country_iso_code] = country_iso_code if country_iso_code
           hash[:beneficial_owners] = beneficial_owners if beneficial_owners&.any?
+          hash[:beneficial_owner_links] = beneficial_owner_links.map(&:to_hash) if beneficial_owner_links&.any?
+          hash[:directors] = directors.map(&:to_hash) if directors&.any?
+          hash[:parent_organization] = parent_organization.to_hash if parent_organization
+          hash[:subsidiaries] = subsidiaries.map(&:to_hash) if subsidiaries&.any?
           hash[:sector] = sector if sector
           hash
         end
@@ -172,10 +188,16 @@ module Ammitto
           map :country, to: :country
           map :country_iso_code, to: :country_iso_code
           map :beneficial_owners, to: :beneficial_owners
+          map :beneficial_owner_links, to: :beneficial_owner_links
+          map :directors, to: :directors
+          map :parent_organization, to: :parent_organization
+          map :subsidiaries, to: :subsidiaries
           map :sector, to: :sector
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
 
         # YAML mapping
@@ -197,10 +219,16 @@ module Ammitto
           map :country, to: :country
           map :country_iso_code, to: :country_iso_code
           map :beneficial_owners, to: :beneficial_owners
+          map :beneficial_owner_links, to: :beneficial_owner_links
+          map :directors, to: :directors
+          map :parent_organization, to: :parent_organization
+          map :subsidiaries, to: :subsidiaries
           map :sector, to: :sector
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
       end
     end

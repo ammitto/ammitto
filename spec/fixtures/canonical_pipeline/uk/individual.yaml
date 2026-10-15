@@ -1,0 +1,83 @@
+---
+last_updated: '2026-04-29'
+date_designated: '2001-02-23'
+unique_id: AFG0034
+ofsi_group_id: '6904'
+un_reference_number: TAi.038
+names:
+  names:
+  - name1: ABDUL BAQI
+    name2: BASIR
+    name6: AWAL SHAH
+    name_type: Primary Name
+  - name1: ABDUL
+    name2: " BAQI"
+    name6: " HAQQANI "
+    name_type: Primary Name Variation
+  - name1: Abdul
+    name6: Baqi
+    name_type: Alias
+    alias_strength: Good quality a.k.a
+non_latin_names:
+  names:
+  - name_non_latin_script: عبد الباقي بصير أول شاه
+  - name_non_latin_script: " حقاني عبدالباقي "
+regime_name: The Afghanistan (Sanctions) (EU Exit) Regulations 2020
+individual_entity_ship: Individual
+designation_source: UN
+sanctions_imposed: Asset freeze|Travel Ban
+sanctions_imposed_indicators:
+  asset_freeze: true
+  trust_services_sanctions: false
+  arms_embargo: false
+  targeted_arms_embargo: false
+  technical_assistance_related_to_aircraft: false
+  travel_ban: true
+  prohibition_of_port_entry: false
+  chartering_of_ships: false
+  crew_servicing_of_ships_and_aircraft: false
+  prevention_of_chartering_of_ships_and_aircraft: false
+  prevention_of_business_arrangements: false
+  closure_of_representative_offices: false
+  director_disqualification_sanction: false
+  deflag: false
+other_information: Taliban member responsible for Nangarhar Province as at 2008. Until
+  7 Sep. 2007 he was also listed under number TAi.048. Height 175 cm. Review pursuant
+  to Security Council resolution 1822 (2008) was concluded on 1 Jun. 2010. Photo available
+  for inclusion in the INTERPOL-UN Security Council Special Notice. INTERPOL-UN Security
+  Council Special Notice web link:https://www.interpol.int/en/How-we-work/Notices/View-UN-Notices-Individuals#2007-47507
+uk_statement_of_reasons: "\n"
+addresses:
+  addresses:
+  - address_line1: Afshar Main road
+    address_line2: Police District 5
+    address_line3: near Kabul Education University
+    address_line6: Kabul
+    address_country: Afghanistan
+titles:
+- Maulavi
+individual_details:
+  individual:
+    dobs:
+    - dd/mm/1960
+    - dd/mm/1961
+    - '1967-01-01'
+    nationalities:
+    - Afghanistan
+    positions:
+    - Governor of Khost and Paktika provinces under the Taliban regime  (1996-2001)
+    - Consular Department, Ministry of Foreign Affairs under the Taliban regime (1996-
+      2001)
+    - Vice-Minister of Information and  Culture under the Taliban regime (1996-2001)
+    birth_details:
+      locations:
+      - town_of_birth: Jalalabad City, Nangarhar Province
+        country_of_birth: Afghanistan
+      - town_of_birth: Shinwar District, Nangarhar Province
+        country_of_birth: Afghanistan
+    passport_details:
+      passports:
+      - number: D0009724
+        additional_information: 'Afghanistan diplomatic passport issued on 13 Oct.
+          2021 in Kabul, Afghanistan, expires on 13 Oct. 2026 (Name in Latin script:  Abdul
+          Baqi Haqqani; name in original script: ي حقان عبدالباقي)'

@@ -3,9 +3,19 @@
 require_relative 'entity'
 require_relative 'entity_link'
 require_relative 'tonnage'
+require_relative 'ontology/contracts'
+require_relative 'ontology/entities/vessel_entity'
 
 module Ammitto
   # VesselEntity represents a sanctioned vessel/ship
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Entities::VesselEntity (see Ontology::Contracts). Renamed
+  # here: +mmsi+ (canonical +mmsi_number+), +deadweight_tonnage+
+  # (+deadweight+), +owner+/+operator+/+registered_owner+ EntityLinks
+  # (+owner_link+/+operator_link+/+registered_owner_link+) and the
+  # registered owner's name string +registered_owner_name+
+  # (+registered_owner+). +length+ stays an Integer here.
   #
   # @example Creating a vessel entity
   #   VesselEntity.new(
@@ -16,26 +26,7 @@ module Ammitto
   #   )
   #
   class VesselEntity < Entity
-    attribute :entity_type, :string, default: 'vessel'
-    attribute :imo_number, :string            # International Maritime Organization number
-    attribute :mmsi, :string                  # Maritime Mobile Service Identity
-    attribute :call_sign, :string             # Radio call sign
-    attribute :flag_state, :string            # Country of registration
-    attribute :flag_state_iso_code, :string   # ISO 3166-1 alpha-2
-    attribute :vessel_type, :string           # Cargo, tanker, fishing, etc.
-    attribute :vessel_type_code, :string      # Standardized vessel type code
-    attribute :tonnage, Tonnage
-    attribute :build_year, :integer
-    attribute :builder, :string               # Shipyard/builder name
-    attribute :length, :integer               # Length in meters
-    attribute :gross_tonnage, :integer
-    attribute :deadweight_tonnage, :integer
-    attribute :owner, EntityLink              # Owning company
-    attribute :operator, EntityLink           # Operating company
-    attribute :registered_owner, EntityLink   # Registered owner
-    attribute :technical_manager, EntityLink  # Technical management company
-    attribute :previous_names, :string, collection: true
-    attribute :previous_flags, :string, collection: true
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'entityType', to: :entity_type
@@ -58,6 +49,10 @@ module Ammitto
       map 'technicalManager', to: :technical_manager
       map 'previousNames', to: :previous_names
       map 'previousFlags', to: :previous_flags
+      map 'name', to: :name
+      map 'portOfRegistry', to: :port_of_registry
+      map 'registeredOwnerName', to: :registered_owner_name
+      map 'manager', to: :manager
     end
 
     # Check if this vessel matches a search term

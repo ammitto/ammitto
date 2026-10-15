@@ -51,6 +51,11 @@ module Ammitto
         # @return [String, nil]
         attribute :registration, :string
 
+        # Earlier registrations (tail numbers), kept apart from
+        # previous_names
+        # @return [Array<String>, nil]
+        attribute :previous_registrations, :string, collection: true
+
         # ICAO 24-bit address (hex)
         # @return [String, nil]
         attribute :icao_24bit, :string
@@ -58,6 +63,14 @@ module Ammitto
         # Aircraft type/model
         # @return [String, nil]
         attribute :aircraft_type, :string
+
+        # Model designation (737-800, A320, ...)
+        # @return [String, nil]
+        attribute :model, :string
+
+        # Engine type (jet, turboprop, piston)
+        # @return [String, nil]
+        attribute :engine_type, :string
 
         # Manufacturer
         # @return [String, nil]
@@ -71,6 +84,10 @@ module Ammitto
         # @return [String, nil]
         attribute :registration_country, :string
 
+        # ISO 3166-1 alpha-2 code of the registration country
+        # @return [String, nil]
+        attribute :flag_state_iso_code, :string
+
         # Registered owner
         # @return [String, nil]
         attribute :registered_owner, :string
@@ -78,6 +95,15 @@ module Ammitto
         # Operator
         # @return [String, nil]
         attribute :operator, :string
+
+        # Owning company or person as a link to its entity
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :owner_link, ValueObjects::EntityLink
+
+        # Operating airline or company as a link to its entity; the
+        # +operator+ string keeps the name as published
+        # @return [ValueObjects::EntityLink, nil]
+        attribute :operator_link, ValueObjects::EntityLink
 
         def initialize(*args)
           super
@@ -104,13 +130,19 @@ module Ammitto
           hash[:previous_names] = previous_names if previous_names&.any?
           hash[:serial_number] = serial_number if serial_number
           hash[:registration] = registration if registration
+          hash[:previous_registrations] = previous_registrations if previous_registrations&.any?
           hash[:icao_24bit] = icao_24bit if icao_24bit
           hash[:aircraft_type] = aircraft_type if aircraft_type
+          hash[:model] = model if model
+          hash[:engine_type] = engine_type if engine_type
           hash[:manufacturer] = manufacturer if manufacturer
           hash[:build_year] = build_year if build_year
           hash[:registration_country] = registration_country if registration_country
+          hash[:flag_state_iso_code] = flag_state_iso_code if flag_state_iso_code
           hash[:registered_owner] = registered_owner if registered_owner
           hash[:operator] = operator if operator
+          hash[:owner_link] = owner_link.to_hash if owner_link
+          hash[:operator_link] = operator_link.to_hash if operator_link
           hash
         end
 
@@ -119,19 +151,28 @@ module Ammitto
           map :id, to: :id
           map :entity_type, to: :entity_type
           map :name, to: :name
+          map :names, to: :names
           map :previous_names, to: :previous_names
           map :serial_number, to: :serial_number
           map :registration, to: :registration
+          map :previous_registrations, to: :previous_registrations
           map :icao_24bit, to: :icao_24bit
           map :aircraft_type, to: :aircraft_type
+          map :model, to: :model
+          map :engine_type, to: :engine_type
           map :manufacturer, to: :manufacturer
           map :build_year, to: :build_year
           map :registration_country, to: :registration_country
+          map :flag_state_iso_code, to: :flag_state_iso_code
           map :registered_owner, to: :registered_owner
           map :operator, to: :operator
+          map :owner_link, to: :owner_link
+          map :operator_link, to: :operator_link
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
 
         # YAML mapping
@@ -139,19 +180,28 @@ module Ammitto
           map :id, to: :id
           map :entity_type, to: :entity_type
           map :name, to: :name
+          map :names, to: :names
           map :previous_names, to: :previous_names
           map :serial_number, to: :serial_number
           map :registration, to: :registration
+          map :previous_registrations, to: :previous_registrations
           map :icao_24bit, to: :icao_24bit
           map :aircraft_type, to: :aircraft_type
+          map :model, to: :model
+          map :engine_type, to: :engine_type
           map :manufacturer, to: :manufacturer
           map :build_year, to: :build_year
           map :registration_country, to: :registration_country
+          map :flag_state_iso_code, to: :flag_state_iso_code
           map :registered_owner, to: :registered_owner
           map :operator, to: :operator
+          map :owner_link, to: :owner_link
+          map :operator_link, to: :operator_link
           map :source_references, to: :source_references
+          map :linked_entities, to: :linked_entities
           map :same_as, to: :same_as
           map :remarks, to: :remarks
+          map :sanction_entry_ids, to: :sanction_entry_ids
         end
       end
     end

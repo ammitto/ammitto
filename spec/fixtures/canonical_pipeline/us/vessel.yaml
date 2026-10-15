@@ -1,0 +1,52 @@
+---
+uid: '15049'
+last_name: FOREST
+sdn_type: Vessel
+program_list:
+  programs:
+  - IRAN
+aka_list:
+  items:
+  - uid: '22158'
+    type: f.k.a.
+    category: strong
+    last_name: FAEZ
+  - uid: '23443'
+    type: f.k.a.
+    category: strong
+    last_name: SATEEN
+  - uid: '24781'
+    type: f.k.a.
+    category: strong
+    last_name: MAESTRO
+  - uid: '40667'
+    type: f.k.a.
+    category: strong
+    last_name: FIANGA
+id_list:
+  items:
+  - uid: '8058'
+    id_type: Vessel Registration Identification
+    id_number: IMO 9283760
+  - uid: '8127'
+    id_type: MMSI
+    id_number: '572438210'
+  - uid: '111476'
+    id_type: Former Vessel Flag
+    id_number: Malta
+  - uid: '112999'
+    id_type: Former Vessel Flag
+    id_number: Tuvalu
+  - uid: '114793'
+    id_type: Former Vessel Flag
+    id_number: Tanzania
+  - uid: '119266'
+    id_type: Additional Sanctions Information -
+    id_number: Subject to Secondary Sanctions
+remarks: "(Linked To: NATIONAL IRANIAN TANKER COMPANY)"
+vessel_info:
+  call_sign: T2DM4
+  vessel_type: Chemical/Products Tanker
+  vessel_flag: Iran
+  tonnage: '35124'
+  gross_registered_tonnage: '25214'

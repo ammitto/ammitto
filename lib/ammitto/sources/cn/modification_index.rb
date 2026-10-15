@@ -6,6 +6,7 @@ require_relative 'measure_modification'
 require_relative 'entity'
 require_relative '../../status_change'
 require_relative '../../notice_reference'
+require_relative '../../transformers/canonical_models'
 
 module Ammitto
   module Sources
@@ -25,6 +26,8 @@ module Ammitto
       # more than one, a target date that disagrees with the announcement,
       # an action after a stop) are collected in #errors so the harmonize
       # health gate fails instead.
+      #
+      # History is canonical internally and is projected for legacy entries.
       class ModificationIndex
         # The current status is left as published; these only describe the
         # history the modification records.
@@ -75,7 +78,8 @@ module Ammitto
         def load_file(file, code, transformer)
           list = Transformer::LIST_TYPE_MAPPING.fetch(code)[:list_slug]
           data = YAML.safe_load_file(file, permitted_classes: [Date, Time], aliases: true)
-          result = transformer.transform_modification(MeasureModification.from_hash(data), list_type_code: code)
+          result = transformer.canonical_transform_modification(MeasureModification.from_hash(data),
+                                                                list_type_code: code)
           publish_date = result[:official_announcement]&.publish_date
           result[:modifications].each_with_index do |mod, position|
             key = [list, mod.target_announcement_document_id]
@@ -100,7 +104,7 @@ module Ammitto
         # Attach every modification of the announcement these entries came
         # from, with the status history it implies. The published status is
         # not touched.
-        # @param entries [Array<Ammitto::SanctionEntry>]
+        # @param entries [Array<Ammitto::SanctionEntry, Ammitto::Ontology::Sanction::SanctionEntry>]
         # @param list [String, nil] list slug the entries are published under
         # @param announcement [Ammitto::OfficialAnnouncement]
         def attach(entries, list, announcement)
@@ -115,7 +119,9 @@ module Ammitto
           records.each { |r| check_target_date(r, announcement) }
           entries.each do |entry|
             entry.modifications = records.map(&:modification)
-            entry.status_history = @history[key].dup
+            history = @history[key].dup
+            history = Ontology::Compatibility.legacy(history) unless entry.is_a?(Ontology::Sanction::SanctionEntry)
+            entry.status_history = history
           end
         end
 
@@ -153,9 +159,11 @@ module Ammitto
           to_status = STATUS_FOR_ACTION[mod.action]
           return invalid(record, "action #{mod.action.inspect} is not suspend or stop") unless to_status
           return invalid(record, 'conflicts with another action the same day') if conflicting?(previous, mod, to_status)
-          return invalid(record, 'follows a stop of the same announcement') if previous&.termination?
+          return invalid(record, 'follows a stop of the same announcement') if previous&.to_status == 'terminated'
 
-          Ammitto::StatusChange.new(
+          # The flat StatusChange#date string is the canonical timestamp
+          Transformers::CanonicalModels.build(
+            Ammitto::StatusChange,
             date: mod.effective_date.to_s,
             from_status: status_before(previous, mod.effective_date),
             to_status: to_status,
@@ -165,14 +173,14 @@ module Ammitto
         end
 
         def conflicting?(previous, mod, to_status)
-          previous && previous.date == mod.effective_date.to_s && previous.to_status != to_status
+          previous && previous.timestamp == mod.effective_date.to_s && previous.to_status != to_status
         end
 
         # A suspension that lapsed before this change took effect left the
         # measures in force again.
         def status_before(previous, date)
           return 'active' unless previous
-          return 'active' if previous.suspension? && previous.suspension_end_date &&
+          return 'active' if previous.to_status == 'suspended' && previous.suspension_end_date &&
                              date && previous.suspension_end_date < date
 
           previous.to_status
@@ -187,7 +195,8 @@ module Ammitto
         def notice_reference(announcement)
           return nil unless announcement
 
-          Ammitto::NoticeReference.new(
+          Transformers::CanonicalModels.build(
+            Ammitto::NoticeReference,
             notice_number: announcement.document_id,
             notice_date: announcement.publish_date,
             notice_title: announcement.title,

@@ -30,7 +30,8 @@ module Ammitto
         # Neo4j configuration for NameVariant
         neo4j_labels 'Name'
         neo4j_property :full_name, :first_name, :middle_name, :last_name,
-                       :title, :function, :script, :language, :is_primary, :is_strong
+                       :title, :function, :script, :language, :is_primary,
+                       :is_strong
 
         # Full name (complete name as a single string)
         # @return [String, nil]
@@ -121,6 +122,7 @@ module Ammitto
           hash[:script] = script if script
           hash[:language] = language if language
           hash[:is_primary] = is_primary if is_primary
+          # A source's explicit "not strong" is a statement, so false is kept
           hash[:is_strong] = is_strong unless is_strong.nil?
           hash
         end
@@ -158,7 +160,7 @@ module Ammitto
       class NameVariant < NameVariantModel
         include Immutable
 
-        # Return a new value; the canonical name cannot be mutated in place.
+        # Return a new value; canonical names cannot be changed in place.
         def with_detected_script
           full_name ? with(script: Types.detect_script(full_name).to_s) : self
         end

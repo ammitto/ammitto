@@ -28,7 +28,8 @@ module Ammitto
 
         # Neo4j configuration for Identification
         neo4j_labels 'Identifier'
-        neo4j_property :type, :number, :issuing_country, :issue_date, :expiry_date
+        neo4j_property :type, :number, :issuing_country, :issue_date, :expiry_date,
+                       :country_iso_code, :note
 
         # Type of identification document
         # @return [Symbol, String, nil]
@@ -49,6 +50,15 @@ module Ammitto
         # Issue date
         # @return [Date, nil]
         attribute :issue_date, :date
+
+        # ISO 3166-1 alpha-2 code of the issuing country, when the source
+        # gives one beside the country as written
+        # @return [String, nil]
+        attribute :country_iso_code, :string
+
+        # Free-text note the source attached to the document
+        # @return [String, nil]
+        attribute :note, :string
 
         # Check if identification has meaningful content
         # @return [Boolean]
@@ -71,6 +81,8 @@ module Ammitto
           hash[:issuing_country] = issuing_country if issuing_country
           hash[:expiry_date] = expiry_date.to_s if expiry_date
           hash[:issue_date] = issue_date.to_s if issue_date
+          hash[:country_iso_code] = country_iso_code if country_iso_code
+          hash[:note] = note if note
           hash
         end
 
@@ -81,6 +93,8 @@ module Ammitto
           map :issuing_country, to: :issuing_country
           map :expiry_date, to: :expiry_date
           map :issue_date, to: :issue_date
+          map :country_iso_code, to: :country_iso_code
+          map :note, to: :note
         end
 
         # YAML mapping
@@ -90,6 +104,8 @@ module Ammitto
           map :issuing_country, to: :issuing_country
           map :expiry_date, to: :expiry_date
           map :issue_date, to: :issue_date
+          map :country_iso_code, to: :country_iso_code
+          map :note, to: :note
         end
       end
       private_constant :IdentificationModel

@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
+require_relative 'ontology/contracts'
+require_relative 'ontology/value_objects/address'
+
 module Ammitto
   # Address represents a physical address
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::ValueObjects::Address (see Ontology::Contracts).
   #
   # @example Creating an address
   #   Address.new(
@@ -13,14 +19,7 @@ module Ammitto
   #   )
   #
   class Address < Lutaml::Model::Serializable
-    attribute :street, :string
-    attribute :street2, :string
-    attribute :city, :string
-    attribute :state, :string             # State, province, region
-    attribute :country, :string           # Country name
-    attribute :country_iso_code, :string  # ISO 3166-1 alpha-2
-    attribute :postal_code, :string
-    attribute :po_box, :string
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'street', to: :street
@@ -34,6 +33,8 @@ module Ammitto
       map 'postalCode', to: :postal_code # backward compatibility
       map 'po_box', to: :po_box
       map 'poBox', to: :po_box # backward compatibility
+      map 'region', to: :region
+      map 'address_type', to: :address_type
     end
 
     # @return [String] formatted single-line address

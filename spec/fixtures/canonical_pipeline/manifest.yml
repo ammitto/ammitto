@@ -1,0 +1,110 @@
+# One actual record per harmonize transform branch, copied byte for byte
+# from the data repository commit named beside it. `derived` entries are
+# the stated subtree or production flattening of an actual record, for the
+# two branches no published file reaches directly. `synthetic` entries are
+# records written for a branch no actual record was found for; each names
+# what it was made from, and `absence_proof` says what was searched and
+# where that search stops short. Golden files hold the JSON-LD the
+# unmodified pipeline (4fab0fa) emitted for each record.
+#
+# input_dir (CN only) is the directory harmonize would resolve, so the
+# modification index is built from the sibling sanction-updates directory
+# exactly as harmonize_source builds it.
+branches:
+  - { source: uk, branch: individual, file: uk/individual.yaml,
+      origin: ammitto/data-uk@4644d2e97aacc62a9da0e5bb9568d76109942c9b:processed/afg0034.yaml }
+  - { source: uk, branch: entity, file: uk/entity.yaml,
+      origin: ammitto/data-uk@4644d2e97aacc62a9da0e5bb9568d76109942c9b:processed/inu0113.yaml }
+  - { source: uk, branch: ship, file: uk/ship.yaml,
+      origin: ammitto/data-uk@4644d2e97aacc62a9da0e5bb9568d76109942c9b:processed/rus2334.yaml }
+  - { source: eu, branch: person, file: eu/person.yaml,
+      origin: ammitto/data-eu@2a4478637c4989f9a8a35d2353eb44670a5dafab:processed/eu-1003-87.yaml }
+  - { source: eu, branch: enterprise, file: eu/enterprise.yaml,
+      origin: ammitto/data-eu@2a4478637c4989f9a8a35d2353eb44670a5dafab:processed/eu-12036-8.yaml }
+  - { source: un, branch: individual, file: un/individual.yaml,
+      origin: ammitto/data-un@bdc292912f4f44410c91faf4dc04965a532d5b1d:processed/cdi-004.yaml }
+  - { source: un, branch: entity, file: un/entity.yaml,
+      origin: ammitto/data-un@bdc292912f4f44410c91faf4dc04965a532d5b1d:processed/hte-001.yaml }
+  - { source: us, branch: individual, file: us/individual.yaml,
+      origin: ammitto/data-us@e0c3b8d6a875e5feed106d50d35fb70438f073e2:processed/15226.yaml }
+  - { source: us, branch: entity, file: us/entity.yaml,
+      origin: ammitto/data-us@e0c3b8d6a875e5feed106d50d35fb70438f073e2:processed/10416.yaml }
+  - { source: us, branch: vessel, file: us/vessel.yaml,
+      origin: ammitto/data-us@e0c3b8d6a875e5feed106d50d35fb70438f073e2:processed/15049.yaml }
+  - { source: us, branch: aircraft, file: us/aircraft.yaml,
+      origin: ammitto/data-us@e0c3b8d6a875e5feed106d50d35fb70438f073e2:processed/24493.yaml }
+  - { source: wb, branch: person, file: wb/person.yaml,
+      origin: ammitto/data-wb@cc6ad1631968f4b6f3f4a54046db9ea92810d49a:processed/wb-1079119.yaml }
+  - { source: wb, branch: organization, file: wb/organization.yaml,
+      origin: ammitto/data-wb@cc6ad1631968f4b6f3f4a54046db9ea92810d49a:processed/wb-1043835.yaml }
+  - { source: au, branch: individual, file: au/individual.yaml,
+      origin: ammitto/data-au@2af73f4b2fff535992ddb53a0fbe58382ff6f365:processed/au-1060.yaml }
+  - { source: au, branch: organization, file: au/organization.yaml,
+      origin: ammitto/data-au@2af73f4b2fff535992ddb53a0fbe58382ff6f365:processed/au-2126.yaml }
+  - { source: au, branch: vessel, file: au/vessel.yaml,
+      origin: ammitto/data-au@2af73f4b2fff535992ddb53a0fbe58382ff6f365:processed/au-8283.yaml }
+  - { source: au, branch: generic, file: au/generic.yaml,
+      synthetic: 'au/organization.yaml with entity_type replaced by an unrecognised value',
+      absence_proof: 'all 4009 processed/*.yaml of ammitto/data-au@2af73f4b2fff535992ddb53a0fbe58382ff6f365
+        read 2026-10-14: entity_type person 2575, organization 1075, vessel 359, none other' }
+  - { source: ca, branch: individual, file: ca/individual.yaml,
+      origin: ammitto/data-ca@8c8b2e0c0c8a38eeb26e3a85a8bab700b71d2c2d:processed/ca-Belarus-B-larus-1-Part-1-1-37.yaml }
+  - { source: ca, branch: entity, file: ca/entity.yaml,
+      origin: ammitto/data-ca@8c8b2e0c0c8a38eeb26e3a85a8bab700b71d2c2d:processed/ca-Belarus-B-larus-1-Part-2-17.yaml }
+  - { source: ca, branch: vessel, file: ca/vessel.yaml,
+      origin: ammitto/data-ca@8c8b2e0c0c8a38eeb26e3a85a8bab700b71d2c2d:processed/ca-Russia-Russie-1-1-1.yaml }
+  - { source: ch, branch: target_individual, file: ch/target_individual.yaml,
+      origin: ammitto/data-ch@465a91599a2019c5fd84fedf9f1261689853a35e:processed/ch-100173.yaml }
+  - { source: ch, branch: target_entity, file: ch/target_entity.yaml,
+      origin: ammitto/data-ch@465a91599a2019c5fd84fedf9f1261689853a35e:processed/ch-100027.yaml }
+  - { source: ch, branch: target_object, file: ch/target_object.yaml,
+      origin: ammitto/data-ch@465a91599a2019c5fd84fedf9f1261689853a35e:processed/ch-100001.yaml }
+  - { source: ch, branch: identity, file: ch/identity.yaml,
+      derived: individual.identity subtree of ch/target_individual.yaml }
+  - { source: cn, branch: announcement,
+      file: cn/sources/sanction-lists/unreliable-entity-list/202507.yml,
+      input_dir: cn/sources/sanction-lists,
+      origin: ammitto/data-cn@4b5b653275035caa13f7dd18c9ab54b308e685df:sources/sanction-lists/unreliable-entity-list/202507.yml }
+  - { source: cn, branch: modification,
+      file: cn/sources/sanction-updates/unreliable-entity-list-updates/20250514.yml,
+      input_dir: cn/sources/sanction-lists,
+      origin: ammitto/data-cn@4b5b653275035caa13f7dd18c9ab54b308e685df:sources/sanction-updates/unreliable-entity-list-updates/20250514.yml }
+  - { source: ru, branch: announcement, file: ru/announcement.yml,
+      origin: ammitto/data-ru@c7c3852f6baf3fcfc89b14a321b6e326a37abdec:sources/announcements/20240417.yml }
+  - { source: ru, branch: per_entity, file: ru/per_entity.yaml,
+      synthetic: 'placeholder names; other values restate ru/announcement.yml',
+      absence_proof: 'ammitto/data-ru@c7c3852f6baf3fcfc89b14a321b6e326a37abdec git tree (95 entries, not truncated):
+        processed/ holds only .gitkeep and the only record files are the 21 sources/announcements/*.yml; their
+        contents beyond ru/announcement.yml were not read, so their shape is inferred from that directory' }
+  - { source: nz, branch: individual, file: nz/individual.yaml,
+      origin: ammitto/data-nz@0ae363ba2dfd41285507ae2bf4178c7139f1a370:processed/nz-ind-10.yaml }
+  - { source: nz, branch: entity, file: nz/entity.yaml,
+      origin: ammitto/data-nz@0ae363ba2dfd41285507ae2bf4178c7139f1a370:processed/nz-ent-119.yaml }
+  - { source: nz, branch: ship, file: nz/ship.yaml,
+      origin: ammitto/data-nz@0ae363ba2dfd41285507ae2bf4178c7139f1a370:processed/nz-shp-108.yaml }
+  - { source: tr, branch: person, file: tr/person.yaml,
+      origin: ammitto/data-tr@abec777d7c4dcf25f06ff17629e24726bc82513e:processed/tr-1.yaml }
+  - { source: tr, branch: organization, file: tr/organization.yaml,
+      origin: ammitto/data-tr@abec777d7c4dcf25f06ff17629e24726bc82513e:processed/tr-187.yaml }
+  - { source: eu_vessels, branch: vessel, file: eu_vessels/vessel.yaml,
+      origin: ammitto/data-eu-vessels@4c51bc99664dff51e01de7f131740ef24017e6e0:processed/eu-vessel-1031537.yaml }
+  - { source: jp, branch: announcement_top_level,
+      file: jp/sources/sanction-lists/russia-export-prohibition/20250912.yml,
+      origin: ammitto/data-jp@795970f3a83d0d77a127f561db322b850d92ed85:sources/sanction-lists/russia-export-prohibition/20250912.yml }
+  - { source: jp, branch: announcement_nested,
+      file: jp/sources/sanction-lists/mof-asset-freeze/06-iraq-2/20260305.yml,
+      origin: ammitto/data-jp@795970f3a83d0d77a127f561db322b850d92ed85:sources/sanction-lists/mof-asset-freeze/06-iraq-2/20260305.yml }
+  - { source: jp, branch: flat, file: jp/flat.yaml,
+      derived: 'JpAnnouncementTransform#jp_flatten_record of record 1 of jp announcement_nested' }
+  - { source: un_vessels, branch: vessel, file: un_vessels/vessel.yaml,
+      origin: ammitto/data-un-vessels@4aae4642770d6f1b666897edfb39b5f6a72829de:processed/un-vessel-7303803.yaml }
+
+# Outside the harmonize registry: driven through its own transformer.
+extras:
+  - { source: jp_meti, branch: entity, file: meti/entity.yaml,
+      synthetic: 'source_entity of spec/ammitto/data/japan/meti/transformer_spec.rb',
+      absence_proof: 'this transformer reads Meti::Entity rows parsed from the METI workbook (not fetched); the
+        published list, ammitto/data-jp@795970f3a83d0d77a127f561db322b850d92ed85:sources/sanction-lists/foreign-user-list/20250929.yml,
+        is a jp-announcement document harmonize reads through the JP path, not a Meti::Entity record. Its entity
+        jp.meti.ful.1 has the id, name, country and source of this record, but 8 aliases (2 here) and 5 reasons
+        (4 wmd_types here)' }

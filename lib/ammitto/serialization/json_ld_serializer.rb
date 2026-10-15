@@ -3,6 +3,7 @@
 require 'json'
 require_relative '../schema/context'
 require_relative '../utils/presence'
+require_relative 'wire_view'
 
 module Ammitto
   module Serialization
@@ -20,10 +21,12 @@ module Ammitto
       # @param entity [Entity] the entity to serialize
       # @return [Hash] JSON-LD representation
       def serialize_entity(entity)
+        type = type_for_entity(entity)
+        entity = wire_model(entity)
         {
           '@context' => Schema::Context.context_url,
           '@id' => entity.id,
-          '@type' => type_for_entity(entity),
+          '@type' => type,
           'entityType' => entity.entity_type,
           'names' => serialize_names(entity.names),
           'sourceReferences' => serialize_source_references(entity.source_references),
@@ -31,13 +34,14 @@ module Ammitto
           'hasSanctionEntry' => serialize_entry_ids(entity.sanction_entry_ids),
           'sameAs' => entity.same_as,
           'remarks' => entity.remarks
-        }.compact.merge(serialize_entity_specific(entity))
+        }.compact.merge(serialize_entity_specific(entity, type))
       end
 
       # Serialize a sanction entry to JSON-LD
       # @param entry [SanctionEntry] the entry to serialize
       # @return [Hash] JSON-LD representation
       def serialize_entry(entry)
+        entry = wire_model(entry)
         {
           '@context' => Schema::Context.context_url,
           '@id' => entry.id,
@@ -117,9 +121,21 @@ module Ammitto
         'content' => 'content', 'language' => 'language'
       }.freeze
 
+      # Canonical ontology entity class => the @type it publishes as
+      CANONICAL_ENTITY_TYPES = {
+        'Ammitto::Ontology::Entities::PersonEntity' => 'PersonEntity',
+        'Ammitto::Ontology::Entities::OrganizationEntity' => 'OrganizationEntity',
+        'Ammitto::Ontology::Entities::VesselEntity' => 'VesselEntity',
+        'Ammitto::Ontology::Entities::AircraftEntity' => 'AircraftEntity',
+        'Ammitto::Ontology::Entities::Entity' => 'Entity'
+      }.freeze
+
       private
 
       def type_for_entity(entity)
+        canonical = entity.class.ancestors.lazy.filter_map { |ancestor| CANONICAL_ENTITY_TYPES[ancestor.name] }.first
+        return canonical if canonical
+
         case entity
         when PersonEntity then 'PersonEntity'
         when OrganizationEntity then 'OrganizationEntity'
@@ -129,18 +145,22 @@ module Ammitto
         end
       end
 
-      def serialize_entity_specific(entity)
-        case entity
-        when PersonEntity
-          serialize_person_specific(entity)
-        when OrganizationEntity
-          serialize_organization_specific(entity)
-        when VesselEntity
-          serialize_vessel_specific(entity)
-        when AircraftEntity
-          serialize_aircraft_specific(entity)
-        else
-          {}
+      # The published vocabulary is the flat facade's field names: a
+      # canonical model is read under them through a WireView, which builds
+      # no flat object, so a value the flat types could not hold still
+      # publishes exactly. A flat model is read as it is.
+      def wire_model(model)
+        WireView.wrap(model)
+      end
+
+      # @param type [String] the @type the entity publishes as
+      def serialize_entity_specific(entity, type)
+        case type
+        when 'PersonEntity' then serialize_person_specific(entity)
+        when 'OrganizationEntity' then serialize_organization_specific(entity)
+        when 'VesselEntity' then serialize_vessel_specific(entity)
+        when 'AircraftEntity' then serialize_aircraft_specific(entity)
+        else {}
         end
       end
 
@@ -439,9 +459,20 @@ module Ammitto
             '@type' => 'SanctionEffect',
             'effectType' => effect.effect_type,
             'scope' => effect.scope,
-            'description' => effect.description
+            'description' => effect_description(effect)
           }.compact
         end
+      end
+
+      # An effect publishes one description: its text (description_text)
+      # where the source gave one text, otherwise its LocalizedString
+      # collection as before. No transformer states both.
+      def effect_description(effect)
+        localized = effect.description
+        text = effect.description_text
+        return text if text && (localized.nil? || localized == [])
+
+        localized
       end
 
       def serialize_reasons(reasons)

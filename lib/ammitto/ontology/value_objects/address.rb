@@ -29,11 +29,15 @@ module Ammitto
         # Neo4j configuration for Address
         neo4j_labels 'Address'
         neo4j_property :street, :city, :region, :country, :country_iso_code,
-                       :postal_code, :po_box, :address_type
+                       :postal_code, :po_box, :address_type, :street2, :state
 
         # Street address (building number and street name)
         # @return [String, nil]
         attribute :street, :string
+
+        # Second street line, as the source split it
+        # @return [String, nil]
+        attribute :street2, :string
 
         # City / town / locality
         # @return [String, nil]
@@ -42,6 +46,11 @@ module Ammitto
         # Region / state / province
         # @return [String, nil]
         attribute :region, :string
+
+        # State as the source labelled it. Kept apart from region: a source
+        # may state both, and they need not agree.
+        # @return [String, nil]
+        attribute :state, :string
 
         # Country name (free text)
         # @return [String, nil]
@@ -66,7 +75,7 @@ module Ammitto
         # Check if address has meaningful content
         # @return [Boolean]
         def present?
-          [street, city, region, country, postal_code].any? { |v| Utils::Presence.present?(v) }
+          [street, street2, city, region, state, country, postal_code].any? { |v| Utils::Presence.present?(v) }
         end
 
         # Check if address is empty
@@ -78,7 +87,7 @@ module Ammitto
         # Get single-line address string
         # @return [String]
         def to_s
-          parts = [street, city, region, postal_code, country].compact
+          parts = [street, street2, city, region, state, postal_code, country].compact
           parts.join(', ')
         end
 
@@ -87,8 +96,10 @@ module Ammitto
         def to_hash
           hash = {}
           hash[:street] = street if street
+          hash[:street2] = street2 if street2
           hash[:city] = city if city
           hash[:region] = region if region
+          hash[:state] = state if state
           hash[:country] = country if country
           hash[:country_iso_code] = country_iso_code if country_iso_code
           hash[:postal_code] = postal_code if postal_code
@@ -107,6 +118,8 @@ module Ammitto
           map :postal_code, to: :postal_code
           map :po_box, to: :po_box
           map :address_type, to: :address_type
+          map :street2, to: :street2
+          map :state, to: :state
         end
 
         # YAML mapping
@@ -119,6 +132,8 @@ module Ammitto
           map :postal_code, to: :postal_code
           map :po_box, to: :po_box
           map :address_type, to: :address_type
+          map :street2, to: :street2
+          map :state, to: :state
         end
       end
       private_constant :AddressModel

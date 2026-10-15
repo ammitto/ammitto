@@ -1,0 +1,53 @@
+---
+reference: '1060'
+entity_type: person
+names:
+- text: FELICIANO SEMBORIO DELOS REYES JR
+  name_type: Primary Name
+  script: Latn
+- text: Abubakar Abdillah 
+  name_type: Alias
+  script: Latn
+  alias_strength: Strong
+- text: Abdul Abdillah
+  name_type: Alias
+  script: Latn
+  alias_strength: Strong
+- text: فلسيانو سمبوريو ديلوس رييس الإبن
+  name_type: Original Script
+  script: Arab
+address: Philippines
+additional_info: Member of the Rajah Solaiman Movement (QDe.128). Fathers name is
+  Feliciano Delos Reyes Sr. Mothers name is Aurea Semborio. In detention in the Philippines
+  as of May 2011. Review pursuant to Security Council resolution 1822 (2008) was concluded
+  on 13 May 2010. Review pursuant to Security Council resolution 2368 (2017) was concluded
+  on 4 Dec. 2019. Review pursuant to Security Council resolution 2610 (2021) was concluded
+  on 30 October 2023.
+sanction:
+  listing_information: 'Resolution 1735 (2006) Listed on: 4 June. 2008 (amended 3
+    June 2009, 13 Dec. 201, 6 Dec 2019)'
+  committees: 1267 (ISIL (Da'esh) and Al-Qaida)
+  control_date: '2026-02-20'
+  instrument: Charter of the United Nations (Sanctions—ISIL (Da’esh) and Al-Qaida)
+    Regulations 2008
+  targeted_financial_sanction: true
+  travel_ban: true
+  arms_embargo: true
+  maritime_restriction: false
+dates_of_birth:
+- raw_value: 4/11/1963  
+  year: 1963
+  month: 11
+  day: 4
+  precision: full
+places_of_birth:
+- raw_value: Arco
+  country: Arco
+- raw_value: Lamitan
+  country: Lamitan
+- raw_value: Basilan
+  country: Basilan
+- raw_value: Philippines  
+  country: Philippines  
+citizenships:
+- Philippines

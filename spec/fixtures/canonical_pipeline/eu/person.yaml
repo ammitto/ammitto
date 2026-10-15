@@ -1,0 +1,140 @@
+---
+eu_reference_number: EU.1003.87
+logical_id: '1003'
+regulations:
+- regulation_type: amendment
+  organisation_type: commission
+  publication_date: '2011-06-17'
+  entry_into_force_date: '2011-06-16'
+  number_title: 577/2011 (OJ L159)
+  programme: TAQA
+  logical_id: '1008'
+  publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2011:159:0069:0085:EN:PDF
+subject_type:
+  code: person
+  classification_code: P
+name_aliases:
+- whole_name: Encep Nurjaman (birth name)
+  strong: true
+  regulation_language: en
+  logical_id: '2108'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2011-06-17'
+    number_title: 577/2011 (OJ L159)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2011:159:0069:0085:EN:PDF
+- whole_name: Isamudin Ridwan
+  strong: true
+  regulation_language: en
+  logical_id: '5798'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2007-07-18'
+    number_title: 844/2007 (OJ L186)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2007:186:0024:0028:EN:PDF
+- whole_name: Hambali
+  strong: true
+  regulation_language: en
+  logical_id: '2104'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2007-07-18'
+    number_title: 844/2007 (OJ L186)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2007:186:0024:0028:EN:PDF
+- whole_name: Nurjaman
+  strong: true
+  regulation_language: en
+  logical_id: '2105'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2003-02-04'
+    number_title: 215/2003 (OJ L28)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2003:028:0041:0042:EN:PDF
+- first_name: Nurjaman
+  middle_name: Riduan
+  last_name: Isomuddin
+  whole_name: Nurjaman Riduan Isomuddin
+  strong: true
+  regulation_language: en
+  logical_id: '2106'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2003-02-04'
+    number_title: 215/2003 (OJ L28)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2003:028:0041:0042:EN:PDF
+- whole_name: Isomuddin, Nurjaman Riduan
+  strong: true
+  regulation_language: en
+  logical_id: '5892'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2007-07-18'
+    number_title: 844/2007 (OJ L186)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2007:186:0024:0028:EN:PDF
+- first_name: Nurjaman
+  middle_name: Riduan
+  last_name: Isamuddin
+  whole_name: Nurjaman Riduan Isamuddin
+  gender: M
+  strong: true
+  regulation_language: en
+  logical_id: '2103'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2003-02-04'
+    number_title: 215/2003 (OJ L28)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2003:028:0041:0042:EN:PDF
+- whole_name: Hambali Bin Ending
+  strong: true
+  regulation_language: en
+  logical_id: '5795'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2007-07-18'
+    number_title: 844/2007 (OJ L186)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2007:186:0024:0028:EN:PDF
+- whole_name: Hambali Ending Hambali
+  strong: true
+  regulation_language: en
+  logical_id: '5796'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2007-07-18'
+    number_title: 844/2007 (OJ L186)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2007:186:0024:0028:EN:PDF
+- whole_name: Isamuddin Riduan
+  strong: true
+  regulation_language: en
+  logical_id: '5797'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2007-07-18'
+    number_title: 844/2007 (OJ L186)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2007:186:0024:0028:EN:PDF
+citizenships:
+- country_iso2_code: ID
+  country_description: INDONESIA
+  regulation_language: en
+  logical_id: '102'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2003-02-04'
+    number_title: 215/2003 (OJ L28)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2003:028:0041:0042:EN:PDF
+birthdates:
+- birthdate: '1964-04-04'
+  circa: false
+  calendar_type: GREGORIAN
+  day_of_month: 4
+  month_of_year: 4
+  year: 1964
+  city: Cianjur, West Java
+  country_iso2_code: ID
+  country_description: INDONESIA
+  regulation_language: en
+  logical_id: '348'
+  regulation_summaries:
+  - regulation_type: amendment
+    publication_date: '2003-02-04'
+    number_title: 215/2003 (OJ L28)
+    publication_url: http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2003:028:0041:0042:EN:PDF

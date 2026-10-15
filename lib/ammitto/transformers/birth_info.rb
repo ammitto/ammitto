@@ -197,16 +197,15 @@ module Ammitto
         # span. Only the point-date path needs the marker decision.
         parsed_date = parse_complete_date(without_circa_marker(date))
 
-        Ammitto::BirthInfo.new(
-          date: parsed_date,
-          circa: circa,
-          city: city,
-          region: region,
-          country: country,
-          country_iso_code: country_iso_code,
-          year: normalize_year(year) || parsed_date&.year ||
-                extract_birth_year(date)
-        )
+        build_model(Ammitto::BirthInfo,
+                    date: parsed_date,
+                    circa: circa,
+                    city: city,
+                    region: region,
+                    country: country,
+                    country_iso_code: country_iso_code,
+                    year: normalize_year(year) || parsed_date&.year ||
+                          extract_birth_year(date))
       end
 
       # A date span publishes its complete endpoints and repeats their
@@ -219,19 +218,18 @@ module Ammitto
         lower, upper = bounds
         exact_year = lower.year if lower && upper && lower.year == upper.year
 
-        Ammitto::BirthInfo.new(
-          date: nil,
-          year: exact_year,
-          date_range_from: lower,
-          date_range_to: upper,
-          year_range_from: lower&.year,
-          year_range_to: upper&.year,
-          circa: circa,
-          city: city,
-          region: region,
-          country: country,
-          country_iso_code: country_iso_code
-        )
+        build_model(Ammitto::BirthInfo,
+                    date: nil,
+                    year: exact_year,
+                    date_range_from: lower,
+                    date_range_to: upper,
+                    year_range_from: lower&.year,
+                    year_range_to: upper&.year,
+                    circa: circa,
+                    city: city,
+                    region: region,
+                    country: country,
+                    country_iso_code: country_iso_code)
       end
 
       # A span of years suppresses both scalars: date and year are the
@@ -239,17 +237,16 @@ module Ammitto
       # @param bounds [Array<Integer, nil>] validated [from, to]
       # @return [::Ammitto::BirthInfo] the birth info
       def birth_info_for_range(bounds, circa, city, region, country, country_iso_code)
-        Ammitto::BirthInfo.new(
-          date: nil,
-          year: nil,
-          year_range_from: bounds.first,
-          year_range_to: bounds.last,
-          circa: circa,
-          city: city,
-          region: region,
-          country: country,
-          country_iso_code: country_iso_code
-        )
+        build_model(Ammitto::BirthInfo,
+                    date: nil,
+                    year: nil,
+                    year_range_from: bounds.first,
+                    year_range_to: bounds.last,
+                    circa: circa,
+                    city: city,
+                    region: region,
+                    country: country,
+                    country_iso_code: country_iso_code)
       end
 
       # Bounds of a complete-date span stated as one string, or nil when

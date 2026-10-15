@@ -1,0 +1,34 @@
+# SYNTHETIC record, not published data. It is au/organization.yaml (actual:
+# ammitto/data-au@2af73f4b2fff535992ddb53a0fbe58382ff6f365:processed/au-2126.yaml)
+# with only entity_type replaced, so the record reaches the GenericEntity
+# branch, which no published data-au record reaches (see manifest.yml).
+---
+reference: '2126'
+entity_type: Synthetic unrecognised type
+names:
+- text: PASSIVE DEFENSE ORGANIZATION
+  name_type: Primary Name
+  script: Latn
+- text: Permanent Committee for Passive Defense
+  name_type: Alias
+  script: Latn
+  alias_strength: Strong
+- text: PDO
+  name_type: Alias
+  script: Latn
+  alias_strength: Weak
+sanction:
+  listing_information: Designated under the Autonomous Sanctions Regulations 2011
+    on 2 March 2012. Instrument of first designation Autonomous Sanctions (Designated
+    Persons and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly
+    listed on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024.
+  committees: Autonomous (Iran)
+  control_date: '2024-01-12'
+  instrument: Designated under the Autonomous Sanctions Regulations 2011 on 2 March
+    2012. Instrument of first designation Autonomous Sanctions (Designated Persons
+    and Entities and Declared Persons – Iran) List 2012 [F2012L00479]. Formerly listed
+    on the RBA Consolidated List as 2010IRN0108. Relisted on 12 January 2024.
+  targeted_financial_sanction: true
+  travel_ban: false
+  arms_embargo: false
+  maritime_restriction: false

@@ -1,0 +1,259 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/eu/eu100387",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Encep Nurjaman (birth name)",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Isamudin Ridwan",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Hambali",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Nurjaman",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Nurjaman Riduan Isomuddin",
+            "firstName": "Nurjaman",
+            "middleName": "Riduan",
+            "lastName": "Isomuddin",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Isomuddin, Nurjaman Riduan",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Nurjaman Riduan Isamuddin",
+            "firstName": "Nurjaman",
+            "middleName": "Riduan",
+            "lastName": "Isamuddin",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Hambali Bin Ending",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Hambali Ending Hambali",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Isamuddin Riduan",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/eu/consolidated-list/eu100387"
+        ],
+        "birthInfo": [
+          {
+            "@type": "BirthInfo",
+            "date": "1964-04-04",
+            "circa": false,
+            "year": 1964,
+            "city": "Cianjur, West Java",
+            "country": "INDONESIA",
+            "countryIsoCode": "ID"
+          }
+        ],
+        "nationalities": [
+          "INDONESIA"
+        ],
+        "identifications": [],
+        "addresses": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/eu/consolidated-list/eu100387",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/eu/eu100387",
+        "authority": {
+          "@type": "Authority",
+          "id": "eu",
+          "name": "European Union",
+          "countryCode": "EU"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "TAQA",
+          "code": "TAQA"
+        },
+        "legalBases": [
+          {
+            "@type": "LegalInstrument",
+            "type": "amendment",
+            "identifier": "577/2011 (OJ L159)",
+            "title": "577/2011 (OJ L159)",
+            "issuingBody": "Commission",
+            "publishDate": "2011-06-17",
+            "url": "http://eur-lex.europa.eu/LexUriServ/LexUriServ.do?uri=OJ:L:2011:159:0069:0085:EN:PDF"
+          }
+        ],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2011-06-17",
+          "effectiveDate": "2011-06-16",
+          "isIndefinite": true
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "EU.1003.87",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "eu:logicalId": "1003",
+            "eu:unitedNationId": null,
+            "eu:designationDetails": null,
+            "eu:subjectTypeCode": "person"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.names[3].@type": "String",
+    "$.output.entity.names[3].fullName": "String",
+    "$.output.entity.names[3].script": "String",
+    "$.output.entity.names[3].isPrimary": "FalseClass",
+    "$.output.entity.names[4].@type": "String",
+    "$.output.entity.names[4].fullName": "String",
+    "$.output.entity.names[4].firstName": "String",
+    "$.output.entity.names[4].middleName": "String",
+    "$.output.entity.names[4].lastName": "String",
+    "$.output.entity.names[4].script": "String",
+    "$.output.entity.names[4].isPrimary": "FalseClass",
+    "$.output.entity.names[5].@type": "String",
+    "$.output.entity.names[5].fullName": "String",
+    "$.output.entity.names[5].script": "String",
+    "$.output.entity.names[5].isPrimary": "FalseClass",
+    "$.output.entity.names[6].@type": "String",
+    "$.output.entity.names[6].fullName": "String",
+    "$.output.entity.names[6].firstName": "String",
+    "$.output.entity.names[6].middleName": "String",
+    "$.output.entity.names[6].lastName": "String",
+    "$.output.entity.names[6].script": "String",
+    "$.output.entity.names[6].isPrimary": "FalseClass",
+    "$.output.entity.names[7].@type": "String",
+    "$.output.entity.names[7].fullName": "String",
+    "$.output.entity.names[7].script": "String",
+    "$.output.entity.names[7].isPrimary": "FalseClass",
+    "$.output.entity.names[8].@type": "String",
+    "$.output.entity.names[8].fullName": "String",
+    "$.output.entity.names[8].script": "String",
+    "$.output.entity.names[8].isPrimary": "FalseClass",
+    "$.output.entity.names[9].@type": "String",
+    "$.output.entity.names[9].fullName": "String",
+    "$.output.entity.names[9].script": "String",
+    "$.output.entity.names[9].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.birthInfo[0].@type": "String",
+    "$.output.entity.birthInfo[0].date": "Date",
+    "$.output.entity.birthInfo[0].circa": "FalseClass",
+    "$.output.entity.birthInfo[0].year": "Integer",
+    "$.output.entity.birthInfo[0].city": "String",
+    "$.output.entity.birthInfo[0].country": "String",
+    "$.output.entity.birthInfo[0].countryIsoCode": "String",
+    "$.output.entity.nationalities[0]": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.legalBases[0].@type": "String",
+    "$.output.entry.legalBases[0].type": "String",
+    "$.output.entry.legalBases[0].identifier": "String",
+    "$.output.entry.legalBases[0].title": "String",
+    "$.output.entry.legalBases[0].issuingBody": "String",
+    "$.output.entry.legalBases[0].publishDate": "Date",
+    "$.output.entry.legalBases[0].url": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.eu:logicalId": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.eu:unitedNationId": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.eu:designationDetails": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.eu:subjectTypeCode": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::BirthInfo": 1,
+    "Ammitto::LegalInstrument": 1,
+    "Ammitto::NameVariant": 10,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1
+  }
+}

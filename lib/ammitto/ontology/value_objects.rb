@@ -20,6 +20,8 @@ require_relative 'value_objects/contact_info'
 require_relative 'value_objects/entity_link'
 require_relative 'value_objects/source_reference'
 require_relative 'value_objects/tonnage'
+require_relative 'value_objects/notice_reference'
+require_relative 'value_objects/raw_source_data'
 
 module Ammitto
   module Ontology

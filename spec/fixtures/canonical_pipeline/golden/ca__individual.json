@@ -1,0 +1,121 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/ca/belarus-b-larus-1-part-1-1-37",
+        "@type": "PersonEntity",
+        "entityType": "person",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Valery Ivanovich YANUSHKEVICH",
+            "firstName": "Valery Ivanovich",
+            "lastName": "YANUSHKEVICH",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "Валерий Иванович Янушкевич",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/ca/consolidated-list/belarus-b-larus-1-part-1-1-37"
+        ],
+        "remarks": "Country: Belarus / Bélarus; Schedule: 1, Part 1.1; Item: 37; Date of Listing: 2022-03-16",
+        "birthInfo": [],
+        "nationalities": [],
+        "identifications": [],
+        "addresses": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/ca/consolidated-list/belarus-b-larus-1-part-1-1-37",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/ca/belarus-b-larus-1-part-1-1-37",
+        "authority": {
+          "@type": "Authority",
+          "id": "ca",
+          "name": "Canada (SEFO)",
+          "countryCode": "CA"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Belarus / Bélarus",
+          "code": "CA_BELARUS / BÉLARUS"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "Belarus-B-larus-1-Part-1-1-37",
+        "remarks": "Schedule: 1, Part 1.1, Item: 37",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "ca:country": "Belarus / Bélarus",
+            "ca:schedule": "1, Part 1.1",
+            "ca:item": "37",
+            "ca:date_of_listing": "2022-03-16"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].firstName": "String",
+    "$.output.entity.names[0].lastName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:country": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:schedule": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:item": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:date_of_listing": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 2,
+    "Ammitto::PersonEntity": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1
+  }
+}

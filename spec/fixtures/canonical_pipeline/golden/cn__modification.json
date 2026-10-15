@@ -1,0 +1,14 @@
+{
+  "json": {
+    "output": {
+      "entity": null,
+      "entry": null
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity": "NilClass",
+    "$.output.entry": "NilClass"
+  },
+  "base_model_classes": {}
+}

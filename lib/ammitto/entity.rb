@@ -5,12 +5,17 @@ require_relative 'entity_link'
 require_relative 'name_variant'
 require_relative 'source_reference'
 require_relative 'utils/iri_sanitizer'
+require_relative 'ontology/contracts'
+require_relative 'ontology/entities/entity'
 
 module Ammitto
   # Entity is the abstract base class for all sanctioned entities
   #
   # This class should not be instantiated directly. Use one of the
   # subclasses: PersonEntity, OrganizationEntity, VesselEntity, or AircraftEntity.
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Entities::Entity (see Ontology::Contracts).
   #
   # @example Creating a person entity
   #   PersonEntity.new(
@@ -22,14 +27,7 @@ module Ammitto
     # Entity types
     TYPES = %w[person organization vessel aircraft].freeze
 
-    attribute :id, :string                        # URI identifier
-    attribute :entity_type, :string               # person, organization, vessel, aircraft
-    attribute :names, NameVariant, collection: true
-    attribute :source_references, SourceReference, collection: true
-    attribute :linked_entities, EntityLink, collection: true
-    attribute :same_as, :string, collection: true # URIs of same entity in other systems
-    attribute :remarks, :string
-    attribute :sanction_entry_ids, :string, collection: true # Entry IRIs
+    Ontology::Contracts.declare_legacy_attributes(self)
     # The authority code the search layer read off the node it built this
     # entity from. Deliberately not an attribute and not mapped: Entity
     # serialization does not carry an authority, and #authority answers a

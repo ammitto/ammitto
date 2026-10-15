@@ -60,7 +60,7 @@ module Ammitto
           entry = create_entry(entity)
 
           # Link entity to entry
-          ont_entity.add_sanction_entry(entry)
+          link_entry(ont_entity, entry)
 
           {
             entity: ont_entity,
@@ -69,6 +69,7 @@ module Ammitto
         ensure
           @current_entity = nil
         end
+        canonical_entrypoints :transform
 
         private
 
@@ -87,31 +88,29 @@ module Ammitto
         # @param entity [Ammitto::Sources::Eu::SanctionEntity]
         # @return [PersonEntity]
         def create_person_entity(entity)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(entity.eu_reference_number),
-            entity_type: 'person',
-            names: transform_names(entity.name_aliases),
-            addresses: transform_addresses(entity.addresses),
-            birth_info: transform_birthdates(entity.birthdates),
-            nationalities: entity.nationalities,
-            gender: entity.gender,
-            identifications: transform_identifications(entity.identifications),
-            remarks: entity.remark
-          )
+          build_model(Ammitto::PersonEntity,
+                      id: generate_entity_id(entity.eu_reference_number),
+                      entity_type: 'person',
+                      names: transform_names(entity.name_aliases),
+                      addresses: transform_addresses(entity.addresses),
+                      birth_info: transform_birthdates(entity.birthdates),
+                      nationalities: entity.nationalities,
+                      gender: entity.gender,
+                      identifications: transform_identifications(entity.identifications),
+                      remarks: entity.remark)
         end
 
         # Create an OrganizationEntity from an EU sanction entity
         # @param entity [Ammitto::Sources::Eu::SanctionEntity]
         # @return [OrganizationEntity]
         def create_organization_entity(entity)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(entity.eu_reference_number),
-            entity_type: 'organization',
-            names: transform_names(entity.name_aliases),
-            addresses: transform_addresses(entity.addresses),
-            identifications: transform_identifications(entity.identifications),
-            remarks: entity.remark
-          )
+          build_model(Ammitto::OrganizationEntity,
+                      id: generate_entity_id(entity.eu_reference_number),
+                      entity_type: 'organization',
+                      names: transform_names(entity.name_aliases),
+                      addresses: transform_addresses(entity.addresses),
+                      identifications: transform_identifications(entity.identifications),
+                      remarks: entity.remark)
         end
 
         # Create a SanctionEntry from an EU sanction entity
@@ -120,38 +119,37 @@ module Ammitto
         def create_entry(entity)
           regulation = entity.primary_regulation
 
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(entity.eu_reference_number),
-            entity_id: generate_entity_id(entity.eu_reference_number),
-            authority: authority,
-            regime: transform_regime(entity.programme),
-            legal_bases: transform_regulations(entity.regulations),
-            effects: create_default_effects,
-            # legal_bases above already reports an unreadable publication_date
-            # for every regulation, so it is parsed here without reporting
-            # to keep one bad cell at one failure. The date the entity was
-            # designated is the listing date where the source states one
-            # (as UK does); the regulation date is only the fallback.
-            period: create_period(
-              source: :eu,
-              listed_date: parse_date(
-                entity.designation_date, source: :eu, field: :designation_date
-              ) || parse_date(regulation&.publication_date),
-              effective_date: regulation&.entry_into_force_date
-            ),
-            status: 'active',
-            reference_number: entity.eu_reference_number,
-            remarks: entity.remark,
-            raw_source_data: create_raw_source_data(
-              source_format: 'xml',
-              source_specific_fields: {
-                'eu:logicalId' => entity.logical_id,
-                'eu:unitedNationId' => entity.united_nation_id,
-                'eu:designationDetails' => entity.designation_details,
-                'eu:subjectTypeCode' => entity.subject_type&.code
-              }
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(entity.eu_reference_number),
+                      entity_id: generate_entity_id(entity.eu_reference_number),
+                      authority: authority,
+                      regime: transform_regime(entity.programme),
+                      legal_bases: transform_regulations(entity.regulations),
+                      effects: create_default_effects,
+                      # legal_bases above already reports an unreadable publication_date
+                      # for every regulation, so it is parsed here without reporting
+                      # to keep one bad cell at one failure. The date the entity was
+                      # designated is the listing date where the source states one
+                      # (as UK does); the regulation date is only the fallback.
+                      period: create_period(
+                        source: :eu,
+                        listed_date: parse_date(
+                          entity.designation_date, source: :eu, field: :designation_date
+                        ) || parse_date(regulation&.publication_date),
+                        effective_date: regulation&.entry_into_force_date
+                      ),
+                      status: 'active',
+                      reference_number: entity.eu_reference_number,
+                      remarks: entity.remark,
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'xml',
+                        source_specific_fields: {
+                          'eu:logicalId' => entity.logical_id,
+                          'eu:unitedNationId' => entity.united_nation_id,
+                          'eu:designationDetails' => entity.designation_details,
+                          'eu:subjectTypeCode' => entity.subject_type&.code
+                        }
+                      ))
         end
 
         # Transform EU name aliases to NameVariant objects
@@ -242,14 +240,13 @@ module Ammitto
           return [] if regulations.nil?
 
           regulations.map do |reg|
-            Ammitto::LegalInstrument.new(
-              type: normalize_instrument_type(reg.regulation_type),
-              identifier: reg.number_title,
-              title: reg.number_title,
-              issuing_body: reg.organisation_type&.capitalize,
-              publish_date: parse_date(reg.publication_date, source: :eu, field: :publication_date),
-              url: reg.publication_url
-            )
+            build_model(Ammitto::LegalInstrument,
+                        type: normalize_instrument_type(reg.regulation_type),
+                        identifier: reg.number_title,
+                        title: reg.number_title,
+                        issuing_body: reg.organisation_type&.capitalize,
+                        publish_date: parse_date(reg.publication_date, source: :eu, field: :publication_date),
+                        url: reg.publication_url)
           end
         end
 

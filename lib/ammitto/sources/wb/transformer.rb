@@ -42,7 +42,7 @@ module Ammitto
           entry = create_entry(firm)
 
           # Link entity to entry
-          entity.add_sanction_entry(entry)
+          link_entry(entity, entry)
 
           {
             entity: entity,
@@ -51,6 +51,7 @@ module Ammitto
         ensure
           @current_firm = nil
         end
+        canonical_entrypoints :transform
 
         private
 
@@ -69,28 +70,26 @@ module Ammitto
         # @param firm [Ammitto::Sources::Wb::SanctionedFirm]
         # @return [PersonEntity]
         def create_person_entity(firm)
-          Ammitto::PersonEntity.new(
-            id: generate_entity_id(firm.supp_id.to_s),
-            entity_type: 'person',
-            names: [create_name_variant(full_name: firm.supp_name, is_primary: true)],
-            addresses: create_address_from_firm(firm) ? [create_address_from_firm(firm)] : [],
-            identifications: transform_identifications(firm),
-            remarks: firm.add_supp_info
-          )
+          build_model(Ammitto::PersonEntity,
+                      id: generate_entity_id(firm.supp_id.to_s),
+                      entity_type: 'person',
+                      names: [create_name_variant(full_name: firm.supp_name, is_primary: true)],
+                      addresses: create_address_from_firm(firm) ? [create_address_from_firm(firm)] : [],
+                      identifications: transform_identifications(firm),
+                      remarks: firm.add_supp_info)
         end
 
         # Create an OrganizationEntity from a WB sanctioned firm
         # @param firm [Ammitto::Sources::Wb::SanctionedFirm]
         # @return [OrganizationEntity]
         def create_organization_entity(firm)
-          Ammitto::OrganizationEntity.new(
-            id: generate_entity_id(firm.supp_id.to_s),
-            entity_type: 'organization',
-            names: [create_name_variant(full_name: firm.supp_name, is_primary: true)],
-            addresses: create_address_from_firm(firm) ? [create_address_from_firm(firm)] : [],
-            identifications: transform_identifications(firm),
-            remarks: firm.add_supp_info
-          )
+          build_model(Ammitto::OrganizationEntity,
+                      id: generate_entity_id(firm.supp_id.to_s),
+                      entity_type: 'organization',
+                      names: [create_name_variant(full_name: firm.supp_name, is_primary: true)],
+                      addresses: create_address_from_firm(firm) ? [create_address_from_firm(firm)] : [],
+                      identifications: transform_identifications(firm),
+                      remarks: firm.add_supp_info)
         end
 
         # The register number the World Bank holds for a firm. Its
@@ -115,43 +114,42 @@ module Ammitto
             expiry_date: firm.debar_to_date
           )
 
-          Ammitto::SanctionEntry.new(
-            id: generate_entry_id(firm.supp_id.to_s),
-            entity_id: generate_entity_id(firm.supp_id.to_s),
-            authority: authority,
-            regime: create_regime(code: 'DEBARMENT', name: 'World Bank Debarment'),
-            effects: create_debarment_effects(firm),
-            period: period,
-            status: determine_status(firm, period.expiry_date),
-            reference_number: firm.supp_id.to_s,
-            remarks: firm.debar_reason,
-            raw_source_data: create_raw_source_data(
-              source_format: 'json',
-              source_specific_fields: {
-                'wb:suppTypeCode' => firm.supp_type_code,
-                'wb:debarType' => firm.debar_type,
-                'wb:debarTypeDesc' => DEBARMENT_TYPES[firm.debar_type],
-                'wb:suppPreAcrn' => firm.supp_pre_acrn,
-                'wb:suppPostAcrn' => firm.supp_post_acrn,
-                'wb:legacyFlag' => firm.legacy_flg,
-                'wb:unSuppFlag' => firm.un_supp_flg,
-                'wb:ineligFlag' => firm.inelig_flg,
-                'wb:crossDebarment' => firm.crpd_match,
-                'wb:crossDebarmentStatus' => firm.crpd_stat,
-                'wb:eligStatus' => firm.elig_stat,
-                'wb:suppEligStat' => firm.supp_elig_stat,
-                'wb:ineligiblyStatus' => firm.ineligibly_status,
-                'wb:register' => firm.register,
-                'wb:parent' => firm.parent,
-                'wb:amlEntrInd' => firm.aml_entr_ind,
-                'wb:rechkInd' => firm.rechk_ind,
-                'wb:createUser' => firm.create_user,
-                'wb:createUserName' => firm.create_user_name,
-                'wb:createDate' => firm.create_date,
-                'wb:createTime' => firm.create_time
-              }
-            )
-          )
+          build_model(Ammitto::SanctionEntry,
+                      id: generate_entry_id(firm.supp_id.to_s),
+                      entity_id: generate_entity_id(firm.supp_id.to_s),
+                      authority: authority,
+                      regime: create_regime(code: 'DEBARMENT', name: 'World Bank Debarment'),
+                      effects: create_debarment_effects(firm),
+                      period: period,
+                      status: determine_status(firm, period.expiry_date),
+                      reference_number: firm.supp_id.to_s,
+                      remarks: firm.debar_reason,
+                      raw_source_data: create_raw_source_data(
+                        source_format: 'json',
+                        source_specific_fields: {
+                          'wb:suppTypeCode' => firm.supp_type_code,
+                          'wb:debarType' => firm.debar_type,
+                          'wb:debarTypeDesc' => DEBARMENT_TYPES[firm.debar_type],
+                          'wb:suppPreAcrn' => firm.supp_pre_acrn,
+                          'wb:suppPostAcrn' => firm.supp_post_acrn,
+                          'wb:legacyFlag' => firm.legacy_flg,
+                          'wb:unSuppFlag' => firm.un_supp_flg,
+                          'wb:ineligFlag' => firm.inelig_flg,
+                          'wb:crossDebarment' => firm.crpd_match,
+                          'wb:crossDebarmentStatus' => firm.crpd_stat,
+                          'wb:eligStatus' => firm.elig_stat,
+                          'wb:suppEligStat' => firm.supp_elig_stat,
+                          'wb:ineligiblyStatus' => firm.ineligibly_status,
+                          'wb:register' => firm.register,
+                          'wb:parent' => firm.parent,
+                          'wb:amlEntrInd' => firm.aml_entr_ind,
+                          'wb:rechkInd' => firm.rechk_ind,
+                          'wb:createUser' => firm.create_user,
+                          'wb:createUserName' => firm.create_user_name,
+                          'wb:createDate' => firm.create_date,
+                          'wb:createTime' => firm.create_time
+                        }
+                      ))
         end
 
         # Create address from WB firm data

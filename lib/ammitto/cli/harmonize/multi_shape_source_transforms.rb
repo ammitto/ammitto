@@ -37,7 +37,7 @@ module Ammitto
                    else
                      Ammitto::Sources::Au::Organization.from_hash(data)
                    end
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -66,7 +66,7 @@ module Ammitto
                    else
                      Ammitto::Sources::Ch::Identity.from_hash(data)
                    end
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -113,7 +113,7 @@ module Ammitto
         # @return [Array<Hash>] array of transformation results
         def transform_cn_announcement(transformer, data, file = nil)
           announcement = Ammitto::Sources::Cn::Announcement.from_hash(data)
-          result = transformer.transform_announcement(announcement, list_type_code: cn_list_from_path(file))
+          result = canonical_result(transformer, :transform_announcement, announcement, list_type_code: cn_list_from_path(file))
 
           # Export SanctionGroup if present
           @exporter.add_group(result[:group], source: :cn) if
@@ -150,7 +150,7 @@ module Ammitto
         # @return [Hash] empty entity/entry pair for a modification
         def transform_cn_modification(transformer, data, file = nil)
           modification = Ammitto::Sources::Cn::MeasureModification.from_hash(data)
-          transformer.transform_modification(modification, list_type_code: cn_list_from_path(file))
+          canonical_result(transformer, :transform_modification, modification, list_type_code: cn_list_from_path(file))
 
           # Modifications amend an existing entity rather than adding one; the
           # ingest path treats a nil pair as a designed skip.
@@ -175,7 +175,7 @@ module Ammitto
             data.key?('announcement') || data.key?('sanction_details')
 
           source = Ammitto::Sources::Ru::SanctionedEntity.from_hash(data)
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -197,7 +197,7 @@ module Ammitto
                    else
                      Ammitto::Sources::Nz::Entity.from_hash(data)
                    end
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -211,7 +211,7 @@ module Ammitto
         # @return [Hash]
         def transform_tr(transformer, data)
           source = Ammitto::Sources::Tr::Entity.from_hash(data)
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),
@@ -225,7 +225,7 @@ module Ammitto
         # @return [Array<Hash>] one pair per designation
         def transform_eu_vessels(transformer, data)
           source = Ammitto::Sources::EuVessels::Vessel.from_hash(data)
-          transformer.transform(source).map do |result|
+          canonical_result(transformer, :transform, source).map do |result|
             {
               entity: entity_to_hash(result[:entity]),
               entry: entry_to_hash(result[:entry])
@@ -242,7 +242,7 @@ module Ammitto
             jp_announcement?(data)
 
           source = Ammitto::Sources::Jp::Entity.from_hash(data)
-          result = transformer.transform(source)
+          result = canonical_result(transformer, :transform, source)
 
           {
             entity: entity_to_hash(result[:entity]),

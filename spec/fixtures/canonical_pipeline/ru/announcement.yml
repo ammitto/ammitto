@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=../../schemas/announcement-schema.yml
+---
+announcement:
+  title:
+    ru: Заявление МИД России в связи с введением персональных санкций в отношении муниципальных депутатов Австралии
+    en: Foreign Ministry statement on personal sanctions on members of Australia’s municipal councils
+  url: https://mid.ru/en/foreign_policy/news/1944697/
+  lang: ru
+  publish_date: '2024-04-17'
+  publish_time: '11:23'
+  authority: ru/ministry-of-foreign-affairs
+  publisher: ru/ministry-of-foreign-affairs
+  type: ru/ministry-of-foreign-affairs-announcement
+  document_id: 703-17-04-2024
+  signatory: ru/ministry-of-foreign-affairs
+  content:
+    ru: "В ответ на политически мотивированные санкции против российских физических и юридических лиц со стороны правительства
+      Австралии, вводимые в рамках русофобской кампании «коллективного Запада», въезд в нашу страну на бессрочной основе закрывается
+      дополнительно для 235 австралийцев из числа депутатов муниципальных собраний, формирующих в этой стране антироссийскую
+      повестку дня (ниже следует поименный перечень).\n\nС учетом того, что официальная Канберра не намерена отказываться
+      от антироссийского курса и продолжает вводить новые санкционные меры, работа над актуализацией российского «стоп-листа»
+      будет продолжена.\n\n№ п/п\tИмя, фамилия\tИмя, фамилия на русском языке\tМесто работы/ Должность\n\n<list>\n"
+    en: |
+      In response to the politically motivated sanctions imposed on Russian private individuals and legal entities by the Government of Australia as part of the collective West’s Russophobic campaign, the decision has been made to indefinitely deny entry to Russia to 235 Australian nationals who are members of municipal councils actively promoting the anti-Russia agenda in their country. The complete list of individuals affected by this measure follows below.
+
+      Given that official Canberra shows no sign of renouncing its anti-Russia position and the continued introduction of new sanctions, we will further update the Russian stop list accordingly.
+
+      <list>
+sanction_details:
+  instruments:
+  - id: ru/federal-law-114
+  entities:
+  - name:
+      ru: "c 2018 г. по настоящее время)\n\n2.\n\nDaniel Andrews\tДэниел Эндрюс\nчлен законодательного собрания штата Виктория"
+      en: с 2002 по 2023 гг.
+    type: individual
+    nationality: AU
+    title:
+      ru: без должности
+      en: no title
+    effective_date: '2024-04-17'
+    sanction_list: черного списка
+    reason:
+    - ru: За участие в антироссийской деятельности австралийского правительства.
+      en: For participation in anti-Russian activities of the Australian government.
+    measures:
+    - type:
+      - entry_ban
+      ru: Запрещен въезд в Российскую Федерацию.
+      en: Entry into the Russian Federation is prohibited.
+  - name:
+      ru: |-
+        с 2022 г. по настоящее время)
+
+
+        Steven Marshall
+
+        Стивен Маршалл
+
+        член палаты собраний штата Южная Австралия
+      en: с 2012 г. по настоящее время
+    type: individual
+    nationality: AU
+    title:
+      ru: без должности
+      en: no title
+    effective_date: '2024-04-17'
+    sanction_list: черного списка
+    reason:
+    - ru: За участие в антироссийской деятельности австралийского правительства.
+      en: For participation in anti-Russian activities of the Australian government.
+    measures:
+    - type:
+      - entry_ban
+      ru: Запрещен въезд в Российскую Федерацию.
+      en: Entry into the Russian Federation is prohibited.

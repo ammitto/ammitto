@@ -1,0 +1,9 @@
+---
+id: un-vessel-7303803
+entity_type: vessel
+names:
+- full_name: AN SAN 1
+  is_primary: true
+imo_number: '7303803'
+date_designated: '2018-03-30'
+resolution: Resolution 1718 (2006)

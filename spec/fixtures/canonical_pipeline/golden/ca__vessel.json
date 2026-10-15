@@ -1,0 +1,113 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/ca/russia-russie-1-1-1",
+        "@type": "VesselEntity",
+        "entityType": "vessel",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "Balitiyskiy III",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/ca/consolidated-list/russia-russie-1-1-1"
+        ],
+        "remarks": "Country: Russia / Russie; Schedule: 1.1; Item: 1; Date of Listing: 2025-02-21",
+        "imoNumber": "7612448",
+        "vesselType": "General Cargo/Multi Purpose",
+        "buildYear": 1980,
+        "previousNames": [],
+        "previousFlags": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/ca/consolidated-list/russia-russie-1-1-1",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/ca/russia-russie-1-1-1",
+        "authority": {
+          "@type": "Authority",
+          "id": "ca",
+          "name": "Canada (SEFO)",
+          "countryCode": "CA"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Russia / Russie",
+          "code": "CA_RUSSIA / RUSSIE"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "Russia-Russie-1-1-1",
+        "remarks": "Schedule: 1.1, Item: 1",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "ca:country": "Russia / Russie",
+            "ca:schedule": "1.1",
+            "ca:item": "1",
+            "ca:date_of_listing": "2025-02-21"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.imoNumber": "String",
+    "$.output.entity.vesselType": "String",
+    "$.output.entity.buildYear": "Integer",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:country": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:schedule": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:item": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.ca:date_of_listing": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::VesselEntity": 1
+  }
+}

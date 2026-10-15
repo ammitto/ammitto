@@ -41,6 +41,8 @@ module Ammitto
             }
           end
 
+          canonical_entrypoints :transform
+
           private
 
           # Create harmonized organization entity
@@ -49,14 +51,13 @@ module Ammitto
           # @return [Ammitto::OrganizationEntity]
           #
           def create_organization_entity(source)
-            Ammitto::OrganizationEntity.new.tap do |entity|
-              entity.id = generate_entity_id(source.reference_number)
-              entity.entity_type = 'organization'
-              entity.names = build_names(source)
-              entity.addresses = build_addresses(source)
-              entity.source_references = build_source_references(source)
-              entity.remarks = build_remarks(source)
-            end
+            build_model(Ammitto::OrganizationEntity,
+                        id: generate_entity_id(source.reference_number),
+                        entity_type: 'organization',
+                        names: build_names(source),
+                        addresses: build_addresses(source),
+                        source_references: build_source_references(source),
+                        remarks: build_remarks(source))
           end
 
           # Build names array
@@ -115,20 +116,21 @@ module Ammitto
 
           # Build source references
           #
+          # Built whole: a source reference is an immutable value, so the
+          # URL is part of its construction rather than set afterwards.
+          # The fetch time is named by the flat facade's retrieved_at
+          # (canonical fetched_at): the flat class has no fetched_at, and an
+          # unknown keyword would drop the time without a word.
+          #
           # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Array<Ammitto::SourceReference>]
           #
           def build_source_references(source)
-            ref = Ammitto::SourceReference.new(
-              source_code: 'jp_meti',
-              reference_number: source.reference_number,
-              fetched_at: Time.now.utc.iso8601
-            )
-
-            # Add source URL if available
-            ref.url = source.source_url if source.respond_to?(:source_url) && source.source_url
-
-            [ref]
+            [build_model(Ammitto::SourceReference,
+                         source_code: 'jp_meti',
+                         reference_number: source.reference_number,
+                         url: (source.source_url if source.respond_to?(:source_url)),
+                         retrieved_at: Time.now.utc.iso8601)]
           end
 
           # Build remarks from WMD types
@@ -153,17 +155,16 @@ module Ammitto
           # @return [Ammitto::SanctionEntry]
           #
           def create_entry(source, entity)
-            Ammitto::SanctionEntry.new.tap do |entry|
-              entry.id = generate_entry_id(source.reference_number)
-              entry.entity_id = entity.id
-              entry.authority = authority
-              entry.regime = create_regime
-              entry.status = 'active'
-              entry.effects = build_effects
-              entry.period = create_period(source)
-              entry.reasons = build_reasons(source)
-              entry.remarks = 'Meti Foreign User List - Export Control'
-            end
+            build_model(Ammitto::SanctionEntry,
+                        id: generate_entry_id(source.reference_number),
+                        entity_id: entity.id,
+                        authority: authority,
+                        regime: create_regime,
+                        status: 'active',
+                        effects: build_effects,
+                        period: create_period(source),
+                        reasons: build_reasons(source),
+                        remarks: 'Meti Foreign User List - Export Control')
           end
 
           # Create regime
@@ -171,10 +172,9 @@ module Ammitto
           # @return [Ammitto::SanctionRegime]
           #
           def create_regime
-            Ammitto::SanctionRegime.new(
-              name: 'Japan Meti Foreign User List',
-              code: 'JP-Meti-FUL'
-            )
+            build_model(Ammitto::SanctionRegime,
+                        name: 'Japan Meti Foreign User List',
+                        code: 'JP-Meti-FUL')
           end
 
           # Build effects
@@ -209,15 +209,16 @@ module Ammitto
 
           # Create period
           #
+          # Built whole with its listing date: a period is an immutable
+          # value, never filled in after construction.
+          #
           # @param source [Ammitto::Data::Japan::Meti::Entity]
           # @return [Ammitto::TemporalPeriod]
           #
           def create_period(source)
-            period = Ammitto::TemporalPeriod.new(is_indefinite: true)
-
-            period.listed_date = source.list_date if source.list_date
-
-            period
+            build_model(Ammitto::TemporalPeriod,
+                        is_indefinite: true,
+                        listed_date: source.list_date)
           end
         end
       end

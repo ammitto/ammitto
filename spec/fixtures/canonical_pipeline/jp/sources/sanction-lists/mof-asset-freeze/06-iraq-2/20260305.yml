@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=../../schemas/jp-announcement.yml
+---
+announcement:
+  title:
+  - ja: イラク前政権関係者等 (Ⅱ)
+  - en: Former Iraqi Regime Officials (II)
+  url: https://www.mof.go.jp/policy/international_policy/gaitame_kawase/gaitame/economic_sanctions/list.html
+  publish_date: '2026-03-05'
+  authority: jp/mof
+  publisher: jp/mof
+  type: jp/asset-freeze-announcement
+  source_file: shisantouketsu20260305.xlsx
+  source_url: https://www.mof.go.jp/policy/international_policy/gaitame_kawase/gaitame/economic_sanctions/shisantouketsu20260305.xlsx
+sanction_details:
+  instruments:
+  - id: jp/diet-foreign-exchange-and-foreign-trade-act
+  - id: jp/cabinet-order-foreign-exchange
+  entities:
+  - id: jp.mof.iraq-2.49
+    name:
+      ja: イドリブ紡績会社
+      en: IDLEB COMPANY FOR SPINNING
+    type: organization
+    effective_date: '2010-07-16'
+    sanction_list: jp/mof-asset-freeze-iraq-2
+    sanction_list_en: Former Iraqi Regime Officials (II)
+    address: イラク、イドリブ、私書箱9号
+    measures:
+    - type:
+      - asset_freeze
+      ja: 資産凍結の対象
+      en: Subject to asset freeze

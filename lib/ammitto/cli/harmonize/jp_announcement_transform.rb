@@ -52,7 +52,7 @@ module Ammitto
             source = Ammitto::Sources::Jp::Entity.from_hash(
               jp_flatten_record(rec, announcement, index + 1)
             )
-            result = transformer.transform(source)
+            result = canonical_result(transformer, :transform, source)
 
             {
               entity: entity_to_hash(result[:entity]),

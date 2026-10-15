@@ -2,9 +2,18 @@
 
 require_relative 'entity'
 require_relative 'entity_link'
+require_relative 'ontology/contracts'
+require_relative 'ontology/entities/aircraft_entity'
 
 module Ammitto
   # AircraftEntity represents a sanctioned aircraft
+  #
+  # Legacy facade: its fields are projected from
+  # Ontology::Entities::AircraftEntity (see Ontology::Contracts). Renamed
+  # here: +registration_number+ (canonical +registration+), +flag_state+
+  # (+registration_country+), +owner+/+operator+ EntityLinks
+  # (+owner_link+/+operator_link+) and the operator's name string
+  # +operator_name+ (+operator+).
   #
   # @example Creating an aircraft entity
   #   AircraftEntity.new(
@@ -16,19 +25,7 @@ module Ammitto
   #   )
   #
   class AircraftEntity < Entity
-    attribute :entity_type, :string, default: 'aircraft'
-    attribute :serial_number, :string         # Manufacturer serial number
-    attribute :manufacturer, :string          # Boeing, Airbus, etc.
-    attribute :model, :string                 # 737-800, A320, etc.
-    attribute :registration_number, :string   # Tail number
-    attribute :flag_state, :string            # Country of registration
-    attribute :flag_state_iso_code, :string   # ISO 3166-1 alpha-2
-    attribute :build_year, :integer
-    attribute :aircraft_type, :string         # Passenger, cargo, private, etc.
-    attribute :engine_type, :string           # Jet, turboprop, piston
-    attribute :owner, EntityLink              # Owning company/person
-    attribute :operator, EntityLink           # Operating airline/company
-    attribute :previous_registrations, :string, collection: true
+    Ontology::Contracts.declare_legacy_attributes(self)
 
     json do
       map 'entityType', to: :entity_type
@@ -44,6 +41,11 @@ module Ammitto
       map 'owner', to: :owner
       map 'operator', to: :operator
       map 'previousRegistrations', to: :previous_registrations
+      map 'name', to: :name
+      map 'previousNames', to: :previous_names
+      map 'icao24bit', to: :icao_24bit
+      map 'registeredOwner', to: :registered_owner
+      map 'operatorName', to: :operator_name
     end
 
     # Check if this aircraft matches a search term

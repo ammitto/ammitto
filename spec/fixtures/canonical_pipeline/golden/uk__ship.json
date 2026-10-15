@@ -1,0 +1,127 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/uk/rus2334",
+        "@type": "VesselEntity",
+        "entityType": "vessel",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "DAKSHA ",
+            "script": "Latn",
+            "isPrimary": true
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/uk/consolidated-list/rus2334"
+        ],
+        "remarks": "Shipping sanctions: a specified ship is prohibited from being provided with access to or having its master or pilot cause it to enter a port in the UK, may have its registration on the UK Ship Register terminated, and a master or pilot of a specified ship may be given a port barring direction, a detention direction, and a port entry direction or a movement direction.",
+        "imoNumber": "9259185",
+        "buildYear": 2002,
+        "previousNames": [],
+        "previousFlags": [
+          "Comoros",
+          "Panama",
+          "Hong Kong",
+          "China"
+        ]
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/uk/consolidated-list/rus2334",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/uk/rus2334",
+        "authority": {
+          "@type": "Authority",
+          "id": "uk",
+          "name": "United Kingdom (OFSI)",
+          "countryCode": "GB"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "The Russia (Sanctions) (EU Exit) Regulations 2019",
+          "code": "THE_RUSSIA_SANCTIONS_EU_EXIT_REGULATIONS_2019"
+        },
+        "legalBases": [],
+        "effects": [],
+        "reasons": [],
+        "period": {
+          "@type": "TemporalPeriod",
+          "listedDate": "2024-11-25",
+          "effectiveDate": "2024-11-25",
+          "isIndefinite": true,
+          "lastUpdated": "2024-11-25"
+        },
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "RUS2334",
+        "remarks": "\nIMO 9259185 (“DAKSHA”) is involved in activity whose object or effect is to destabilise Ukraine or undermine or threaten the territorial integrity, sovereignty or independence of Ukraine or to obtain a benefit from or support the Government of Russia. Namely, DAKSHA is involved in carrying oil or oil products that originated in Russia from Russia to a third country. \n",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "uk:ofsiGroupId": null,
+            "uk:unReferenceNumber": null,
+            "uk:designationSource": "UK",
+            "uk:sanctionsImposed": "Shipping sanctions: (see \"Other information\")",
+            "uk:entityType": "Ship"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.imoNumber": "String",
+    "$.output.entity.buildYear": "Integer",
+    "$.output.entity.previousFlags[0]": "String",
+    "$.output.entity.previousFlags[1]": "String",
+    "$.output.entity.previousFlags[2]": "String",
+    "$.output.entity.previousFlags[3]": "String",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.period.@type": "String",
+    "$.output.entry.period.listedDate": "Date",
+    "$.output.entry.period.effectiveDate": "Date",
+    "$.output.entry.period.isIndefinite": "TrueClass",
+    "$.output.entry.period.lastUpdated": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:ofsiGroupId": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:unReferenceNumber": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:designationSource": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:sanctionsImposed": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.uk:entityType": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 1,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::TemporalPeriod": 1,
+    "Ammitto::VesselEntity": 1
+  }
+}

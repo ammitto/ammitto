@@ -1,0 +1,50 @@
+---
+last_updated: '2024-11-25'
+date_designated: '2024-11-25'
+unique_id: RUS2334
+names:
+  names:
+  - name6: 'DAKSHA '
+    name_type: Primary Name
+regime_name: The Russia (Sanctions) (EU Exit) Regulations 2019
+individual_entity_ship: Ship
+designation_source: UK
+sanctions_imposed: 'Shipping sanctions: (see "Other information")'
+sanctions_imposed_indicators:
+  asset_freeze: false
+  trust_services_sanctions: false
+  arms_embargo: false
+  targeted_arms_embargo: false
+  technical_assistance_related_to_aircraft: false
+  travel_ban: false
+  prohibition_of_port_entry: false
+  chartering_of_ships: false
+  crew_servicing_of_ships_and_aircraft: false
+  prevention_of_chartering_of_ships_and_aircraft: false
+  prevention_of_business_arrangements: false
+  closure_of_representative_offices: false
+  director_disqualification_sanction: false
+  deflag: false
+other_information: 'Shipping sanctions: a specified ship is prohibited from being
+  provided with access to or having its master or pilot cause it to enter a port in
+  the UK, may have its registration on the UK Ship Register terminated, and a master
+  or pilot of a specified ship may be given a port barring direction, a detention
+  direction, and a port entry direction or a movement direction.'
+uk_statement_of_reasons: "\nIMO 9259185 (“DAKSHA”) is involved in activity whose object
+  or effect is to destabilise Ukraine or undermine or threaten the territorial integrity,
+  sovereignty or independence of Ukraine or to obtain a benefit from or support the
+  Government of Russia. Namely, DAKSHA is involved in carrying oil or oil products
+  that originated in Russia from Russia to a third country. \n"
+ship_details:
+  ship:
+    imo_numbers:
+    - IMO9259185
+    previous_flags:
+    - Comoros
+    - Panama
+    - Hong Kong
+    - China
+    tonnages:
+    - '57979'
+    years_built:
+    - '2002'

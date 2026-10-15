@@ -1,0 +1,174 @@
+{
+  "json": {
+    "output": {
+      "entity": {
+        "@id": "https://www.ammitto.org/entity/us/15049",
+        "@type": "VesselEntity",
+        "entityType": "vessel",
+        "names": [
+          {
+            "@type": "NameVariant",
+            "fullName": "FOREST",
+            "lastName": "FOREST",
+            "script": "Latn",
+            "isPrimary": true
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "FAEZ",
+            "lastName": "FAEZ",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "SATEEN",
+            "lastName": "SATEEN",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "MAESTRO",
+            "lastName": "MAESTRO",
+            "script": "Latn",
+            "isPrimary": false
+          },
+          {
+            "@type": "NameVariant",
+            "fullName": "FIANGA",
+            "lastName": "FIANGA",
+            "script": "Latn",
+            "isPrimary": false
+          }
+        ],
+        "sourceReferences": [],
+        "linkedEntities": [],
+        "hasSanctionEntry": [
+          "https://www.ammitto.org/entry/us/sdn-list/15049"
+        ],
+        "remarks": "(Linked To: NATIONAL IRANIAN TANKER COMPANY)",
+        "callSign": "T2DM4",
+        "flagState": "Iran",
+        "vesselType": "Chemical/Products Tanker",
+        "tonnage": {
+          "@type": "Tonnage",
+          "grossRegisterTonnage": 25214
+        },
+        "previousNames": [],
+        "previousFlags": []
+      },
+      "entry": {
+        "@id": "https://www.ammitto.org/entry/us/sdn-list/15049",
+        "@type": "SanctionEntry",
+        "entityId": "https://www.ammitto.org/entity/us/15049",
+        "authority": {
+          "@type": "Authority",
+          "id": "us",
+          "name": "United States (OFAC)",
+          "countryCode": "US"
+        },
+        "regime": {
+          "@type": "SanctionRegime",
+          "name": "Iran",
+          "code": "IRAN"
+        },
+        "legalBases": [],
+        "effects": [
+          {
+            "@type": "SanctionEffect",
+            "effectType": "asset_freeze",
+            "scope": "full"
+          }
+        ],
+        "reasons": [],
+        "status": "active",
+        "statusHistory": [],
+        "referenceNumber": "15049",
+        "remarks": "(Linked To: NATIONAL IRANIAN TANKER COMPANY)",
+        "rawSourceData": {
+          "@type": "RawSourceData",
+          "sourceFormat": "xml",
+          "sourceSpecificFields": {
+            "us:sdnType": "Vessel",
+            "us:programs": [
+              "IRAN"
+            ],
+            "us:title": null,
+            "us:vesselTonnage": "35124"
+          }
+        }
+      }
+    },
+    "groups": []
+  },
+  "leaf_types": {
+    "$.output.entity.@id": "String",
+    "$.output.entity.@type": "String",
+    "$.output.entity.entityType": "String",
+    "$.output.entity.names[0].@type": "String",
+    "$.output.entity.names[0].fullName": "String",
+    "$.output.entity.names[0].lastName": "String",
+    "$.output.entity.names[0].script": "String",
+    "$.output.entity.names[0].isPrimary": "TrueClass",
+    "$.output.entity.names[1].@type": "String",
+    "$.output.entity.names[1].fullName": "String",
+    "$.output.entity.names[1].lastName": "String",
+    "$.output.entity.names[1].script": "String",
+    "$.output.entity.names[1].isPrimary": "FalseClass",
+    "$.output.entity.names[2].@type": "String",
+    "$.output.entity.names[2].fullName": "String",
+    "$.output.entity.names[2].lastName": "String",
+    "$.output.entity.names[2].script": "String",
+    "$.output.entity.names[2].isPrimary": "FalseClass",
+    "$.output.entity.names[3].@type": "String",
+    "$.output.entity.names[3].fullName": "String",
+    "$.output.entity.names[3].lastName": "String",
+    "$.output.entity.names[3].script": "String",
+    "$.output.entity.names[3].isPrimary": "FalseClass",
+    "$.output.entity.names[4].@type": "String",
+    "$.output.entity.names[4].fullName": "String",
+    "$.output.entity.names[4].lastName": "String",
+    "$.output.entity.names[4].script": "String",
+    "$.output.entity.names[4].isPrimary": "FalseClass",
+    "$.output.entity.hasSanctionEntry[0]": "String",
+    "$.output.entity.remarks": "String",
+    "$.output.entity.callSign": "String",
+    "$.output.entity.flagState": "String",
+    "$.output.entity.vesselType": "String",
+    "$.output.entity.tonnage.@type": "String",
+    "$.output.entity.tonnage.grossRegisterTonnage": "Integer",
+    "$.output.entry.@id": "String",
+    "$.output.entry.@type": "String",
+    "$.output.entry.entityId": "String",
+    "$.output.entry.authority.@type": "String",
+    "$.output.entry.authority.id": "String",
+    "$.output.entry.authority.name": "String",
+    "$.output.entry.authority.countryCode": "String",
+    "$.output.entry.regime.@type": "String",
+    "$.output.entry.regime.name": "String",
+    "$.output.entry.regime.code": "String",
+    "$.output.entry.effects[0].@type": "String",
+    "$.output.entry.effects[0].effectType": "String",
+    "$.output.entry.effects[0].scope": "String",
+    "$.output.entry.status": "String",
+    "$.output.entry.referenceNumber": "String",
+    "$.output.entry.remarks": "String",
+    "$.output.entry.rawSourceData.@type": "String",
+    "$.output.entry.rawSourceData.sourceFormat": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:sdnType": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:programs[0]": "String",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:title": "NilClass",
+    "$.output.entry.rawSourceData.sourceSpecificFields.us:vesselTonnage": "String"
+  },
+  "base_model_classes": {
+    "Ammitto::Authority": 1,
+    "Ammitto::NameVariant": 5,
+    "Ammitto::RawSourceData": 1,
+    "Ammitto::SanctionEffect": 1,
+    "Ammitto::SanctionEntry": 1,
+    "Ammitto::SanctionRegime": 1,
+    "Ammitto::Tonnage": 1,
+    "Ammitto::VesselEntity": 1
+  }
+}

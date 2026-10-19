@@ -89,6 +89,16 @@ RSpec.describe Ammitto::Validation::OutputValidator do
     expect(result.details[:files]).to eq(disk_paths.length)
   end
 
+  it 'validates generated ontology examples as canonical standalone entities' do
+    export_families
+    instance = validator
+    %w[person organization vessel].each do |kind|
+      data = JSON.parse(File.read(File.join(@output_dir, "ontology/examples/#{kind}.jsonld")))
+      canonical_path = write("node/entity/examples/#{kind}.jsonld", data)
+      expect(instance.validate_files([canonical_path]).errors).to eq([])
+    end
+  end
+
   it 'rejects newline-bearing language-map keys while preserving valid language tags' do
     legal = { '@context' => Ammitto::Schema::Context.context_url,
               '@id' => 'https://www.ammitto.org/legal-instrument/cn/act',
@@ -367,8 +377,13 @@ RSpec.describe Ammitto::Validation::OutputValidator do
       ['wrong entity discriminator', ->(d) { d['entityType'] = 'aircraft' }],
       ['unknown field', ->(d) { d['birthdate'] = '1964' }],
       ['wrong name scalar', ->(d) { d['names'].first['fullName'] = 9 }],
+      ['legacy name type', ->(d) { d['names'].first['@type'] = 'Name' }],
+      ['object sanction reference', ->(d) { d['hasSanctionEntry'] = [{ '@id' => 'https://www.ammitto.org/entry/example' }] }],
       ['invalid calendar date', ->(d) { d['birthInfo'] = [{ '@type' => 'BirthInfo', 'date' => '1964-02-30' }] }],
       ['malformed birth information', ->(d) { d['birthInfo'] = [{ '@type' => 'BirthInfo', 'year' => '1964' }] }]
+    ],
+    'node/entity/eu/vessel.jsonld' => [
+      ['legacy IMO field', ->(d) { d['imo'] = '1234567' }]
     ],
     'node/entry/eu/list/person.jsonld' => [
       ['invalid status', ->(d) { d['status'] = 'made_up' }],
@@ -393,10 +408,34 @@ RSpec.describe Ammitto::Validation::OutputValidator do
       ['unknown facet entity type', ->(d) { d['facets'].first['code'] = 'made_up' }]
     ],
     'facets/statuses.json' => [['unknown facet status', ->(d) { d['facets'].first['code'] = 'made_up' }]],
-    'ontology/classes.jsonld' => [['wrong class type', ->(d) { d['@graph'].first['@type'] = 'rdf:Property' }]],
-    'ontology/properties.jsonld' => [['missing property range', ->(d) { d['@graph'].first.delete('range') }]],
+    'ontology/classes.jsonld' => [
+      ['wrong class type', ->(d) { d['@graph'].first['@type'] = 'rdf:Property' }],
+      ['wrong RDFS prefix', ->(d) { d['@context']['rdfs'] = 'https://example.org/' }],
+      ['missing subclass IRI coercion', ->(d) { d['@context']['subClassOf'].delete('@type') }],
+      ['wrong property list IRI coercion', ->(d) { d['@context']['properties']['@type'] = 'xsd:string' }],
+      ['arbitrary metadata context term', ->(d) { d['@context']['unexpected'] = 'rdfs:label' }]
+    ],
+    'ontology/properties.jsonld' => [
+      ['invalid property range IRI', ->(d) { d['@graph'].first['range'] = 'notanIRI' }],
+      ['invalid usage class IRI', ->(d) { d['@graph'].first['usages'].first['class'] = 'SanctionEntry' }],
+      ['wrong usage cardinality type', ->(d) { d['@graph'].first['usages'].first['isArray'] = 'false' }],
+      ['missing property usages', ->(d) { d['@graph'].first.delete('usages') }],
+      ['wrong usages JSON coercion', ->(d) { d['@context']['usages']['@type'] = '@id' }],
+      ['wrong range IRI coercion', ->(d) { d['@context']['range']['@type'] = 'xsd:string' }],
+      ['wrong domain IRI coercion', ->(d) { d['@context']['domain']['@type'] = 'xsd:string' }],
+      ['wrong RDF prefix', ->(d) { d['@context']['rdf'] = 'https://example.org/' }],
+      ['wrong label predicate', ->(d) { d['@context']['label'] = 'comment' }],
+      ['wrong comment predicate', ->(d) { d['@context']['comment'] = 'label' }]
+    ],
     'ontology/hierarchy.json' => [['malformed nested hierarchy', ->(d) { d['children'].first['children'] = 2 }]],
-    'ontology/examples/vessel.jsonld' => [['wrong illustrative tonnage', ->(d) { d['tonnage'] = '50000' }]],
+    'ontology/examples/person.jsonld' => [
+      ['legacy name type', ->(d) { d['names'].first['@type'] = 'Name' }],
+      ['object sanction reference', ->(d) { d['hasSanctionEntry'] = [{ '@id' => 'https://www.ammitto.org/entry/example' }] }]
+    ],
+    'ontology/examples/vessel.jsonld' => [
+      ['wrong tonnage value type', ->(d) { d['tonnage']['grossTonnage'] = '50000' }],
+      ['legacy IMO field', ->(d) { d['imo'] = d.delete('imoNumber') }]
+    ],
     'index.jsonld' => [['missing catalogue byte count', ->(d) { d['entries'].find { |e| e.key?('bytes') }.delete('bytes') }]],
     'context.jsonld' => [['wrong birth-year coercion', ->(d) { d['@context']['yearRangeTo']['@type'] = 'xsd:string' }]],
     'all.jsonld' => [['invalid nested aggregate node', ->(d) { d['@graph'].find { |n| n['@type'] == 'SanctionEntry' }['status'] = 'made_up' }]]

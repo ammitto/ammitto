@@ -4,6 +4,14 @@ require 'fileutils'
 require 'json'
 require 'time'
 require_relative '../schema/context'
+require_relative 'ontology_catalogue'
+require_relative 'json_ld_serializer'
+require_relative '../person_entity'
+require_relative '../organization_entity'
+require_relative '../vessel_entity'
+require_relative '../name_variant'
+require_relative '../tonnage'
+require_relative '../ontology/compatibility'
 
 module Ammitto
   module Serialization
@@ -23,292 +31,26 @@ module Ammitto
       # Context URL
       CONTEXT_URL = Ammitto::Schema::Context::CONTEXT_URL
 
-      # Class definitions
-      CLASSES = [
-        {
-          id: 'Entity',
-          label: 'Entity',
-          comment: 'Base class for all sanctionable entities',
-          parent: nil,
-          properties: %w[entityType names aliases hasSanctionEntry]
-        },
-        {
-          id: 'PersonEntity',
-          label: 'Person Entity',
-          comment: 'A human individual subject to sanctions',
-          parent: 'Entity',
-          properties: %w[birthInfo nationalities documents gender]
-        },
-        {
-          id: 'OrganizationEntity',
-          label: 'Organization Entity',
-          comment: 'A legal entity (company, government, etc.) subject to sanctions',
-          parent: 'Entity',
-          properties: %w[registration addresses businessType]
-        },
-        {
-          id: 'VesselEntity',
-          label: 'Vessel Entity',
-          comment: 'A maritime vessel subject to sanctions',
-          parent: 'Entity',
-          properties: %w[imo mmsi flag tonnage callSign buildDate]
-        },
-        {
-          id: 'AircraftEntity',
-          label: 'Aircraft Entity',
-          comment: 'An aircraft subject to sanctions',
-          parent: 'Entity',
-          properties: %w[registrationNumber manufacturer model serialNumber]
-        },
-        {
-          id: 'SanctionEntry',
-          label: 'Sanction Entry',
-          comment: 'A sanction record linking an entity to its sanction details',
-          parent: nil,
-          properties: %w[entityId authority regime legalBases status listingDate measures announcement]
-        },
-        {
-          id: 'Authority',
-          label: 'Authority',
-          comment: 'An issuing authority for sanctions (e.g., UN, EU, UK)',
-          parent: nil,
-          properties: %w[code name countryCode url]
-        },
-        {
-          id: 'Announcement',
-          label: 'Announcement',
-          comment: 'A publication or list update from an authority',
-          parent: nil,
-          properties: %w[title number date effectiveDate issuingAuthority measures]
-        },
-        {
-          id: 'SanctionRegime',
-          label: 'Sanction Regime',
-          comment: 'A sanctions regime (e.g., DPRK, Iran, Russia)',
-          parent: nil,
-          properties: %w[code name description]
-        },
-        {
-          id: 'LegalInstrument',
-          label: 'Legal Instrument',
-          comment: 'A legal basis for sanctions (resolution, regulation, etc.)',
-          parent: nil,
-          properties: %w[identifier title type publicationDate url]
-        },
-        {
-          id: 'SanctionsList',
-          label: 'Sanctions List',
-          comment: 'A specific sanctions list (e.g., EU Consolidated List, OFAC SDN)',
-          parent: nil,
-          properties: %w[name authority description listType url]
-        },
-        {
-          id: 'Country',
-          label: 'Country',
-          comment: 'A country or territory (ISO 3166-1)',
-          parent: nil,
-          properties: %w[code name]
-        },
-        {
-          id: 'Measure',
-          label: 'Measure',
-          comment: 'A specific sanctions measure (asset freeze, travel ban, etc.)',
-          parent: nil,
-          properties: %w[code name description]
-        },
-        {
-          id: 'Name',
-          label: 'Name',
-          comment: 'A name variant for an entity',
-          parent: nil,
-          properties: %w[fullName lastName firstName middleName isPrimary script language]
-        },
-        {
-          id: 'Address',
-          label: 'Address',
-          comment: 'A physical address',
-          parent: nil,
-          properties: %w[street city state postalCode country countryCode careOf]
-        },
-        {
-          id: 'Identifier',
-          label: 'Identifier',
-          comment: 'An identifier document (passport, national ID, etc.)',
-          parent: nil,
-          properties: %w[type value country issuer issueDate expiryDate]
-        },
-        {
-          id: 'BirthInfo',
-          label: 'Birth Information',
-          comment: 'Birth date and place information',
-          parent: nil,
-          properties: %w[
-            date dateRangeFrom dateRangeTo year yearRangeFrom yearRangeTo
-            place country circa
-          ]
-        },
-        {
-          id: 'Nationality',
-          label: 'Nationality',
-          comment: 'A nationality or citizenship',
-          parent: nil,
-          properties: %w[countryCode country]
-        }
-      ].freeze
+      # The output contract is the catalogue source; do not duplicate wire fields here.
+      CLASSES = OntologyCatalogue.new.classes.freeze
+      PROPERTIES = OntologyCatalogue.new.properties.freeze
 
-      # Property definitions
-      PROPERTIES = [
-        # Entity properties
-        { id: 'entityType', label: 'Entity Type', comment: 'The type of entity', domain: 'Entity', range: 'string' },
-        { id: 'names', label: 'Names', comment: 'Name variants for the entity', domain: 'Entity', range: 'Name',
-          array: true },
-        { id: 'aliases', label: 'Aliases', comment: 'Alternative names or aliases', domain: 'Entity', range: 'Name',
-          array: true },
-        { id: 'hasSanctionEntry', label: 'Has Sanction Entry', comment: 'Links to sanction record', domain: 'Entity',
-          range: 'SanctionEntry', array: true },
-
-        # PersonEntity properties
-        { id: 'birthInfo', label: 'Birth Info', comment: 'Birth information', domain: 'PersonEntity',
-          range: 'BirthInfo', array: true },
-        { id: 'nationalities', label: 'Nationalities', comment: 'Nationalities', domain: 'PersonEntity',
-          range: 'Nationality', array: true },
-        { id: 'documents', label: 'Documents', comment: 'Identity documents', domain: 'PersonEntity',
-          range: 'Identifier', array: true },
-        { id: 'gender', label: 'Gender', comment: 'Gender', domain: 'PersonEntity', range: 'string' },
-
-        # OrganizationEntity properties
-        { id: 'registration', label: 'Registration', comment: 'Registration details', domain: 'OrganizationEntity',
-          range: 'Registration' },
-        { id: 'businessType', label: 'Business Type', comment: 'Type of business', domain: 'OrganizationEntity',
-          range: 'string' },
-
-        # VesselEntity properties
-        { id: 'imo', label: 'IMO', comment: 'IMO number', domain: 'VesselEntity', range: 'string' },
-        { id: 'mmsi', label: 'MMSI', comment: 'MMSI number', domain: 'VesselEntity', range: 'string' },
-        { id: 'flag', label: 'Flag', comment: 'Flag state', domain: 'VesselEntity', range: 'Country' },
-        { id: 'tonnage', label: 'Tonnage', comment: 'Gross tonnage', domain: 'VesselEntity', range: 'integer' },
-        { id: 'callSign', label: 'Call Sign', comment: 'Radio call sign', domain: 'VesselEntity', range: 'string' },
-        { id: 'buildDate', label: 'Build Date', comment: 'Date vessel was built', domain: 'VesselEntity',
-          range: 'date' },
-
-        # AircraftEntity properties
-        { id: 'registrationNumber', label: 'Registration Number', comment: 'Aircraft registration',
-          domain: 'AircraftEntity', range: 'string' },
-        { id: 'manufacturer', label: 'Manufacturer', comment: 'Aircraft manufacturer', domain: 'AircraftEntity',
-          range: 'string' },
-        { id: 'model', label: 'Model', comment: 'Aircraft model', domain: 'AircraftEntity', range: 'string' },
-        { id: 'serialNumber', label: 'Serial Number', comment: 'Aircraft serial number', domain: 'AircraftEntity',
-          range: 'string' },
-
-        # Address properties (shared)
-        { id: 'addresses', label: 'Addresses', comment: 'Physical addresses', domain: 'Entity', range: 'Address',
-          array: true },
-
-        # SanctionEntry properties
-        { id: 'entityId', label: 'Entity ID', comment: 'Reference to entity', domain: 'SanctionEntry',
-          range: 'Entity' },
-        { id: 'authority', label: 'Authority', comment: 'Issuing authority', domain: 'SanctionEntry',
-          range: 'Authority' },
-        { id: 'regime', label: 'Regime', comment: 'Sanctions regime', domain: 'SanctionEntry',
-          range: 'SanctionRegime' },
-        { id: 'legalBases', label: 'Legal Bases', comment: 'Legal instruments', domain: 'SanctionEntry',
-          range: 'LegalInstrument', array: true },
-        { id: 'status', label: 'Status', comment: 'Current status', domain: 'SanctionEntry', range: 'string' },
-        { id: 'listingDate', label: 'Listing Date', comment: 'Date listed', domain: 'SanctionEntry', range: 'date' },
-        { id: 'delistingDate', label: 'Delisting Date', comment: 'Date removed from list', domain: 'SanctionEntry',
-          range: 'date' },
-        { id: 'measures', label: 'Measures', comment: 'Sanctions measures applied', domain: 'SanctionEntry',
-          range: 'Measure', array: true },
-        { id: 'announcement', label: 'Announcement', comment: 'Source announcement', domain: 'SanctionEntry',
-          range: 'Announcement' },
-
-        # Authority properties
-        { id: 'code', label: 'Code', comment: 'Unique code identifier', domain: 'Authority', range: 'string' },
-        { id: 'name', label: 'Name', comment: 'Name', domain: 'Authority', range: 'string' },
-        { id: 'countryCode', label: 'Country Code', comment: 'ISO country code', domain: 'Authority', range: 'string' },
-        { id: 'url', label: 'URL', comment: 'Official website', domain: 'Authority', range: 'string' },
-
-        # Announcement properties
-        { id: 'title', label: 'Title', comment: 'Announcement title', domain: 'Announcement', range: 'string' },
-        { id: 'number', label: 'Number', comment: 'Announcement number', domain: 'Announcement', range: 'string' },
-        { id: 'date', label: 'Date', comment: 'Publication date', domain: 'Announcement', range: 'date' },
-        { id: 'effectiveDate', label: 'Effective Date', comment: 'Date when effective', domain: 'Announcement',
-          range: 'date' },
-        { id: 'issuingAuthority', label: 'Issuing Authority', comment: 'Authority that issued', domain: 'Announcement',
-          range: 'string' },
-
-        # SanctionRegime properties
-        { id: 'description', label: 'Description', comment: 'Description', domain: 'SanctionRegime', range: 'string' },
-
-        # LegalInstrument properties
-        { id: 'identifier', label: 'Identifier', comment: 'Instrument identifier', domain: 'LegalInstrument',
-          range: 'string' },
-        { id: 'type', label: 'Type', comment: 'Type', domain: 'LegalInstrument', range: 'string' },
-        { id: 'publicationDate', label: 'Publication Date', comment: 'Date published', domain: 'LegalInstrument',
-          range: 'date' },
-
-        # SanctionsList properties
-        { id: 'listType', label: 'List Type', comment: 'Type of sanctions list', domain: 'SanctionsList',
-          range: 'string' },
-        { id: 'authority', label: 'Authority', comment: 'Owning authority', domain: 'SanctionsList',
-          range: 'Authority' },
-
-        # Country properties
-        { id: 'country', label: 'Country', comment: 'Country name', domain: 'Country', range: 'string' },
-
-        # Name properties
-        { id: 'fullName', label: 'Full Name', comment: 'Full name', domain: 'Name', range: 'string' },
-        { id: 'lastName', label: 'Last Name', comment: 'Family name', domain: 'Name', range: 'string' },
-        { id: 'firstName', label: 'First Name', comment: 'Given name', domain: 'Name', range: 'string' },
-        { id: 'middleName', label: 'Middle Name', comment: 'Middle name', domain: 'Name', range: 'string' },
-        { id: 'isPrimary', label: 'Is Primary', comment: 'Is primary name', domain: 'Name', range: 'boolean' },
-        { id: 'script', label: 'Script', comment: 'Writing script (ISO 15924)', domain: 'Name', range: 'string' },
-        { id: 'language', label: 'Language', comment: 'Language (ISO 639-1)', domain: 'Name', range: 'string' },
-
-        # Address properties
-        { id: 'street', label: 'Street', comment: 'Street address', domain: 'Address', range: 'string' },
-        { id: 'city', label: 'City', comment: 'City', domain: 'Address', range: 'string' },
-        { id: 'state', label: 'State', comment: 'State or province', domain: 'Address', range: 'string' },
-        { id: 'postalCode', label: 'Postal Code', comment: 'Postal/ZIP code', domain: 'Address', range: 'string' },
-        { id: 'careOf', label: 'Care Of', comment: 'c/o address', domain: 'Address', range: 'string' },
-
-        # Identifier properties
-        { id: 'value', label: 'Value', comment: 'Value', domain: 'Identifier', range: 'string' },
-        { id: 'issuer', label: 'Issuer', comment: 'Issuing authority', domain: 'Identifier', range: 'string' },
-        { id: 'issueDate', label: 'Issue Date', comment: 'Date issued', domain: 'Identifier', range: 'date' },
-        { id: 'expiryDate', label: 'Expiry Date', comment: 'Expiry date', domain: 'Identifier', range: 'date' },
-
-        # BirthInfo temporal properties. The date bounds preserve the
-        # complete endpoint dates; the year bounds are either
-        # source-stated or derived from those endpoints for year-only
-        # discovery. Both datatypes match the JSON-LD context.
-        #
-        # The three year-valued ones are gYear, matching that context.
-        # The two artifacts mint their terms under different bases —
-        # this vocabulary under BASE_URI, the context under its own
-        # @vocab — so they are not literally the same RDF property, but
-        # they describe the same field to the same reader, and telling
-        # that reader "integer" in the ontology browser and "gYear" in
-        # the data is a contradiction either way. 'year' carried that
-        # contradiction before the bounds existed; adding the bounds is
-        # what made it worth resolving rather than propagating into two
-        # more properties.
-        { id: 'dateRangeFrom', label: 'Date Range From',
-          comment: 'Lower bound of a stated span of complete birth dates',
-          domain: 'BirthInfo', range: 'date' },
-        { id: 'dateRangeTo', label: 'Date Range To',
-          comment: 'Upper bound of a stated span of complete birth dates',
-          domain: 'BirthInfo', range: 'date' },
-        { id: 'year', label: 'Year', comment: 'Birth year', domain: 'BirthInfo', range: 'gYear' },
-        { id: 'yearRangeFrom', label: 'Year Range From',
-          comment: 'Lower bound of a birth-year span',
-          domain: 'BirthInfo', range: 'gYear' },
-        { id: 'yearRangeTo', label: 'Year Range To',
-          comment: 'Upper bound of a birth-year span',
-          domain: 'BirthInfo', range: 'gYear' },
-        { id: 'place', label: 'Place', comment: 'Birth place', domain: 'BirthInfo', range: 'string' },
-        { id: 'circa', label: 'Circa', comment: 'Approximate date', domain: 'BirthInfo', range: 'boolean' }
-      ].freeze
+      METADATA_CONTEXT = {
+        '@vocab' => "#{BASE_URI}/",
+        'rdf' => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+        'rdfs' => 'http://www.w3.org/2000/01/rdf-schema#',
+        'owl' => 'http://www.w3.org/2002/07/owl#',
+        'xsd' => 'http://www.w3.org/2001/XMLSchema#',
+        'label' => 'rdfs:label',
+        'comment' => 'rdfs:comment',
+        'subClassOf' => { '@id' => 'rdfs:subClassOf', '@type' => '@id' },
+        'domain' => { '@id' => 'rdfs:domain', '@type' => '@id' },
+        'range' => { '@id' => 'rdfs:range', '@type' => '@id' },
+        'usages' => { '@id' => "#{BASE_URI}/usages", '@type' => '@json' },
+        'properties' => { '@id' => "#{BASE_URI}/properties", '@type' => '@id', '@container' => '@set' },
+        'equivalentClass' => { '@id' => 'owl:equivalentClass', '@type' => '@id' },
+        'equivalentProperty' => { '@id' => 'owl:equivalentProperty', '@type' => '@id' }
+      }.freeze
 
       # Entity type info for hierarchy
       ENTITY_TYPES = {
@@ -362,7 +104,8 @@ module Ammitto
             '@id' => "#{BASE_URI}/#{cls[:id]}",
             '@type' => 'rdfs:Class',
             'label' => cls[:label],
-            'comment' => cls[:comment]
+            'comment' => cls[:comment],
+            'equivalentClass' => OntologyCatalogue.publication_iri(cls[:id])
           }
           class_node['subClassOf'] = "#{BASE_URI}/#{cls[:parent]}" if cls[:parent]
           class_node['properties'] = cls[:properties].map { |p| "#{BASE_URI}/#{p}" } if cls[:properties]
@@ -370,7 +113,7 @@ module Ammitto
         end
 
         data = {
-          '@context' => CONTEXT_URL,
+          '@context' => METADATA_CONTEXT,
           '@graph' => classes_graph
         }
 
@@ -385,16 +128,20 @@ module Ammitto
             '@id' => "#{BASE_URI}/#{prop[:id]}",
             '@type' => 'rdf:Property',
             'label' => prop[:label],
-            'comment' => prop[:comment]
+            'comment' => prop[:comment],
+            'equivalentProperty' => OntologyCatalogue.publication_iri(prop[:id])
           }
+          property_node['usages'] = prop[:usages].map do |usage|
+            usage.merge(class: "#{BASE_URI}/#{usage[:class]}", range: usage[:range] && map_range(usage[:range])).compact
+          end
           property_node['domain'] = "#{BASE_URI}/#{prop[:domain]}" if prop[:domain]
-          property_node['range'] = map_range(prop[:range])
+          property_node['range'] = map_range(prop[:range]) if prop[:range]
           property_node['isArray'] = true if prop[:array]
           property_node
         end
 
         data = {
-          '@context' => CONTEXT_URL,
+          '@context' => METADATA_CONTEXT,
           '@graph' => properties_graph
         }
 
@@ -406,7 +153,8 @@ module Ammitto
       # @return [String] URI or XSD type
       def map_range(range)
         case range
-        when 'string', 'integer', 'date', 'boolean', 'gYear'
+        when 'string', 'integer', 'number', 'date', 'boolean', 'gYear'
+          range = 'decimal' if range == 'number'
           "http://www.w3.org/2001/XMLSchema##{range}"
         else
           "#{BASE_URI}/#{range}"
@@ -424,21 +172,9 @@ module Ammitto
         }
 
         # Add supporting classes
-        supporting = [
-          { name: 'SanctionEntry', label: 'Sanction Entry', icon: 'scroll-text', children: [] },
-          { name: 'Authority', label: 'Authority', icon: 'building-2', children: [] },
-          { name: 'Announcement', label: 'Announcement', icon: 'megaphone', children: [] },
-          { name: 'SanctionRegime', label: 'Regime', icon: 'flag', children: [] },
-          { name: 'LegalInstrument', label: 'Legal Instrument', icon: 'file-text', children: [] },
-          { name: 'SanctionsList', label: 'Sanctions List', icon: 'list', children: [] },
-          { name: 'Country', label: 'Country', icon: 'globe', children: [] },
-          { name: 'Measure', label: 'Measure', icon: 'ban', children: [] },
-          { name: 'Name', label: 'Name', icon: 'type', children: [] },
-          { name: 'Address', label: 'Address', icon: 'map-pin', children: [] },
-          { name: 'Identifier', label: 'Identifier', icon: 'id-card', children: [] },
-          { name: 'BirthInfo', label: 'Birth Info', icon: 'cake', children: [] },
-          { name: 'Nationality', label: 'Nationality', icon: 'passport', children: [] }
-        ]
+        supporting = CLASSES.reject { |cls| cls[:id] == 'Entity' || cls[:parent] == 'Entity' }.map do |cls|
+          { name: cls[:id], label: cls[:label], children: [] }
+        end
 
         full_hierarchy = {
           name: 'AmmittoOntology',
@@ -476,75 +212,42 @@ module Ammitto
         export_vessel_example(examples_dir)
       end
 
-      # Export person example
-      # @param dir [String] examples directory
+      # Use the public serializer so examples share the actual publication wire.
       def export_person_example(dir)
-        example = {
-          '@context' => CONTEXT_URL,
-          '@id' => 'https://www.ammitto.org/entity/example/person',
-          '@type' => 'PersonEntity',
-          'entityType' => 'person',
-          'names' => [
-            { '@type' => 'Name', 'fullName' => 'DOE, John', 'isPrimary' => true }
-          ],
-          'birthInfo' => [
-            { '@type' => 'BirthInfo', 'date' => '1970-01-15', 'countryCode' => 'XX' }
-          ],
-          'nationalities' => [
-            { '@type' => 'Nationality', 'countryCode' => 'XX' }
-          ],
-          'hasSanctionEntry' => [
-            { '@id' => 'https://www.ammitto.org/entry/example/person' }
-          ]
-        }
-
-        write_json(File.join(dir, 'person.jsonld'), example)
+        attributes = example_attributes('person', 'DOE, John').merge(
+          birth_info: [BirthInfo.new(date: '1970-01-15', country: 'Example Country', country_iso_code: 'XX')],
+          nationalities: ['Example Country'],
+          identifications: [Identification.new(type: 'passport', number: 'EXAMPLE123')]
+        )
+        write_example(dir, 'person', PersonEntity.new(attributes))
       end
 
-      # Export organization example
-      # @param dir [String] examples directory
       def export_organization_example(dir)
-        example = {
-          '@context' => CONTEXT_URL,
-          '@id' => 'https://www.ammitto.org/entity/example/organization',
-          '@type' => 'OrganizationEntity',
-          'entityType' => 'organization',
-          'names' => [
-            { '@type' => 'Name', 'fullName' => 'EXAMPLE CORPORATION LTD', 'isPrimary' => true }
-          ],
-          'addresses' => [
-            { '@type' => 'Address', 'street' => '123 Example St', 'city' => 'Example City', 'countryCode' => 'XX' }
-          ],
-          'hasSanctionEntry' => [
-            { '@id' => 'https://www.ammitto.org/entry/example/organization' }
-          ]
-        }
-
-        write_json(File.join(dir, 'organization.jsonld'), example)
+        attributes = example_attributes('organization', 'EXAMPLE CORPORATION LTD').merge(
+          addresses: [Address.new(street: '123 Example St', city: 'Example City', country_iso_code: 'XX')]
+        )
+        write_example(dir, 'organization', OrganizationEntity.new(attributes))
       end
 
-      # Export vessel example
-      # @param dir [String] examples directory
       def export_vessel_example(dir)
-        example = {
-          '@context' => CONTEXT_URL,
-          '@id' => 'https://www.ammitto.org/entity/example/vessel',
-          '@type' => 'VesselEntity',
-          'entityType' => 'vessel',
-          'names' => [
-            { '@type' => 'Name', 'fullName' => 'EXAMPLE VESSEL', 'isPrimary' => true }
-          ],
-          'imo' => '1234567',
-          'mmsi' => '123456789',
-          'flag' => 'Example Flag State',
-          'tonnage' => 50_000,
-          'callSign' => 'ABCD1',
-          'hasSanctionEntry' => [
-            { '@id' => 'https://www.ammitto.org/entry/example/vessel' }
-          ]
-        }
+        attributes = example_attributes('vessel', 'EXAMPLE VESSEL').merge(
+          imo_number: '1234567', mmsi: '123456789', flag_state: 'Example Flag State',
+          tonnage: Tonnage.new(gross_tonnage: 50_000), call_sign: 'ABCD1'
+        )
+        write_example(dir, 'vessel', VesselEntity.new(attributes))
+      end
 
-        write_json(File.join(dir, 'vessel.jsonld'), example)
+      def example_attributes(type, name)
+        {
+          id: "https://www.ammitto.org/entity/example/#{type}",
+          entity_type: type,
+          names: [NameVariant.new(full_name: name, is_primary: true)],
+          sanction_entry_ids: ["https://www.ammitto.org/entry/example/#{type}"]
+        }
+      end
+
+      def write_example(dir, type, entity)
+        write_json(File.join(dir, "#{type}.jsonld"), JsonLdSerializer.new.serialize_entity(Ontology::Compatibility.canonical(entity)))
       end
     end
   end

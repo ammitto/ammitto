@@ -49,9 +49,15 @@ preserves recursive chapter, clause and list structures from the China and
 Japan source contracts. RawSourceData.sourceSpecificFields is intentionally a
 free-form provenance object, rather than a domain object with an invented schema.
 
-Ontology-browser examples retain their established illustrative field names
-(`Name`, `imo`, and reference objects for `hasSanctionEntry`) through separate
-contracts. They do not weaken the entity schemas used for published records.
+Ontology-browser examples use the same typed standalone entity contracts as
+published records: `NameVariant`, `imoNumber`, and IRI strings for
+`hasSanctionEntry`. The `example_*` definitions reference the canonical person,
+organization and vessel file contracts directly. Ontology class and property
+metadata use a separate inline context with explicit RDF/RDFS term mappings;
+the shared sanctions context remains the contract for real records and examples.
+Property `usages` retain each class's range and array cardinality as JSON metadata.
+Each usage names its class by IRI, requires boolean `isArray`, and includes an
+IRI range when unambiguous; shared fields do not invent RDFS domain intersections.
 The versioned context contract checks all current term coercions and containers.
 Changing the context or output payload requires updating its contract.
 

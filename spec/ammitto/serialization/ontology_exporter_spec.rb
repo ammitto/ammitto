@@ -4,6 +4,8 @@ require 'spec_helper'
 require 'fileutils'
 require 'json'
 require 'tmpdir'
+require 'json/ld'
+require 'json-schema'
 require 'ammitto/serialization/ontology_exporter'
 
 RSpec.describe Ammitto::Serialization::OntologyExporter do
@@ -28,7 +30,7 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
       expect(File.exist?(classes_file)).to be true
 
       data = JSON.parse(File.read(classes_file))
-      expect(data['@context']).to eq('https://ammitto.org/api/v1/context.jsonld')
+      expect(data['@context']).to eq(described_class::METADATA_CONTEXT)
       expect(data['@graph']).to be_an(Array)
       expect(data['@graph'].length).to be > 0
     end
@@ -38,8 +40,72 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
       expect(File.exist?(properties_file)).to be true
 
       data = JSON.parse(File.read(properties_file))
-      expect(data['@context']).to eq('https://ammitto.org/api/v1/context.jsonld')
+      expect(data['@context']).to eq(described_class::METADATA_CONTEXT)
       expect(data['@graph']).to be_an(Array)
+    end
+
+    it 'expands metadata into RDF classes, properties and IRI-valued links' do
+      classes = JSON::LD::API.expand(JSON.parse(File.read(File.join(output_dir, 'ontology/classes.jsonld'))))
+      properties = JSON::LD::API.expand(JSON.parse(File.read(File.join(output_dir, 'ontology/properties.jsonld'))))
+      person = classes.find { |node| node['@id'].end_with?('/PersonEntity') }
+      names = properties.find { |node| node['@id'].end_with?('/names') }
+      expect(person['@type']).to eq(['http://www.w3.org/2000/01/rdf-schema#Class'])
+      expect(person['http://www.w3.org/2000/01/rdf-schema#subClassOf'])
+        .to eq([{ '@id' => "#{described_class::BASE_URI}/Entity" }])
+      expect(person['http://www.w3.org/2002/07/owl#equivalentClass'])
+        .to eq([{ '@id' => 'https://ammitto.org/schema/v1/PersonEntity' }])
+      expect(names['@type']).to eq(['http://www.w3.org/1999/02/22-rdf-syntax-ns#Property'])
+      expect(names['http://www.w3.org/2000/01/rdf-schema#range'])
+        .to eq([{ '@id' => "#{described_class::BASE_URI}/NameVariant" }])
+      expect(names['http://www.w3.org/2000/01/rdf-schema#domain'])
+        .to eq([{ '@id' => "#{described_class::BASE_URI}/Entity" }])
+      expect(names['http://www.w3.org/2002/07/owl#equivalentProperty'])
+        .to eq([{ '@id' => 'https://schema.org/name' }])
+    end
+
+    it 'validates examples against ordinary entity contracts and their expanded entry links' do
+      schema = JSON.parse(File.read(Ammitto::Serialization::OntologyCatalogue::SCHEMA_PATH))
+      %w[person organization vessel].each do |kind|
+        example = JSON.parse(File.read(File.join(output_dir, "ontology/examples/#{kind}.jsonld")))
+        contract = schema.merge('$ref' => "#/definitions/#{kind.capitalize}Entity")
+        expect(JSON::Validator.fully_validate(contract, example)).to be_empty
+        expect(example.fetch('names').first['@type']).to eq('NameVariant')
+        expect(example.fetch('hasSanctionEntry')).to eq(["https://www.ammitto.org/entry/example/#{kind}"])
+        example['@context'] = Ammitto::Schema::Context.context.fetch('@context')
+        expanded = JSON::LD::API.expand(example).first
+        expect(expanded['https://ammitto.org/schema/v1/hasSanctionEntry'])
+          .to eq([{ '@id' => "https://www.ammitto.org/entry/example/#{kind}" }])
+      end
+      vessel = JSON.parse(File.read(File.join(output_dir, 'ontology/examples/vessel.jsonld')))
+      expect(vessel['tonnage']).to eq('@type' => 'Tonnage', 'grossTonnage' => 50_000)
+      expect(vessel['imoNumber']).to eq('1234567')
+    end
+
+    it 'uses only published class and property names throughout the hierarchy' do
+      classes = described_class::CLASSES.map { |item| item[:id] }
+      expect(classes).to include('NameVariant', 'Identification', 'Tonnage', 'OfficialAnnouncement', 'SanctionEffect')
+      expect(classes & %w[Name Identifier Announcement Measure Country Nationality SanctionsList]).to be_empty
+      hierarchy = JSON.parse(File.read(File.join(output_dir, 'ontology/hierarchy.json')))
+      names = hierarchy['children'].flat_map { |node| [node['name']] + node.fetch('children').map { |child| child['name'] } }
+      expect(names.sort).to eq(classes.sort)
+      expect(described_class::PROPERTIES.map { |item| item[:id] } & %w[documents imo flag measures aliases]).to be_empty
+    end
+
+    it 'preserves per-class ranges and cardinalities when a shared property varies' do
+      properties = JSON.parse(File.read(File.join(output_dir, 'ontology/properties.jsonld')))['@graph']
+      authority = properties.find { |property| property['@id'].end_with?('/authority') }
+      expect(authority['usages']).to include(
+        { 'class' => "#{described_class::BASE_URI}/SanctionEntry", 'range' => "#{described_class::BASE_URI}/Authority", 'isArray' => false },
+        { 'class' => "#{described_class::BASE_URI}/OfficialAnnouncement", 'range' => 'http://www.w3.org/2001/XMLSchema#string', 'isArray' => false }
+      )
+      name = properties.find { |property| property['@id'].end_with?('/name') }
+      expect(name['usages']).to include(
+        { 'class' => "#{described_class::BASE_URI}/Authority", 'range' => 'http://www.w3.org/2001/XMLSchema#string', 'isArray' => false },
+        { 'class' => "#{described_class::BASE_URI}/DocumentType", 'range' => "#{described_class::BASE_URI}/LocalizedString", 'isArray' => true }
+      )
+      expanded = JSON::LD::API.expand(JSON.parse(File.read(File.join(output_dir, 'ontology/properties.jsonld'))))
+      expanded_authority = expanded.find { |property| property['@id'].end_with?('/authority') }
+      expect(expanded_authority["#{described_class::BASE_URI}/usages"].first['@type']).to eq('@json')
     end
 
     # The ontology browser and the JSON-LD context describe the same
@@ -145,15 +211,15 @@ RSpec.describe Ammitto::Serialization::OntologyExporter do
     it 'contains authority property' do
       prop = described_class::PROPERTIES.find { |p| p[:id] == 'authority' }
       expect(prop).not_to be_nil
-      expect(prop[:domain]).to eq('SanctionEntry')
-      expect(prop[:range]).to eq('Authority')
+      expect(prop[:domain]).to be_nil
+      expect(prop[:range]).to be_nil
     end
 
     it 'contains status property' do
       prop = described_class::PROPERTIES.find { |p| p[:id] == 'status' }
       expect(prop).not_to be_nil
       expect(prop[:domain]).to eq('SanctionEntry')
-      expect(prop[:range]).to eq('string')
+      expect(prop[:range]).to be_nil # status is vocabulary-coerced to an IRI
     end
   end
 

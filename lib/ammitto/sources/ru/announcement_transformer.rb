@@ -158,7 +158,7 @@ module Ammitto
         # @param announcement [Ammitto::Sources::Ru::Announcement]
         # @return [Array<String>] one reference per entity, in order
         def announcement_references(announcement)
-          document_id = document_reference(announcement.document_id)
+          document_id = announcement_reference(announcement.announcement)
           slugs = announcement.entities.map { |e| entity_name_slug(e) }
           counts = slugs.tally
 
@@ -258,7 +258,7 @@ module Ammitto
             reasons: announcement_reasons(entity.reason),
             period: announcement_period(entity),
             status: 'active',
-            reference_number: reference,
+            reference_number: first_present(announcement.document_id) ? reference : nil,
             # Unreported: transform_announcement already reported this
             # block's date once for the whole announcement.
             announcement: official_announcement_from(announcement.announcement,
@@ -389,13 +389,13 @@ module Ammitto
           build_model(
             Ammitto::OfficialAnnouncement,
             id: generate_announcement_id(
-              document_reference(block.document_id)
+              announcement_reference(block)
             ),
             title: announcement_title(block),
             url: block.url,
             publish_date: parse_date(block.publish_date, **report_as),
             publish_time: block.publish_time,
-            document_id: block.document_id,
+            document_id: first_present(block.document_id),
             document_type: block.type,
             signatory: block.signatory,
             publisher: block.publisher,

@@ -245,6 +245,7 @@ module Ammitto
         def create_announcement_entry(entity, reference, entity_id,
                                       citations, announcement)
           list_info = announcement_list_info(entity)
+          regime = create_regime(code: list_info[:code], name: list_info[:name]) if first_present(list_info[:name])
 
           build_model(
             Ammitto::SanctionEntry,
@@ -252,8 +253,7 @@ module Ammitto
                                   entry_list_type: list_info[:list_slug]),
             entity_id: entity_id,
             authority: authority,
-            regime: create_regime(code: list_info[:code],
-                                  name: list_info[:name]),
+            regime: regime,
             effects: announcement_effects(entity.measures),
             reasons: announcement_reasons(entity.reason),
             period: announcement_period(entity),

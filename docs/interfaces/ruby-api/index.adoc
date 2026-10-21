@@ -73,6 +73,19 @@ status = Ammitto.cache_status
 #            size: 7178346, age_seconds: 443 }, ... }
 ----
 
+=== Bulk Downloads
+
+`Ammitto::Client::ApiClient.new.fetch_all` reads `index.jsonld` under the
+configured API base URL and downloads its `all.jsonld` entry. Production bulk
+exports live in a pinned `ammitto/data` GitHub Release; source downloads stay
+under `sources/`. The client follows at most five HTTPS redirects to GitHub
+release asset hosts for bulk downloads only.
+
+A missing catalogue (HTTP 404) uses the legacy local `all.jsonld` endpoint.
+An unavailable or malformed catalogue raises `Ammitto::NetworkError` rather
+than silently choosing a different snapshot. Custom hosts may keep a relative
+`all.jsonld` catalogue URL.
+
 === Available Sources
 
 [source,ruby]

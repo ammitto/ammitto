@@ -236,8 +236,7 @@ API surface (served as static JSON)::
 | `/api/v1/by-type/{type}.jsonld` | Entities by type
 | `/api/v1/facets/{type}.json` | Facet counts
 | `/api/v1/ontology/classes.jsonld` | Ontology class definitions
-| `/api/v1/all.jsonld` | Complete graph
-| `/api/v1/all.ttl` | Turtle/RDF
+| `/api/v1/index.jsonld` | Download catalogue; complete JSON-LD and Turtle exports use pinned GitHub Release asset URLs
 |===
 
 === Multi-format exports (downstream consumers)

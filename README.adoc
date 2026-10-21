@@ -175,9 +175,13 @@ A `SanctionEntry` represents a single sanction against an entity, including:
 │                    www.ammitto.org/api/v1/                      │
 │                                                                  │
 │  /sources/eu.jsonld    /sources/un.jsonld    /sources/us.jsonld │
-│  /sources/gb.jsonld    /sources/cn.jsonld    /all.jsonld        │
+│  /sources/gb.jsonld    /sources/cn.jsonld    /index.jsonld      │
 └─────────────────────────────────────────────────────────────────┘
 ....
+
+The API download catalogue at `index.jsonld` points bulk JSON-LD and Turtle
+consumers to a pinned GitHub Release. Source JSON-LD and individual records
+remain on the API host.
 
 == Data Sources
 

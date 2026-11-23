@@ -20,9 +20,11 @@ module Ammitto
         # The order that decides which designation is a vessel's earliest,
         # shared by the workbook merge and the transformer so a file read
         # back from YAML gives the bare IRI to the same row the fetch did.
+        # Cosmetic case/spacing changes must not move that IRI to a
+        # different measure when two designations share a date.
         # @return [Array]
         def sort_key
-          [date_of_application, subject_to]
+          [date_of_application, subject_to.to_s.gsub(/[[:space:]]+/, ' ').strip.downcase]
         end
       end
     end

@@ -47,6 +47,23 @@ RSpec.describe Ammitto::Sources::EuVessels::SanctionsList do
     expect(designations(vessel)).to eq([[Date.new(2025, 5, 20), russia]])
   end
 
+  it 'preserves unfamiliar source text and warns once per value within each workbook parse' do
+    text = '  New measure (Council Regulation (EU) 9999/123)  '
+    rows = [['Alpha', 9_000_001, Date.new(2025, 5, 20), text],
+            ['Beta', 9_000_002, Date.new(2025, 5, 20), text]]
+    allow(Ammitto::Logger).to receive(:warn)
+    allow(Ammitto::ParseFailureVisibility).to receive(:report)
+
+    items = parse(rows).items
+
+    expect(items.map { |item| item.designations.first.subject_to }).to eq([text, text])
+    expect(Ammitto::Logger).to have_received(:warn).with(include(text.inspect)).once
+    expect(Ammitto::ParseFailureVisibility).not_to have_received(:report)
+
+    parse(rows)
+    expect(Ammitto::Logger).to have_received(:warn).twice
+  end
+
   it 'carries every row for one IMO number on one vessel, earliest first' do
     items = parse([
                     ['HAO FAN 6', 8_628_597, Date.new(2018, 3, 30), deregistration],
@@ -77,9 +94,9 @@ RSpec.describe Ammitto::Sources::EuVessels::SanctionsList do
   end
 
   describe 'rows that do not read as a designation' do
-    it 'refuses a Subject to value it has no mapping for, naming it' do
-      expect { parse([['Alpha', 9_000_001, Date.new(2025, 5, 20), 'Travel ban (Council Regulation 2017/1509)']]) }
-        .to raise_error(Ammitto::ParseError, %r{"Travel ban \(Council Regulation 2017/1509\)"})
+    it 'refuses a malformed Subject to value rather than treating it as unfamiliar vocabulary' do
+      expect { parse([['Alpha', 9_000_001, Date.new(2025, 5, 20), 'Travel ban (Regulation unknown)']]) }
+        .to raise_error(Ammitto::ParseError, /does not read as/)
     end
 
     it 'refuses a row whose cells shifted, putting a name in the IMO column' do

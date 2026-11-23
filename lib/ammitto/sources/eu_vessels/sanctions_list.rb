@@ -34,12 +34,13 @@ module Ammitto
           xlsx = Roo::Spreadsheet.open(file_path)
           xlsx.default_sheet = xlsx.sheets.first
           keys = header_keys(xlsx.row(1))
+          subject_cache = {}
 
           rows = (2..xlsx.last_row).filter_map do |row_num|
             row = xlsx.row(row_num)
             next if row.all? { |cell| blank?(cell) }
 
-            Vessel.from_row_data(read_row(row, keys, row_num))
+            Vessel.from_row_data(read_row(row, keys, row_num, subject_cache: subject_cache))
           end
 
           new(vessels: consolidate(rows))
@@ -72,7 +73,7 @@ module Ammitto
         # @param row_num [Integer] the sheet row, for the error
         # @return [Hash]
         # @raise [Ammitto::ParseError] naming the row and what is wrong
-        def self.read_row(row, keys, row_num)
+        def self.read_row(row, keys, row_num, subject_cache: {})
           problem = ->(why) { raise Ammitto::ParseError, "eu_vessels: row #{row_num} #{row.inspect} #{why}" }
 
           stray = row.each_index.select { |idx| keys[idx].nil? && !blank?(row[idx]) }
@@ -88,7 +89,7 @@ module Ammitto
 
           data['date_of_application'] = read_date(data['date_of_application'], field: :date_of_application) ||
                                         problem.call("has date of application #{data['date_of_application'].inspect}, not a date")
-          SubjectTo.parse(data['subject_to'])
+          subject_cache[data['subject_to']] ||= SubjectTo.parse(data['subject_to'])
           data
         end
 

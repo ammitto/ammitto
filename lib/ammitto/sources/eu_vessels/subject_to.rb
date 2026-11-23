@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../error'
+require_relative '../../logger'
 
 module Ammitto
   module Sources
@@ -11,11 +12,16 @@ module Ammitto
       #
       # The workbook mixes EU regimes: Russia, DPRK and Libya, each with
       # the measure DMA names. Publishing one fixed pair of effects for all
-      # of them stated measures the source does not, so every cell is
-      # read, and a cell outside this vocabulary stops the harvest: a new
-      # measure has to be mapped by a person before it is published.
+      # of them stated measures the source does not. Unfamiliar vocabulary
+      # is preserved and flagged for review without inferring legal effects;
+      # malformed cells still stop the harvest.
       class SubjectTo
-        CELL = %r{\A(?<measures>.+?) \(Council Regulation (?<regulation>\d+/\d+)\)\z}
+        CITATION = %r{
+          \bCouncil[[:space:]]+Regulation
+          (?:[[:space:]]+\(EU\))?(?:[[:space:]]+No\.?)?
+          [[:space:]]+(?<regulation>\d+/\d+)\b
+        }ix
+        CELL = /\A(?<measures>.+?)[[:space:]]+\((?<citation>#{CITATION})\)\z/im
 
         # Regime codes and names match the EU consolidated list source, so
         # an entry from either source links to the same regime node.
@@ -70,41 +76,74 @@ module Ammitto
 
         # @param text [String, nil] the cell as DMA publishes it
         # @return [SubjectTo]
-        # @raise [Ammitto::ParseError] when the cell names a regulation or a
-        #   measure this vocabulary does not know
+        # @raise [Ammitto::ParseError] when the legal citation is malformed
+        #   or any measure clause is empty
         def self.parse(text)
           new(text)
         end
 
         def initialize(text)
-          @text = text.to_s.strip
-          match = CELL.match(@text)
+          @text = text.to_s
+          match = CELL.match(trim(@text))
           raise unknown('does not read as "<measure> (Council Regulation <number>)"') unless match
+          raise unknown('contains multiple legal citations') if match[:measures].match?(CITATION)
 
+          @citation = match[:citation]
+          @regulation_number = match[:regulation]
           @regulation = REGULATIONS[match[:regulation]]
-          raise unknown("names regulation #{match[:regulation]}, which is not mapped") unless @regulation
+          @measures = match[:measures].split('+', -1).map { |measure| trim(measure) }
+          raise unknown('contains an empty measure clause') if @measures.any? { |measure| measure.gsub(/[[:space:]\p{Cf}\p{Cc}]/, '').empty? }
 
-          @measures = match[:measures].split(' + ').map(&:strip)
-          unmapped = @measures.reject { |measure| @regulation[:measures].key?(measure) }
-          raise unknown("names measure(s) #{unmapped.join(', ')}, not mapped under #{match[:regulation]}") if unmapped.any?
+          unmapped = @measures.reject { |measure| mapped_effects(measure) }
+          warn_unmapped(unmapped) if unmapped.any?
         end
 
-        # @return [Hash] regime code and name
+        # @return [Hash, nil] verified regime code and name, if known
         def regime
-          regulation[:regime]
+          regulation && regulation[:regime]
         end
 
         # @return [Hash] instrument identifier and url
         def instrument
-          regulation[:instrument]
+          regulation ? regulation[:instrument] : { identifier: @citation }
         end
 
+        # @return [Boolean] whether every clause has a verified mapping
+        def fully_mapped?
+          measures.all? { |measure| mapped_effects(measure) }
+        end
+
+        # Unmapped clauses do not establish scope; nil overrides the
+        # transformer's default for verified effects.
         # @return [Array<Hash>] effect_type and description, per measure
         def effects
-          measures.flat_map { |measure| regulation[:measures].fetch(measure) }
+          measures.flat_map do |measure|
+            mapped_effects(measure) || [{ effect_type: 'other', scope: nil, description: "Unmapped source measure: #{measure}" }]
+          end
         end
 
         private
+
+        def trim(value)
+          value.gsub(/\A[[:space:]]+|[[:space:]]+\z/, '')
+        end
+
+        def normalized(value)
+          value.gsub(/[[:space:]]+/, ' ').downcase
+        end
+
+        def mapped_effects(measure)
+          return unless regulation
+
+          regulation[:measures].find { |name, _| normalized(name) == normalized(measure) }&.last
+        end
+
+        def warn_unmapped(measures)
+          reason = regulation ? "measure(s) #{measures.join(', ')} under #{@regulation_number}" : "regulation #{@regulation_number}"
+          Ammitto::Logger.warn(
+            "eu_vessels: unmapped #{reason} in #{@text.inspect}; preserving source text without inferred effects; review mapping"
+          )
+        end
 
         def unknown(why)
           Ammitto::ParseError.new("eu_vessels: \"Subject to\" value #{@text.inspect} #{why}")

@@ -18,6 +18,7 @@ module Ammitto
       class Transformer < Ammitto::Transformers::BaseTransformer
         def initialize
           super(:eu_vessels)
+          @subject_to_cache = {}
         end
 
         # Transform an EU Vessel to ontology models: one entity, and one
@@ -124,16 +125,18 @@ module Ammitto
         # @param first [Boolean] whether this is the vessel's earliest
         # @return [SanctionEntry]
         def create_entry(vessel, entity, designation, first:)
-          subject_to = designation.subject_to && SubjectTo.parse(designation.subject_to)
+          text = designation.subject_to
+          subject_to = text && (@subject_to_cache[text] ||= SubjectTo.parse(text))
 
           build_model(Ammitto::SanctionEntry).tap do |entry|
             entry.id = generate_entry_id(entry_local_id(vessel, designation, subject_to, first: first))
             entry.entity_id = entity.id
             entry.authority = authority
             entry.status = 'active'
+            # Unmapped vocabulary cannot establish indefinite duration.
             entry.period = build_model(Ammitto::TemporalPeriod,
                                        listed_date: designation.date_of_application,
-                                       is_indefinite: true)
+                                       is_indefinite: subject_to && !subject_to.fully_mapped? ? nil : true)
             state_measure(entry, subject_to, designation) if subject_to
           end
         end
@@ -141,7 +144,7 @@ module Ammitto
         # A designation read from a file that predates the Subject to
         # column states no regime or measure, so its entry carries none.
         def state_measure(entry, subject_to, designation)
-          entry.regime = build_model(Ammitto::SanctionRegime, **subject_to.regime)
+          entry.regime = build_model(Ammitto::SanctionRegime, **subject_to.regime) if subject_to.regime
           entry.legal_bases = [create_legal_basis(subject_to)]
           entry.effects = subject_to.effects.map { |effect| create_effect(**effect) }
           entry.remarks = designation.subject_to

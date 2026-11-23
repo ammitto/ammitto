@@ -41,6 +41,27 @@ RSpec.describe Ammitto::Sources::EuVessels::SubjectTo do
     expect(effects).to eq([{ effect_type: 'other', description: 'Seizure' }])
   end
 
+  it 'retains the Libya Article 15 basis without assuming every conditional prohibition applies' do
+    subject_to = described_class.parse('Article 15 (Council Regulation 2016/44)')
+
+    expect(subject_to.regime).to eq(code: 'LIBYA', name: 'Libya')
+    expect(subject_to.instrument).to eq(
+      identifier: 'Council Regulation (EU) 2016/44',
+      url: 'https://eur-lex.europa.eu/eli/reg/2016/44/oj'
+    )
+    expect(subject_to.effects).to eq([{ effect_type: 'other', description: 'Article 15' }])
+  end
+
+  it 'refuses an unmapped measure under the recognized Libya regulation' do
+    expect { described_class.parse('Article 16 (Council Regulation 2016/44)') }
+      .to raise_error(Ammitto::ParseError, %r{measure\(s\) Article 16, not mapped under 2016/44})
+  end
+
+  it 'does not borrow a measure from a different regulation' do
+    expect { described_class.parse('Article 3s (Council Regulation 2016/44)') }
+      .to raise_error(Ammitto::ParseError, %r{measure\(s\) Article 3s, not mapped under 2016/44})
+  end
+
   it 'refuses a measure it has no mapping for' do
     expect { described_class.parse('Travel ban (Council Regulation 2017/1509)') }
       .to raise_error(Ammitto::ParseError, /measure\(s\) Travel ban/)

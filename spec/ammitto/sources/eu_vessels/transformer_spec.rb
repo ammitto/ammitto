@@ -83,6 +83,21 @@ RSpec.describe Ammitto::Sources::EuVessels::Transformer do
     expect(entry.effects.map(&:effect_type)).not_to include('asset_freeze')
   end
 
+  it 'reads and transforms DMA\'s Libya Article 15 row without adding unstated prohibitions' do
+    list_class = Ammitto::Sources::EuVessels::SanctionsList
+    row = ['AVAX', 9_058_713, Date.new(2026, 8, 7), 'Article 15 (Council Regulation 2016/44)']
+    parsed = Ammitto::Sources::EuVessels::Vessel.from_row_data(
+      list_class.read_row(row, list_class::COLUMNS, 2)
+    )
+
+    entry = described_class.new.transform(parsed).first[:entry]
+
+    expect(entry.regime.code).to eq('LIBYA')
+    expect(entry.legal_bases.map(&:identifier)).to eq(['Council Regulation (EU) 2016/44'])
+    expect(entry.effects.map(&:effect_type)).to eq(%w[other])
+    expect(entry.remarks).to eq(row.last)
+  end
+
   it 'names a vessel without an IMO number after its name' do
     result = described_class.new.transform(
       vessel('MIN NING DE YOU 078', nil, [Date.new(2018, 3, 30), 'Port entry ban (Council Regulation 2017/1509)'])

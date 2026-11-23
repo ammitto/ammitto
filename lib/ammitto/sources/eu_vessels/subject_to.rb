@@ -9,9 +9,7 @@ module Ammitto
       # workbook states, e.g. "Article 3s (Council Regulation 833/2014)" or
       # "De-registration + Port entry ban (Council Regulation 2017/1509)".
       #
-      # The workbook mixes two EU regimes: vessels under Article 3s of the
-      # Russia regulation, which closes ports and services to them but
-      # freezes nothing, and vessels under the DPRK regulation, each with
+      # The workbook mixes EU regimes: Russia, DPRK and Libya, each with
       # the measure DMA names. Publishing one fixed pair of effects for all
       # of them stated measures the source does not, so every cell is
       # read, and a cell outside this vocabulary stops the harvest: a new
@@ -35,6 +33,19 @@ module Ammitto
                 { effect_type: 'service_prohibition',
                   description: 'Provision of services to the vessel prohibited (Article 3s, Annex XLII)' }
               ]
+            }
+          },
+          '2016/44' => {
+            regime: { code: 'LIBYA', name: 'Libya' },
+            instrument: {
+              identifier: 'Council Regulation (EU) 2016/44',
+              url: 'https://eur-lex.europa.eu/eli/reg/2016/44/oj'
+            },
+            # Article 15 includes measures conditional on the designation
+            # in Annex V. DMA's workbook names only the article, so retain
+            # that statement rather than assert every possible prohibition.
+            measures: {
+              'Article 15' => [{ effect_type: 'other', description: 'Article 15' }]
             }
           },
           '2017/1509' => {
